@@ -1,0 +1,1571 @@
+{
+  "name": "AdvancedMaterials",
+  "fullName": "Advanced Materials",
+  "description": "Adds Blender-like PBR material controls as an object behavior for 3D boxes, 3D models, and extruded sprites while preserving existing textures and maps unless a replacement option is enabled.",
+  "category": "3D",
+  "author": "Antigravity",
+  "license": "MIT",
+  "version": "1.3.1",
+  "tags": [
+    "3D",
+    "material",
+    "advanced material",
+    "PBR",
+    "shader",
+    "Three.js",
+    "roughness",
+    "metallic",
+    "emission",
+    "transmission",
+    "clearcoat"
+  ],
+  "extensionNamespace": "",
+  "eventsBasedBehaviors": [
+    {
+      "name": "AdvancedMaterials",
+      "fullName": "Advanced Materials",
+      "description": "Adds physical material controls to a 3D object as a reusable behavior, preserving original material assignments and texture maps unless explicitly changed.",
+      "eventsFunctions": [
+        {
+          "name": "doStepPreEvents",
+          "fullName": "doStepPreEvents",
+          "functionType": "Action",
+          "private": true,
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "\nif (typeof THREE === 'undefined') return;\n\nif (!gdjs.__advancedMaterials) {\n    gdjs.__advancedMaterials = (function() {\n        const copiedProps = [\n            'map', 'alphaMap', 'aoMap', 'lightMap', 'normalMap', 'bumpMap', 'displacementMap',\n            'roughnessMap', 'metalnessMap', 'emissiveMap', 'envMap', 'color', 'opacity',\n            'transparent', 'alphaTest', 'side', 'name', 'vertexColors', 'blending',\n            'depthWrite', 'depthTest', 'visible', 'wireframe', 'emissive',\n            'emissiveIntensity', 'roughness', 'metalness', 'ior', 'transmission',\n            'thickness', 'clearcoat', 'clearcoatRoughness', 'attenuationColor',\n            'attenuationDistance', 'sheen', 'sheenColor', 'sheenRoughness'\n        ];\n\n        let nextBehaviorId = 1;\n\n        const getRootObject3D = (object) => {\n            if (!object) return null;\n            if (typeof object.get3DRendererObject === 'function') {\n                try {\n                    const obj = object.get3DRendererObject();\n                    if (obj) return obj;\n                } catch(e) {}\n            }\n            return null;\n        };\n\n        const makeReplacementStore = () => {\n            if (typeof WeakMap !== 'undefined') {\n                const map = new WeakMap();\n                return {\n                    get: (key) => map.get(key),\n                    set: (key, value) => map.set(key, value)\n                };\n            }\n            const entries = [];\n            return {\n                get: (key) => {\n                    const found = entries.find((entry) => entry.key === key);\n                    return found ? found.value : undefined;\n                },\n                set: (key, value) => entries.push({ key, value })\n            };\n        };\n\n        const getBehaviorState = (behavior) => {\n            if (!behavior.__advancedMaterialsState) {\n                behavior.__advancedMaterialsState = {\n                    ownerId: nextBehaviorId++,\n                    initialized: false,\n                    replacements: makeReplacementStore(),\n                    ownedMaterials: [],\n                    activeMaterials: [],\n                    originalAssignments: [],\n                    materialCount: 0,\n                    lastError: '',\n                    lastSignature: '',\n                    rootObject: null\n                };\n            }\n            return behavior.__advancedMaterialsState;\n        };\n\n        const resetState = (state) => {\n            state.initialized = false;\n            state.replacements = makeReplacementStore();\n            state.ownedMaterials = [];\n            state.activeMaterials = [];\n            state.originalAssignments = [];\n            state.materialCount = 0;\n            state.lastSignature = '';\n            state.rootObject = null;\n        };\n\n        const getNumber = (behavior, name, def) => {\n            const g = behavior['_get' + name];\n            if (typeof g !== 'function') return def;\n            const v = Number(g.call(behavior));\n            return Number.isFinite(v) ? v : def;\n        };\n\n        const getBoolean = (behavior, name, def) => {\n            const g = behavior['_get' + name];\n            if (typeof g !== 'function') return def;\n            const v = g.call(behavior);\n            return v === true || v === 'true' || v === 1 || v === '1';\n        };\n\n        const getString = (behavior, name, def) => {\n            const g = behavior['_get' + name];\n            return typeof g === 'function' ? String(g.call(behavior)) : def;\n        };\n\n        const parseColor = (colorString, fallback) => {\n            const color = new THREE.Color();\n            if (!colorString) return color.copy(fallback || new THREE.Color(1, 1, 1));\n            if (colorString.indexOf(';') === -1) {\n                try {\n                    color.set(colorString);\n                    return color;\n                } catch(e) {\n                    return color.copy(fallback || new THREE.Color(1, 1, 1));\n                }\n            }\n            const parts = colorString.split(';');\n            const r = Math.max(0, Math.min(255, Number(parts[0]) || 0)) / 255;\n            const g = Math.max(0, Math.min(255, Number(parts[1]) || 0)) / 255;\n            const b = Math.max(0, Math.min(255, Number(parts[2]) || 0)) / 255;\n            color.setRGB(r, g, b, THREE.SRGBColorSpace);\n            return color;\n        };\n\n        const rememberOriginals = (material, source) => {\n            if (!material.userData) material.userData = {};\n            if (!material.userData.__advancedMaterialsOriginals) {\n                material.userData.__advancedMaterialsOriginals = {\n                    color: source.color && source.color.clone ? source.color.clone() : new THREE.Color(1, 1, 1),\n                    emissive: source.emissive && source.emissive.clone ? source.emissive.clone() : new THREE.Color(0, 0, 0),\n                    emissiveIntensity: source.emissiveIntensity !== undefined ? source.emissiveIntensity : 0,\n                    opacity: source.opacity !== undefined ? source.opacity : 1,\n                    transparent: !!source.transparent,\n                    alphaTest: source.alphaTest !== undefined ? source.alphaTest : 0,\n                    side: source.side !== undefined ? source.side : THREE.FrontSide\n                };\n            }\n        };\n\n        const copyValue = (value) => {\n            if (value && value.isColor && value.clone) return value.clone();\n            return value;\n        };\n\n        const addOwnedMaterial = (state, material) => {\n            if (material && state.ownedMaterials.indexOf(material) === -1) {\n                state.ownedMaterials.push(material);\n            }\n        };\n\n        const makePhysicalMaterial = (state, source) => {\n            const material = new THREE.MeshPhysicalMaterial();\n            for (const prop of copiedProps) {\n                if (source[prop] !== undefined && material[prop] !== undefined) {\n                    material[prop] = copyValue(source[prop]);\n                }\n            }\n            material.userData = Object.assign({}, source.userData || {});\n            material.__advancedMaterialsManaged = true;\n            material.__advancedMaterialsOwnerId = state.ownerId;\n            rememberOriginals(material, source);\n            material.needsUpdate = true;\n            addOwnedMaterial(state, material);\n            return material;\n        };\n\n        const getManagedMaterial = (state, source) => {\n            if (!source) return source;\n            if (source.__advancedMaterialsManaged && source.__advancedMaterialsOwnerId === state.ownerId) {\n                addOwnedMaterial(state, source);\n                return source;\n            }\n            const existing = state.replacements.get(source);\n            if (existing) return existing;\n            const material = makePhysicalMaterial(state, source);\n            state.replacements.set(source, material);\n            return material;\n        };\n\n        const rememberOriginalAssignment = (state, mesh) => {\n            for (const assignment of state.originalAssignments) {\n                if (assignment.mesh === mesh) return;\n            }\n            const wasArray = Array.isArray(mesh.material);\n            state.originalAssignments.push({\n                mesh,\n                wasArray,\n                material: wasArray ? mesh.material.slice() : mesh.material\n            });\n        };\n\n        const syncMeshMaterials = (state, root) => {\n            const activeMaterials = [];\n            const visit = (child) => {\n                if (!child.isMesh || !child.material) return;\n                const wasArray = Array.isArray(child.material);\n                const oldMats = wasArray ? child.material : [child.material];\n                const newMats = oldMats.map((mat) => getManagedMaterial(state, mat));\n                const changed = newMats.some((mat, index) => mat !== oldMats[index]);\n                if (changed) {\n                    rememberOriginalAssignment(state, child);\n                    child.material = wasArray ? newMats : newMats[0];\n                }\n                for (const mat of newMats) {\n                    if (mat && activeMaterials.indexOf(mat) === -1) activeMaterials.push(mat);\n                }\n            };\n            if (root.traverse) root.traverse(visit);\n            else visit(root);\n            state.activeMaterials = activeMaterials;\n            state.materialCount = activeMaterials.length;\n            return activeMaterials;\n        };\n\n        const applyToMaterial = (mat, settings) => {\n            const originals = mat.userData && mat.userData.__advancedMaterialsOriginals;\n\n            if (settings.useBaseColor && mat.color) {\n                mat.color.copy(parseColor(settings.baseColor, originals && originals.color));\n            } else if (originals && originals.color && mat.color) {\n                mat.color.copy(originals.color);\n            }\n\n            mat.metalness = Math.max(0, Math.min(1, settings.metallic));\n            mat.roughness = Math.max(0, Math.min(1, settings.roughness));\n\n            if (mat.ior !== undefined) mat.ior = Math.max(1, Math.min(2.333, settings.ior));\n            if (mat.clearcoat !== undefined) mat.clearcoat = Math.max(0, Math.min(1, settings.clearcoat));\n            if (mat.clearcoatRoughness !== undefined) mat.clearcoatRoughness = Math.max(0, Math.min(1, settings.clearcoatRoughness));\n            if (mat.transmission !== undefined) mat.transmission = Math.max(0, Math.min(1, settings.transmission));\n            if (mat.thickness !== undefined) mat.thickness = Math.max(0, settings.thickness);\n\n            if (settings.useEmission && mat.emissive) {\n                mat.emissive.copy(parseColor(settings.emissionColor, originals && originals.emissive));\n                mat.emissiveIntensity = Math.max(0, settings.emissionStrength);\n            } else if (originals && mat.emissive) {\n                mat.emissive.copy(originals.emissive);\n                mat.emissiveIntensity = originals.emissiveIntensity;\n            }\n\n            if (settings.alphaMode === 'Opaque') {\n                mat.transparent = false;\n                mat.opacity = 1;\n                mat.alphaTest = 0;\n            } else if (settings.alphaMode === 'Blend') {\n                mat.transparent = true;\n                mat.opacity = Math.max(0, Math.min(1, settings.alpha));\n                mat.alphaTest = 0;\n            } else if (settings.alphaMode === 'Cutout') {\n                mat.transparent = false;\n                mat.opacity = 1;\n                mat.alphaTest = Math.max(0, Math.min(1, settings.alpha));\n            } else if (originals) {\n                mat.transparent = originals.transparent;\n                mat.opacity = originals.opacity;\n                mat.alphaTest = originals.alphaTest;\n            }\n\n            if (settings.sideMode === 'Front') mat.side = THREE.FrontSide;\n            else if (settings.sideMode === 'Back') mat.side = THREE.BackSide;\n            else if (settings.sideMode === 'Double') mat.side = THREE.DoubleSide;\n            else if (originals) mat.side = originals.side;\n\n            mat.needsUpdate = true;\n        };\n\n        const readSettings = (behavior) => ({\n            useBaseColor: getBoolean(behavior, 'UseBaseColor', false),\n            baseColor: getString(behavior, 'BaseColor', '255;255;255'),\n            metallic: getNumber(behavior, 'Metallic', 0),\n            roughness: getNumber(behavior, 'Roughness', 0.5),\n            ior: getNumber(behavior, 'IOR', 1.5),\n            clearcoat: getNumber(behavior, 'Clearcoat', 0),\n            clearcoatRoughness: getNumber(behavior, 'ClearcoatRoughness', 0),\n            transmission: getNumber(behavior, 'Transmission', 0),\n            thickness: getNumber(behavior, 'Thickness', 0),\n            useEmission: getBoolean(behavior, 'UseEmission', false),\n            emissionColor: getString(behavior, 'EmissionColor', '0;0;0'),\n            emissionStrength: getNumber(behavior, 'EmissionStrength', 1),\n            alphaMode: getString(behavior, 'AlphaMode', 'Preserve'),\n            alpha: getNumber(behavior, 'Alpha', 1),\n            sideMode: getString(behavior, 'Side', 'Preserve')\n        });\n\n        const settingsSignature = (settings) => [\n            settings.useBaseColor,\n            settings.baseColor,\n            settings.metallic,\n            settings.roughness,\n            settings.ior,\n            settings.clearcoat,\n            settings.clearcoatRoughness,\n            settings.transmission,\n            settings.thickness,\n            settings.useEmission,\n            settings.emissionColor,\n            settings.emissionStrength,\n            settings.alphaMode,\n            settings.alpha,\n            settings.sideMode\n        ].join('|');\n\n        const applyToBehavior = (behavior, object, force) => {\n            const state = getBehaviorState(behavior);\n            const settings = readSettings(behavior);\n            const signature = settingsSignature(settings);\n            const root = getRootObject3D(object);\n            if (!root) {\n                state.lastError = 'The object renderer is not ready or is not a compatible 3D object.';\n                return false;\n            }\n            if (force === false && state.initialized && state.rootObject === root && state.lastSignature === signature) {\n                state.lastError = '';\n                return true;\n            }\n\n            const materials = syncMeshMaterials(state, root);\n            if (materials.length === 0) {\n                state.lastError = 'No compatible 3D mesh materials were found on the object.';\n                return false;\n            }\n\n            for (const mat of materials) applyToMaterial(mat, settings);\n            state.initialized = true;\n            state.rootObject = root;\n            state.lastSignature = signature;\n            state.lastError = '';\n            return true;\n        };\n\n        const restoreMaterialValues = (mat) => {\n            const originals = mat.userData && mat.userData.__advancedMaterialsOriginals;\n            if (!originals) return;\n            if (mat.color && originals.color) mat.color.copy(originals.color);\n            if (mat.emissive && originals.emissive) mat.emissive.copy(originals.emissive);\n            if (mat.emissiveIntensity !== undefined) mat.emissiveIntensity = originals.emissiveIntensity;\n            mat.opacity = originals.opacity;\n            mat.transparent = originals.transparent;\n            mat.alphaTest = originals.alphaTest;\n            mat.side = originals.side;\n            mat.needsUpdate = true;\n        };\n\n        const restoreAssignments = (state) => {\n            for (const mat of state.activeMaterials) restoreMaterialValues(mat);\n            for (const assignment of state.originalAssignments) {\n                if (!assignment.mesh) continue;\n                assignment.mesh.material = assignment.wasArray ? assignment.material.slice() : assignment.material;\n            }\n        };\n\n        const disposeOwnedMaterials = (state) => {\n            for (const mat of state.ownedMaterials) {\n                if (mat && typeof mat.dispose === 'function') mat.dispose();\n            }\n        };\n\n        const restoreBehavior = (behavior, object) => {\n            const state = getBehaviorState(behavior);\n            if (state.activeMaterials.length === 0 && state.originalAssignments.length === 0) {\n                const root = getRootObject3D(object);\n                if (root) syncMeshMaterials(state, root);\n            }\n            if (state.activeMaterials.length === 0 && state.originalAssignments.length === 0) {\n                state.lastError = 'No managed Advanced Materials values were found to restore.';\n                return false;\n            }\n            restoreAssignments(state);\n            disposeOwnedMaterials(state);\n            resetState(state);\n            state.lastError = '';\n            return true;\n        };\n\n        const disposeBehavior = (behavior) => {\n            const state = getBehaviorState(behavior);\n            if (state.activeMaterials.length > 0 || state.originalAssignments.length > 0) {\n                restoreAssignments(state);\n            }\n            disposeOwnedMaterials(state);\n            resetState(state);\n            state.lastError = '';\n        };\n\n        return { getBehaviorState, applyToBehavior, restoreBehavior, disposeBehavior };\n    })();\n    gdjs.__blenderMaterial = gdjs.__advancedMaterials;\n}\n\ngdjs.__advancedMaterials.applyToBehavior(behavior, object, false);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "onDestroy",
+          "functionType": "Action",
+          "private": true,
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.disposeBehavior(behavior);\nreturn;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "name": "SetUseBaseColor",
+          "fullName": "Set replace base color",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set replace base color of _PARAM0_ _PARAM1_: _PARAM2_",
+          "description": "Enable or disable replacing the material base color.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const rawValue = eventsFunctionContext.getArgument('Enable');",
+                "const value = rawValue === true || rawValue === 'true' || rawValue === 'yes' || rawValue === 1 || rawValue === '1';",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setUseBaseColor'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "defaultValue": "true",
+              "description": "Replace base color",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetBaseColor",
+          "fullName": "Set base color",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set base color of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the replacement base color.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const value = String(eventsFunctionContext.getArgument('Color'));",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setBaseColor'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Base color",
+              "name": "Color",
+              "type": "color"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetMetallic",
+          "fullName": "Set metallic",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set metallic of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the metallic material value from 0 to 1.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setMetallic'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Metallic",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetRoughness",
+          "fullName": "Set roughness",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set roughness of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the roughness material value from 0 to 1.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setRoughness'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Roughness",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetTransmission",
+          "fullName": "Set transmission",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set transmission of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the transmission material value from 0 to 1.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setTransmission'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Transmission",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetIOR",
+          "fullName": "Set IOR",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set IOR of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the index of refraction.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setIOR'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "IOR",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetThickness",
+          "fullName": "Set transmission thickness",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set transmission thickness of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the transmission thickness material value.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setThickness'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Thickness",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetClearcoat",
+          "fullName": "Set clearcoat",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set clearcoat of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the clearcoat material value from 0 to 1.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setClearcoat'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Clearcoat",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetClearcoatRoughness",
+          "fullName": "Set clearcoat roughness",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set clearcoat roughness of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the clearcoat roughness material value from 0 to 1.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setClearcoatRoughness'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Clearcoat roughness",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetUseEmission",
+          "fullName": "Set use emission",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set emission of _PARAM0_ _PARAM1_: _PARAM2_",
+          "description": "Enable or disable replacing the material emission.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const rawValue = eventsFunctionContext.getArgument('Enable');",
+                "const value = rawValue === true || rawValue === 'true' || rawValue === 'yes' || rawValue === 1 || rawValue === '1';",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setUseEmission'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "defaultValue": "true",
+              "description": "Use emission",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetEmissionColor",
+          "fullName": "Set emission color",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set emission color of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the emission color.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const value = String(eventsFunctionContext.getArgument('Color'));",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setEmissionColor'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Emission color",
+              "name": "Color",
+              "type": "color"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetEmissionStrength",
+          "fullName": "Set emission strength",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set emission strength of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change the emission strength.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setEmissionStrength'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Emission strength",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetAlphaMode",
+          "fullName": "Set alpha mode",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set alpha mode of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change alpha handling: Preserve, Opaque, Blend, or Cutout.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const value = String(eventsFunctionContext.getArgument('Mode'));",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setAlphaMode'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Alpha mode",
+              "name": "Mode",
+              "type": "stringWithSelector",
+              "extraInfo": "[\"Preserve\",\"Opaque\",\"Blend\",\"Cutout\"]"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetAlpha",
+          "fullName": "Set alpha",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set alpha of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change opacity or cutout threshold from 0 to 1.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const raw = Number(eventsFunctionContext.getArgument('Value'));\nconst value = Number.isFinite(raw) ? raw : 0;",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setAlpha'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Alpha",
+              "name": "Value",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetSide",
+          "fullName": "Set render side",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Set render side of _PARAM0_ _PARAM1_ to _PARAM2_",
+          "description": "Change rendered side: Preserve, Front, Back, or Double.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const value = String(eventsFunctionContext.getArgument('Mode'));",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const object = objectList[i];",
+                "    const behavior = object.getBehavior(behaviorName);",
+                "    if (!behavior) continue;",
+                "    const setter = behavior['_setSide'];",
+                "    if (typeof setter === 'function') setter.call(behavior, value);",
+                "    if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);",
+                "}"
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            },
+            {
+              "description": "Render side",
+              "name": "Mode",
+              "type": "stringWithSelector",
+              "extraInfo": "[\"Preserve\",\"Front\",\"Back\",\"Double\"]"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "ApplyMaterial",
+          "fullName": "Apply advanced material",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Apply advanced material on _PARAM0_ _PARAM1_",
+          "description": "Apply the behavior material settings immediately to the object.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.applyToBehavior(behavior, object, true);\nreturn;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "RestoreMaterials",
+          "fullName": "Restore original materials",
+          "functionType": "Action",
+          "group": "Advanced Materials",
+          "sentence": "Restore original material values on _PARAM0_ _PARAM1_",
+          "description": "Restore the original material assignments and values saved before this behavior changed the object.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (gdjs.__advancedMaterials) gdjs.__advancedMaterials.restoreBehavior(behavior, object);\nreturn;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "IsApplied",
+          "fullName": "Advanced material is applied",
+          "functionType": "Condition",
+          "group": "Advanced Materials",
+          "sentence": "Advanced material is applied on _PARAM0_ _PARAM1_",
+          "description": "Check whether the behavior has successfully applied material settings.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return gdjs.__advancedMaterials ? gdjs.__advancedMaterials.getBehaviorState(behavior).initialized === true : false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "HasManagedMaterials",
+          "fullName": "Has managed materials",
+          "functionType": "Condition",
+          "group": "Advanced Materials",
+          "sentence": "_PARAM0_ _PARAM1_ has managed materials",
+          "description": "Check whether the behavior found and manages at least one material on the object.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return gdjs.__advancedMaterials ? gdjs.__advancedMaterials.getBehaviorState(behavior).materialCount > 0 : false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "IsUsingBaseColor",
+          "fullName": "Is replacing base color",
+          "functionType": "Condition",
+          "group": "Advanced Materials",
+          "sentence": "_PARAM0_ _PARAM1_ is replacing base color",
+          "description": "Check whether base color replacement is enabled.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return behavior._getUseBaseColor ? behavior._getUseBaseColor() === true : false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "IsUsingEmission",
+          "fullName": "Is using emission",
+          "functionType": "Condition",
+          "group": "Advanced Materials",
+          "sentence": "_PARAM0_ _PARAM1_ is using emission",
+          "description": "Check whether emission is enabled.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return behavior._getUseEmission ? behavior._getUseEmission() === true : false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "Metallic",
+          "fullName": "Metallic",
+          "functionType": "Expression",
+          "group": "Advanced Materials",
+          "description": "Return the configured metallic value.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return Number(behavior._getMetallic ? behavior._getMetallic() : 0);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "Roughness",
+          "fullName": "Roughness",
+          "functionType": "Expression",
+          "group": "Advanced Materials",
+          "description": "Return the configured roughness value.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return Number(behavior._getRoughness ? behavior._getRoughness() : 0.5);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "Transmission",
+          "fullName": "Transmission",
+          "functionType": "Expression",
+          "group": "Advanced Materials",
+          "description": "Return the configured transmission value.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return Number(behavior._getTransmission ? behavior._getTransmission() : 0);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "MaterialCount",
+          "fullName": "Managed material count",
+          "functionType": "Expression",
+          "group": "Advanced Materials",
+          "description": "Return the number of materials managed by the behavior.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return gdjs.__advancedMaterials ? gdjs.__advancedMaterials.getBehaviorState(behavior).materialCount : 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "Alpha",
+          "fullName": "Alpha",
+          "functionType": "Expression",
+          "group": "Advanced Materials",
+          "description": "Return the configured alpha value.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return Number(behavior._getAlpha ? behavior._getAlpha() : 1);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "EmissionStrength",
+          "fullName": "Emission strength",
+          "functionType": "Expression",
+          "group": "Advanced Materials",
+          "description": "Return the configured emission strength.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return Number(behavior._getEmissionStrength ? behavior._getEmissionStrength() : 1);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "AlphaMode",
+          "fullName": "Alpha mode",
+          "functionType": "StringExpression",
+          "group": "Advanced Materials",
+          "description": "Return the configured alpha mode.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return behavior._getAlphaMode ? String(behavior._getAlphaMode()) : 'Preserve';\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "RenderSide",
+          "fullName": "Render side",
+          "functionType": "StringExpression",
+          "group": "Advanced Materials",
+          "description": "Return the configured render side.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return behavior._getSide ? String(behavior._getSide()) : 'Preserve';\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "LastError",
+          "fullName": "Last error",
+          "functionType": "StringExpression",
+          "group": "Advanced Materials",
+          "description": "Return the last material application error.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "return gdjs.__advancedMaterials ? String(gdjs.__advancedMaterials.getBehaviorState(behavior).lastError || '') : '';\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "AdvancedMaterials::AdvancedMaterials",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        }
+      ],
+      "eventsFunctionsFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "functionName": "doStepPreEvents"
+          },
+          {
+            "functionName": "onDestroy"
+          },
+          {
+            "folderName": "Advanced Materials",
+            "children": [
+              {
+                "functionName": "ApplyMaterial"
+              },
+              {
+                "functionName": "RestoreMaterials"
+              },
+              {
+                "functionName": "SetUseBaseColor"
+              },
+              {
+                "functionName": "SetBaseColor"
+              },
+              {
+                "functionName": "SetMetallic"
+              },
+              {
+                "functionName": "SetRoughness"
+              },
+              {
+                "functionName": "SetTransmission"
+              },
+              {
+                "functionName": "SetIOR"
+              },
+              {
+                "functionName": "SetThickness"
+              },
+              {
+                "functionName": "SetClearcoat"
+              },
+              {
+                "functionName": "SetClearcoatRoughness"
+              },
+              {
+                "functionName": "SetUseEmission"
+              },
+              {
+                "functionName": "SetEmissionColor"
+              },
+              {
+                "functionName": "SetEmissionStrength"
+              },
+              {
+                "functionName": "SetAlphaMode"
+              },
+              {
+                "functionName": "SetAlpha"
+              },
+              {
+                "functionName": "SetSide"
+              },
+              {
+                "functionName": "IsApplied"
+              },
+              {
+                "functionName": "HasManagedMaterials"
+              },
+              {
+                "functionName": "IsUsingBaseColor"
+              },
+              {
+                "functionName": "IsUsingEmission"
+              },
+              {
+                "functionName": "Metallic"
+              },
+              {
+                "functionName": "Roughness"
+              },
+              {
+                "functionName": "Transmission"
+              },
+              {
+                "functionName": "Alpha"
+              },
+              {
+                "functionName": "EmissionStrength"
+              },
+              {
+                "functionName": "MaterialCount"
+              },
+              {
+                "functionName": "AlphaMode"
+              },
+              {
+                "functionName": "RenderSide"
+              },
+              {
+                "functionName": "LastError"
+              }
+            ]
+          }
+        ]
+      },
+      "propertyDescriptors": [
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Replace Base Color",
+          "description": "Replace the material base color. Leave disabled to preserve the original texture and color.",
+          "group": "Base Color",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "UseBaseColor"
+        },
+        {
+          "value": "255;255;255",
+          "type": "Color",
+          "label": "Base Color",
+          "description": "Replacement base color used only when Replace Base Color is enabled.",
+          "group": "Base Color",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "BaseColor"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Metallic",
+          "description": "Metallic amount from 0 to 1.",
+          "group": "Surface",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Metallic"
+        },
+        {
+          "value": "0.5",
+          "type": "Number",
+          "label": "Roughness",
+          "description": "Roughness from 0 to 1.",
+          "group": "Surface",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Roughness"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Transmission",
+          "description": "Transmission from 0 to 1. Useful for glass, water, and other transparent physical materials.",
+          "group": "Transmission",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Transmission"
+        },
+        {
+          "value": "1.5",
+          "type": "Number",
+          "label": "IOR",
+          "description": "Index of refraction from 1.0 to 2.333. Glass is usually around 1.5.",
+          "group": "Transmission",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "IOR"
+        },
+        {
+          "value": "0.1",
+          "type": "Number",
+          "label": "Thickness",
+          "description": "Transmission thickness used for volumetric refraction.",
+          "group": "Transmission",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Thickness"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Clearcoat",
+          "description": "Clearcoat amount from 0 to 1. Useful for car paint, varnish, and wet looks.",
+          "group": "Clearcoat",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Clearcoat"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Clearcoat Roughness",
+          "description": "Clearcoat roughness from 0 to 1.",
+          "group": "Clearcoat",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "ClearcoatRoughness"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Use Emission",
+          "description": "Enable emissive color and strength controls.",
+          "group": "Emission",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "UseEmission"
+        },
+        {
+          "value": "255;255;255",
+          "type": "Color",
+          "label": "Emission Color",
+          "description": "Emissive color used when emission is enabled.",
+          "group": "Emission",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "EmissionColor"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Emission Strength",
+          "description": "Emissive intensity. Use values above 1 for stronger glow with bloom/post-processing.",
+          "group": "Emission",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "EmissionStrength"
+        },
+        {
+          "value": "Preserve",
+          "type": "Choice",
+          "label": "Alpha Mode",
+          "description": "Alpha mode. Preserve keeps the original material transparency settings.",
+          "group": "Transparency",
+          "extraInformation": [
+            "Preserve",
+            "Opaque",
+            "Blend",
+            "Cutout"
+          ],
+          "hidden": false,
+          "name": "AlphaMode"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Alpha",
+          "description": "Alpha / Opacity / Cutoff (0 to 1)",
+          "group": "Transparency",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Alpha"
+        },
+        {
+          "value": "Preserve",
+          "type": "Choice",
+          "label": "Render Side",
+          "description": "Rendered side. Preserve keeps the original material side setting.",
+          "group": "Rendering",
+          "extraInformation": [
+            "Preserve",
+            "Front",
+            "Back",
+            "Double"
+          ],
+          "hidden": false,
+          "name": "Side"
+        }
+      ],
+      "propertiesFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "propertyName": "UseBaseColor"
+          },
+          {
+            "propertyName": "BaseColor"
+          },
+          {
+            "propertyName": "Metallic"
+          },
+          {
+            "propertyName": "Roughness"
+          },
+          {
+            "propertyName": "Transmission"
+          },
+          {
+            "propertyName": "IOR"
+          },
+          {
+            "propertyName": "Thickness"
+          },
+          {
+            "propertyName": "Clearcoat"
+          },
+          {
+            "propertyName": "ClearcoatRoughness"
+          },
+          {
+            "propertyName": "UseEmission"
+          },
+          {
+            "propertyName": "EmissionColor"
+          },
+          {
+            "propertyName": "EmissionStrength"
+          },
+          {
+            "propertyName": "AlphaMode"
+          },
+          {
+            "propertyName": "Alpha"
+          },
+          {
+            "propertyName": "Side"
+          }
+        ]
+      }
+    }
+  ],
+  "eventsFunctionsFolderStructure": {
+    "folderName": "__ROOT",
+    "children": []
+  },
+  "eventsFunctions": []
+}

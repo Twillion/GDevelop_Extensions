@@ -1,0 +1,132 @@
+{
+  "name": "VolumetricFog",
+  "fullName": "Volumetric Fog",
+  "description": "Adds volumetric fog and dynamic boolean subtractive blockers for 3D scenes.",
+  "shortDescription": "Volumetric fog with SDF boolean blockers.",
+  "category": "3D",
+  "author": "",
+  "license": "MIT",
+  "version": "0.1.0",
+  "tags": [
+    "3D",
+    "fog",
+    "volume",
+    "shader",
+    "SDF",
+    "boolean"
+  ],
+  "extensionNamespace": "VolumetricFog",
+  "gdevelopVersion": ">=5.5.222",
+  "eventsFunctions": [],
+  "eventsBasedBehaviors": [
+    {
+      "name": "VolumetricFog",
+      "fullName": "Volumetric Fog",
+      "description": "Attach to a 3D Box to turn it into a volume of fog particles.",
+      "objectType": "",
+      "private": false,
+      "propertyDescriptors": [
+        {
+          "name": "ParticleCount",
+          "type": "Number",
+          "description": "Number of fog balls",
+          "label": "Particle Count",
+          "value": "1000"
+        },
+        {
+          "name": "ParticleSize",
+          "type": "Number",
+          "description": "Size of individual balls",
+          "label": "Particle Size",
+          "value": "1"
+        },
+        {
+          "name": "Color",
+          "type": "Color",
+          "description": "Fog color",
+          "label": "Color",
+          "value": "255;255;255"
+        },
+        {
+          "name": "MaxBlockers",
+          "type": "Number",
+          "description": "Maximum number of blockers supported",
+          "label": "Max Blockers",
+          "value": "10"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "functionType": "BehaviorEvent",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "\n        // Volumetric Fog Runtime Code\nconst registry = gdjs;\nif (!registry.__volumetricFog) {\n  registry.__volumetricFog = {\n    blockers: [],\n    \n    registerBlocker: function(runtimeScene, object, shapeType, enableCollisionMesh) {\n      console.log(\"[Volumetric Fog] Registering blocker\", object.name, \"Shape:\", shapeType);\n      if (!this.blockers.includes(object)) {\n        this.blockers.push({\n          object: object,\n          shapeType: shapeType, // 0: Box, 1: Sphere, 2: Capsule\n          enableCollisionMesh: enableCollisionMesh\n        });\n      }\n    },\n    \n    unregisterBlocker: function(runtimeScene, object) {\n      console.log(\"[Volumetric Fog] Unregistering blocker\", object.name);\n      const index = this.blockers.findIndex(b => b.object === object);\n      if (index !== -1) {\n        this.blockers.splice(index, 1);\n      }\n    },\n    \n    initFog: function(runtimeScene, object, particleCount, particleSize, color, maxBlockers) {\n      console.log(\"[Volumetric Fog] Initializing fog for\", object.name, \"Count:\", particleCount, \"Size:\", particleSize, \"MaxBlockers:\", maxBlockers);\n      const renderer = runtimeScene.getGame().getRenderer();\n      if (!renderer || !renderer.getThreeScene) return;\n\n      const threeObject = object.getRendererObject ? object.getRendererObject() : null;\n      if (!threeObject) return;\n      \n      const THREE = gdjs.__custom3DShaderBackend ? gdjs.__custom3DShaderBackend.THREE : window.THREE;\n      if (!THREE) return;\n\n      // Hide original mesh if it's a 3D box or model\n      if (threeObject.material) threeObject.material.visible = false;\n      if (threeObject.children) {\n        threeObject.children.forEach(c => { if (c.material) c.material.visible = false; });\n      }\n\n      // Create geometry and material for InstancedMesh\n      const geometry = new THREE.SphereGeometry(particleSize, 8, 8);\n      \n      const vertexShader = `\n        varying vec3 vWorldPosition;\n        void main() {\n          vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);\n          vWorldPosition = worldPosition.xyz;\n          gl_Position = projectionMatrix * viewMatrix * worldPosition;\n        }\n      `;\n\n      // SDF Logic for boolean subtraction\n      const fragmentShader = `\n        uniform vec3 uColor;\n        uniform int uBlockerCount;\n        uniform vec3 uBlockerPos[${maxBlockers}];\n        uniform vec3 uBlockerScale[${maxBlockers}];\n        uniform int uBlockerShape[${maxBlockers}]; // 0=Box, 1=Sphere, 2=Capsule\n\n        varying vec3 vWorldPosition;\n\n        // Box SDF\n        float sdBox(vec3 p, vec3 b) {\n          vec3 q = abs(p) - b;\n          return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);\n        }\n\n        // Sphere SDF\n        float sdSphere(vec3 p, float s) {\n          return length(p) - s;\n        }\n\n        void main() {\n          bool hidden = false;\n          \n          for(int i = 0; i < ${maxBlockers}; i++) {\n            if (i >= uBlockerCount) break;\n            \n            vec3 p = vWorldPosition - uBlockerPos[i];\n            float d = 1000.0;\n            \n            if (uBlockerShape[i] == 0) { // Box\n              d = sdBox(p, uBlockerScale[i] * 0.5);\n            } else if (uBlockerShape[i] == 1) { // Sphere\n              d = sdSphere(p, uBlockerScale[i].x * 0.5);\n            } else if (uBlockerShape[i] == 2) { // Capsule (approximated as box for now)\n              d = sdBox(p, uBlockerScale[i] * 0.5);\n            }\n            \n            if (d < 0.0) {\n              hidden = true;\n              break;\n            }\n          }\n          \n          if (hidden) discard;\n          \n          gl_FragColor = vec4(uColor, 1.0);\n        }\n      `;\n\n      const material = new THREE.ShaderMaterial({\n        vertexShader,\n        fragmentShader,\n        uniforms: {\n          uColor: { value: new THREE.Color(color) },\n          uBlockerCount: { value: 0 },\n          uBlockerPos: { value: [] },\n          uBlockerScale: { value: [] },\n          uBlockerShape: { value: [] }\n        },\n        transparent: true\n      });\n\n      // Pad arrays to maxBlockers\n      for(let i=0; i<maxBlockers; i++) {\n        material.uniforms.uBlockerPos.value.push(new THREE.Vector3());\n        material.uniforms.uBlockerScale.value.push(new THREE.Vector3());\n        material.uniforms.uBlockerShape.value.push(0);\n      }\n\n      const instancedMesh = new THREE.InstancedMesh(geometry, material, particleCount);\n      \n      // Distribute particles in a volume 1x1x1 (will be scaled by the object matrix)\n      const dummy = new THREE.Object3D();\n      for (let i = 0; i < particleCount; i++) {\n        dummy.position.set(\n          Math.random() - 0.5,\n          Math.random() - 0.5,\n          Math.random() - 0.5\n        );\n        dummy.updateMatrix();\n        instancedMesh.setMatrixAt(i, dummy.matrix);\n      }\n      \n      threeObject.add(instancedMesh);\n      object._fogInstancedMesh = instancedMesh;\n      object._fogMaterial = material;\n      object._maxBlockers = maxBlockers;\n    },\n\n    updateFog: function(runtimeScene, object) {\n      if (!object._fogMaterial) return;\n      \n      const material = object._fogMaterial;\n      let activeCount = 0;\n      \n      for(let i = 0; i < this.blockers.length && i < object._maxBlockers; i++) {\n        const blocker = this.blockers[i];\n        const obj = blocker.object;\n        \n        // Pass to uniforms\n        let px = obj.getX() || 0;\n        let py = obj.getY() || 0;\n        let pz = obj.getZ ? obj.getZ() : 0;\n        \n        let sx = obj.getWidth() || 0;\n        let sy = obj.getHeight() || 0;\n        let sz = obj.getDepth ? obj.getDepth() : 0;\n        \n        material.uniforms.uBlockerPos.value[i].set(px, py, pz);\n        material.uniforms.uBlockerScale.value[i].set(sx, sy, sz);\n        material.uniforms.uBlockerShape.value[i] = blocker.shapeType;\n        activeCount++;\n      }\n      \n      material.uniforms.uBlockerCount.value = activeCount;\n    }\n  };\n}\n\n        const obj = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;\n        if (!obj) return;\n        const fogRegistry = gdjs.__volumetricFog;\n        \n        const count = eventsFunctionContext.getArgument(\"ParticleCount\");\n        const size = eventsFunctionContext.getArgument(\"ParticleSize\");\n        const color = eventsFunctionContext.getArgument(\"Color\");\n        \n        let hexColor = 0xffffff;\n        if (typeof color === \"string\") {\n          const parts = color.split(\";\").map(Number);\n          if (parts.length === 3) {\n            hexColor = (parts[0] << 16) | (parts[1] << 8) | parts[2];\n          }\n        }\n        \n        const maxBlockers = eventsFunctionContext.getArgument(\"MaxBlockers\");\n        \n        fogRegistry.initFog(runtimeScene, obj, count, size, hexColor, maxBlockers);\n      "
+            }
+          ]
+        },
+        {
+          "name": "doStepPreEvents",
+          "functionType": "BehaviorEvent",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "\n        const obj = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;\n        if (!obj) return;\n        const fogRegistry = gdjs.__volumetricFog;\n        fogRegistry.updateFog(runtimeScene, obj);\n      "
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "VolumetricFogBlocker",
+      "fullName": "Volumetric Fog Blocker",
+      "description": "Attach to a 3D object to make it subtract from the volumetric fog.",
+      "objectType": "",
+      "private": false,
+      "propertyDescriptors": [
+        {
+          "name": "ShapeType",
+          "type": "Choice",
+          "description": "0 = Box, 1 = Sphere, 2 = Capsule",
+          "label": "Collision Shape",
+          "value": "0",
+          "extraInformation": [
+            "0",
+            "1",
+            "2"
+          ]
+        },
+        {
+          "name": "EnableCollisionMesh",
+          "type": "Boolean",
+          "description": "Use collision mesh instead of primitive shape (WIP)",
+          "label": "Enable Collision Mesh",
+          "value": "false"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "functionType": "BehaviorEvent",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "\n        // Volumetric Fog Runtime Code\nconst registry = gdjs;\nif (!registry.__volumetricFog) {\n  registry.__volumetricFog = {\n    blockers: [],\n    \n    registerBlocker: function(runtimeScene, object, shapeType, enableCollisionMesh) {\n      console.log(\"[Volumetric Fog] Registering blocker\", object.name, \"Shape:\", shapeType);\n      if (!this.blockers.includes(object)) {\n        this.blockers.push({\n          object: object,\n          shapeType: shapeType, // 0: Box, 1: Sphere, 2: Capsule\n          enableCollisionMesh: enableCollisionMesh\n        });\n      }\n    },\n    \n    unregisterBlocker: function(runtimeScene, object) {\n      console.log(\"[Volumetric Fog] Unregistering blocker\", object.name);\n      const index = this.blockers.findIndex(b => b.object === object);\n      if (index !== -1) {\n        this.blockers.splice(index, 1);\n      }\n    },\n    \n    initFog: function(runtimeScene, object, particleCount, particleSize, color, maxBlockers) {\n      console.log(\"[Volumetric Fog] Initializing fog for\", object.name, \"Count:\", particleCount, \"Size:\", particleSize, \"MaxBlockers:\", maxBlockers);\n      const renderer = runtimeScene.getGame().getRenderer();\n      if (!renderer || !renderer.getThreeScene) return;\n\n      const threeObject = object.getRendererObject ? object.getRendererObject() : null;\n      if (!threeObject) return;\n      \n      const THREE = gdjs.__custom3DShaderBackend ? gdjs.__custom3DShaderBackend.THREE : window.THREE;\n      if (!THREE) return;\n\n      // Hide original mesh if it's a 3D box or model\n      if (threeObject.material) threeObject.material.visible = false;\n      if (threeObject.children) {\n        threeObject.children.forEach(c => { if (c.material) c.material.visible = false; });\n      }\n\n      // Create geometry and material for InstancedMesh\n      const geometry = new THREE.SphereGeometry(particleSize, 8, 8);\n      \n      const vertexShader = `\n        varying vec3 vWorldPosition;\n        void main() {\n          vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);\n          vWorldPosition = worldPosition.xyz;\n          gl_Position = projectionMatrix * viewMatrix * worldPosition;\n        }\n      `;\n\n      // SDF Logic for boolean subtraction\n      const fragmentShader = `\n        uniform vec3 uColor;\n        uniform int uBlockerCount;\n        uniform vec3 uBlockerPos[${maxBlockers}];\n        uniform vec3 uBlockerScale[${maxBlockers}];\n        uniform int uBlockerShape[${maxBlockers}]; // 0=Box, 1=Sphere, 2=Capsule\n\n        varying vec3 vWorldPosition;\n\n        // Box SDF\n        float sdBox(vec3 p, vec3 b) {\n          vec3 q = abs(p) - b;\n          return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);\n        }\n\n        // Sphere SDF\n        float sdSphere(vec3 p, float s) {\n          return length(p) - s;\n        }\n\n        void main() {\n          bool hidden = false;\n          \n          for(int i = 0; i < ${maxBlockers}; i++) {\n            if (i >= uBlockerCount) break;\n            \n            vec3 p = vWorldPosition - uBlockerPos[i];\n            float d = 1000.0;\n            \n            if (uBlockerShape[i] == 0) { // Box\n              d = sdBox(p, uBlockerScale[i] * 0.5);\n            } else if (uBlockerShape[i] == 1) { // Sphere\n              d = sdSphere(p, uBlockerScale[i].x * 0.5);\n            } else if (uBlockerShape[i] == 2) { // Capsule (approximated as box for now)\n              d = sdBox(p, uBlockerScale[i] * 0.5);\n            }\n            \n            if (d < 0.0) {\n              hidden = true;\n              break;\n            }\n          }\n          \n          if (hidden) discard;\n          \n          gl_FragColor = vec4(uColor, 1.0);\n        }\n      `;\n\n      const material = new THREE.ShaderMaterial({\n        vertexShader,\n        fragmentShader,\n        uniforms: {\n          uColor: { value: new THREE.Color(color) },\n          uBlockerCount: { value: 0 },\n          uBlockerPos: { value: [] },\n          uBlockerScale: { value: [] },\n          uBlockerShape: { value: [] }\n        },\n        transparent: true\n      });\n\n      // Pad arrays to maxBlockers\n      for(let i=0; i<maxBlockers; i++) {\n        material.uniforms.uBlockerPos.value.push(new THREE.Vector3());\n        material.uniforms.uBlockerScale.value.push(new THREE.Vector3());\n        material.uniforms.uBlockerShape.value.push(0);\n      }\n\n      const instancedMesh = new THREE.InstancedMesh(geometry, material, particleCount);\n      \n      // Distribute particles in a volume 1x1x1 (will be scaled by the object matrix)\n      const dummy = new THREE.Object3D();\n      for (let i = 0; i < particleCount; i++) {\n        dummy.position.set(\n          Math.random() - 0.5,\n          Math.random() - 0.5,\n          Math.random() - 0.5\n        );\n        dummy.updateMatrix();\n        instancedMesh.setMatrixAt(i, dummy.matrix);\n      }\n      \n      threeObject.add(instancedMesh);\n      object._fogInstancedMesh = instancedMesh;\n      object._fogMaterial = material;\n      object._maxBlockers = maxBlockers;\n    },\n\n    updateFog: function(runtimeScene, object) {\n      if (!object._fogMaterial) return;\n      \n      const material = object._fogMaterial;\n      let activeCount = 0;\n      \n      for(let i = 0; i < this.blockers.length && i < object._maxBlockers; i++) {\n        const blocker = this.blockers[i];\n        const obj = blocker.object;\n        \n        // Pass to uniforms\n        let px = obj.getX() || 0;\n        let py = obj.getY() || 0;\n        let pz = obj.getZ ? obj.getZ() : 0;\n        \n        let sx = obj.getWidth() || 0;\n        let sy = obj.getHeight() || 0;\n        let sz = obj.getDepth ? obj.getDepth() : 0;\n        \n        material.uniforms.uBlockerPos.value[i].set(px, py, pz);\n        material.uniforms.uBlockerScale.value[i].set(sx, sy, sz);\n        material.uniforms.uBlockerShape.value[i] = blocker.shapeType;\n        activeCount++;\n      }\n      \n      material.uniforms.uBlockerCount.value = activeCount;\n    }\n  };\n}\n\n        const obj = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;\n        if (!obj) return;\n        const fogRegistry = gdjs.__volumetricFog;\n        \n        const shapeType = eventsFunctionContext.getArgument(\"ShapeType\");\n        const enableCollisionMesh = eventsFunctionContext.getArgument(\"EnableCollisionMesh\") === \"true\";\n        \n        fogRegistry.registerBlocker(runtimeScene, obj, parseInt(shapeType), enableCollisionMesh);\n      "
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "functionType": "BehaviorEvent",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "\n        const obj = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;\n        if (!obj) return;\n        const fogRegistry = gdjs.__volumetricFog;\n        fogRegistry.unregisterBlocker(runtimeScene, obj);\n      "
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

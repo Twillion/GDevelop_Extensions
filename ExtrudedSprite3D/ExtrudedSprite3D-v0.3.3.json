@@ -1,0 +1,1756 @@
+{
+  "author": "",
+  "category": "General",
+  "dimension": "",
+  "extensionNamespace": "",
+  "fullName": "Extruded Sprite 3D",
+  "gdevelopVersion": ">=5.5.222",
+  "helpPath": "",
+  "iconUrl": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiBpZD0ibWRpLWN1YmUtb3V0bGluZSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGQ9Ik0yMSAxNi41QzIxIDE2Ljg4IDIwLjc5IDE3LjIxIDIwLjQ3IDE3LjM4TDEyLjU3IDIxLjgyQzEyLjQxIDIxLjk0IDEyLjIxIDIyIDEyIDIyUzExLjU5IDIxLjk0IDExLjQzIDIxLjgyTDMuNTMgMTcuMzhDMy4yMSAxNy4yMSAzIDE2Ljg4IDMgMTYuNVY3LjVDMyA3LjEyIDMuMjEgNi43OSAzLjUzIDYuNjJMMTEuNDMgMi4xOEMxMS41OSAyLjA2IDExLjc5IDIgMTIgMlMxMi40MSAyLjA2IDEyLjU3IDIuMThMMjAuNDcgNi42MkMyMC43OSA2Ljc5IDIxIDcuMTIgMjEgNy41VjE2LjVNMTIgNC4xNUw2LjA0IDcuNUwxMiAxMC44NUwxNy45NiA3LjVMMTIgNC4xNU01IDE1LjkxTDExIDE5LjI5VjEyLjU4TDUgOS4yMVYxNS45MU0xOSAxNS45MVY5LjIxTDEzIDEyLjU4VjE5LjI5TDE5IDE1LjkxWiIgLz48L3N2Zz4=",
+  "name": "ExtrudedSprite3D",
+  "previewIconUrl": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiBpZD0ibWRpLWN1YmUtb3V0bGluZSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGQ9Ik0yMSAxNi41QzIxIDE2Ljg4IDIwLjc5IDE3LjIxIDIwLjQ3IDE3LjM4TDEyLjU3IDIxLjgyQzEyLjQxIDIxLjk0IDEyLjIxIDIyIDEyIDIyUzExLjU5IDIxLjk0IDExLjQzIDIxLjgyTDMuNTMgMTcuMzhDMy4yMSAxNy4yMSAzIDE2Ljg4IDMgMTYuNVY3LjVDMyA3LjEyIDMuMjEgNi43OSAzLjUzIDYuNjJMMTEuNDMgMi4xOEMxMS41OSAyLjA2IDExLjc5IDIgMTIgMlMxMi40MSAyLjA2IDEyLjU3IDIuMThMMjAuNDcgNi42MkMyMC43OSA2Ljc5IDIxIDcuMTIgMjEgNy41VjE2LjVNMTIgNC4xNUw2LjA0IDcuNUwxMiAxMC44NUwxNy45NiA3LjVMMTIgNC4xNU01IDE1LjkxTDExIDE5LjI5VjEyLjU4TDUgOS4yMVYxNS45MU0xOSAxNS45MVY5LjIxTDEzIDEyLjU4VjE5LjI5TDE5IDE1LjkxWiIgLz48L3N2Zz4=",
+  "shortDescription": "Turns 2D sprite animations into extruded 3D meshes that receive light and cast shadows.",
+  "version": "0.3.3",
+  "description": "An animated sprite extruded into a real 3D mesh. Edit animations like a regular Sprite, then use the normal 3D object width, height, and depth controls to size it. Front and back faces are textured with the sprite image, side walls are generated where solid pixels touch transparent pixels, so the object can receive 3D lights and cast silhouette-accurate shadows.",
+  "tags": [
+    "3d",
+    "sprite",
+    "extrude",
+    "mesh",
+    "shadow",
+    "voxel"
+  ],
+  "authorIds": [],
+  "dependencies": [],
+  "globalVariables": [],
+  "sceneVariables": [],
+  "eventsFunctions": [
+    {
+      "description": "Define helper classes JavaScript code.",
+      "fullName": "Define helper classes",
+      "functionType": "Action",
+      "name": "DefineHelperClasses",
+      "private": true,
+      "sentence": "Define helper classes JavaScript code",
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": [
+            "// AUTO-GENERATED from Extensions/ExtrudedSprite3D/ExtrudedSprite3DRuntime.ts",
+            "// Do not edit here; edit the .ts and run build-inline.js.",
+            "const registry = gdjs;",
+            "if (!registry.__extrudedSprite3D) {",
+            "  const maskCache = new Map();",
+            "  const geometryCache = new Map();",
+            "  const materialCache = new Map();",
+            "  const depthMaterialCache = new Map();",
+            "  const getAlphaData = (imageName, image) => {",
+            "    let entry = maskCache.get(imageName);",
+            "    if (entry) {",
+            "      return entry;",
+            "    }",
+            "    const width = image.width;",
+            "    const height = image.height;",
+            "    const canvas = document.createElement(\"canvas\");",
+            "    canvas.width = width;",
+            "    canvas.height = height;",
+            "    const context = canvas.getContext(\"2d\", { willReadFrequently: true });",
+            "    if (!context) {",
+            "      throw new Error(\"Could not get a 2D context to read the sprite alpha.\");",
+            "    }",
+            "    context.drawImage(image, 0, 0);",
+            "    const rgba = context.getImageData(0, 0, width, height).data;",
+            "    const alpha = new Uint8Array(width * height);",
+            "    const colors = new Float32Array(width * height * 3);",
+            "    for (let index = 0; index < alpha.length; index++) {",
+            "      const rgbaIndex = index * 4;",
+            "      alpha[index] = rgba[rgbaIndex + 3];",
+            "      colors[index * 3] = rgba[rgbaIndex] / 255;",
+            "      colors[index * 3 + 1] = rgba[rgbaIndex + 1] / 255;",
+            "      colors[index * 3 + 2] = rgba[rgbaIndex + 2] / 255;",
+            "    }",
+            "    entry = { width, height, alpha, colors };",
+            "    maskCache.set(imageName, entry);",
+            "    return entry;",
+            "  };",
+            "  const getOrBuildGeometry = (imageName, image, alphaThreshold, depth) => {",
+            "    const key = imageName + \"|\" + alphaThreshold + \"|\" + depth;",
+            "    let entry = geometryCache.get(key);",
+            "    if (entry) {",
+            "      return entry;",
+            "    }",
+            "    const startTime = performance.now();",
+            "    const mask = getAlphaData(imageName, image);",
+            "    const width = mask.width;",
+            "    const height = mask.height;",
+            "    const alpha = mask.alpha;",
+            "    const colors = mask.colors;",
+            "    const threshold = Math.max(1, alphaThreshold);",
+            "    const isSolid = (x, y) => x >= 0 && y >= 0 && x < width && y < height && alpha[y * width + x] >= threshold;",
+            "    const D = Math.max(1, depth);",
+            "    const faceZOffset = Math.min(0.02, D * 0.001);",
+            "    const sideInset = 0;",
+            "    const frontBack = new THREE.BufferGeometry();",
+            "    frontBack.setAttribute(\"position\", new THREE.BufferAttribute(new Float32Array([",
+            "      0,",
+            "      0,",
+            "      D + faceZOffset,",
+            "      width,",
+            "      0,",
+            "      D + faceZOffset,",
+            "      width,",
+            "      height,",
+            "      D + faceZOffset,",
+            "      0,",
+            "      height,",
+            "      D + faceZOffset,",
+            "      0,",
+            "      0,",
+            "      -faceZOffset,",
+            "      width,",
+            "      0,",
+            "      -faceZOffset,",
+            "      width,",
+            "      height,",
+            "      -faceZOffset,",
+            "      0,",
+            "      height,",
+            "      -faceZOffset",
+            "    ]), 3));",
+            "    frontBack.setAttribute(\"normal\", new THREE.BufferAttribute(new Float32Array([",
+            "      0,",
+            "      0,",
+            "      1,",
+            "      0,",
+            "      0,",
+            "      1,",
+            "      0,",
+            "      0,",
+            "      1,",
+            "      0,",
+            "      0,",
+            "      1,",
+            "      0,",
+            "      0,",
+            "      -1,",
+            "      0,",
+            "      0,",
+            "      -1,",
+            "      0,",
+            "      0,",
+            "      -1,",
+            "      0,",
+            "      0,",
+            "      -1",
+            "    ]), 3));",
+            "    const e = 1e-4;",
+            "    frontBack.setAttribute(\"uv\", new THREE.BufferAttribute(new Float32Array([",
+            "      e,",
+            "      1 - e,",
+            "      1 - e,",
+            "      1 - e,",
+            "      1 - e,",
+            "      e,",
+            "      e,",
+            "      e,",
+            "      e,",
+            "      1 - e,",
+            "      1 - e,",
+            "      1 - e,",
+            "      1 - e,",
+            "      e,",
+            "      e,",
+            "      e",
+            "    ]), 2));",
+            "    frontBack.setIndex(new THREE.BufferAttribute(new Uint32Array([0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6]), 1));",
+            "    const positions = [];",
+            "    const normals = [];",
+            "    const wallColors = [];",
+            "    const indices = [];",
+            "    let wallVertexCount = 0;",
+            "    const pushWall = (x0, y0, x1, y1, nx, ny, colorX, colorY) => {",
+            "      const insetX = -nx * sideInset;",
+            "      const insetY = -ny * sideInset;",
+            "      positions.push(x0 + insetX, y0 + insetY, 0, x1 + insetX, y1 + insetY, 0, x1 + insetX, y1 + insetY, D, x0 + insetX, y0 + insetY, D);",
+            "      for (let corner = 0; corner < 4; corner++) {",
+            "        normals.push(nx, ny, 0);",
+            "      }",
+            "      const colorIndex = (colorY * width + colorX) * 3;",
+            "      const r = colors[colorIndex];",
+            "      const g = colors[colorIndex + 1];",
+            "      const b = colors[colorIndex + 2];",
+            "      for (let corner = 0; corner < 4; corner++) {",
+            "        wallColors.push(r, g, b);",
+            "      }",
+            "      indices.push(wallVertexCount, wallVertexCount + 1, wallVertexCount + 2, wallVertexCount, wallVertexCount + 2, wallVertexCount + 3);",
+            "      wallVertexCount += 4;",
+            "    };",
+            "    for (let y = 0; y < height; y++) {",
+            "      for (let x = 0; x < width; x++) {",
+            "        if (!isSolid(x, y)) {",
+            "          continue;",
+            "        }",
+            "        if (!isSolid(x - 1, y)) {",
+            "          pushWall(x, y + 1, x, y, -1, 0, x, y);",
+            "        }",
+            "        if (!isSolid(x + 1, y)) {",
+            "          pushWall(x + 1, y, x + 1, y + 1, 1, 0, x, y);",
+            "        }",
+            "        if (!isSolid(x, y - 1)) {",
+            "          pushWall(x, y, x + 1, y, 0, -1, x, y);",
+            "        }",
+            "        if (!isSolid(x, y + 1)) {",
+            "          pushWall(x + 1, y + 1, x, y + 1, 0, 1, x, y);",
+            "        }",
+            "      }",
+            "    }",
+            "    const side = new THREE.BufferGeometry();",
+            "    side.setAttribute(\"position\", new THREE.BufferAttribute(new Float32Array(positions), 3));",
+            "    side.setAttribute(\"normal\", new THREE.BufferAttribute(new Float32Array(normals), 3));",
+            "    side.setAttribute(\"color\", new THREE.BufferAttribute(new Float32Array(wallColors), 3));",
+            "    side.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));",
+            "    if (positions.length === 0) {",
+            "      side.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 0);",
+            "      side.boundingBox = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));",
+            "    }",
+            "    entry = {",
+            "      frontBack,",
+            "      side,",
+            "      triangleCount: 4 + indices.length / 3,",
+            "      vertexCount: 8 + wallVertexCount,",
+            "      generationTimeMs: performance.now() - startTime,",
+            "      width,",
+            "      height",
+            "    };",
+            "    geometryCache.set(key, entry);",
+            "    return entry;",
+            "  };",
+            "  const parseColor = (colorString) => {",
+            "    const color = new THREE.Color();",
+            "    const text = String(colorString);",
+            "    if (text.indexOf(\";\") === -1) {",
+            "      color.set(text);",
+            "      return color;",
+            "    }",
+            "    const parts = text.split(\";\");",
+            "    const red = Math.min(255, Math.max(0, Number(parts[0]) || 0));",
+            "    const green = Math.min(255, Math.max(0, Number(parts[1]) || 0));",
+            "    const blue = Math.min(255, Math.max(0, Number(parts[2]) || 0));",
+            "    color.setRGB(red / 255, green / 255, blue / 255, THREE.SRGBColorSpace);",
+            "    return color;",
+            "  };",
+            "  const clamp01 = (value, defaultValue) => {",
+            "    const number = Number(value);",
+            "    if (!Number.isFinite(number)) {",
+            "      return defaultValue;",
+            "    }",
+            "    return Math.min(1, Math.max(0, number));",
+            "  };",
+            "  const applyCommonSurfaceParameters = (parameters, defaultColor) => {",
+            "    if (defaultColor) {",
+            "      parameters.color = parseColor(defaultColor);",
+            "    }",
+            "  };",
+            "  const getFaceMaterial = (imageName, texture, alphaTest, unlit) => {",
+            "    const textureKey = texture && texture.uuid ? texture.uuid : imageName;",
+            "    const key = \"face|\" + textureKey + \"|\" + alphaTest + \"|\" + unlit;",
+            "    let material = materialCache.get(key);",
+            "    if (material) {",
+            "      return material;",
+            "    }",
+            "    const parameters = {",
+            "      map: texture,",
+            "      alphaTest: Math.max(alphaTest, 1 / 255),",
+            "      side: THREE.DoubleSide",
+            "    };",
+            "    applyCommonSurfaceParameters(parameters, \"255;255;255\");",
+            "    if (unlit) {",
+            "      material = new THREE.MeshBasicMaterial(parameters);",
+            "    } else {",
+            "      material = new THREE.MeshStandardMaterial(Object.assign({",
+            "        metalness: 0,",
+            "        roughness: 1",
+            "      }, parameters));",
+            "    }",
+            "    material.shadowSide = THREE.DoubleSide;",
+            "    materialCache.set(key, material);",
+            "    return material;",
+            "  };",
+            "  const getSideMaterial = (colorString, unlit, useVertexColors) => {",
+            "    const key = \"side|\" + colorString + \"|\" + unlit + \"|\" + useVertexColors;",
+            "    let material = materialCache.get(key);",
+            "    if (material) {",
+            "      return material;",
+            "    }",
+            "    const parameters = {",
+            "      side: THREE.DoubleSide,",
+            "      vertexColors: !!useVertexColors",
+            "    };",
+            "    if (!useVertexColors) {",
+            "      applyCommonSurfaceParameters(parameters, colorString);",
+            "    } else {",
+            "      applyCommonSurfaceParameters(parameters, \"255;255;255\");",
+            "    }",
+            "    if (unlit) {",
+            "      material = new THREE.MeshBasicMaterial(parameters);",
+            "    } else {",
+            "      material = new THREE.MeshStandardMaterial(Object.assign({",
+            "        metalness: 0,",
+            "        roughness: 1",
+            "      }, parameters));",
+            "    }",
+            "    material.shadowSide = THREE.DoubleSide;",
+            "    materialCache.set(key, material);",
+            "    return material;",
+            "  };",
+            "  const getWireframeMaterial = (colorString) => {",
+            "    const key = \"wire|\" + colorString;",
+            "    let material = materialCache.get(key);",
+            "    if (material) {",
+            "      return material;",
+            "    }",
+            "    material = new THREE.MeshBasicMaterial({",
+            "      color: parseColor(colorString),",
+            "      side: THREE.DoubleSide,",
+            "      wireframe: true,",
+            "      transparent: true,",
+            "      opacity: 0.85,",
+            "      depthWrite: false",
+            "    });",
+            "    materialCache.set(key, material);",
+            "    return material;",
+            "  };",
+            "  const getDepthMaterial = (imageName, texture, alphaTest, shadowDepthBias) => {",
+            "    const textureKey = texture && texture.uuid ? texture.uuid : imageName;",
+            "    const bias = Number.isFinite(shadowDepthBias) ? shadowDepthBias : 0;",
+            "    const key = textureKey + \"|\" + alphaTest + \"|\" + bias;",
+            "    let material = depthMaterialCache.get(key);",
+            "    if (material) {",
+            "      return material;",
+            "    }",
+            "    const parameters = {",
+            "      depthPacking: THREE.RGBADepthPacking,",
+            "      side: THREE.DoubleSide",
+            "    };",
+            "    if (texture) {",
+            "      parameters.map = texture;",
+            "      parameters.alphaTest = Math.max(alphaTest, 1 / 255);",
+            "    }",
+            "    if (bias !== 0) {",
+            "      parameters.polygonOffset = true;",
+            "      parameters.polygonOffsetFactor = bias;",
+            "      parameters.polygonOffsetUnits = bias;",
+            "    }",
+            "    material = new THREE.MeshDepthMaterial(parameters);",
+            "    depthMaterialCache.set(key, material);",
+            "    return material;",
+            "  };",
+            "  const getDistanceMaterial = (imageName, texture, alphaTest, shadowDepthBias) => {",
+            "    if (!THREE.MeshDistanceMaterial) {",
+            "      return null;",
+            "    }",
+            "    const textureKey = texture && texture.uuid ? texture.uuid : imageName;",
+            "    const bias = Number.isFinite(shadowDepthBias) ? shadowDepthBias : 0;",
+            "    const key = \"distance|\" + textureKey + \"|\" + alphaTest + \"|\" + bias;",
+            "    let material = depthMaterialCache.get(key);",
+            "    if (material) {",
+            "      return material;",
+            "    }",
+            "    const parameters = {",
+            "      side: THREE.DoubleSide",
+            "    };",
+            "    if (texture) {",
+            "      parameters.map = texture;",
+            "      parameters.alphaTest = Math.max(alphaTest, 1 / 255);",
+            "    }",
+            "    if (bias !== 0) {",
+            "      parameters.polygonOffset = true;",
+            "      parameters.polygonOffsetFactor = bias;",
+            "      parameters.polygonOffsetUnits = bias;",
+            "    }",
+            "    material = new THREE.MeshDistanceMaterial(parameters);",
+            "    depthMaterialCache.set(key, material);",
+            "    return material;",
+            "  };",
+            "  class ExtrudedSprite3DRenderer {",
+            "    constructor(object) {",
+            "      this.object = object;",
+            "      this.visualFlippedX = false;",
+            "      this.currentGeometryKey = null;",
+            "      this.currentImageName = null;",
+            "      this.currentTexture = null;",
+            "      this.stats = {",
+            "        triangleCount: 0,",
+            "        vertexCount: 0,",
+            "        generationTimeMs: 0,",
+            "        width: 0,",
+            "        height: 0",
+            "      };",
+            "      this.depth = 0;",
+            "      this.alphaThreshold = 128;",
+            "      this.sideColor = \"128;128;128\";",
+            "      this.useSpriteSideColors = true;",
+            "      this.unlit = false;",
+            "      this.castShadow = true;",
+            "      this.receiveShadow = false;",
+            "      this.avoidSelfShadow = true;",
+            "      this.shadowBias = 0;",
+            "      this.wireframe = false;",
+            "      this.readProperties();",
+            "      this.root = new THREE.Group();",
+            "      this.root.name = \"ExtrudedSprite3D\";",
+            "      this.frontBackMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial());",
+            "      this.sideMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial());",
+            "      this.frontBackWireMesh = new THREE.Mesh(new THREE.BufferGeometry(), getWireframeMaterial(\"0;0;0\"));",
+            "      this.sideWireMesh = new THREE.Mesh(new THREE.BufferGeometry(), getWireframeMaterial(\"0;0;0\"));",
+            "      this.frontBackWireMesh.renderOrder = 1;",
+            "      this.sideWireMesh.renderOrder = 1;",
+            "      this.root.add(this.frontBackMesh);",
+            "      this.root.add(this.sideMesh);",
+            "      this.root.add(this.frontBackWireMesh);",
+            "      this.root.add(this.sideWireMesh);",
+            "      object.get3DRendererObject().add(this.root);",
+            "      this.updateFrame();",
+            "      const animator = object.getAnimator();",
+            "      if (animator) {",
+            "        animator.setOnFrameChangeCallback(() => this.updateFrame());",
+            "      }",
+            "    }",
+            "    readProperties() {",
+            "      const object = this.object;",
+            "      const read = (name, defaultValue) => {",
+            "        const getter = object[\"_get\" + name];",
+            "        return typeof getter === \"function\" ? getter.call(object) : defaultValue;",
+            "      };",
+            "      const toNumber = (value, defaultValue) => {",
+            "        const number = Number(value);",
+            "        return Number.isFinite(number) ? number : defaultValue;",
+            "      };",
+            "      const toBoolean = (value) => value === true || value === \"true\" || value === 1 || value === \"1\";",
+            "      this.alphaThreshold = Math.min(255, Math.max(0, Math.round(toNumber(read(\"AlphaThreshold\", 128), 128))));",
+            "      this.sideColor = String(read(\"SideColor\", \"128;128;128\"));",
+            "      this.useSpriteSideColors = toBoolean(read(\"UseSpriteSideColors\", true));",
+            "      this.unlit = toBoolean(read(\"Unlit\", false));",
+            "      this.castShadow = toBoolean(read(\"CastShadow\", true));",
+            "      this.receiveShadow = toBoolean(read(\"ReceiveShadow\", false));",
+            "      this.avoidSelfShadow = toBoolean(read(\"AvoidSelfShadow\", true));",
+            "      this.shadowBias = toNumber(read(\"ShadowBias\", 0), 0);",
+            "      this.wireframe = toBoolean(read(\"DebugWireframe\", false));",
+            "    }",
+            "    getLocalDepth(width) {",
+            "      const object = this.object;",
+            "      const renderedDepth = (() => {",
+            "        if (typeof object.getDepth === \"function\") {",
+            "          const value = Number(object.getDepth());",
+            "          if (Number.isFinite(value) && value > 0) {",
+            "            return value;",
+            "          }",
+            "        }",
+            "        const minZ = Number(object._minZ);",
+            "        const maxZ = Number(object._maxZ);",
+            "        if (Number.isFinite(minZ) && Number.isFinite(maxZ) && maxZ > minZ) {",
+            "          return maxZ - minZ;",
+            "        }",
+            "        return 8;",
+            "      })();",
+            "      const scaleZ = typeof object.getScaleZ === \"function\" ? Math.abs(Number(object.getScaleZ())) : NaN;",
+            "      if (Number.isFinite(scaleZ) && scaleZ > 1e-4) {",
+            "        return Math.max(1, renderedDepth / scaleZ);",
+            "      }",
+            "      const renderedWidth = typeof object.getWidth === \"function\" ? Number(object.getWidth()) : width;",
+            "      const scaleX = width > 0 && Number.isFinite(renderedWidth) && renderedWidth > 0 ? renderedWidth / width : 1;",
+            "      return Math.max(1, renderedDepth / Math.max(Math.abs(scaleX), 1e-4));",
+            "    }",
+            "    updateFrame() {",
+            "      const object = this.object;",
+            "      const animator = object.getAnimator();",
+            "      const frame = animator ? animator.getCurrentFrame() : null;",
+            "      const frameMaterial = frame ? frame.texture : null;",
+            "      const texture = frameMaterial && frameMaterial.map ? frameMaterial.map : null;",
+            "      const image = texture ? texture.image : null;",
+            "      if (!frame || !image || !image.width) {",
+            "        this.root.visible = false;",
+            "        return;",
+            "      }",
+            "      this.root.visible = true;",
+            "      const imageName = frame.image;",
+            "      this.depth = this.getLocalDepth(image.width);",
+            "      const geometryKey = imageName + \"|\" + this.alphaThreshold + \"|\" + this.depth;",
+            "      let materialsNeedUpdate = this.currentTexture !== texture || this.currentImageName !== imageName;",
+            "      if (this.currentGeometryKey !== geometryKey) {",
+            "        const entry = getOrBuildGeometry(imageName, image, this.alphaThreshold, this.depth);",
+            "        this.frontBackMesh.geometry = entry.frontBack;",
+            "        this.sideMesh.geometry = entry.side;",
+            "        this.frontBackWireMesh.geometry = entry.frontBack;",
+            "        this.sideWireMesh.geometry = entry.side;",
+            "        this.stats = entry;",
+            "        this.currentGeometryKey = geometryKey;",
+            "        materialsNeedUpdate = true;",
+            "      }",
+            "      if (materialsNeedUpdate) {",
+            "        this.currentImageName = imageName;",
+            "        this.currentTexture = texture;",
+            "        this.applyMaterials();",
+            "      }",
+            "      const width = this.stats.width;",
+            "      const height = this.stats.height;",
+            "      const origin = frame.origin;",
+            "      const center = frame.center;",
+            "      const flipX = this.visualFlippedX;",
+            "      this.root.scale.set(flipX ? -1 : 1, 1, 1);",
+            "      this.root.position.set(-origin.x + (flipX ? 2 * center.x : 0), -origin.y, 0);",
+            "      object.setRotationCenter3D(center.x - origin.x, center.y - origin.y, this.depth / 2);",
+            "      const hitBoxes = object._untransformedHitBoxes;",
+            "      if (frame.hasCustomHitBoxes) {",
+            "        const customHitBoxes = frame.customHitBoxes;",
+            "        let i = 0;",
+            "        for (let len = customHitBoxes.length; i < len; ++i) {",
+            "          const sourceVertices = customHitBoxes[i].vertices;",
+            "          if (i >= hitBoxes.length) {",
+            "            hitBoxes.push(new gdjs.Polygon());",
+            "          }",
+            "          let j = 0;",
+            "          for (const len2 = sourceVertices.length; j < len2; ++j) {",
+            "            const point = sourceVertices[j];",
+            "            if (j >= hitBoxes[i].vertices.length) {",
+            "              hitBoxes[i].vertices.push([0, 0]);",
+            "            }",
+            "            hitBoxes[i].vertices[j][0] = point[0] - origin.x;",
+            "            hitBoxes[i].vertices[j][1] = point[1] - origin.y;",
+            "          }",
+            "          hitBoxes[i].vertices.length = j;",
+            "        }",
+            "        hitBoxes.length = i;",
+            "      } else if (hitBoxes.length === 0) {",
+            "        const hitBox = new gdjs.Polygon();",
+            "        hitBoxes.push(hitBox);",
+            "        const vertices = hitBox.vertices;",
+            "        vertices.push([-origin.x, -origin.y]);",
+            "        vertices.push([-origin.x + width, -origin.y]);",
+            "        vertices.push([-origin.x + width, -origin.y + height]);",
+            "        vertices.push([-origin.x, -origin.y + height]);",
+            "      }",
+            "      const aabb = object._unrotatedAABB;",
+            "      aabb.min[0] = -origin.x;",
+            "      aabb.min[1] = -origin.y;",
+            "      aabb.max[0] = -origin.x + width;",
+            "      aabb.max[1] = -origin.y + height;",
+            "      object._minZ = 0;",
+            "      object._maxZ = this.depth;",
+            "      object._isUntransformedHitBoxesDirty = false;",
+            "    }",
+            "    applyMaterials() {",
+            "      if (!this.currentTexture) {",
+            "        return;",
+            "      }",
+            "      const imageName = this.currentImageName || \"\";",
+            "      const alphaTest = this.alphaThreshold / 255;",
+            "      this.frontBackMesh.material = getFaceMaterial(imageName, this.currentTexture, alphaTest, this.unlit);",
+            "      this.frontBackMesh.customDepthMaterial = getDepthMaterial(imageName, this.currentTexture, alphaTest, this.shadowBias);",
+            "      const frontBackDistance = getDistanceMaterial(imageName, this.currentTexture, alphaTest, this.shadowBias);",
+            "      if (frontBackDistance) {",
+            "        this.frontBackMesh.customDistanceMaterial = frontBackDistance;",
+            "      }",
+            "      this.sideMesh.material = getSideMaterial(this.sideColor, this.unlit, this.useSpriteSideColors);",
+            "      this.sideMesh.customDepthMaterial = getDepthMaterial(\"side\", null, 0, this.shadowBias);",
+            "      const sideDistance = getDistanceMaterial(\"side\", null, 0, this.shadowBias);",
+            "      if (sideDistance) {",
+            "        this.sideMesh.customDistanceMaterial = sideDistance;",
+            "      }",
+            "      this.frontBackWireMesh.material = getWireframeMaterial(\"0;0;0\");",
+            "      this.sideWireMesh.material = getWireframeMaterial(\"0;0;0\");",
+            "      this.frontBackWireMesh.visible = this.wireframe;",
+            "      this.sideWireMesh.visible = this.wireframe;",
+            "      this.frontBackWireMesh.castShadow = false;",
+            "      this.frontBackWireMesh.receiveShadow = false;",
+            "      this.sideWireMesh.castShadow = false;",
+            "      this.sideWireMesh.receiveShadow = false;",
+            "      const faceReceiveShadow = this.receiveShadow && (!this.castShadow || !this.avoidSelfShadow);",
+            "      const sideReceiveShadow = this.receiveShadow;",
+            "      this.frontBackMesh.castShadow = this.castShadow;",
+            "      this.frontBackMesh.receiveShadow = faceReceiveShadow;",
+            "      this.sideMesh.castShadow = this.castShadow;",
+            "      this.sideMesh.receiveShadow = sideReceiveShadow;",
+            "    }",
+            "    rebuild(dropCaches) {",
+            "      if (dropCaches && this.currentImageName) {",
+            "        maskCache.delete(this.currentImageName);",
+            "        geometryCache.delete(this.currentImageName + \"|\" + this.alphaThreshold + \"|\" + this.depth);",
+            "      }",
+            "      this.currentGeometryKey = null;",
+            "      this.updateFrame();",
+            "    }",
+            "  }",
+            "  registry.__extrudedSprite3D = {",
+            "    ExtrudedSprite3DRenderer,",
+            "    getOrBuildGeometry,",
+            "    getFaceMaterial,",
+            "    getSideMaterial,",
+            "    getDepthMaterial,",
+            "    getDistanceMaterial,",
+            "    getWireframeMaterial,",
+            "    maskCache,",
+            "    geometryCache,",
+            "    materialCache,",
+            "    depthMaterialCache",
+            "  };",
+            "}"
+          ],
+          "parameterObjects": "",
+          "useStrict": true,
+          "eventsSheetExpanded": true
+        }
+      ],
+      "parameters": [],
+      "objectGroups": []
+    }
+  ],
+  "eventsFunctionsFolderStructure": {
+    "folderName": "__ROOT",
+    "children": [
+      {
+        "functionName": "DefineHelperClasses"
+      }
+    ]
+  },
+  "eventsBasedBehaviors": [
+    {
+      "description": "Makes any object with a 3D renderer face the active 3D camera. It is safe to add to Extruded Sprite 3D, Sprite3D, Cube3DObject, Model3D, and other objects that expose get3DRendererObject().",
+      "fullName": "Billboard 3D",
+      "helpPath": "",
+      "iconUrl": "",
+      "name": "Billboard3D",
+      "objectType": "",
+      "previewIconUrl": "",
+      "eventsFunctions": [
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "onCreated",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "// Billboard3D does its work every frame in doStepPreEvents.",
+                ""
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "doStepPreEvents",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "if (typeof THREE === 'undefined') {",
+                "    return;",
+                "}",
+                "",
+                "if (!gdjs.__billboard3D) {",
+                "    gdjs.__billboard3D = (function () {",
+                "        const tempCameraPosition = new THREE.Vector3();",
+                "        const tempObjectPosition = new THREE.Vector3();",
+                "        const tempQuaternion = new THREE.Quaternion();",
+                "        const invertQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);",
+                "        const tempEuler = new THREE.Euler(0, 0, 0, 'ZYX');",
+                "",
+                "        const getThreeObject = (object) => {",
+                "            if (!object) {",
+                "                return null;",
+                "            }",
+                "            if (typeof object.get3DRendererObject === 'function') {",
+                "                try {",
+                "                    const threeObject = object.get3DRendererObject();",
+                "                    if (threeObject) {",
+                "                        return threeObject;",
+                "                    }",
+                "                }",
+                "                catch (error) {}",
+                "            }",
+                "            const renderer = typeof object.getRenderer === 'function' ? object.getRenderer() : null;",
+                "            if (!renderer) {",
+                "                return null;",
+                "            }",
+                "            if (typeof renderer.get3DRendererObject === 'function') {",
+                "                try {",
+                "                    const threeObject = renderer.get3DRendererObject();",
+                "                    if (threeObject) {",
+                "                        return threeObject;",
+                "                    }",
+                "                }",
+                "                catch (error) {}",
+                "            }",
+                "            return renderer._threeObject || renderer.object3D || null;",
+                "        };",
+                "",
+                "        const getCamera = (runtimeScene, object) => {",
+                "            const layerName = object && typeof object.getLayer === 'function' ? object.getLayer() : '';",
+                "            const layer = runtimeScene.getLayer(layerName || '');",
+                "            const renderer = layer && typeof layer.getRenderer === 'function' ? layer.getRenderer() : null;",
+                "            return renderer && typeof renderer.getThreeCamera === 'function' ? renderer.getThreeCamera() : null;",
+                "        };",
+                "",
+                "        const getBoolean = (behavior, name, defaultValue) => {",
+                "            const getter = behavior && behavior['_get' + name];",
+                "            if (typeof getter !== 'function') {",
+                "                return defaultValue;",
+                "            }",
+                "            const value = getter.call(behavior);",
+                "            return value === true || value === 'true' || value === 1 || value === '1';",
+                "        };",
+                "",
+                "        const getString = (behavior, name, defaultValue) => {",
+                "            const getter = behavior && behavior['_get' + name];",
+                "            return typeof getter === 'function' ? String(getter.call(behavior)) : defaultValue;",
+                "        };",
+                "",
+                "        const setObjectRotation = (object, threeObject, rotationX, rotationY, rotationZ, quaternion) => {",
+                "            if (typeof object.setRotationX === 'function' &&",
+                "                typeof object.setRotationY === 'function' &&",
+                "                typeof object.setAngle === 'function') {",
+                "                object.setRotationX(rotationX);",
+                "                object.setRotationY(rotationY);",
+                "                object.setAngle(rotationZ);",
+                "                return;",
+                "            }",
+                "            if (quaternion && threeObject.quaternion) {",
+                "                threeObject.quaternion.copy(quaternion);",
+                "            }",
+                "            else if (threeObject.rotation) {",
+                "                threeObject.rotation.set(",
+                "                    THREE.MathUtils.degToRad(rotationX),",
+                "                    THREE.MathUtils.degToRad(rotationY),",
+                "                    THREE.MathUtils.degToRad(rotationZ),",
+                "                    'ZYX'",
+                "                );",
+                "            }",
+                "        };",
+                "",
+                "        const apply = (runtimeScene, object, behavior) => {",
+                "            if (!getBoolean(behavior, 'Enabled', true)) {",
+                "                return;",
+                "            }",
+                "            const threeObject = getThreeObject(object);",
+                "            const camera = getCamera(runtimeScene, object);",
+                "            if (!threeObject || !camera) {",
+                "                return;",
+                "            }",
+                "            const mode = getString(behavior, 'Mode', 'Full').toLowerCase();",
+                "            const invert = getBoolean(behavior, 'Invert', false);",
+                "            threeObject.updateMatrixWorld && threeObject.updateMatrixWorld(true);",
+                "            camera.updateMatrixWorld && camera.updateMatrixWorld(true);",
+                "",
+                "            if (mode.indexOf('y') !== -1) {",
+                "                threeObject.getWorldPosition(tempObjectPosition);",
+                "                camera.getWorldPosition(tempCameraPosition);",
+                "                const dx = tempCameraPosition.x - tempObjectPosition.x;",
+                "                const dz = tempCameraPosition.z - tempObjectPosition.z;",
+                "                if (Math.abs(dx) + Math.abs(dz) < 0.00001) {",
+                "                    return;",
+                "                }",
+                "                const rotationY = THREE.MathUtils.radToDeg(Math.atan2(dx, dz) + (invert ? Math.PI : 0));",
+                "                setObjectRotation(object, threeObject, 0, rotationY, 0, null);",
+                "                return;",
+                "            }",
+                "",
+                "            camera.getWorldQuaternion(tempQuaternion);",
+                "            if (invert) {",
+                "                tempQuaternion.multiply(invertQuaternion);",
+                "            }",
+                "            tempEuler.setFromQuaternion(tempQuaternion, 'ZYX');",
+                "            setObjectRotation(",
+                "                object,",
+                "                threeObject,",
+                "                THREE.MathUtils.radToDeg(tempEuler.x),",
+                "                THREE.MathUtils.radToDeg(tempEuler.y),",
+                "                THREE.MathUtils.radToDeg(tempEuler.z),",
+                "                tempQuaternion",
+                "            );",
+                "        };",
+                "",
+                "        return { apply, getThreeObject };",
+                "    })();",
+                "}",
+                "",
+                "const object = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;",
+                "if (!object) {",
+                "    return;",
+                "}",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const behavior = object.getBehavior(behaviorName);",
+                "if (!behavior) {",
+                "    return;",
+                "}",
+                "gdjs.__billboard3D.apply(runtimeScene, object, behavior);",
+                ""
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable the billboard behavior.",
+          "fullName": "Set enabled",
+          "functionType": "Action",
+          "group": "Billboard 3D",
+          "name": "SetEnabled",
+          "sentence": "Set billboard behavior of _PARAM0_ enabled: _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const enabled = !!eventsFunctionContext.getArgument('Enabled');",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const behavior = objectList[i].getBehavior(behaviorName);",
+                "    if (behavior && behavior._setEnabled) {",
+                "        behavior._setEnabled(enabled);",
+                "    }",
+                "}",
+                ""
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::Billboard3D",
+              "type": "behavior"
+            },
+            {
+              "defaultValue": "true",
+              "description": "Enabled",
+              "name": "Enabled",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        }
+      ],
+      "eventsFunctionsFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "functionName": "onCreated"
+          },
+          {
+            "functionName": "doStepPreEvents"
+          },
+          {
+            "folderName": "Billboard 3D",
+            "children": [
+              {
+                "functionName": "SetEnabled"
+              }
+            ]
+          }
+        ]
+      },
+      "propertyDescriptors": [
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Enabled",
+          "description": "Turn billboarding on for this object.",
+          "name": "Enabled"
+        },
+        {
+          "value": "Full",
+          "type": "Choice",
+          "label": "Mode",
+          "description": "Full copies the camera orientation. Y axis only keeps the object upright and rotates around Y.",
+          "choices": [
+            {
+              "label": "Full",
+              "value": "Full"
+            },
+            {
+              "label": "Y axis only",
+              "value": "Y axis only"
+            }
+          ],
+          "name": "Mode"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Invert facing",
+          "description": "Turn this on if the object faces away from the camera.",
+          "name": "Invert"
+        }
+      ],
+      "propertiesFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "propertyName": "Enabled"
+          },
+          {
+            "propertyName": "Mode"
+          },
+          {
+            "propertyName": "Invert"
+          }
+        ]
+      }
+    }
+  ],
+  "eventsBasedObjects": [
+    {
+      "areaMaxX": 64,
+      "areaMaxY": 64,
+      "areaMaxZ": 64,
+      "areaMinX": 0,
+      "areaMinY": 0,
+      "areaMinZ": 0,
+      "defaultName": "",
+      "description": "An animated sprite extruded into a 3D mesh using the object's normal 3D depth, able to receive 3D lights and cast shadows.",
+      "fullName": "Extruded Sprite 3D",
+      "helpPath": "",
+      "iconUrl": "",
+      "is3D": true,
+      "isAnimatable": true,
+      "isUsingLegacyInstancesRenderer": true,
+      "name": "ExtrudedSprite3D",
+      "previewIconUrl": "",
+      "objects": [],
+      "objectsFolderStructure": {
+        "folderName": "__ROOT"
+      },
+      "objectsGroups": [],
+      "layers": [
+        {
+          "ambientLightColorB": 200,
+          "ambientLightColorG": 200,
+          "ambientLightColorR": 200,
+          "camera2DPlaneMaxDrawingDistance": 5000,
+          "camera3DFarPlaneDistance": 10000,
+          "camera3DFieldOfView": 45,
+          "camera3DNearPlaneDistance": 3,
+          "cameraType": "",
+          "followBaseLayerCamera": false,
+          "isLightingLayer": false,
+          "isLocked": false,
+          "name": "",
+          "renderingType": "",
+          "visibility": true,
+          "cameras": [
+            {
+              "defaultSize": true,
+              "defaultViewport": true,
+              "height": 0,
+              "viewportBottom": 1,
+              "viewportLeft": 0,
+              "viewportRight": 1,
+              "viewportTop": 0,
+              "width": 0
+            }
+          ],
+          "effects": []
+        }
+      ],
+      "instances": [],
+      "editionSettings": [],
+      "eventsFunctions": [
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "onCreated",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::Standard",
+              "conditions": [],
+              "actions": [
+                {
+                  "type": {
+                    "value": "ExtrudedSprite3D::DefineHelperClasses"
+                  },
+                  "parameters": [
+                    "",
+                    ""
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "/** @type {gdjs.CustomRuntimeObject3D} */",
+                "const object = objects[0];",
+                "",
+                "object.__extrudedSprite3D = {",
+                "    renderer: new gdjs.__extrudedSprite3D.ExtrudedSprite3DRenderer(object)",
+                "};",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the alpha threshold used to decide which pixels are solid, then rebuild the mesh.",
+          "fullName": "Set alpha threshold",
+          "functionType": "Action",
+          "name": "SetAlphaThreshold",
+          "sentence": "Set the alpha threshold of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "const value = Number(eventsFunctionContext.getArgument('Threshold'));",
+                "renderer.alphaThreshold = Math.min(255, Math.max(0, Math.round(Number.isFinite(value) ? value : 128)));",
+                "renderer.rebuild(false);",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Alpha threshold (0-255)",
+              "longDescription": "Pixels with an alpha value greater or equal to this are considered solid.",
+              "name": "Threshold",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the solid color of the generated side walls when sprite edge colors are disabled.",
+          "fullName": "Set side color",
+          "functionType": "Action",
+          "name": "SetSideColor",
+          "sentence": "Set the side color of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "renderer.sideColor = String(eventsFunctionContext.getArgument('Color'));",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Side walls color",
+              "name": "Color",
+              "type": "color"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable shadow casting for the extruded mesh.",
+          "fullName": "Set cast shadows",
+          "functionType": "Action",
+          "name": "SetCastShadow",
+          "sentence": "Set shadow casting of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "renderer.castShadow = !!eventsFunctionContext.getArgument('Enable');",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable cast shadows",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable receiving shadows from other objects.",
+          "fullName": "Set receive shadows",
+          "functionType": "Action",
+          "name": "SetReceiveShadow",
+          "sentence": "Set shadow receiving of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "renderer.receiveShadow = !!eventsFunctionContext.getArgument('Enable');",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable receive shadows",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable the acne-safe mode that prevents the flat sprite faces from receiving their own shadow while the object casts shadows.",
+          "fullName": "Set self-shadow protection",
+          "functionType": "Action",
+          "name": "SetAvoidSelfShadow",
+          "sentence": "Set self-shadow protection of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "renderer.avoidSelfShadow = !!eventsFunctionContext.getArgument('Enable');",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Avoid self-shadow acne on the flat sprite faces",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the object-specific offset used when this mesh is rendered into shadow maps.",
+          "fullName": "Set shadow bias",
+          "functionType": "Action",
+          "name": "SetShadowBias",
+          "sentence": "Set shadow bias of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "const value = Number(eventsFunctionContext.getArgument('Bias'));",
+                "renderer.shadowBias = Number.isFinite(value) ? value : 0;",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Shadow bias",
+              "longDescription": "A polygon offset applied to this object in shadow-map passes. Use small values when an extruded sprite casts and receives shadows and shows acne or detached shadows.",
+              "name": "Bias",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable wireframe rendering (debug).",
+          "fullName": "Set wireframe rendering",
+          "functionType": "Action",
+          "name": "SetWireframe",
+          "sentence": "Set wireframe rendering of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "renderer.wireframe = !!eventsFunctionContext.getArgument('Enable');",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable wireframe",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Toggle wireframe rendering on or off (debug).",
+          "fullName": "Toggle wireframe rendering",
+          "functionType": "Action",
+          "name": "ToggleWireframe",
+          "sentence": "Toggle wireframe rendering of _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "const renderer = data.renderer;",
+                "renderer.wireframe = !renderer.wireframe;",
+                "renderer.applyMaterials();",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Drop the cached data of the current image and rebuild the extruded mesh.",
+          "fullName": "Rebuild mesh",
+          "functionType": "Action",
+          "name": "RebuildMesh",
+          "sentence": "Rebuild the extruded mesh of _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) {",
+                "    return;",
+                "}",
+                "data.renderer.rebuild(true);",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Number of triangles in the current extruded mesh.",
+          "fullName": "Triangle count",
+          "functionType": "Expression",
+          "name": "TriangleCount",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "eventsFunctionContext.returnValue = data && data.renderer ? data.renderer.stats.triangleCount : 0;",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Number of vertices in the current extruded mesh.",
+          "fullName": "Vertex count",
+          "functionType": "Expression",
+          "name": "VertexCount",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "eventsFunctionContext.returnValue = data && data.renderer ? data.renderer.stats.vertexCount : 0;",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Time in milliseconds it took to generate the current mesh (0 until generated; cached meshes report their original generation time).",
+          "fullName": "Generation time (ms)",
+          "functionType": "Expression",
+          "name": "GenerationTimeMs",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "eventsFunctionContext.returnValue = data && data.renderer ? data.renderer.stats.generationTimeMs : 0;",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Width in pixels of the current animation frame image.",
+          "fullName": "Image width",
+          "functionType": "Expression",
+          "name": "ImageWidth",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "eventsFunctionContext.returnValue = data && data.renderer ? data.renderer.stats.width : 0;",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Height in pixels of the current animation frame image.",
+          "fullName": "Image height",
+          "functionType": "Expression",
+          "name": "ImageHeight",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "eventsFunctionContext.returnValue = data && data.renderer ? data.renderer.stats.height : 0;",
+                ""
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Flip the visual mesh of the 3D sprite horizontally without affecting the object's physics or hitboxes. This acts completely independently of the default GDevelop flip action.",
+          "fullName": "Flip visual mesh horizontally",
+          "functionType": "Action",
+          "name": "SetVisualFlipX",
+          "sentence": "Flip visual mesh of _PARAM0_ horizontally: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const object = objects[0];",
+                "const data = object.__extrudedSprite3D;",
+                "if (!data || !data.renderer) return;",
+                "const renderer = data.renderer;",
+                "renderer.visualFlippedX = !!eventsFunctionContext.getArgument('Enable');",
+                "renderer.updateFrame();"
+              ],
+              "parameterObjects": "Object",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable visual flip",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        }
+      ],
+      "eventsFunctionsFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "functionName": "onCreated"
+          },
+          {
+            "functionName": "SetAlphaThreshold"
+          },
+          {
+            "functionName": "SetSideColor"
+          },
+          {
+            "functionName": "SetCastShadow"
+          },
+          {
+            "functionName": "SetReceiveShadow"
+          },
+          {
+            "functionName": "SetAvoidSelfShadow"
+          },
+          {
+            "functionName": "SetShadowBias"
+          },
+          {
+            "functionName": "SetWireframe"
+          },
+          {
+            "functionName": "ToggleWireframe"
+          },
+          {
+            "functionName": "RebuildMesh"
+          },
+          {
+            "functionName": "TriangleCount"
+          },
+          {
+            "functionName": "VertexCount"
+          },
+          {
+            "functionName": "GenerationTimeMs"
+          },
+          {
+            "functionName": "ImageWidth"
+          },
+          {
+            "functionName": "ImageHeight"
+          }
+        ]
+      },
+      "propertyDescriptors": [
+        {
+          "value": "128",
+          "type": "Number",
+          "label": "Alpha threshold (0-255)",
+          "description": "Pixels with an alpha value greater or equal to this are considered solid.",
+          "group": "Mesh",
+          "name": "AlphaThreshold"
+        },
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Use sprite edge colors for sides",
+          "description": "Color generated side walls from the nearest solid sprite pixels. Turn this off to use a single side walls color.",
+          "group": "Mesh",
+          "name": "UseSpriteSideColors"
+        },
+        {
+          "value": "128;128;128",
+          "type": "Color",
+          "label": "Side walls color",
+          "description": "Solid side wall color used when sprite edge colors are disabled.",
+          "group": "Mesh",
+          "name": "SideColor"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Unlit",
+          "description": "Ignore 3D lights and render at full brightness (like a Basic material).",
+          "group": "Rendering",
+          "name": "Unlit"
+        },
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Cast shadows",
+          "description": "The mesh casts shadows when a directional light with shadows is active.",
+          "group": "Rendering",
+          "name": "CastShadow"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Receive shadows",
+          "description": "Receive shadows cast by other objects. When self-shadow protection is enabled, only the flat sprite faces are suppressed while the object also casts shadows; the extrusion sides still receive shadows.",
+          "group": "Rendering",
+          "name": "ReceiveShadow"
+        },
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Avoid self-shadow acne",
+          "description": "Keep receive shadows disabled on the flat sprite faces while this object casts shadows, preventing striped self-shadow artifacts. The extrusion sides still receive shadows.",
+          "group": "Rendering",
+          "name": "AvoidSelfShadow"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Shadow bias",
+          "description": "Object-specific polygon offset used in shadow-map passes. Adjust if this object both casts and receives shadows and shows acne or detached shadows.",
+          "group": "Rendering",
+          "name": "ShadowBias"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Debug wireframe",
+          "description": "Draw a wireframe overlay while keeping the filled/textured mesh visible.",
+          "group": "Debug",
+          "name": "DebugWireframe"
+        }
+      ],
+      "propertiesFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "folderName": "Mesh",
+            "children": [
+              {
+                "propertyName": "AlphaThreshold"
+              },
+              {
+                "propertyName": "UseSpriteSideColors"
+              },
+              {
+                "propertyName": "SideColor"
+              }
+            ]
+          },
+          {
+            "folderName": "Rendering",
+            "children": [
+              {
+                "propertyName": "Unlit"
+              },
+              {
+                "propertyName": "CastShadow"
+              },
+              {
+                "propertyName": "ReceiveShadow"
+              },
+              {
+                "propertyName": "AvoidSelfShadow"
+              },
+              {
+                "propertyName": "ShadowBias"
+              }
+            ]
+          },
+          {
+            "folderName": "Debug",
+            "children": [
+              {
+                "propertyName": "DebugWireframe"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

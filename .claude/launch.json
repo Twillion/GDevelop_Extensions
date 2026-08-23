@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "extrude-harness",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\chris\\AppData\\Local\\Temp\\claude\\C--Users-chris-OneDrive-Documents-Extensions-for-gdevelop\\96efa55b-8523-4c09-b31e-f29f778ca144\\scratchpad\\harness\\server.js"],
+      "port": 8123
+    }
+  ]
+}

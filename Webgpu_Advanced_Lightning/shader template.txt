@@ -1,0 +1,36 @@
+struct Light {
+    position: vec3<f32>,
+    range: f32,
+    color: vec3<f32>,
+    intensity: f32,
+}
+
+struct SceneData {
+    cameraPos: vec3<f32>,
+    numLights: u32,
+    // Padding to 16-byte alignment handled automatically here
+}
+
+@group(0) @binding(0) var<uniform> scene: SceneData;
+@group(0) @binding(1) var<storage, read> lights: array<Light>;
+@group(0) @binding(2) var outputTex: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let coords = vec2<i32>(gid.xy);
+    let texSize = textureDimensions(outputTex);
+
+    if (coords.x >= texSize.x || coords.y >= texSize.y) {
+        return;
+    }
+
+    var finalColor = vec3<f32>(0.0);
+
+    // Phase 3 Test: Iterate through active lights and output a debug color
+    for (var i = 0u; i < scene.numLights; i++) {
+        let light = lights[i];
+        finalColor += light.color * light.intensity * 0.1; 
+    }
+
+    textureStore(outputTex, coords, vec4<f32>(finalColor, 1.0));
+}

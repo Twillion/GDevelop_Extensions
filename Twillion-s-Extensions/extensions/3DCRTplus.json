@@ -1,0 +1,2099 @@
+{
+  "author": "Twillion",
+  "category": "Visual effect",
+  "extensionNamespace": "",
+  "fullName": "3DCRT+",
+  "name": "CRT3D",
+  "version": "0.6.0",
+  "description": "3DCRT+ is a flexible retro screen / post-processing shader for GDevelop 3D scenes (Three.js). Each effect - scanlines, anti-aliased shadow mask, screen bulge, black bezel border, brightness, ReShade-quality multi-tier bloom, chromatic aberration, roll, flicker, interlacing, and color grading - has its own on/off toggle (all off by default), so you switch on only what you want and the rest costs nothing. Blended by a master opacity. Tune it visually with the '3DCRT+ shader effect (manager)' behavior on an object in your scene (each effect is a checkbox), or drive it from events. Core scan-line shader ported from Timothy Lottes' public-domain CRT shader. Author: Twillion.",
+  "shortDescription": "Flexible 3D retro/post shader: each effect (scanlines, bulge, mask, glitch, color...) toggles on/off. Editor-tunable.",
+  "helpPath": "",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+CiAgPCEtLSAzRENSVCsgaWNvbjogbWluaW1hbCBmbGF0IHNjcmVlbiwgYmxhY2sgJiB3aGl0ZSAtLT4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjQ4IiBmaWxsPSIjMTExMTExIi8+CiAgPCEtLSBzY3JlZW4gYXMgYSB0aGljayByb3VuZGVkLXJlY3Qgb3V0bGluZSAtLT4KICA8cmVjdCB4PSI1MiIgeT0iNjAiIHdpZHRoPSIxNTIiIGhlaWdodD0iMTIwIiByeD0iMzQiIGZpbGw9Im5vbmUiCiAgICAgICAgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjE0Ii8+CiAgPCEtLSB0aHJlZSBib2xkIHNjYW5saW5lcyBpbnNpZGUgLS0+CiAgPGcgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjkiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+CiAgICA8bGluZSB4MT0iODAiIHkxPSI5OCIgIHgyPSIxNzYiIHkyPSI5OCIvPgogICAgPGxpbmUgeDE9IjgwIiB5MT0iMTIwIiB4Mj0iMTc2IiB5Mj0iMTIwIi8+CiAgICA8bGluZSB4MT0iODAiIHkxPSIxNDIiIHgyPSIxNzYiIHkyPSIxNDIiLz4KICA8L2c+CiAgPCEtLSBzdGFuZCAtLT4KICA8cmVjdCB4PSIxMTYiIHk9IjE4NiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjE2IiByeD0iNCIgZmlsbD0iI2ZmZmZmZiIvPgogIDxyZWN0IHg9IjkyIiB5PSIyMDAiIHdpZHRoPSI3MiIgaGVpZ2h0PSIxMiIgcng9IjYiIGZpbGw9IiNmZmZmZmYiLz4KPC9zdmc+Cg==",
+  "previewIconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+CiAgPCEtLSAzRENSVCsgaWNvbjogbWluaW1hbCBmbGF0IHNjcmVlbiwgYmxhY2sgJiB3aGl0ZSAtLT4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjQ4IiBmaWxsPSIjMTExMTExIi8+CiAgPCEtLSBzY3JlZW4gYXMgYSB0aGljayByb3VuZGVkLXJlY3Qgb3V0bGluZSAtLT4KICA8cmVjdCB4PSI1MiIgeT0iNjAiIHdpZHRoPSIxNTIiIGhlaWdodD0iMTIwIiByeD0iMzQiIGZpbGw9Im5vbmUiCiAgICAgICAgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjE0Ii8+CiAgPCEtLSB0aHJlZSBib2xkIHNjYW5saW5lcyBpbnNpZGUgLS0+CiAgPGcgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjkiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+CiAgICA8bGluZSB4MT0iODAiIHkxPSI5OCIgIHgyPSIxNzYiIHkyPSI5OCIvPgogICAgPGxpbmUgeDE9IjgwIiB5MT0iMTIwIiB4Mj0iMTc2IiB5Mj0iMTIwIi8+CiAgICA8bGluZSB4MT0iODAiIHkxPSIxNDIiIHgyPSIxNzYiIHkyPSIxNDIiLz4KICA8L2c+CiAgPCEtLSBzdGFuZCAtLT4KICA8cmVjdCB4PSIxMTYiIHk9IjE4NiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjE2IiByeD0iNCIgZmlsbD0iI2ZmZmZmZiIvPgogIDxyZWN0IHg9IjkyIiB5PSIyMDAiIHdpZHRoPSI3MiIgaGVpZ2h0PSIxMiIgcng9IjYiIGZpbGw9IiNmZmZmZmYiLz4KPC9zdmc+Cg==",
+  "tags": [
+    "3D",
+    "CRT",
+    "shader",
+    "retro",
+    "post-processing",
+    "scanlines",
+    "screen effect",
+    "bulge",
+    "color grading"
+  ],
+  "authorIds": [],
+  "dependencies": [],
+  "globalVariables": [],
+  "sceneVariables": [],
+  "eventsFunctions": [
+    {
+      "name": "StartCRTEffect",
+      "fullName": "Start shader render effect",
+      "description": "Turn on the 3DCRT+ shader effect for the game's 3D rendering.",
+      "group": "3DCRT+ - Setup",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Layer3D",
+          "type": "layer",
+          "description": "3D layer",
+          "longDescription": "Optional. If set, the effect only applies to this layer's 3D camera. Leave empty for all 3D rendering.",
+          "defaultValue": "",
+          "optional": true
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.startEffect(runtimeScene, eventsFunctionContext.getArgument(\"Layer3D\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "StopCRTEffect",
+      "fullName": "Stop shader render effect",
+      "description": "Turn off the 3DCRT+ shader effect.",
+      "group": "3DCRT+ - Setup",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.stopEffect(runtimeScene);",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTEffectIsEnabled",
+      "fullName": "Shader render effect is enabled",
+      "description": "Check if the 3DCRT+ shader effect is currently on.",
+      "group": "3DCRT+ - Setup",
+      "functionType": "Condition",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.isEnabled(runtimeScene);",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetOpacity",
+      "fullName": "Set shader render opacity",
+      "description": "Set shader render opacity to _PARAM1_.",
+      "sentence": "Set shader render opacity to _PARAM1_",
+      "group": "3DCRT+ - General",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Opacity (0-255)",
+          "longDescription": "Master strength, like object opacity. 0 = original image, 255 = full effect. Default: 255.",
+          "defaultValue": "255",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setOpacity(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetScanlineThickness",
+      "fullName": "Set CRT scanline thickness",
+      "description": "Set CRT scanline thickness to _PARAM1_.",
+      "sentence": "Set CRT scanline thickness to _PARAM1_",
+      "group": "3DCRT+ - Scanlines",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Thickness (0-100)",
+          "longDescription": "0 = thin/soft, 100 = thick/hard. Default: 33.",
+          "defaultValue": "33",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setScanlineThickness(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetPixelSharpness",
+      "fullName": "Set CRT pixel sharpness",
+      "description": "Set CRT pixel sharpness to _PARAM1_.",
+      "sentence": "Set CRT pixel sharpness to _PARAM1_",
+      "group": "3DCRT+ - Scanlines",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Sharpness (0-100)",
+          "longDescription": "0 = soft, 100 = sharp. Default: 25.",
+          "defaultValue": "25",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setPixelSharpness(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetScanlineCount",
+      "fullName": "Set CRT scanline count",
+      "description": "Set CRT scanline count to _PARAM1_.",
+      "sentence": "Set CRT scanline count to _PARAM1_",
+      "group": "3DCRT+ - Scanlines",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Scanline count",
+          "longDescription": "Virtual vertical resolution. 240 classic, 480 sharper. 0 = use pixel size. Default: 240.",
+          "defaultValue": "240",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setScanlineCount(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetPixelSize",
+      "fullName": "Set CRT pixel size",
+      "description": "Set CRT pixel size to _PARAM1_.",
+      "sentence": "Set CRT pixel size to _PARAM1_",
+      "group": "3DCRT+ - Scanlines",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Pixel size",
+          "longDescription": "Only used when scanline count is 0. Higher = chunkier. Default: 6.",
+          "defaultValue": "6",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setPixelSize(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetScreenBulge",
+      "fullName": "Set CRT screen bulge",
+      "description": "Set CRT screen bulge to _PARAM1_.",
+      "sentence": "Set CRT screen bulge to _PARAM1_",
+      "group": "3DCRT+ - Shape",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Screen bulge",
+          "longDescription": "0 flat, 1 classic, 2 strong. Default: 1.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setScreenBulge(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBorder",
+      "fullName": "Set CRT border size",
+      "description": "Set CRT border size to _PARAM1_.",
+      "sentence": "Set CRT border size to _PARAM1_",
+      "group": "3DCRT+ - Shape",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Border size (0-45)",
+          "longDescription": "Black bezel border. 0 = none, 45 = very thick. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBorder(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBorderLeft",
+      "fullName": "Set CRT border left (extra)",
+      "description": "Set CRT border left extra inset to _PARAM1_.",
+      "sentence": "Set CRT border left extra to _PARAM1_",
+      "group": "3DCRT+ - Shape",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Border left extra (0-45)",
+          "longDescription": "Extra inset added to the left side ON TOP OF the master border size. 0 = use master only. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBorderLeft(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBorderRight",
+      "fullName": "Set CRT border right (extra)",
+      "description": "Set CRT border right extra inset to _PARAM1_.",
+      "sentence": "Set CRT border right extra to _PARAM1_",
+      "group": "3DCRT+ - Shape",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Border right extra (0-45)",
+          "longDescription": "Extra inset added to the right side ON TOP OF the master border size. 0 = use master only. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBorderRight(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBorderTop",
+      "fullName": "Set CRT border top (extra)",
+      "description": "Set CRT border top extra inset to _PARAM1_.",
+      "sentence": "Set CRT border top extra to _PARAM1_",
+      "group": "3DCRT+ - Shape",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Border top extra (0-45)",
+          "longDescription": "Extra inset added to the top side ON TOP OF the master border size. 0 = use master only. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBorderTop(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBorderBottom",
+      "fullName": "Set CRT border bottom (extra)",
+      "description": "Set CRT border bottom extra inset to _PARAM1_.",
+      "sentence": "Set CRT border bottom extra to _PARAM1_",
+      "group": "3DCRT+ - Shape",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Border bottom extra (0-45)",
+          "longDescription": "Extra inset added to the bottom side ON TOP OF the master border size. 0 = use master only. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBorderBottom(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetMaskDark",
+      "fullName": "Set CRT shadow mask dark level",
+      "description": "Set CRT shadow mask dark level to _PARAM1_.",
+      "sentence": "Set CRT shadow mask dark level to _PARAM1_",
+      "group": "3DCRT+ - Mask",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Dark level (0-100)",
+          "longDescription": "0 = black gaps, 100 = no visible mask. Default: 50.",
+          "defaultValue": "50",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setShadowMaskDarkLevel(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetMaskLight",
+      "fullName": "Set CRT shadow mask light level",
+      "description": "Set CRT shadow mask light level to _PARAM1_.",
+      "sentence": "Set CRT shadow mask light level to _PARAM1_",
+      "group": "3DCRT+ - Mask",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Light level (1 or more)",
+          "longDescription": "Boost for lit sub-pixels. 1 = none. Default: 1.5.",
+          "defaultValue": "1.5",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setShadowMaskLightLevel(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBrightness",
+      "fullName": "Set shader render brightness",
+      "description": "Set shader render brightness to _PARAM1_.",
+      "sentence": "Set shader render brightness to _PARAM1_",
+      "group": "3DCRT+ - Tone",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Brightness",
+          "longDescription": "Offsets scanline/mask dimming. 1 = none. Default: 1.2.",
+          "defaultValue": "1.2",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBrightness(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBloom",
+      "fullName": "Set shader render bloom",
+      "description": "Set shader render bloom to _PARAM1_.",
+      "sentence": "Set shader render bloom to _PARAM1_",
+      "group": "3DCRT+ - Tone",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Bloom (0-100)",
+          "longDescription": "Bright-area bleed/glow. 0 = none. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBloom(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetAberration",
+      "fullName": "Set shader render chromatic aberration",
+      "description": "Set shader render chromatic aberration to _PARAM1_.",
+      "sentence": "Set shader render chromatic aberration to _PARAM1_",
+      "group": "3DCRT+ - Glitch",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Aberration (0-3)",
+          "longDescription": "Edge color fringing. 0 = none. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setAberration(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetRollSpeed",
+      "fullName": "Set shader render roll speed",
+      "description": "Set shader render roll speed to _PARAM1_.",
+      "sentence": "Set shader render roll speed to _PARAM1_",
+      "group": "3DCRT+ - Glitch",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Roll speed",
+          "longDescription": "Speed of a vertical rolling bar. 0 = off. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setRollSpeed(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetRollHeight",
+      "fullName": "Set shader render roll height",
+      "description": "Set shader render roll height to _PARAM1_.",
+      "sentence": "Set shader render roll height to _PARAM1_",
+      "group": "3DCRT+ - Glitch",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Roll height (0-1)",
+          "longDescription": "Rolling bar thickness. Default: 0.1.",
+          "defaultValue": "0.1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setRollHeight(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetFlicker",
+      "fullName": "Set shader render flicker",
+      "description": "Set shader render flicker to _PARAM1_.",
+      "sentence": "Set shader render flicker to _PARAM1_",
+      "group": "3DCRT+ - Glitch",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Flicker (0-20)",
+          "longDescription": "Per-frame brightness wobble. 0 = none. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setFlicker(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetInterlace",
+      "fullName": "Set shader render interlacing",
+      "description": "Set shader render interlacing to _PARAM1_.",
+      "sentence": "Set shader render interlacing to _PARAM1_",
+      "group": "3DCRT+ - Glitch",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Interlacing (0-1)",
+          "longDescription": "Dims alternating lines; can flicker on high-refresh displays. 0 = off. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setInterlace(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetSaturation",
+      "fullName": "Set shader render saturation",
+      "description": "Set shader render saturation to _PARAM1_.",
+      "sentence": "Set shader render saturation to _PARAM1_",
+      "group": "3DCRT+ - Color",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Saturation",
+          "longDescription": "0 grayscale, 1 normal, above 1 boosted. Default: 1.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setSaturation(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetContrast",
+      "fullName": "Set shader render contrast",
+      "description": "Set shader render contrast to _PARAM1_.",
+      "sentence": "Set shader render contrast to _PARAM1_",
+      "group": "3DCRT+ - Color",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Contrast",
+          "longDescription": "1 = unchanged. Default: 1.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setContrast(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetGamma",
+      "fullName": "Set shader render gamma",
+      "description": "Set shader render gamma to _PARAM1_.",
+      "sentence": "Set shader render gamma to _PARAM1_",
+      "group": "3DCRT+ - Color",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Gamma",
+          "longDescription": "1 = unchanged. Default: 1.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setGamma(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetTint",
+      "fullName": "Set shader render phosphor tint",
+      "description": "Set the phosphor tint multiplier (1, 1, 1 = no tint). Lower a channel to tint toward the others.",
+      "sentence": "Set shader render tint to _PARAM1_, _PARAM2_, _PARAM3_",
+      "group": "3DCRT+ - Color",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Red",
+          "type": "number",
+          "description": "Red multiplier",
+          "longDescription": "1 = unchanged.",
+          "defaultValue": "1",
+          "optional": false
+        },
+        {
+          "name": "Green",
+          "type": "number",
+          "description": "Green multiplier",
+          "longDescription": "1 = unchanged.",
+          "defaultValue": "1",
+          "optional": false
+        },
+        {
+          "name": "Blue",
+          "type": "number",
+          "description": "Blue multiplier",
+          "longDescription": "1 = unchanged.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setTint(runtimeScene, eventsFunctionContext.getArgument(\"Red\"), eventsFunctionContext.getArgument(\"Green\"), eventsFunctionContext.getArgument(\"Blue\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderOpacity",
+      "fullName": "ShaderRenderOpacity",
+      "description": "Current value: shader render opacity.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getOpacity();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTScanlineThickness",
+      "fullName": "CRTScanlineThickness",
+      "description": "Current value: CRT scanline thickness.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getScanlineThickness();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTPixelSharpness",
+      "fullName": "CRTPixelSharpness",
+      "description": "Current value: CRT pixel sharpness.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getPixelSharpness();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTScanlineCount",
+      "fullName": "CRTScanlineCount",
+      "description": "Current value: CRT scanline count.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getScanlineCount();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTPixelSize",
+      "fullName": "CRTPixelSize",
+      "description": "Current value: CRT pixel size.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getPixelSize();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTScreenBulge",
+      "fullName": "CRTScreenBulge",
+      "description": "Current value: CRT screen bulge.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getScreenBulge();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTBorder",
+      "fullName": "CRTBorder",
+      "description": "Current value: CRT border size.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBorder();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTShadowMaskDarkLevel",
+      "fullName": "CRTShadowMaskDarkLevel",
+      "description": "Current value: CRT shadow mask dark level.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getShadowMaskDarkLevel();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "CRTShadowMaskLightLevel",
+      "fullName": "CRTShadowMaskLightLevel",
+      "description": "Current value: CRT shadow mask light level.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getShadowMaskLightLevel();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBrightness",
+      "fullName": "ShaderRenderBrightness",
+      "description": "Current value: shader render brightness.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBrightness();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloom",
+      "fullName": "ShaderRenderBloom",
+      "description": "Current value: shader render bloom.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloom();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderAberration",
+      "fullName": "ShaderRenderAberration",
+      "description": "Current value: shader render chromatic aberration.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getAberration();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderRollSpeed",
+      "fullName": "ShaderRenderRollSpeed",
+      "description": "Current value: shader render roll speed.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getRollSpeed();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderRollHeight",
+      "fullName": "ShaderRenderRollHeight",
+      "description": "Current value: shader render roll height.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getRollHeight();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderFlicker",
+      "fullName": "ShaderRenderFlicker",
+      "description": "Current value: shader render flicker.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getFlicker();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderInterlace",
+      "fullName": "ShaderRenderInterlace",
+      "description": "Current value: shader render interlacing.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getInterlace();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderSaturation",
+      "fullName": "ShaderRenderSaturation",
+      "description": "Current value: shader render saturation.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getSaturation();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderContrast",
+      "fullName": "ShaderRenderContrast",
+      "description": "Current value: shader render contrast.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getContrast();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderGamma",
+      "fullName": "ShaderRenderGamma",
+      "description": "Current value: shader render gamma.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getGamma();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderTintRed",
+      "fullName": "ShaderRenderTintRed",
+      "description": "Current value: Tint red.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getTintR();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderTintGreen",
+      "fullName": "ShaderRenderTintGreen",
+      "description": "Current value: Tint green.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getTintG();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderTintBlue",
+      "fullName": "ShaderRenderTintBlue",
+      "description": "Current value: Tint blue.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getTintB();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "onFirstSceneLoaded",
+      "fullName": "",
+      "description": "",
+      "group": "",
+      "functionType": "Action",
+      "private": true,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "// =====================================================================\n// 3DCRT+ — a flexible retro-screen post-processing toolkit for GDevelop 3D\n// Author: Twillion\n// Core scan-line shader ported from Timothy Lottes' PUBLIC DOMAIN CRT\n// shader (\"Please take and use, change, or whatever.\").\n//\n// ---------------------------------------------------------------------\n// WHAT THIS IS\n// ---------------------------------------------------------------------\n// GDevelop renders all 3D through a single shared THREE.WebGLRenderer.\n// This module wraps that renderer's render() method: every frame the 3D\n// scene is first drawn into an off-screen render target (\"the shader\n// layer\"), then a single full-screen quad redraws it through a shader\n// (scanlines, shadow mask, screen curvature/bulge, chromatic aberration,\n// roll, interlacing, bloom, color grading, a black bezel border, and a\n// master OPACITY that blends the whole thing against the untouched image).\n//\n// This file is the ENGINE. It is driven two ways, both of which write to\n// the same shared `settings` object so they never fight:\n//   1. The behavior (editor-tunable properties), and\n//   2. The extension's actions / conditions / expressions (runtime).\n//\n// NOTE ON SCALES: the public actions/behavior expose friendly numbers\n// (opacity 0-255, scanline THICKNESS / pixel SHARPNESS where bigger =\n// more, border 0-45, flicker 0-20, bloom 0-100, mask dark 0-100). The\n// conversions to the shader's internal values (e.g. the negative\n// hardScan/hardPix, the 0-1 fractions) happen in the setters below, so\n// the `settings` object and the shader still use the raw internal units.\n//\n// ---------------------------------------------------------------------\n// VERIFIED GDevelop API (checked against GDJS source / forum, 2025-2026)\n// ---------------------------------------------------------------------\n//   runtimeScene.getGame().getRenderer().getThreeRenderer()   -> THREE.WebGLRenderer (public)\n//   runtimeScene.getLayer(name).getRenderer().getThreeCamera() -> THREE.Camera (public)\n//   runtimeScene.getLayer(name).getRenderer().getThreeScene()  -> THREE.Scene  (public)\n// These three accessors are public and confirmed. There is NO public\n// \"add a 3D post-process\" hook, so we wrap render() ourselves; that wrap\n// is the one genuinely fragile part and is marked // FRAGILE below.\n// =====================================================================\n\nif (!gdjs._crtLottes3D) {\n  // -------------------------------------------------------------------\n  // Vertex shader: draws a single full-screen triangle/quad. The quad's\n  // PlaneGeometry(2,2) already spans clip space (-1..1), so we bypass any\n  // camera/projection and just pass the position straight through.\n  // -------------------------------------------------------------------\n  const vertexShader = `\n    varying vec2 vUv;\n    void main() {\n      vUv = uv;\n      gl_Position = vec4(position.xy, 0.0, 1.0);\n    }\n  `;\n\n  // -------------------------------------------------------------------\n  // Fragment shader: the whole CRT look. Each block is gated by a uniform\n  // so any feature can be dialed to zero with no cost to the result (the\n  // GPU still runs the math, but the toolkit stays flexible). The final\n  // color is mixed against the untouched source by `intensity` so the\n  // entire effect has a single master strength / fade knob.\n  // -------------------------------------------------------------------\n  const fragmentShader = `\n    precision highp float;\n    varying vec2 vUv;\n\n    uniform sampler2D tDiffuse;   // the rendered 3D scene\n    uniform vec2 dimensions;      // real output size in pixels\n    uniform vec2 res;             // emulated CRT resolution (the low-res grid)\n    uniform float time;           // seconds since effect start (for roll/flicker)\n\n    // Scanline / pixel shape\n    uniform float hardScan;       // scanline gap hardness (-16 hard .. -4 soft)\n    uniform float hardPix;        // in-line pixel hardness (-6 hard .. -2 soft)\n\n    // Curvature + framing\n    uniform float warpX;          // horizontal curvature (bulge derived)\n    uniform float warpY;          // vertical curvature\n    // Per-side bezel insets (fraction of screen, 0..0.45). Each side is the\n    // master Border plus that side's own offset, already combined in JS.\n    uniform float borderL;        // left inset\n    uniform float borderR;        // right inset\n    uniform float borderT;        // top inset\n    uniform float borderB;        // bottom inset\n    // Independent X/Y stretch of the rendered image (1 = unchanged).\n    uniform float stretchX;\n    uniform float stretchY;\n\n    // Shadow mask\n    uniform float maskDark;       // brightness of \"off\" mask subpixels (0..1)\n    uniform float maskLight;      // brightness multiplier of \"lit\" subpixels (>=1)\n\n    // Tone\n    uniform float brightness;     // flat post-multiply to offset mask/scan dimming\n    uniform float bloom;          // bloom intensity multiplier\n    uniform float bloomThreshold;  // luminance cutoff point (0..2)\n    uniform float bloomKnee;       // soft-knee transition curve (0..1)\n    uniform float bloomRadius;     // blur spread radius (1..50)\n    uniform vec3 bloomTint;        // RGB color tint for the bloom glow\n\n    // Glitch / motion\n    uniform float aberration;     // chromatic aberration in emulated pixels (0..~3)\n    uniform float rollSpeed;      // vertical roll bar speed (0 = off)\n    uniform float rollHeight;     // roll bar thickness (0..1 of screen)\n    uniform float flicker;        // per-frame brightness flicker amount (0..~0.2)\n    uniform float interlace;      // 0 = off, 1 = full interlacing dimming of alt lines\n\n    // Color grading\n    uniform float saturation;     // 1 = unchanged, 0 = grayscale, >1 = boosted\n    uniform float contrast;       // 1 = unchanged\n    uniform float gammaCorrect;   // 1 = unchanged; >1 darkens mids, <1 lifts them\n    uniform vec3  tint;           // phosphor tint multiplier (1,1,1 = none)\n\n    uniform float intensity;      // master mix 0 = original image .. 1 = full CRT\n\n    // ---- per-group enable flags (1 = on, 0 = off) ---------------------\n    // When a group is off, its block is skipped and contributes nothing,\n    // regardless of the group's own setting values.\n    uniform float enScanlines;\n    uniform float enBulge;\n    uniform float enBorder;\n    uniform float enMask;\n    uniform float enBrightness;\n    uniform float enBloom;\n    uniform float enAberration;\n    uniform float enRoll;\n    uniform float enFlicker;\n    uniform float enInterlace;\n    uniform float enColor;\n    uniform float enGrain;\n\n    // Overlay: the called 2D layer, composited between camera + display.\n    uniform float enOverlay;      // 1 = composite the overlay layer\n    uniform sampler2D tOverlay;   // grabbed 2D layer (tagged sRGB, like tDiffuse)\n    uniform float overlayOpacity; // 0..1 fade for the overlay only\n    uniform float overlayGlow;     // phosphor bloom on the overlay (0 = none)\n\n    // Grain (animated pseudo-random noise, pure math, no textures).\n    uniform float grainAmount;    // 0..1 strength\n    uniform float grainSize;      // cell size in real pixels (1 fine .. coarse)\n    uniform float grainColor;     // 0 = mono film grain, 1 = full RGB static\n    uniform float grainSpeed;     // 0 = frozen, 1 = fast animation\n\n    // ---- color space helpers -----------------------------------------\n    // The render target is tagged sRGB (see JS), so sampling already gives\n    // linear-ish values for the GPU; we encode back to sRGB at the very end.\n    float ToSrgb1(float c){ return (c<0.0031308)?c*12.92:1.055*pow(c,0.41666)-0.055; }\n    vec3 ToSrgb(vec3 c){ return vec3(ToSrgb1(c.r),ToSrgb1(c.g),ToSrgb1(c.b)); }\n    // Overlay sampled premultiplied (rgb*a) -- used to bloom the UI's own light.\n    vec3 OverlayPM(vec2 uv){ vec4 s = texture2D(tOverlay, uv); return s.rgb * s.a; }\n\n    // Sample the scene at an emulated-grid position, zeroing off-screen\n    // reads (this is what darkens the curved edges into a vignette/border).\n    vec3 Fetch(vec2 pos, vec2 off){\n      pos = floor(pos*res+off)/res;\n      if (max(abs(pos.x-0.5), abs(pos.y-0.5)) > 0.5) return vec3(0.0);\n      return texture2D(tDiffuse, pos.xy).rgb;\n    }\n\n    vec2 Dist(vec2 pos){ pos = pos*res; return -((pos-floor(pos))-vec2(0.5)); }\n    float Gaus(float pos, float scale){ return exp2(scale*pos*pos); }\n\n    // 3-tap and 5-tap horizontal gaussian reconstruction of the scanline.\n    vec3 Horz3(vec2 pos, float off){\n      vec3 b = Fetch(pos, vec2(-1.0, off));\n      vec3 c = Fetch(pos, vec2( 0.0, off));\n      vec3 d = Fetch(pos, vec2( 1.0, off));\n      float dst = Dist(pos).x;\n      float wb = Gaus(dst-1.0, hardPix);\n      float wc = Gaus(dst+0.0, hardPix);\n      float wd = Gaus(dst+1.0, hardPix);\n      return (b*wb+c*wc+d*wd)/(wb+wc+wd);\n    }\n    vec3 Horz5(vec2 pos, float off){\n      vec3 a = Fetch(pos, vec2(-2.0, off));\n      vec3 b = Fetch(pos, vec2(-1.0, off));\n      vec3 c = Fetch(pos, vec2( 0.0, off));\n      vec3 d = Fetch(pos, vec2( 1.0, off));\n      vec3 e = Fetch(pos, vec2( 2.0, off));\n      float dst = Dist(pos).x;\n      float wa = Gaus(dst-2.0, hardPix);\n      float wb = Gaus(dst-1.0, hardPix);\n      float wc = Gaus(dst+0.0, hardPix);\n      float wd = Gaus(dst+1.0, hardPix);\n      float we = Gaus(dst+2.0, hardPix);\n      return (a*wa+b*wb+c*wc+d*wd+e*we)/(wa+wb+wc+wd+we);\n    }\n\n    float Scan(vec2 pos, float off){\n      float dst = Dist(pos).y;\n      return Gaus(dst+off, hardScan);\n    }\n\n    // Combine the three nearest scanlines, weighted by vertical distance.\n    vec3 Tri(vec2 pos){\n      vec3 a = Horz3(pos, -1.0);\n      vec3 b = Horz5(pos,  0.0);\n      vec3 c = Horz3(pos,  1.0);\n      float wa = Scan(pos, -1.0);\n      float wb = Scan(pos,  0.0);\n      float wc = Scan(pos,  1.0);\n      return a*wa + b*wb + c*wc;\n    }\n\n    // ---- Overlay reconstruction: SAME math as the scene, but sampling\n    // tOverlay, ALPHA-AWARE (vec4), and with the emulated resolution passed in\n    // so the amount can interpolate it. This is what gives the UI the footage's\n    // real scanlines + pixel structure instead of a flat block-snap.\n    vec4 FetchOv(vec2 pos, vec2 off, vec2 r){\n      pos = floor(pos*r+off)/r;\n      if (max(abs(pos.x-0.5), abs(pos.y-0.5)) > 0.5) return vec4(0.0);\n      return texture2D(tOverlay, pos.xy);\n    }\n    vec2 DistOv(vec2 pos, vec2 r){ pos = pos*r; return -((pos-floor(pos))-vec2(0.5)); }\n    vec4 Horz3Ov(vec2 pos, float off, vec2 r){\n      vec4 b = FetchOv(pos, vec2(-1.0, off), r);\n      vec4 c = FetchOv(pos, vec2( 0.0, off), r);\n      vec4 d = FetchOv(pos, vec2( 1.0, off), r);\n      float dst = DistOv(pos, r).x;\n      float wb = Gaus(dst-1.0, hardPix);\n      float wc = Gaus(dst+0.0, hardPix);\n      float wd = Gaus(dst+1.0, hardPix);\n      return (b*wb+c*wc+d*wd)/(wb+wc+wd);\n    }\n    vec4 Horz5Ov(vec2 pos, float off, vec2 r){\n      vec4 a = FetchOv(pos, vec2(-2.0, off), r);\n      vec4 b = FetchOv(pos, vec2(-1.0, off), r);\n      vec4 c = FetchOv(pos, vec2( 0.0, off), r);\n      vec4 d = FetchOv(pos, vec2( 1.0, off), r);\n      vec4 e = FetchOv(pos, vec2( 2.0, off), r);\n      float dst = DistOv(pos, r).x;\n      float wa = Gaus(dst-2.0, hardPix);\n      float wb = Gaus(dst-1.0, hardPix);\n      float wc = Gaus(dst+0.0, hardPix);\n      float wd = Gaus(dst+1.0, hardPix);\n      float we = Gaus(dst+2.0, hardPix);\n      return (a*wa+b*wb+c*wc+d*wd+e*we)/(wa+wb+wc+wd+we);\n    }\n    float ScanOv(vec2 pos, float off, vec2 r){\n      float dst = DistOv(pos, r).y;\n      return Gaus(dst+off, hardScan);\n    }\n    vec4 TriOv(vec2 pos, vec2 r){\n      vec4 a = Horz3Ov(pos, -1.0, r);\n      vec4 b = Horz5Ov(pos,  0.0, r);\n      vec4 c = Horz3Ov(pos,  1.0, r);\n      float wa = ScanOv(pos, -1.0, r);\n      float wb = ScanOv(pos,  0.0, r);\n      float wc = ScanOv(pos,  1.0, r);\n      // Scanlines darken the COLOUR (the look) but must NOT cut the overlay's\n      // COVERAGE -- otherwise the dark gaps become windows that let a bright 3D\n      // background punch through the text. So weight rgb by the scanline profile\n      // (un-normalized = dark gaps) but normalize alpha so opaque text stays\n      // opaque in the gaps (dark TEXT, not background).\n      vec3 rgb = a.rgb*wa + b.rgb*wb + c.rgb*wc;\n      float cov = (a.a*wa + b.a*wb + c.a*wc) / max(wa + wb + wc, 1e-4);\n      return vec4(rgb, cov);\n    }\n\n    // Screen curvature (\"bulge\"). Returns warped UVs.\n    vec2 Warp(vec2 pos){\n      pos = pos*2.0 - 1.0;\n      pos *= vec2(1.0 + (pos.y*pos.y)*warpX, 1.0 + (pos.x*pos.x)*warpY);\n      return pos*0.5 + 0.5;\n    }\n\n    // RGB shadow mask (rotated stripe pattern, in real pixels).\n    //\n    // MOIRE FIX: the original used hard if/else stripe boundaries, which are\n    // a razor-sharp full-frequency pattern. When that beats against the\n    // emulated-resolution grid it produces the screen-locked \"comb\" moire\n    // seen on flat surfaces. Here each channel's lit/unlit value is computed\n    // with a SMOOTH profile whose edge softness tracks the on-screen change\n    // rate of the pattern (fwidth), so the stripes anti-alias instead of\n    // aliasing. This removes the comb while keeping the shadow-mask look.\n    vec3 Mask(vec2 pos){\n      pos.x += pos.y*3.0;\n      // phase in [0,1) across one R-G-B triad\n      float ph = fract(pos.x/6.0);\n      // how much the phase changes per pixel -> our anti-alias width\n      float aa = fwidth(pos.x/6.0);\n      aa = clamp(aa, 0.0008, 0.5);\n\n      // Smooth \"is this channel the lit one\" weights centered on each third.\n      // Each channel ramps up near its band center and down away from it.\n      // Vectorized: the same math the old 3-iteration loop did, expressed as\n      // vec3 ops. smoothstep() takes scalar edges with a vec3 x, so the\n      // per-channel result is identical (no behavior change), one less loop.\n      vec3 center = vec3(0.1667, 0.5, 0.8333); // band centers for R,G,B\n      vec3 d = abs(ph - center);               // distance from each band center\n      d = min(d, 1.0 - d);                     // wrap into [0,0.5]\n      // band half-width is 1/6; smoothstep gives a soft lit region per channel.\n      vec3 w = 1.0 - smoothstep(0.1667 - aa, 0.1667 + aa, d);\n      // Blend between the dark floor and the lit level per channel.\n      return mix(vec3(maskDark), vec3(maskLight), w);\n    }\n\n    // ReShade-style highlight extraction with quadratic soft knee curve\n    vec3 ExtractBloom(vec3 c, float threshold, float knee) {\n      float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));\n      // Soft knee curve: smooth transition around threshold\n      float soft = clamp(luma - threshold + knee, 0.0, 2.0 * max(knee, 1e-4));\n      soft = (soft * soft) / (4.0 * max(knee, 1e-4));\n      float weight = max(soft, luma - threshold) / max(luma, 1e-4);\n      return c * clamp(weight, 0.0, 2.0);\n    }\n\n    // ReShade / Advanced Bloom multi-tier hierarchical diffusion\n    vec3 BloomGlow(vec2 uv) {\n      vec3 totalBloom = vec3(0.0);\n      float totalWeight = 0.0;\n      \n      // Core center sample\n      vec3 centerBloom = ExtractBloom(texture2D(tDiffuse, uv).rgb, bloomThreshold, bloomKnee);\n      totalBloom += centerBloom * 0.45;\n      totalWeight += 0.45;\n\n      // 4 progressive tiers covering tight specular highlights to wide atmospheric diffusion\n      float tiers[4];\n      tiers[0] = 1.0;\n      tiers[1] = 2.5;\n      tiers[2] = 6.0;\n      tiers[3] = 15.0;\n\n      float weights[4];\n      weights[0] = 0.35;\n      weights[1] = 0.25;\n      weights[2] = 0.20;\n      weights[3] = 0.12;\n      \n      vec2 baseStep = (enScanlines > 0.5 ? (1.0 / res) : (1.0 / max(dimensions, vec2(1.0, 1.0)))) * bloomRadius;\n      \n      for (int t = 0; t < 4; t++) {\n        vec2 step = baseStep * tiers[t];\n        vec3 tierCol = vec3(0.0);\n        \n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2( step.x, 0.0)).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2(-step.x, 0.0)).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2(0.0,  step.y)).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2(0.0, -step.y)).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2( step.x,  step.y) * 0.707).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2(-step.x,  step.y) * 0.707).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2( step.x, -step.y) * 0.707).rgb, bloomThreshold, bloomKnee);\n        tierCol += ExtractBloom(texture2D(tDiffuse, uv + vec2(-step.x, -step.y) * 0.707).rgb, bloomThreshold, bloomKnee);\n        \n        totalBloom += (tierCol / 8.0) * weights[t];\n        totalWeight += weights[t];\n      }\n      \n      return (totalBloom / max(totalWeight, 1e-4)) * bloomTint;\n    }\n\n    // Using code from another source this is rewritten.\n    float grainHash(vec2 p) {\n      vec3 p3 = fract(vec3(p.xyx) * .1031);\n      p3 += dot(p3, p3.yzx + 33.33);\n      return fract((p3.x + p3.y) * p3.z);\n    }\n\n    void main() {\n      // 3D-only image (no overlay) for the master-opacity blend at the end.\n      vec3 original = texture2D(tDiffuse, vUv).rgb;\n\n      // ============================================================\n      // GEOMETRY -- tube shape shared by camera + display (not graded).\n      // ============================================================\n\n      // --- Border (enBorder): per-side bezel inset. [unchanged]\n      vec2 uv = vUv;\n      float borderMask = 1.0;\n      if (enBorder > 0.5) {\n        vec2 lo = vec2(clamp(borderL, 0.0, 0.45), clamp(borderB, 0.0, 0.45));\n        vec2 hi = vec2(1.0 - clamp(borderR, 0.0, 0.45), 1.0 - clamp(borderT, 0.0, 0.45));\n        vec2 span = max(hi - lo, vec2(1e-3));\n        uv = (vUv - lo) / span;\n        vec2 e = max(fwidth(uv), vec2(1e-4));\n        vec2 m = smoothstep(vec2(0.0), e, uv) *\n                 (vec2(1.0) - smoothstep(vec2(1.0) - e, vec2(1.0), uv));\n        borderMask = m.x * m.y;\n      }\n\n      // --- Screen bulge (enBulge): curve the inset image. [unchanged]\n      vec2 pos = (enBulge > 0.5) ? Warp(uv) : uv;\n\n      // --- Image stretch. [unchanged]\n      pos = (pos - 0.5) / max(vec2(stretchX, stretchY), vec2(0.01)) + 0.5;\n\n      // ============================================================\n      // CAMERA / SIGNAL STAGE -- the filmed world ONLY. The overlay HUD\n      // must NOT receive any of this (it was never in front of the lens\n      // / on the tape grade).\n      //   CAMERA-ONLY: aberration, scanline reconstruction, bloom, colour.\n      // ============================================================\n\n      // --- Scanlines (enScanlines) + Aberration (enAberration). [CAMERA-ONLY]\n      vec3 col;\n      bool doScan = enScanlines > 0.5;\n      if (enAberration > 0.5 && aberration > 0.0) {\n        vec2 dir = (pos - 0.5);\n        vec2 ofs = dir * (aberration / res);\n        if (doScan) {\n          col.r = Tri(pos + ofs).r;\n          col.g = Tri(pos).g;\n          col.b = Tri(pos - ofs).b;\n        } else {\n          col.r = Fetch(pos + ofs, vec2(0.0)).r;\n          col.g = Fetch(pos, vec2(0.0)).g;\n          col.b = Fetch(pos - ofs, vec2(0.0)).b;\n        }\n      } else {\n        col = doScan ? Tri(pos) : Fetch(pos, vec2(0.0));\n      }\n\n      // --- Brightness (enBrightness). [STAYS camera-side: it drives bloom.]\n      //     NOTE: mask moved to the display stage below, so brightness no\n      //     longer pre-lifts a masked image, and the HUD is mask-dimmed with\n      //     no lift. If the HUD reads dark, pre-brighten the HUD layer or add\n      //     a small lift just before the mask block. Moving brightness whole\n      //     would break the bloom coupling (a 3D-look change), so it stays.\n      if (enBrightness > 0.5) {\n        col *= brightness;\n      }\n\n      // --- Bloom (enBloom). [CAMERA-ONLY: lens/optics glow on the world.]\n      if (enBloom > 0.5 && bloom > 0.0) {\n        vec3 glow = BloomGlow(pos);\n        if (enBrightness > 0.5) glow *= brightness;\n        col += glow * (bloom * 1.5);\n      }\n\n      // --- Colour grading (enColor). [CAMERA-ONLY: the footage grade.]\n      //     (tint is the one sub-component arguably a tube/phosphor property\n      //      -- split it out here if you ever want it on the HUD.)\n      if (enColor > 0.5) {\n        float luma = dot(col, vec3(0.299, 0.587, 0.114));\n        col = mix(vec3(luma), col, saturation);\n        col = (col - 0.5) * contrast + 0.5;\n        col = pow(max(col, 0.0), vec3(gammaCorrect));\n        col *= tint;\n      }\n\n      // ============================================================\n      // COMPOSITE -- lay the called 2D layer in between camera + display.\n      // Sampled at the warped 'pos' so the HUD follows curvature + stretch,\n      // but NOT Tri()-reconstructed (no re-pixelating) and NOT aberration-\n      // split. tOverlay is tagged sRGB like tDiffuse, so it samples in the\n      // SAME space as the scene -- composite directly, no manual decode; the\n      // ToSrgb() at the end encodes the combined result once. Killed outside\n      // the picture exactly like Fetch() does for the scene.\n      // ============================================================\n      if (enOverlay > 0.5) {\n        float inside = (max(abs(pos.x - 0.5), abs(pos.y - 0.5)) > 0.5) ? 0.0 : 1.0;\n        // PIXI RenderTexture -> Three is V-flipped (vertical only), so mirror V.\n        vec2 ovUv = vec2(pos.x, 1.0 - pos.y);\n        // Overlay is always reconstructed at the footage resolution (match is\n        // fixed at full). Mirror the scene: scanlines ON -> TriOv; scanlines OFF\n        // -> FetchOv (pixel-snap only, no gaps), so turning scanlines off stops\n        // affecting the UI exactly like the 3D.\n        vec4 ov = (enScanlines > 0.5) ? TriOv(ovUv, res) : FetchOv(ovUv, vec2(0.0), res);\n        // If the grab ever yields PREMULTIPLIED alpha, swap the mix for:\n        //   float a = clamp(ov.a*overlayOpacity,0.0,1.0)*inside;\n        //   col = col*(1.0-a) + ov.rgb*overlayOpacity*inside;\n        col = mix(col, ov.rgb, clamp(ov.a * overlayOpacity, 0.0, 1.0) * inside);\n\n        // Phosphor glow: bloom the overlay's OWN bright pixels so the UI reads\n        // as light emitted by a tube, not a flat decal. A small soft ring of\n        // premultiplied samples, added on top. Sharp source stays sharp; only\n        // the glow is soft. Gated so it costs nothing at 0.\n        if (overlayGlow > 0.0) {\n          vec2 r1 = 1.5 / dimensions;\n          vec2 r2 = 3.5 / dimensions;\n          vec3 g = OverlayPM(ovUv) * 0.5;\n          g += OverlayPM(ovUv + vec2( r1.x, 0.0));\n          g += OverlayPM(ovUv + vec2(-r1.x, 0.0));\n          g += OverlayPM(ovUv + vec2(0.0,  r1.y));\n          g += OverlayPM(ovUv + vec2(0.0, -r1.y));\n          g += OverlayPM(ovUv + vec2( r2.x,  r2.y)) * 0.5;\n          g += OverlayPM(ovUv + vec2(-r2.x,  r2.y)) * 0.5;\n          g += OverlayPM(ovUv + vec2( r2.x, -r2.y)) * 0.5;\n          g += OverlayPM(ovUv + vec2(-r2.x, -r2.y)) * 0.5;\n          g /= 6.5;\n          col += g * overlayGlow * inside;\n        }\n      }\n\n      // ============================================================\n      // DISPLAY STAGE -- the tube/tape the COMBINED image plays through.\n      // Everything here reaches the HUD too. The first four MOVED up from\n      // the camera side; each now runs after colour (e.g. mask multiplies\n      // the graded composite, not the pre-grade signal). Intentional shift.\n      // ============================================================\n\n      // --- Shadow mask (enMask). [MOVED to display: phosphor triad over all.]\n      if (enMask > 0.5) {\n        col *= Mask(vUv * dimensions);\n      }\n\n      // --- Interlacing (enInterlace). [MOVED to display.]\n      if (enInterlace > 0.5 && interlace > 0.0) {\n        float lineParity = mod(floor(pos.y * res.y) + floor(time*60.0), 2.0);\n        col *= mix(1.0, 1.0 - 0.5*interlace, lineParity);\n      }\n\n      // --- Rolling bar (enRoll). [MOVED to display.]\n      if (enRoll > 0.5 && rollSpeed != 0.0 && rollHeight > 0.0) {\n        float barPos = fract(pos.y - time*rollSpeed);\n        float bar = smoothstep(0.0, rollHeight, barPos) *\n                    (1.0 - smoothstep(rollHeight, rollHeight*2.0, barPos));\n        col *= 1.0 - 0.4*bar;\n      }\n\n      // --- Flicker (enFlicker). [MOVED to display.]\n      if (enFlicker > 0.5 && flicker > 0.0) {\n        float f = 1.0 - flicker * fract(sin(time*123.4)*43758.5453);\n        col *= f;\n      }\n\n      // --- Grain (enGrain). [already display-side: the tape medium.]\n      if (enGrain > 0.5 && grainAmount > 0.0) {\n        float cs = max(grainSize, 1.0);\n        // Key the grain cell off the WARPED coordinate (pos), not flat vUv, so\n        // the grain rides the tube curvature/stretch with the picture instead of\n        // staying on a flat rectangular grid when screen bulge is up.\n        vec2 cell = floor((pos * dimensions) / cs);\n        float t = floor(time * grainSpeed * 50.0);\n        vec3 n = vec3(\n          grainHash(cell + vec2(t, t * 7.13)),\n          grainHash(cell + vec2(t * 3.71, t * 11.29)),\n          grainHash(cell + vec2(t * 5.83, t * 17.91))\n        ) - 0.5;\n        vec3 noise = mix(vec3(n.r), n, clamp(grainColor, 0.0, 1.0));\n        float gluma = dot(col, vec3(0.299, 0.587, 0.114));\n        float response = mix(1.0, 1.0 - sqrt(clamp(gluma, 0.0, 1.0)), 0.5);\n        // Clip grain to the warped picture region (same off-screen test the\n        // scene sampling uses), so grain rides the bulge and stops at the curved\n        // edge instead of sitting flat on the black margins the bulge creates.\n        float gInside = (max(abs(pos.x - 0.5), abs(pos.y - 0.5)) > 0.5) ? 0.0 : 1.0;\n        col += noise * grainAmount * response * gInside;\n      }\n\n      // --- Border kill: blacks out the bezel for the combined image. [display]\n      col *= borderMask;\n\n      // ============================================================\n      // OUTPUT\n      // ============================================================\n      vec3 outRgb = ToSrgb(max(col, 0.0));\n      // master-mix blends against the 3D-only 'original', so as intensity\n      // drops the HUD fades out with the effect (power-on fade keeps HUD +\n      // CRT together). To keep the HUD at intensity 0, composite it back in\n      // on this line instead of relying on 'col'.\n      gl_FragColor = vec4(mix(original, outRgb, clamp(intensity, 0.0, 1.0)), 1.0);\n    }\n  `;\n\n  // ===================================================================\n  // SHARED SETTINGS\n  // Both the behavior and the actions write here. Read fresh every frame\n  // by the processor, so any change (editor seed, runtime action, preset,\n  // fade) takes effect immediately. Units/ranges noted per field.\n  // ===================================================================\n  const DEFAULTS = {\n    enabled: true,\n    // Master strength of the whole effect. 0 = original image, 1 = full CRT.\n    intensity: 1.0,\n\n    // Scanline + pixel shape\n    scanlineHardness: -8.0,   // -16 hard .. -4 soft\n    pixelHardness: -3.0,      // -6 hard .. -2 soft\n\n    // Resolution of the emulated grid. scanlineCount (absolute virtual\n    // vertical resolution) takes priority when > 0; otherwise pixelSize\n    // (realResolution / pixelSize) is used.\n    scanlineCount: 240,       // 0 to use pixelSize instead\n    pixelSize: 6.0,           // only used when scanlineCount == 0\n\n    // Curvature + framing\n    screenBulge: 1.0,         // 0 flat, 1 = original Lottes curve, 2 = strong\n    border: 0.0,              // master black bezel inset, 0..0.45 of the screen\n    // Per-side EXTRA inset added on top of the master border (0..0.45 each).\n    // All 0 => uniform bezel from `border` alone. Lets one side be deeper.\n    borderLeft: 0.0,\n    borderRight: 0.0,\n    borderTop: 0.0,\n    borderBottom: 0.0,\n    // Independent X/Y image stretch (1 = unchanged, >1 stretch, <1 squash).\n    stretchX: 1.0,\n    stretchY: 1.0,\n\n    // Shadow mask\n    shadowMaskDarkLevel: 0.5, // 0..1\n    shadowMaskLightLevel: 1.5,// >= 1\n\n    // Tone\n    brightness: 1.2,          // 1 = none\n    bloom: 0.0,               // 0..~5 (intensity scale)\n    bloomThreshold: 0.25,      // 0..2 (brightness cutoff, default 0.7)\n    bloomRadius: 5.0,         // 1..50 (blur radius spread, default 4.0)\n    bloomKnee: 0.5,           // 0..1 (soft-knee transition curve, default 0.5)\n    bloomTintR: 1.0, bloomTintG: 1.0, bloomTintB: 1.0, // bloom tint multipliers\n\n    // Glitch / motion\n    aberration: 0.0,          // 0..~3 emulated pixels\n    rollSpeed: 0.0,           // 0 = off\n    rollHeight: 0.1,          // 0..1\n    flicker: 0.0,             // 0..~0.2\n    interlace: 0.0,           // 0 off .. 1 full\n\n    // Color grading\n    saturation: 1.0,          // 0 grayscale, 1 normal, >1 boosted\n    contrast: 1.0,            // 1 = none\n    gamma: 1.0,               // 1 = none\n    tintR: 1.0, tintG: 1.0, tintB: 1.0, // phosphor tint (1,1,1 = none)\n\n    // Grain (animated noise). Amount 0 = none; size/color/speed shape the look\n    // (fine static .. coarse VHS, mono film grain .. colour static, frozen ..\n    // fast). Speed defaults to animated so raising amount gives moving grain.\n    grainAmount: 0.0,         // 0..1\n    grainSize: 1.0,           // >= 1 real pixels per cell\n    grainColor: 0.0,          // 0 mono .. 1 colour\n    grainSpeed: 1.0,          // 0 frozen .. 1 fast\n\n    // --- Per-group enable flags. ALL DEFAULT OFF: a freshly-added effect\n    //     does nothing until a group is switched on. Each gates its block\n    //     in the shader regardless of that group's setting values.\n    enScanlines: false,\n    enBulge: false,\n    enBorder: false,\n    enMask: false,\n    enBrightness: false,\n    enBloom: false,\n    enAberration: false,\n    enRoll: false,\n    enFlicker: false,\n    enInterlace: false,\n    enColor: false,\n    enGrain: false,\n\n    // Overlay layer compositing. OFF until an action names a layer.\n    enOverlay: false,\n    overlayOpacity: 1.0,   // 0..1, fades only the overlay\n    overlayGlow: 0.0,      // phosphor bloom on the overlay: bright UI glows like it's on a tube (0 = off; ~0.3-0.8 typical)\n    overlayLayerName: '',  // which 2D layer to pull in ('' = none)\n  };\n\n  // The single live settings object the whole extension shares.\n  const settings = Object.assign({}, DEFAULTS);\n\n  // ===================================================================\n  // THE PROCESSOR\n  // Owns the render target, the shader material, and the render() wrap.\n  // One instance lives on the renderer (renderer.__crtLottesProcessor).\n  // ===================================================================\n  class CRTLottesPostProcessor {\n    constructor(threeRenderer) {\n      this.renderer = threeRenderer;\n\n      // If set, only render() calls using THIS layer's current camera get\n      // the effect. Resolved live each frame so it survives the camera\n      // object being recreated (scene change, layer re-init).\n      this.targetLayerRenderer = null;\n\n      // Overlay textures (filled by _ensureOverlay when an action calls a layer).\n      this._overlayTexture = null;\n      this._pixiRT = null;\n      // The live scene, refreshed every frame (see ensureProcessor). The\n      // render() hook fires mid-frame with no scene argument, so the overlay\n      // grab reads this instead of a stale closure-captured scene.\n      this._runtimeScene = null;\n\n      this._startTime = (typeof performance !== 'undefined' ? performance.now() : Date.now());\n\n      this._renderTarget = new THREE.WebGLRenderTarget(2, 2);\n      // Tag the target sRGB so materials encode to sRGB when drawn into it,\n      // matching how GDevelop draws to the canvas (prevents double-darkening).\n      if (THREE.SRGBColorSpace !== undefined) {\n        this._renderTarget.texture.colorSpace = THREE.SRGBColorSpace;\n      } else if (THREE.sRGBEncoding !== undefined) {\n        this._renderTarget.texture.encoding = THREE.sRGBEncoding; // r<152\n      }\n\n      this._quadScene = new THREE.Scene();\n      this._quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);\n      this._material = new THREE.ShaderMaterial({\n        uniforms: {\n          tDiffuse: { value: null },\n          dimensions: { value: new THREE.Vector2() },\n          res: { value: new THREE.Vector2() },\n          time: { value: 0 },\n          hardScan: { value: 0 }, hardPix: { value: 0 },\n          warpX: { value: 0 }, warpY: { value: 0 },\n          borderL: { value: 0 }, borderR: { value: 0 },\n          borderT: { value: 0 }, borderB: { value: 0 },\n          stretchX: { value: 1 }, stretchY: { value: 1 },\n          maskDark: { value: 0 }, maskLight: { value: 0 },\n          brightness: { value: 1 }, bloom: { value: 0 }, bloomThreshold: { value: 0.25 }, bloomRadius: { value: 5.0 }, bloomKnee: { value: 0.5 }, bloomTint: { value: new THREE.Vector3(1, 1, 1) },\n          aberration: { value: 0 }, rollSpeed: { value: 0 },\n          rollHeight: { value: 0.1 }, flicker: { value: 0 },\n          interlace: { value: 0 }, saturation: { value: 1 },\n          contrast: { value: 1 }, gammaCorrect: { value: 1 },\n          tint: { value: new THREE.Vector3(1, 1, 1) },\n          intensity: { value: 1 },\n          enScanlines: { value: 0 }, enBulge: { value: 0 },\n          enBorder: { value: 0 }, enMask: { value: 0 },\n          enBrightness: { value: 0 }, enBloom: { value: 0 },\n          enAberration: { value: 0 }, enRoll: { value: 0 },\n          enFlicker: { value: 0 }, enInterlace: { value: 0 },\n          enColor: { value: 0 }, enGrain: { value: 0 },\n          grainAmount: { value: 0 }, grainSize: { value: 1 },\n          grainColor: { value: 0 }, grainSpeed: { value: 1 },\n          enOverlay: { value: 0 }, tOverlay: { value: null },\n          overlayOpacity: { value: 1 },\n          overlayGlow: { value: 0 },\n        },\n        vertexShader,\n        fragmentShader,\n        depthTest: false,\n        depthWrite: false,\n        // fwidth() in the anti-aliased Mask() needs the derivatives\n        // extension when the renderer runs as WebGL1 (it's built in on\n        // WebGL2). Setting this is harmless on WebGL2.\n        extensions: { derivatives: true },\n      });\n      this._quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this._material);\n      this._quad.frustumCulled = false;\n      this._quadScene.add(this._quad);\n\n      // ---- Install the render() wrap. FRAGILE: there is no public\n      // post-process hook in GDevelop, so we override render(). If a\n      // future GDJS changes how 3D is rendered this is the line to revisit.\n      this._isComposing = false;\n      this._originalRender = threeRenderer.render.bind(threeRenderer);\n\n      const self = this;\n      threeRenderer.render = function (scene, camera) {\n        // Re-entrancy guard (our own passes call the original), plus the\n        // enabled flag and optional per-layer camera targeting.\n        if (self._isComposing || !settings.enabled || !self._shouldApplyEffect(camera)) {\n          return self._originalRender(scene, camera);\n        }\n        self._isComposing = true;\n        try {\n          self._renderWithEffect(scene, camera);\n        } catch (e) {\n          // Never let a bad frame crash the whole game loop. Fall back to\n          // a normal render and log once-ish.\n          if (!self._erroredOnce) {\n            console.error('CRT3D: effect render failed, falling back to normal render.', e);\n            self._erroredOnce = true;\n          }\n          self._originalRender(scene, camera);\n        } finally {\n          self._isComposing = false;\n        }\n      };\n\n      threeRenderer.__crtLottesProcessor = this;\n    }\n\n    _shouldApplyEffect(camera) {\n      const lr = this.targetLayerRenderer;\n      if (!lr) return true; // no specific layer -> all 3D rendering\n      if (typeof lr.getThreeCamera !== 'function') return true;\n      const targetCam = lr.getThreeCamera();\n      return !targetCam || camera === targetCam;\n    }\n\n    _renderWithEffect(scene, camera) {\n      const renderer = this.renderer;\n      const size = renderer.getSize(new THREE.Vector2());\n      const pixelRatio = renderer.getPixelRatio() || 1;\n      const w = Math.max(1, Math.round(size.x * pixelRatio));\n      const h = Math.max(1, Math.round(size.y * pixelRatio));\n      if (this._renderTarget.width !== w || this._renderTarget.height !== h) {\n        this._renderTarget.setSize(w, h);\n      }\n\n      // (1) Render the scene into our off-screen target. Force a clear of\n      //     color+depth: GDevelop may run with autoClear off between its\n      //     own layer passes, and a stale depth buffer here makes distant\n      //     geometry (walls/ceiling/floor) fail the depth test and vanish.\n      const prevTarget = renderer.getRenderTarget();\n      renderer.setRenderTarget(this._renderTarget);\n      renderer.clear();\n      this._originalRender(scene, camera);\n      renderer.setRenderTarget(prevTarget);\n\n      // (1b) Overlay grab. Only when an action switched it on AND named a\n      //      layer. Uncalled => skipped entirely: no layer render, no readback,\n      //      no upload, so it costs nothing on the default path.\n      if (settings.enOverlay && settings.overlayLayerName && this._runtimeScene) {\n        this._ensureOverlay(this._runtimeScene, settings.overlayLayerName, w, h);\n      }\n\n      // (2) Push current settings into the shader uniforms.\n      this._updateUniforms(w, h);\n\n      // (3) Draw the full-screen CRT quad over whatever is on the canvas,\n      //     without clearing it (so 2D UI drawn earlier stays).\n      const prevAutoClear = renderer.autoClear;\n      renderer.autoClear = false;\n      this._originalRender(this._quadScene, this._quadCamera);\n      renderer.autoClear = prevAutoClear;\n    }\n\n    _updateUniforms(w, h) {\n      const u = this._material.uniforms;\n      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());\n      u.time.value = (now - this._startTime) / 1000;\n      u.tDiffuse.value = this._renderTarget.texture;\n      u.dimensions.value.set(w, h);\n\n      // Emulated resolution: absolute scanline count wins; else divisor.\n      if (settings.scanlineCount > 0) {\n        const resY = Math.max(2, Math.round(settings.scanlineCount));\n        const resX = Math.max(2, Math.round(resY * (w / h)));\n        u.res.value.set(resX, resY);\n      } else {\n        const divisor = Math.max(settings.pixelSize, 1);\n        u.res.value.set(w / divisor, h / divisor);\n      }\n\n      u.hardScan.value = settings.scanlineHardness;\n      u.hardPix.value = settings.pixelHardness;\n\n      const bulge = Math.max(settings.screenBulge, 0);\n      u.warpX.value = bulge / 32;\n      u.warpY.value = bulge / 24;\n\n      // Effective per-side inset = master border + that side's offset, each\n      // clamped, then capped so opposite sides can't collapse the picture.\n      var bm = settings.border;\n      u.borderL.value = Math.min(Math.max(bm + settings.borderLeft, 0), 0.45);\n      u.borderR.value = Math.min(Math.max(bm + settings.borderRight, 0), 0.45);\n      u.borderT.value = Math.min(Math.max(bm + settings.borderTop, 0), 0.45);\n      u.borderB.value = Math.min(Math.max(bm + settings.borderBottom, 0), 0.45);\n      u.stretchX.value = settings.stretchX;\n      u.stretchY.value = settings.stretchY;\n      u.maskDark.value = settings.shadowMaskDarkLevel;\n      u.maskLight.value = settings.shadowMaskLightLevel;\n      u.brightness.value = settings.brightness;\n      u.bloom.value = settings.bloom;\n      u.bloomThreshold.value = settings.bloomThreshold;\n      u.bloomRadius.value = settings.bloomRadius;\n      u.bloomKnee.value = settings.bloomKnee;\n      u.bloomTint.value.set(settings.bloomTintR, settings.bloomTintG, settings.bloomTintB);\n      u.aberration.value = settings.aberration;\n      u.rollSpeed.value = settings.rollSpeed;\n      u.rollHeight.value = settings.rollHeight;\n      u.flicker.value = settings.flicker;\n      u.interlace.value = settings.interlace;\n      u.saturation.value = settings.saturation;\n      u.contrast.value = settings.contrast;\n      u.gammaCorrect.value = settings.gamma;\n      u.tint.value.set(settings.tintR, settings.tintG, settings.tintB);\n      u.grainAmount.value = settings.grainAmount;\n      u.grainSize.value = settings.grainSize;\n      u.grainColor.value = settings.grainColor;\n      u.grainSpeed.value = settings.grainSpeed;\n      u.intensity.value = settings.intensity;\n\n      // Per-group enable flags (bool -> 1/0 for the shader).\n      u.enScanlines.value = settings.enScanlines ? 1 : 0;\n      u.enBulge.value = settings.enBulge ? 1 : 0;\n      u.enBorder.value = settings.enBorder ? 1 : 0;\n      u.enMask.value = settings.enMask ? 1 : 0;\n      u.enBrightness.value = settings.enBrightness ? 1 : 0;\n      u.enBloom.value = settings.enBloom ? 1 : 0;\n      u.enAberration.value = settings.enAberration ? 1 : 0;\n      u.enRoll.value = settings.enRoll ? 1 : 0;\n      u.enFlicker.value = settings.enFlicker ? 1 : 0;\n      u.enInterlace.value = settings.enInterlace ? 1 : 0;\n      u.enColor.value = settings.enColor ? 1 : 0;\n      u.enGrain.value = settings.enGrain ? 1 : 0;\n      u.tOverlay.value = this._overlayTexture || null;\n      u.enOverlay.value = (settings.enOverlay && this._overlayTexture) ? 1 : 0;\n      u.overlayOpacity.value = settings.overlayOpacity;\n      u.overlayGlow.value = settings.overlayGlow;\n    }\n\n    _ensureOverlay(runtimeScene, layerName, w, h) {\n      // Capture the named 2D layer's PIXI container into a RenderTexture and\n      // bind its GL handle into a Three texture (zero-copy; shared GL context).\n      // Any failure leaves _overlayTexture null so the composite self-disables.\n      try {\n        const gr = runtimeScene.getGame().getRenderer();\n        const pixi = gr.getPIXIRenderer && gr.getPIXIRenderer();\n        const three = this.renderer;\n        if (!pixi || !three || typeof PIXI === 'undefined') { this._overlayTexture = null; return; }\n\n        const layer = runtimeScene.getLayer(layerName);\n        const lr = layer && layer.getRenderer && layer.getRenderer();\n        const container = lr && lr._pixiContainer;   // the layer's 2D objects\n        if (!container) { this._overlayTexture = null; return; }\n\n        // Our own RenderTexture to capture into.\n        if (!this._pixiRT) {\n          this._pixiRT = PIXI.RenderTexture.create({ width: w, height: h });\n        } else if (this._pixiRT.width !== w || this._pixiRT.height !== h) {\n          this._pixiRT.resize(w, h);\n        }\n        this._pixiRTOwned = true;\n\n        // Re-sync PIXI's GL state BEFORE rendering (Three left the shared\n        // context in its own state, so PIXI would otherwise capture nothing).\n        try { if (pixi.reset) pixi.reset(); } catch (e) {}\n\n        // Force the container drawable for the capture, render, then restore.\n        const pv = container.visible, pr = container.renderable, pa = container.alpha;\n        container.visible = true; container.renderable = true; container.alpha = 1;\n        pixi.render(container, { renderTexture: this._pixiRT, clear: true });\n        container.visible = pv; container.renderable = pr; container.alpha = pa;\n\n        // Rebind PIXI to the SCREEN framebuffer, or every other 2D layer\n        // GDevelop draws later this frame inherits the RenderTexture's flipped\n        // projection and comes out mirrored.\n        try { if (pixi.renderTexture && pixi.renderTexture.bind) pixi.renderTexture.bind(null); } catch (e) {}\n        try { if (pixi.reset) pixi.reset(); } catch (e) {}\n\n        // Hand the context back to Three cleanly before it draws the quad.\n        try { if (three.resetState) three.resetState(); } catch (e) {}\n\n        // Bind the captured RT's GL texture into a Three texture, zero-copy.\n        const base = this._pixiRT.baseTexture;\n        if (pixi.texture && pixi.texture.bind) pixi.texture.bind(base, 0);\n        const glRec = base._glTextures && base._glTextures[pixi.CONTEXT_UID];\n        const glHandle = glRec && glRec.texture;\n        if (!glHandle) { this._overlayTexture = null; return; }\n\n        if (!this._overlayTexture) {\n          const t = new THREE.Texture();\n          t.isRenderTargetTexture = true;\n          t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter;\n          t.generateMipmaps = false;\n          if (THREE.SRGBColorSpace !== undefined) t.colorSpace = THREE.SRGBColorSpace;\n          else if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;\n          this._overlayTexture = t;\n        }\n        const props = three.properties && three.properties.get(this._overlayTexture);\n        if (props) { props.__webglTexture = glHandle; props.__webglInit = true; }\n        else { this._overlayTexture = null; }\n      } catch (e) {\n        this._overlayTexture = null;\n      }\n    }\n\n    dispose() {\n      try { this.renderer.render = this._originalRender; } catch (e) {}\n      delete this.renderer.__crtLottesProcessor;\n      try { this._renderTarget.dispose(); } catch (e) {}\n      try { this._material.dispose(); } catch (e) {}\n      try { this._quad.geometry.dispose(); } catch (e) {}\n      try {\n        // Clear the borrowed GL handle so Three doesn't delete PIXI's texture,\n        // then dispose our wrapper.\n        if (this._overlayTexture) {\n          const p = this.renderer.properties && this.renderer.properties.get(this._overlayTexture);\n          if (p) { p.__webglTexture = undefined; p.__webglInit = false; }\n          try { this._overlayTexture.dispose(); } catch (e) {}\n          this._overlayTexture = null;\n        }\n      } catch (e) {}\n      try { if (this._pixiRT && this._pixiRTOwned) { this._pixiRT.destroy(true); } this._pixiRT = null; } catch (e) {}\n    }\n  }\n\n  // ===================================================================\n  // INTERNAL HELPERS\n  // ===================================================================\n\n  // Safely get the Three.js renderer (returns null if 3D isn't ready).\n  const getThreeRenderer = (runtimeScene) => {\n    try {\n      const gameRenderer = runtimeScene.getGame().getRenderer();\n      return gameRenderer && gameRenderer.getThreeRenderer\n        ? gameRenderer.getThreeRenderer() : null;\n    } catch (e) { return null; }\n  };\n\n  const getProcessor = (runtimeScene) => {\n    const r = getThreeRenderer(runtimeScene);\n    return r ? (r.__crtLottesProcessor || null) : null;\n  };\n\n  // Create the processor on demand (or return the existing one).\n  const ensureProcessor = (runtimeScene) => {\n    if (typeof THREE === 'undefined') {\n      console.warn('CRT3D: THREE is not available (no 3D in this game yet?).');\n      return null;\n    }\n    const r = getThreeRenderer(runtimeScene);\n    if (!r) {\n      // The Three.js renderer is created lazily once a 3D layer renders.\n      // Callers should retry on a later frame (the behavior does this).\n      return null;\n    }\n    const processor = r.__crtLottesProcessor || new CRTLottesPostProcessor(r);\n    // Stamp the LIVE scene every frame (tick() -> ensureProcessor()). Without\n    // this the overlay grab would resolve layers against whatever scene first\n    // created the processor, breaking the HUD on every later scene.\n    processor._runtimeScene = runtimeScene;\n    return processor;\n  };\n\n  // Point the effect at a specific layer's camera (or all 3D if empty/missing).\n  const targetLayer = (runtimeScene, processor, layerName) => {\n    if (!processor) return;\n    if (layerName && runtimeScene.hasLayer && runtimeScene.hasLayer(layerName)) {\n      try {\n        const layer = runtimeScene.getLayer(layerName);\n        const lr = layer && layer.getRenderer && layer.getRenderer();\n        processor.targetLayerRenderer =\n          (lr && typeof lr.getThreeCamera === 'function') ? lr : null;\n      } catch (e) { processor.targetLayerRenderer = null; }\n    } else {\n      processor.targetLayerRenderer = null;\n    }\n  };\n\n  // ===================================================================\n  // PUBLIC API  (camelCase JS internals; the extension's PascalCase\n  // actions/conditions/expressions wrap these.)\n  // ===================================================================\n  gdjs._crtLottes3D = {\n    CRTLottesPostProcessor,\n    settings,\n    DEFAULTS,\n\n    // --- lifecycle ----------------------------------------------------\n    startEffect(runtimeScene, layer3D) {\n      const processor = ensureProcessor(runtimeScene);\n      if (!processor) return false;\n      settings.enabled = true;\n      targetLayer(runtimeScene, processor, layer3D);\n      return true;\n    },\n\n    stopEffect(runtimeScene) {\n      settings.enabled = false;\n    },\n\n    isEnabled(runtimeScene) {\n      const processor = getProcessor(runtimeScene);\n      return !!(processor && settings.enabled);\n    },\n\n    // Called by the behavior each frame so the renderer hook gets created\n    // as soon as 3D is ready.\n    tick(runtimeScene, layer3D) {\n      const processor = ensureProcessor(runtimeScene);\n      if (!processor) return false;\n      if (layer3D !== undefined) targetLayer(runtimeScene, processor, layer3D);\n      return true;\n    },\n\n    dispose(runtimeScene) {\n      const processor = getProcessor(runtimeScene);\n      if (processor) processor.dispose();\n    },\n\n    setBool(name, value) {\n      if (Object.prototype.hasOwnProperty.call(DEFAULTS, name)) settings[name] = !!value;\n    },\n\n    // --- Overlay layer (the called 2D layer, e.g. a HUD) -------------\n    renderOverlayLayer(runtimeScene, layerName) {\n      settings.overlayLayerName = layerName || '';\n      settings.enOverlay = !!settings.overlayLayerName;\n      // Stamp the scene now too, so the action works even on a scene that has\n      // no 3DCRT+ behavior object driving tick().\n      const _p = getProcessor(runtimeScene);\n      if (_p) _p._runtimeScene = runtimeScene;\n      // [DEV WARN] If the chosen layer sits at/above the 3D layer in the list,\n      // GDevelop draws it raw on top of the quad and the HUD escapes the effect\n      // (the exact bug this feature prevents). Needs the scene's layer-order\n      // accessor to compare indices; emit one console.warn once that's\n      // confirmed. Left unwired rather than guessing a method name.\n    },\n    stopOverlayLayer(runtimeScene) {\n      settings.enOverlay = false;\n    },\n    setOverlayOpacity(runtimeScene, v) {\n      settings.overlayOpacity = Math.min(Math.max(v, 0), 1);\n    },\n    setOverlayGlow(runtimeScene, v) {\n      settings.overlayGlow = Math.max(v, 0);\n    },\n\n    // ------------------------------------------------------------------\n    // GROUP ENABLE FLAGS\n    // Each effect group is switched on/off by name. Off = the group's\n    // block is skipped in the shader (neutral), no matter its values.\n    // Valid groups: Scanlines, Bulge, Border, Mask, Brightness, Bloom,\n    // Aberration, Roll, Flicker, Interlace, Color.\n    // ------------------------------------------------------------------\n    _groupKey(group) {\n      var key = 'en' + group;\n      return Object.prototype.hasOwnProperty.call(DEFAULTS, key) ? key : null;\n    },\n    setGroupEnabled(rs, group, on) {\n      var key = this._groupKey(group);\n      if (key) settings[key] = !!on;\n    },\n    isGroupEnabled(rs, group) {\n      var key = this._groupKey(group);\n      return key ? !!settings[key] : false;\n    },\n\n    // ------------------------------------------------------------------\n    // SCALE CONVERSIONS\n    // The public actions/behavior speak in FRIENDLY units; these helpers\n    // convert to/from the shader's internal units. Keeping the conversion\n    // here (not in the shader) means the risky shader code is untouched.\n    //\n    //   opacity:        friendly 0..255   <-> internal 0..1\n    //   scanlineThick:  friendly 0..100   <-> internal hardScan -4..-16\n    //   pixelSharp:     friendly 0..100   <-> internal hardPix  -2..-6\n    //   border:         friendly 0..45    <-> internal 0..0.45\n    //   flicker:        friendly 0..20    <-> internal 0..0.2\n    //   bloom:          friendly 0..100   <-> internal 0..1\n    //   maskDark:       friendly 0..100   <-> internal 0..1\n    // ------------------------------------------------------------------\n    _clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); },\n\n    // --- master opacity (0-255) ---\n    setOpacity(rs, v) { settings.intensity = this._clamp(v, 0, 255) / 255; },\n    getOpacity() { return Math.round(settings.intensity * 255); },\n\n    // --- scanlines: friendly \"bigger = more\" ---\n    setScanlineThickness(rs, v) {\n      v = this._clamp(v, 0, 100);\n      settings.scanlineHardness = -4 - (v / 100) * 12; // 0->-4 soft, 100->-16 hard\n    },\n    getScanlineThickness() {\n      return Math.round(((-4 - settings.scanlineHardness) / 12) * 100);\n    },\n    setPixelSharpness(rs, v) {\n      v = this._clamp(v, 0, 100);\n      settings.pixelHardness = -2 - (v / 100) * 4; // 0->-2 soft, 100->-6 sharp\n    },\n    getPixelSharpness() {\n      return Math.round(((-2 - settings.pixelHardness) / 4) * 100);\n    },\n    setScanlineCount(rs, v) { settings.scanlineCount = Math.max(Math.round(v), 0); },\n    getScanlineCount() { return settings.scanlineCount; },\n    setPixelSize(rs, v) { settings.pixelSize = Math.max(v, 1); },\n    getPixelSize() { return settings.pixelSize; },\n\n    // --- shape ---\n    setScreenBulge(rs, v) { settings.screenBulge = Math.max(v, 0); },\n    getScreenBulge() { return settings.screenBulge; },\n    setBorder(rs, v) { settings.border = this._clamp(v, 0, 45) / 100; },     // 0-45 -> 0-0.45 (master, all sides)\n    getBorder() { return Math.round(settings.border * 100); },\n    // Per-side EXTRA inset, friendly 0-45 -> internal 0-0.45, added on top of\n    // the master border for that side. 0 => that side uses the master only.\n    setBorderLeft(rs, v) { settings.borderLeft = this._clamp(v, 0, 45) / 100; },\n    getBorderLeft() { return Math.round(settings.borderLeft * 100); },\n    setBorderRight(rs, v) { settings.borderRight = this._clamp(v, 0, 45) / 100; },\n    getBorderRight() { return Math.round(settings.borderRight * 100); },\n    setBorderTop(rs, v) { settings.borderTop = this._clamp(v, 0, 45) / 100; },\n    getBorderTop() { return Math.round(settings.borderTop * 100); },\n    setBorderBottom(rs, v) { settings.borderBottom = this._clamp(v, 0, 45) / 100; },\n    getBorderBottom() { return Math.round(settings.borderBottom * 100); },\n\n    // --- image stretch (friendly percent 25-400, 100 = unchanged) ---\n    setImageStretchX(rs, v) { settings.stretchX = this._clamp(v, 25, 400) / 100; },\n    getImageStretchX() { return Math.round(settings.stretchX * 100); },\n    setImageStretchY(rs, v) { settings.stretchY = this._clamp(v, 25, 400) / 100; },\n    getImageStretchY() { return Math.round(settings.stretchY * 100); },\n\n    // --- shadow mask ---\n    setShadowMaskDarkLevel(rs, v) { settings.shadowMaskDarkLevel = this._clamp(v, 0, 100) / 100; }, // 0-100 -> 0-1\n    getShadowMaskDarkLevel() { return Math.round(settings.shadowMaskDarkLevel * 100); },\n    setShadowMaskLightLevel(rs, v) { settings.shadowMaskLightLevel = v; },\n    getShadowMaskLightLevel() { return settings.shadowMaskLightLevel; },\n\n    // --- tone ---\n    setBrightness(rs, v) { settings.brightness = v; },\n    getBrightness() { return settings.brightness; },\n    setBloom(rs, v) { settings.bloom = Math.max(v, 0) / 100; },\n    getBloom() { return Math.round(settings.bloom * 100); },\n    setBloomThreshold(rs, v) { settings.bloomThreshold = this._clamp(v, 0, 200) / 100; }, // friendly 0-200 -> 0.0-2.0\n    getBloomThreshold() { return Math.round(settings.bloomThreshold * 100); },\n    setBloomRadius(rs, v) { settings.bloomRadius = this._clamp(v, 1, 50); }, // friendly 1-50 -> 1.0-50.0\n    getBloomRadius() { return Math.round(settings.bloomRadius); },\n    setBloomKnee(rs, v) { settings.bloomKnee = this._clamp(v, 0, 100) / 100; }, // friendly 0-100 -> 0.0-1.0\n    getBloomKnee() { return Math.round(settings.bloomKnee * 100); },\n    setBloomTint(rs, r, g, b) { settings.bloomTintR = Math.max(r, 0); settings.bloomTintG = Math.max(g, 0); settings.bloomTintB = Math.max(b, 0); },\n    getBloomTintR() { return settings.bloomTintR; },\n    getBloomTintG() { return settings.bloomTintG; },\n    getBloomTintB() { return settings.bloomTintB; },\n\n    // --- glitch ---\n    setAberration(rs, v) { settings.aberration = Math.max(v, 0); },\n    getAberration() { return settings.aberration; },\n    setRollSpeed(rs, v) { settings.rollSpeed = v; },\n    getRollSpeed() { return settings.rollSpeed; },\n    setRollHeight(rs, v) { settings.rollHeight = this._clamp(v, 0, 1); },\n    getRollHeight() { return settings.rollHeight; },\n    setFlicker(rs, v) { settings.flicker = this._clamp(v, 0, 20) / 100; },    // 0-20 -> 0-0.2\n    getFlicker() { return Math.round(settings.flicker * 100); },\n    setInterlace(rs, v) { settings.interlace = this._clamp(v, 0, 1); },\n    getInterlace() { return settings.interlace; },\n\n    // --- color ---\n    setSaturation(rs, v) { settings.saturation = Math.max(v, 0); },\n    getSaturation() { return settings.saturation; },\n    setContrast(rs, v) { settings.contrast = v; },\n    getContrast() { return settings.contrast; },\n    setGamma(rs, v) { settings.gamma = Math.max(v, 0.01); },\n    getGamma() { return settings.gamma; },\n    setTint(rs, r, g, b) { settings.tintR = r; settings.tintG = g; settings.tintB = b; },\n    getTintR() { return settings.tintR; },\n    getTintG() { return settings.tintG; },\n    getTintB() { return settings.tintB; },\n\n    // --- grain (animated noise) ---\n    setGrainAmount(rs, v) { settings.grainAmount = this._clamp(v, 0, 100) / 100; }, // 0-100 -> 0-1\n    getGrainAmount() { return Math.round(settings.grainAmount * 100); },\n    setGrainSize(rs, v) { settings.grainSize = this._clamp(v, 1, 100); },           // pixels per cell\n    getGrainSize() { return Math.round(settings.grainSize); },\n    setGrainColor(rs, v) { settings.grainColor = this._clamp(v, 0, 100) / 100; },   // 0 mono -> 100 colour\n    getGrainColor() { return Math.round(settings.grainColor * 100); },\n    setGrainSpeed(rs, v) { settings.grainSpeed = this._clamp(v, 0, 100) / 100; },   // 0 frozen -> 100 fast\n    getGrainSpeed() { return Math.round(settings.grainSpeed * 100); },\n  };\n}",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetGrainAmount",
+      "fullName": "Set CRT grain amount",
+      "description": "Set CRT grain amount to _PARAM1_.",
+      "sentence": "Set CRT grain amount to _PARAM1_",
+      "group": "3DCRT+ - Grain",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Grain amount (0-100)",
+          "longDescription": "Noise strength. 0 = none. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setGrainAmount(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetGrainSize",
+      "fullName": "Set CRT grain size",
+      "description": "Set CRT grain size to _PARAM1_.",
+      "sentence": "Set CRT grain size to _PARAM1_",
+      "group": "3DCRT+ - Grain",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Grain size (1-100)",
+          "longDescription": "1 = fine static, higher = coarse VHS. Default: 1.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setGrainSize(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetGrainColor",
+      "fullName": "Set CRT grain colour",
+      "description": "Set CRT grain colour to _PARAM1_.",
+      "sentence": "Set CRT grain colour to _PARAM1_",
+      "group": "3DCRT+ - Grain",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Grain colour (0-100)",
+          "longDescription": "0 = mono film grain, 100 = colour static. Default: 0.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setGrainColor(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetGrainSpeed",
+      "fullName": "Set CRT grain speed",
+      "description": "Set CRT grain speed to _PARAM1_.",
+      "sentence": "Set CRT grain speed to _PARAM1_",
+      "group": "3DCRT+ - Grain",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Grain speed (0-100)",
+          "longDescription": "0 = frozen, 100 = fast. Default: 100.",
+          "defaultValue": "0",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setGrainSpeed(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderGrainAmount",
+      "fullName": "ShaderRenderGrainAmount",
+      "description": "Current value: grain amount.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getGrainAmount();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderGrainSize",
+      "fullName": "ShaderRenderGrainSize",
+      "description": "Current value: grain size.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getGrainSize();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderGrainColor",
+      "fullName": "ShaderRenderGrainColor",
+      "description": "Current value: grain colour.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getGrainColor();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderGrainSpeed",
+      "fullName": "ShaderRenderGrainSpeed",
+      "description": "Current value: grain speed.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getGrainSpeed();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetEffectEnabled",
+      "fullName": "Enable or disable a CRT effect",
+      "description": "Enable or disable a single CRT effect group.",
+      "sentence": "Enable CRT effect _PARAM1_: _PARAM2_",
+      "group": "3DCRT+ - Toggle effects",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Effect",
+          "type": "stringWithSelector",
+          "description": "Effect",
+          "supplementaryInformation": "[\"Scanlines\",\"Bulge\",\"Border\",\"Mask\",\"Brightness\",\"Bloom\",\"Aberration\",\"Roll\",\"Flicker\",\"Interlace\",\"Color\",\"Grain\"]",
+          "longDescription": "Which CRT effect group to toggle.",
+          "optional": false
+        },
+        {
+          "name": "Enable",
+          "type": "yesorno",
+          "description": "Enable?",
+          "longDescription": "Yes = turn the effect on, No = turn it off.",
+          "defaultValue": "yes",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "var on = eventsFunctionContext.getArgument(\"Enable\");\non = (on === true || on === \"yes\" || on === \"true\" || on === 1);\ngdjs._crtLottes3D.setGroupEnabled(runtimeScene, eventsFunctionContext.getArgument(\"Effect\"), on);",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "EffectIsEnabled",
+      "fullName": "A CRT effect is enabled",
+      "description": "Check whether a single CRT effect group is on.",
+      "sentence": "CRT effect _PARAM1_ is enabled",
+      "group": "3DCRT+ - Toggle effects",
+      "functionType": "Condition",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Effect",
+          "type": "stringWithSelector",
+          "description": "Effect",
+          "supplementaryInformation": "[\"Scanlines\",\"Bulge\",\"Border\",\"Mask\",\"Brightness\",\"Bloom\",\"Aberration\",\"Roll\",\"Flicker\",\"Interlace\",\"Color\",\"Grain\"]",
+          "longDescription": "Which CRT effect group to toggle.",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.isGroupEnabled(runtimeScene, eventsFunctionContext.getArgument(\"Effect\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "RenderOverlayLayer",
+      "fullName": "Render a 2D layer through the effect",
+      "description": "Pull a 2D layer (e.g. a HUD) into the CRT pipeline. It is composited after colour grading but before the display effects (mask, grain, bezel), so it escapes the colour grade yet still gets mask/grain/bezel. The layer must sit BELOW the 3D layer in the layer list and be hidden in normal rendering.",
+      "sentence": "Render 2D layer _PARAM1_ through the CRT effect",
+      "group": "3DCRT+ - Overlay",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "OverlayLayer",
+          "type": "layer",
+          "description": "2D layer to render through the effect",
+          "longDescription": "Must be below the 3D layer in the editor's layer list, and otherwise hidden.",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.renderOverlayLayer(runtimeScene, eventsFunctionContext.getArgument(\"OverlayLayer\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "StopOverlayLayer",
+      "fullName": "Stop rendering the 2D layer through the effect",
+      "description": "Stop compositing the overlay layer through the CRT effect.",
+      "sentence": "Stop rendering the 2D overlay layer through the CRT effect",
+      "group": "3DCRT+ - Overlay",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.stopOverlayLayer(runtimeScene);",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetOverlayOpacity",
+      "fullName": "Set overlay layer opacity",
+      "description": "Set the overlay-only fade to _PARAM1_ (0 = hidden, 1 = full).",
+      "sentence": "Set CRT overlay opacity to _PARAM1_",
+      "group": "3DCRT+ - Overlay",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Opacity",
+          "longDescription": "0..1. Default 1.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setOverlayOpacity(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetOverlayGlow",
+      "fullName": "Set overlay UI glow",
+      "description": "Phosphor bloom on the overlay (UI): bright UI elements glow like light on a tube, so the overlay reads as on-screen rather than pasted on. _PARAM1_ = strength (0 = off, ~0.3-0.8 typical).",
+      "sentence": "Set CRT overlay UI glow to _PARAM1_",
+      "group": "3DCRT+ - Overlay",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Glow strength",
+          "longDescription": "0 = off. Around 0.3-0.8 looks like a lit tube. The UI itself stays sharp; only the glow is soft.",
+          "defaultValue": "0.5",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setOverlayGlow(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBloomThreshold",
+      "fullName": "Set shader render bloom threshold",
+      "description": "Set shader render bloom brightness threshold to _PARAM1_ (0-200, default 25 = 0.25). Lower values make dimmer areas bloom.",
+      "sentence": "Set shader render bloom threshold to _PARAM1_",
+      "group": "3DCRT+ - Tone",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Threshold (0-200)",
+          "longDescription": "Brightness cutoff point (70 = 0.7). Lower = more bloom across midtones. Default: 70.",
+          "defaultValue": "25",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBloomThreshold(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBloomRadius",
+      "fullName": "Set shader render bloom blur radius",
+      "description": "Set shader render bloom blur spread radius to _PARAM1_ (1-50, default 4). Controls how wide the glow diffuses across the screen.",
+      "sentence": "Set shader render bloom blur radius to _PARAM1_",
+      "group": "3DCRT+ - Tone",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Radius (1-50)",
+          "longDescription": "Spread of the bloom glow. Default: 4.",
+          "defaultValue": "4",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBloomRadius(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBloomKnee",
+      "fullName": "Set shader render bloom soft knee",
+      "description": "Set shader render bloom soft-knee transition to _PARAM1_ (0-100, default 50 = 0.5). Smooths the boundary between glowing and non-glowing areas.",
+      "sentence": "Set shader render bloom soft knee to _PARAM1_",
+      "group": "3DCRT+ - Tone",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Value",
+          "type": "number",
+          "description": "Soft knee (0-100)",
+          "longDescription": "Transition softness curve. 0 = sharp cutoff, 100 = very soft ramp. Default: 50.",
+          "defaultValue": "50",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBloomKnee(runtimeScene, eventsFunctionContext.getArgument(\"Value\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "SetBloomTint",
+      "fullName": "Set shader render bloom tint",
+      "description": "Set the bloom glow tint multiplier (1, 1, 1 = neutral white glow). Colorizes the glowing halos.",
+      "sentence": "Set shader render bloom tint to _PARAM1_, _PARAM2_, _PARAM3_",
+      "group": "3DCRT+ - Tone",
+      "functionType": "Action",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Red",
+          "type": "number",
+          "description": "Red multiplier",
+          "longDescription": "1 = neutral.",
+          "defaultValue": "1",
+          "optional": false
+        },
+        {
+          "name": "Green",
+          "type": "number",
+          "description": "Green multiplier",
+          "longDescription": "1 = neutral.",
+          "defaultValue": "1",
+          "optional": false
+        },
+        {
+          "name": "Blue",
+          "type": "number",
+          "description": "Blue multiplier",
+          "longDescription": "1 = neutral.",
+          "defaultValue": "1",
+          "optional": false
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "gdjs._crtLottes3D.setBloomTint(runtimeScene, eventsFunctionContext.getArgument(\"Red\"), eventsFunctionContext.getArgument(\"Green\"), eventsFunctionContext.getArgument(\"Blue\"));",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloomThreshold",
+      "fullName": "ShaderRenderBloomThreshold",
+      "description": "Current value: shader render bloom threshold (0-200).",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloomThreshold();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloomRadius",
+      "fullName": "ShaderRenderBloomRadius",
+      "description": "Current value: shader render bloom blur radius (1-50).",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloomRadius();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloomKnee",
+      "fullName": "ShaderRenderBloomKnee",
+      "description": "Current value: shader render bloom soft knee (0-100).",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloomKnee();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloomTintRed",
+      "fullName": "ShaderRenderBloomTintRed",
+      "description": "Current value: bloom tint red multiplier.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloomTintR();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloomTintGreen",
+      "fullName": "ShaderRenderBloomTintGreen",
+      "description": "Current value: bloom tint green multiplier.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloomTintG();",
+          "parameterObjects": ""
+        }
+      ]
+    },
+    {
+      "name": "ShaderRenderBloomTintBlue",
+      "fullName": "ShaderRenderBloomTintBlue",
+      "description": "Current value: bloom tint blue multiplier.",
+      "group": "3DCRT+ - Values",
+      "functionType": "Expression",
+      "private": false,
+      "parameters": [],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "eventsFunctionContext.returnValue = gdjs._crtLottes3D.getBloomTintB();",
+          "parameterObjects": ""
+        }
+      ]
+    }
+  ],
+  "eventsBasedBehaviors": [
+    {
+      "description": "Attach to a (usually invisible) manager object in your 3D scene. Each effect has a checkbox (all off by default) - tick the ones you want and set their values, right in the editor. You can also toggle and tune everything from events. One manager per scene.",
+      "fullName": "3DCRT+ shader effect (manager)",
+      "name": "CRT3D",
+      "objectType": "",
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "// The library is declared in onFirstSceneLoaded; this instance starts\n// syncing on its first doStepPreEvents.\n",
+              "parameterObjects": ""
+            }
+          ]
+        },
+        {
+          "name": "doStepPreEvents",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "// Per-frame sync: opacity, each group's enable checkbox, the group's\n// settings (through named setters so scale conversions apply), then tick.\nif (!gdjs._crtLottes3D) return;\nvar object = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;\nif (!object) return;\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar behavior = object.getBehavior(behaviorName);\nif (!behavior) return;\ntry {\n  gdjs._crtLottes3D.setBool('enabled', true);\n    gdjs._crtLottes3D.setOpacity(runtimeScene, behavior._getOpacity());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Scanlines\", behavior._getEnableScanlines());\n    gdjs._crtLottes3D.setScanlineThickness(runtimeScene, behavior._getScanlineThickness());\n    gdjs._crtLottes3D.setPixelSharpness(runtimeScene, behavior._getPixelSharpness());\n    gdjs._crtLottes3D.setScanlineCount(runtimeScene, behavior._getScanlineCount());\n    gdjs._crtLottes3D.setPixelSize(runtimeScene, behavior._getPixelSize());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Bulge\", behavior._getEnableBulge());\n    gdjs._crtLottes3D.setScreenBulge(runtimeScene, behavior._getScreenBulge());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Border\", behavior._getEnableBorder());\n    gdjs._crtLottes3D.setBorder(runtimeScene, behavior._getBorder());\n    gdjs._crtLottes3D.setBorderLeft(runtimeScene, behavior._getBorderLeft());\n    gdjs._crtLottes3D.setBorderRight(runtimeScene, behavior._getBorderRight());\n    gdjs._crtLottes3D.setBorderTop(runtimeScene, behavior._getBorderTop());\n    gdjs._crtLottes3D.setBorderBottom(runtimeScene, behavior._getBorderBottom());\n    gdjs._crtLottes3D.setImageStretchX(runtimeScene, behavior._getImageStretchX());\n    gdjs._crtLottes3D.setImageStretchY(runtimeScene, behavior._getImageStretchY());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Mask\", behavior._getEnableMask());\n    gdjs._crtLottes3D.setShadowMaskDarkLevel(runtimeScene, behavior._getMaskDark());\n    gdjs._crtLottes3D.setShadowMaskLightLevel(runtimeScene, behavior._getMaskLight());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Brightness\", behavior._getEnableBrightness());\n    gdjs._crtLottes3D.setBrightness(runtimeScene, behavior._getBrightness());\n        gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Bloom\", behavior._getEnableBloom());\n    gdjs._crtLottes3D.setBloom(runtimeScene, behavior._getBloom());\n    if (typeof behavior._getBloomThreshold === 'function') gdjs._crtLottes3D.setBloomThreshold(runtimeScene, behavior._getBloomThreshold());\n    if (typeof behavior._getBloomRadius === 'function') gdjs._crtLottes3D.setBloomRadius(runtimeScene, behavior._getBloomRadius());\n    if (typeof behavior._getBloomKnee === 'function') gdjs._crtLottes3D.setBloomKnee(runtimeScene, behavior._getBloomKnee());\n    if (typeof behavior._getBloomTintR === 'function') gdjs._crtLottes3D.setBloomTint(runtimeScene, behavior._getBloomTintR(), behavior._getBloomTintG(), behavior._getBloomTintB());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Aberration\", behavior._getEnableAberration());\n    gdjs._crtLottes3D.setAberration(runtimeScene, behavior._getAberration());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Roll\", behavior._getEnableRoll());\n    gdjs._crtLottes3D.setRollSpeed(runtimeScene, behavior._getRollSpeed());\n    gdjs._crtLottes3D.setRollHeight(runtimeScene, behavior._getRollHeight());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Flicker\", behavior._getEnableFlicker());\n    gdjs._crtLottes3D.setFlicker(runtimeScene, behavior._getFlicker());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Interlace\", behavior._getEnableInterlace());\n    gdjs._crtLottes3D.setInterlace(runtimeScene, behavior._getInterlace());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Color\", behavior._getEnableColor());\n    gdjs._crtLottes3D.setSaturation(runtimeScene, behavior._getSaturation());\n    gdjs._crtLottes3D.setContrast(runtimeScene, behavior._getContrast());\n    gdjs._crtLottes3D.setGamma(runtimeScene, behavior._getGamma());\n    gdjs._crtLottes3D.setTint(runtimeScene, behavior._getTintR(), behavior._getTintG(), behavior._getTintB());\n    gdjs._crtLottes3D.setGroupEnabled(runtimeScene, \"Grain\", behavior._getEnableGrain());\n    gdjs._crtLottes3D.setGrainAmount(runtimeScene, behavior._getGrainAmount());\n    gdjs._crtLottes3D.setGrainSize(runtimeScene, behavior._getGrainSize());\n    gdjs._crtLottes3D.setGrainColor(runtimeScene, behavior._getGrainColor());\n    gdjs._crtLottes3D.setGrainSpeed(runtimeScene, behavior._getGrainSpeed());\n  gdjs._crtLottes3D.tick(runtimeScene, behavior._getTargetLayer());\n} catch (e) {\n  if (!gdjs._crtLottes3D._behaviorErrored) {\n    console.error('3DCRT+ behavior sync failed:', e);\n    gdjs._crtLottes3D._behaviorErrored = true;\n  }\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (gdjs._crtLottes3D) { try { gdjs._crtLottes3D.stopEffect(runtimeScene); } catch(e){} }\n",
+              "parameterObjects": ""
+            }
+          ]
+        }
+      ],
+      "propertyDescriptors": [
+        {
+          "value": "255",
+          "type": "Number",
+          "label": "Opacity (0-255)",
+          "description": "Master strength. 0 = off, 255 = full.",
+          "group": "Master",
+          "name": "Opacity"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Scanlines",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Scanlines",
+          "name": "EnableScanlines"
+        },
+        {
+          "value": "33",
+          "type": "Number",
+          "label": "Scanline thickness (0-100)",
+          "description": "0 thin, 100 thick.",
+          "group": "Scanlines",
+          "name": "ScanlineThickness"
+        },
+        {
+          "value": "25",
+          "type": "Number",
+          "label": "Pixel sharpness (0-100)",
+          "description": "0 soft, 100 sharp.",
+          "group": "Scanlines",
+          "name": "PixelSharpness"
+        },
+        {
+          "value": "240",
+          "type": "Number",
+          "label": "Scanline count",
+          "description": "Virtual vertical resolution. 0 = use pixel size.",
+          "group": "Scanlines",
+          "name": "ScanlineCount"
+        },
+        {
+          "value": "6",
+          "type": "Number",
+          "label": "Pixel size",
+          "description": "Only used when scanline count is 0.",
+          "group": "Scanlines",
+          "name": "PixelSize"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Screen bulge",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Screen bulge",
+          "name": "EnableBulge"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Screen bulge",
+          "description": "0 flat, 1 classic, 2 strong.",
+          "group": "Screen bulge",
+          "name": "ScreenBulge"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Border",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Border",
+          "name": "EnableBorder"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Border size (0-45)",
+          "description": "Black bezel around the picture.",
+          "group": "Border",
+          "name": "Border"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Border left extra (0-45)",
+          "description": "Extra inset added to the left side on top of Border size.",
+          "group": "Border",
+          "name": "BorderLeft"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Border right extra (0-45)",
+          "description": "Extra inset added to the right side on top of Border size.",
+          "group": "Border",
+          "name": "BorderRight"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Border top extra (0-45)",
+          "description": "Extra inset added to the top side on top of Border size.",
+          "group": "Border",
+          "name": "BorderTop"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Border bottom extra (0-45)",
+          "description": "Extra inset added to the bottom side on top of Border size.",
+          "group": "Border",
+          "name": "BorderBottom"
+        },
+        {
+          "value": "100",
+          "type": "Number",
+          "label": "Image stretch X (25-400%)",
+          "description": "Horizontal stretch of the rendered image. 100 = unchanged.",
+          "group": "Shape",
+          "name": "ImageStretchX"
+        },
+        {
+          "value": "100",
+          "type": "Number",
+          "label": "Image stretch Y (25-400%)",
+          "description": "Vertical stretch of the rendered image. 100 = unchanged.",
+          "group": "Shape",
+          "name": "ImageStretchY"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Shadow mask",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Shadow mask",
+          "name": "EnableMask"
+        },
+        {
+          "value": "50",
+          "type": "Number",
+          "label": "Mask dark level (0-100)",
+          "description": "0 = black gaps.",
+          "group": "Shadow mask",
+          "name": "MaskDark"
+        },
+        {
+          "value": "1.5",
+          "type": "Number",
+          "label": "Mask light level (1+)",
+          "description": "Boost for lit subpixels.",
+          "group": "Shadow mask",
+          "name": "MaskLight"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Brightness",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Brightness",
+          "name": "EnableBrightness"
+        },
+        {
+          "value": "1.2",
+          "type": "Number",
+          "label": "Brightness",
+          "description": "Offsets scan/mask dimming.",
+          "group": "Brightness",
+          "name": "Brightness"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Bloom",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Bloom",
+          "name": "EnableBloom"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Bloom intensity (0-100)",
+          "description": "Strength of the bloom glow. 0 = none. Values above 100 boost glow intensity.",
+          "group": "Bloom",
+          "name": "Bloom"
+        },
+        {
+          "value": "25",
+          "type": "Number",
+          "label": "Bloom threshold (0-200)",
+          "description": "Brightness cutoff point where bloom begins (25 = 0.25). Lower = more glow on normal surfaces, higher = only specular/emissive lights. Default: 25.",
+          "group": "Bloom",
+          "name": "BloomThreshold"
+        },
+        {
+          "value": "5",
+          "type": "Number",
+          "label": "Bloom blur radius (1-20)",
+          "description": "Spread of the bloom glow across the screen. Default 5.",
+          "group": "Bloom",
+          "name": "BloomRadius"
+        },
+        {
+          "value": "50",
+          "type": "Number",
+          "label": "Bloom soft knee (0-100)",
+          "description": "Softness of the threshold transition curve (50 = 0.5).",
+          "group": "Bloom",
+          "name": "BloomKnee"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Bloom tint red",
+          "description": "Red color multiplier for the bloom glow (1 = normal).",
+          "group": "Bloom",
+          "name": "BloomTintR"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Bloom tint green",
+          "description": "Green color multiplier for the bloom glow (1 = normal).",
+          "group": "Bloom",
+          "name": "BloomTintG"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Bloom tint blue",
+          "description": "Blue color multiplier for the bloom glow (1 = normal).",
+          "group": "Bloom",
+          "name": "BloomTintB"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Chromatic aberration",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Chromatic aberration",
+          "name": "EnableAberration"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Chromatic aberration (0-3)",
+          "description": "Edge color fringing.",
+          "group": "Chromatic aberration",
+          "name": "Aberration"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Roll",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Roll",
+          "name": "EnableRoll"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Roll speed",
+          "description": "0 = off.",
+          "group": "Roll",
+          "name": "RollSpeed"
+        },
+        {
+          "value": "0.1",
+          "type": "Number",
+          "label": "Roll height (0-1)",
+          "description": "Rolling bar thickness.",
+          "group": "Roll",
+          "name": "RollHeight"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Flicker",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Flicker",
+          "name": "EnableFlicker"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Flicker (0-20)",
+          "description": "Per-frame brightness wobble.",
+          "group": "Flicker",
+          "name": "Flicker"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Interlacing",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Interlacing",
+          "name": "EnableInterlace"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Interlacing (0-1)",
+          "description": "Dims alternate lines; can flicker on high-refresh.",
+          "group": "Interlacing",
+          "name": "Interlace"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Color",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Color",
+          "name": "EnableColor"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Saturation",
+          "description": "0 grayscale, 1 normal.",
+          "group": "Color",
+          "name": "Saturation"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Contrast",
+          "description": "1 = none.",
+          "group": "Color",
+          "name": "Contrast"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Gamma",
+          "description": "1 = none.",
+          "group": "Color",
+          "name": "Gamma"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Tint red",
+          "description": "1 = none.",
+          "group": "Color",
+          "name": "TintR"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Tint green",
+          "description": "1 = none.",
+          "group": "Color",
+          "name": "TintG"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Tint blue",
+          "description": "1 = none.",
+          "group": "Color",
+          "name": "TintB"
+        },
+        {
+          "value": "",
+          "type": "String",
+          "label": "Target 3D layer",
+          "description": "Layer to apply the effect to. Empty = all 3D rendering.",
+          "group": "Master",
+          "name": "TargetLayer"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Enable Grain",
+          "description": "Turn this effect on. Off by default.",
+          "group": "Grain",
+          "name": "EnableGrain"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Grain amount (0-100)",
+          "description": "Noise strength. 0 = none.",
+          "group": "Grain",
+          "name": "GrainAmount"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Grain size (1-100)",
+          "description": "Cell size: 1 = fine static, high = coarse VHS.",
+          "group": "Grain",
+          "name": "GrainSize"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Grain colour (0-100)",
+          "description": "0 = mono film grain, 100 = colour static.",
+          "group": "Grain",
+          "name": "GrainColor"
+        },
+        {
+          "value": "100",
+          "type": "Number",
+          "label": "Grain speed (0-100)",
+          "description": "Animation rate. 0 = frozen, 100 = fast.",
+          "group": "Grain",
+          "name": "GrainSpeed"
+        }
+      ]
+    }
+  ],
+  "eventsBasedObjects": []
+}

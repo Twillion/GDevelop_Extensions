@@ -1,0 +1,1022 @@
+{
+  "author": "Twillion",
+  "category": "Visual effect",
+  "description": "Advanced diffuse BRDF material control for 3D objects. v3.2: Patches Three.js shader at runtime by safely replacing BRDF_Lambert calls inside RE_Direct_Physical with a custom dispatcher. Robust to Three.js version changes. Retains GDevelop lights, shadows, PBR specular, normal maps, and all built-in 3D features. v3.2: Adds 7 diffuse models (half-lambert, wrap, lommel-seeliger, velvet/sheen, ashikhmin-shirley, fresnel-diffuse, kajiya-kay) and a CurrentBRDFIndex numeric expression.",
+  "extensionNamespace": "",
+  "fullName": "BRDF Materials",
+  "gdevelopVersion": ">=5.3.0",
+  "helpPath": "",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImciIGN4PSIzNSUiIGN5PSIzMCUiIHI9Ijc1JSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZiIvPjxzdG9wIG9mZnNldD0iNTUlIiBzdG9wLWNvbG9yPSIjNmFhMGZmIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMTczYTdhIi8+PC9yYWRpYWxHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==",
+  "name": "BRDFMaterials",
+  "previewIconUrl": "",
+  "shortDescription": "Diffuse BRDF shaders (Lambert, Burley, Oren-Nayar, Minnaert, Toon, Callisto, Half-Lambert, Wrap, Lommel-Seeliger, Velvet, Ashikhmin-Shirley, Fresnel-diffuse, Kajiya-Kay) for 3D objects.",
+  "version": "3.2.0",
+  "tags": [
+    "3d",
+    "material",
+    "shader",
+    "brdf",
+    "pbr",
+    "rendering"
+  ],
+  "authorIds": [],
+  "dependencies": [],
+  "globalVariables": [],
+  "sceneVariables": [],
+  "eventsFunctions": [],
+  "eventsBasedBehaviors": [
+    {
+      "description": "Applies a custom diffuse BRDF (Lambert, Burley, Oren-Nayar, Minnaert, Toon, Callisto) to 3D objects via onBeforeCompile. Patches Three.js MeshStandard/Physical material's BRDF_Lambert call at runtime, preserving all GDevelop lights, shadows, and PBR specular.",
+      "fullName": "BRDF Material",
+      "name": "BRDFMaterial",
+      "objectType": "",
+      "eventsFunctions": [
+        {
+          "description": "",
+          "fullName": "",
+          "functionType": "Action",
+          "group": "",
+          "name": "onCreated",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) {\n  gdjs._brdfMaterials = (function () {\n\n    var MODE_INT = {\n      'lambert': 0, 'burley': 1, 'oren-nayar': 2,\n      'minnaert': 3, 'toon': 4, 'callisto': 5,\n      'half-lambert': 6, 'wrap': 7, 'lommel-seeliger': 8, 'velvet': 9,\n      'ashikhmin-shirley': 10, 'fresnel-diffuse': 11, 'kajiya-kay': 12\n    };\n\n    var BRDF_UNIFORMS_AND_HELPERS = [\n      \"\",\n      \"// ── BRDFMaterials v3.1 ────────────────────────────────────────────────\",\n      \"uniform float uBrdfMode;\",\n      \"uniform float uBrdfRoughness;\",\n      \"uniform float uDiffFresnel;\",\n      \"uniform float uDiffFresnelFall;\",\n      \"uniform float uDiffFresnelTanFall;\",\n      \"uniform float uRetroRefl;\",\n      \"uniform float uRetroReflFall;\",\n      \"uniform float uRetroReflTanFall;\",\n      \"uniform float uSmoothTerm;\",\n      \"uniform float uSmoothTermLen;\",\n      \"\",\n      \"float brdf_burley(vec3 N,vec3 L,vec3 V,float r){\",\n      \"  float NoL=max(dot(N,L),0.0);float NoV=max(dot(N,V),0.0);\",\n      \"  vec3 H=normalize(L+V);float LoH=max(dot(L,H),0.0);\",\n      \"  float f=0.5+2.0*r*LoH*LoH;\",\n      \"  float ls=1.0+(f-1.0)*pow(max(1.0-NoL,0.0),5.0);\",\n      \"  float vs=1.0+(f-1.0)*pow(max(1.0-NoV,0.0),5.0);\",\n      \"  return ls*vs*NoL*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_orenNayar(vec3 N,vec3 L,vec3 V,float r){\",\n      \"  float NoL=max(dot(N,L),0.0);float NoV=max(dot(N,V),0.0);\",\n      \"  vec3 Lp=L-N*dot(L,N);vec3 Vp=V-N*dot(V,N);\",\n      \"  float lL=length(Lp);float lV=length(Vp);\",\n      \"  float cp=(lL>1e-5&&lV>1e-5)?max(0.0,dot(Lp/lL,Vp/lV)):0.0;\",\n      \"  float a=acos(clamp(NoL,0.0,1.0));float b=acos(clamp(NoV,0.0,1.0));\",\n      \"  float s2=r*r;\",\n      \"  float A=1.0-0.5*(s2/(s2+0.33));float B=0.45*(s2/(s2+0.09));\",\n      \"  return NoL*(A+B*cp*sin(max(a,b))*tan(min(a,b)))*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_minnaert(vec3 N,vec3 L,vec3 V,float r){\",\n      \"  float NoL=max(dot(N,L),0.001);float NoV=max(dot(N,V),0.001);\",\n      \"  return NoL*pow(NoL*NoV,1.0-r)*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_toon(vec3 N,vec3 L,float r){\",\n      \"  float NoL=max(dot(N,L),0.0);float bands=mix(2.0,8.0,r);\",\n      \"  return (floor(NoL*bands)/bands)*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_rR(float x){return 2.0*(1.0-x);}\",\n      \"float brdf_hF(float cT,float n,float cP,float m){\",\n      \"  return pow(max(1.0-cT,0.0),5.0*n)*pow(max(cP,0.0),5.0*m);\",\n      \"}\",\n      \"float brdf_callisto(vec3 N,vec3 L,vec3 V,float rF,float nf,float mf,float rR,float nr,float mr,float o,float p){\",\n      \"  float NoL=max(dot(N,L),0.0);\",\n      \"  vec3 H=normalize(L+V);\",\n      \"  float cTh=max(dot(N,H),0.0);float cTd=max(dot(L,H),0.0);\",\n      \"  float aF=brdf_hF(cTd,brdf_rR(nf),cTh,brdf_rR(mf));\",\n      \"  float aR=brdf_hF(cTh,brdf_rR(nr),cTd,brdf_rR(mr));\",\n      \"  float c1=mix(1.0,rF,aF)*mix(1.0,rR,aR);\",\n      \"  float as_=1.0-pow(max(1.0-cTh,0.0),3.0);\",\n      \"  float pp=max(p,0.001);\",\n      \"  float c2=mix(1.0,smoothstep(0.0,pp,NoL),-clamp(o,-1.0,1.0)*as_);\",\n      \"  return c1*NoL*c2*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_halfLambert(vec3 N,vec3 L){\",\n      \"  float h=dot(N,L)*0.5+0.5;return h*h*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_wrap(vec3 N,vec3 L,float r){\",\n      \"  float w=r;float d=max((dot(N,L)+w)/((1.0+w)*(1.0+w)),0.0);return d*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_lommelSeeliger(vec3 N,vec3 L,vec3 V){\",\n      \"  float NoL=max(dot(N,L),0.0);float NoV=max(dot(N,V),0.0);\",\n      \"  return 0.5*NoL/max(NoL+NoV,1e-4);\",\n      \"}\",\n      \"float brdf_velvet(vec3 N,vec3 L,vec3 V,float r){\",\n      \"  float NoL=max(dot(N,L),0.0);float NoV=max(dot(N,V),0.0);\",\n      \"  float sheen=pow(max(1.0-NoV,0.0),mix(8.0,1.5,r));\",\n      \"  return (NoL+sheen)*0.5*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_ashikhmin(vec3 N,vec3 L,vec3 V){\",\n      \"  float NoL=max(dot(N,L),0.0);float NoV=max(dot(N,V),0.0);\",\n      \"  float Rs=0.04;float f=(28.0/(23.0*PI))*(1.0-Rs);\",\n      \"  float a=1.0-pow(1.0-0.5*NoL,5.0);float b=1.0-pow(1.0-0.5*NoV,5.0);\",\n      \"  return f*a*b*NoL;\",\n      \"}\",\n      \"float brdf_fresnelDiffuse(vec3 N,vec3 L,vec3 V){\",\n      \"  float NoL=max(dot(N,L),0.0);float NoV=max(dot(N,V),0.0);\",\n      \"  float F=0.04+0.96*pow(max(1.0-NoV,0.0),5.0);\",\n      \"  return NoL*(1.0-F)*RECIPROCAL_PI;\",\n      \"}\",\n      \"float brdf_kajiyaKay(vec3 N,vec3 L,float r){\",\n      \"  vec3 up=normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz);\",\n      \"  vec3 T=cross(N,up);float tl=length(T);\",\n      \"  T=(tl>1e-4)?T/tl:normalize(cross(N,normalize((viewMatrix*vec4(1.0,0.0,0.0,0.0)).xyz)));\",\n      \"  float ToL=dot(T,L);float dd=sqrt(max(1.0-ToL*ToL,0.0));\",\n      \"  dd=pow(dd,mix(1.0,4.0,r));return dd*RECIPROCAL_PI;\",\n      \"}\",\n      \"vec3 brdfCustom(const in vec3 diffuseColor, const in vec3 N, const in vec3 L, const in vec3 V){\",\n      \"  int mode=int(uBrdfMode+0.5);\",\n      \"  float d;\",\n      \"  if(mode==1)      d=brdf_burley(N,L,V,uBrdfRoughness);\",\n      \"  else if(mode==2) d=brdf_orenNayar(N,L,V,uBrdfRoughness);\",\n      \"  else if(mode==3) d=brdf_minnaert(N,L,V,uBrdfRoughness);\",\n      \"  else if(mode==4) d=brdf_toon(N,L,uBrdfRoughness);\",\n      \"  else if(mode==5) d=brdf_callisto(N,L,V,uDiffFresnel,uDiffFresnelFall,uDiffFresnelTanFall,uRetroRefl,uRetroReflFall,uRetroReflTanFall,uSmoothTerm,uSmoothTermLen);\",\n      \"  else if(mode==6)  d=brdf_halfLambert(N,L);\",\n      \"  else if(mode==7)  d=brdf_wrap(N,L,uBrdfRoughness);\",\n      \"  else if(mode==8)  d=brdf_lommelSeeliger(N,L,V);\",\n      \"  else if(mode==9)  d=brdf_velvet(N,L,V,uBrdfRoughness);\",\n      \"  else if(mode==10) d=brdf_ashikhmin(N,L,V);\",\n      \"  else if(mode==11) d=brdf_fresnelDiffuse(N,L,V);\",\n      \"  else if(mode==12) d=brdf_kajiyaKay(N,L,uBrdfRoughness);\",\n      \"  else d=max(dot(N,L),0.0)*RECIPROCAL_PI;\",\n      \"  return diffuseColor*d;\",\n      \"}\",\n      \"// ─────────────────────────────────────────────────────────────────────\"\n    ].join(\"\\n\");\n\n    function makeUniforms(p) {\n      return {\n        uBrdfMode:            { value: parseFloat(MODE_INT[(p.mode||'lambert').toLowerCase()]) || 0 },\n        uBrdfRoughness:       { value: p.roughness },\n        uDiffFresnel:         { value: p.diffuseFresnel },\n        uDiffFresnelFall:     { value: p.diffuseFresnelFalloff },\n        uDiffFresnelTanFall:  { value: p.diffuseFresnelTangentFalloff },\n        uRetroRefl:           { value: p.retroReflection },\n        uRetroReflFall:       { value: p.retroReflectionFalloff },\n        uRetroReflTanFall:    { value: p.retroReflectionTangentFalloff },\n        uSmoothTerm:          { value: p.smoothTerminator },\n        uSmoothTermLen:       { value: p.smoothTerminatorLength }\n      };\n    }\n\n    function syncUniforms(u, p) {\n      var modeKey = (p.mode || 'lambert').toLowerCase();\n      u.uBrdfMode.value           = parseFloat(MODE_INT[modeKey] !== undefined ? MODE_INT[modeKey] : 0);\n      u.uBrdfRoughness.value      = p.roughness;\n      u.uDiffFresnel.value        = p.diffuseFresnel;\n      u.uDiffFresnelFall.value    = p.diffuseFresnelFalloff;\n      u.uDiffFresnelTanFall.value = p.diffuseFresnelTangentFalloff;\n      u.uRetroRefl.value          = p.retroReflection;\n      u.uRetroReflFall.value      = p.retroReflectionFalloff;\n      u.uRetroReflTanFall.value   = p.retroReflectionTangentFalloff;\n      u.uSmoothTerm.value         = p.smoothTerminator;\n      u.uSmoothTermLen.value      = p.smoothTerminatorLength;\n    }\n\n    function patchMaterial(mat, uniforms) {\n      mat.userData.__brdfPatched  = true;\n      mat.userData.__brdfUniforms = uniforms;\n\n      mat.onBeforeCompile = function (shader) {\n        Object.assign(shader.uniforms, uniforms);\n\n        shader.fragmentShader = shader.fragmentShader.replace(\n          '#include <common>',\n          '#include <common>\\n' + BRDF_UNIFORMS_AND_HELPERS\n        );\n\n        var physChunk = THREE.ShaderChunk['lights_physical_pars_fragment'];\n        if (physChunk) {\n          var patched = physChunk.replace(\n            /(void\\s+RE_Direct_Physical[\\s\\S]*?)(?=void\\s+RE_IndirectDiffuse_Physical|$)/,\n            function(match) {\n              return match.replace(\n                /BRDF_Lambert\\s*\\(\\s*material\\.diffuseColor\\s*\\)/g,\n                'brdfCustom(material.diffuseColor, geometryNormal, directLight.direction, geometryViewDir)'\n              );\n            }\n          );\n          shader.fragmentShader = shader.fragmentShader.replace(\n            '#include <lights_physical_pars_fragment>',\n            patched\n          );\n        }\n      };\n\n      mat.customProgramCacheKey = function () {\n        return 'brdf3.1-' + String(uniforms.uBrdfMode.value);\n      };\n      mat.needsUpdate = true;\n    }\n\n    function getThreeObject(object) {\n      if (!object) return null;\n      if (typeof object.get3DRendererObject === 'function') {\n        var o = object.get3DRendererObject();\n        if (o) return o;\n      }\n      var r = object.getRenderer ? object.getRenderer() : null;\n      if (r) {\n        if (typeof r.get3DRendererObject === 'function') {\n          var o2 = r.get3DRendererObject();\n          if (o2) return o2;\n        }\n        if (r._threeObject) return r._threeObject;\n        if (r.object3D)     return r.object3D;\n      }\n      return null;\n    }\n\n    function readParams(behavior) {\n      return {\n        mode:                         behavior._getBRDFModel(),\n        r:                            behavior._getColorR(),\n        g:                            behavior._getColorG(),\n        b:                            behavior._getColorB(),\n        roughness:                    behavior._getRoughness(),\n        diffuseFresnel:               behavior._getDiffuseFresnel(),\n        diffuseFresnelFalloff:        behavior._getDiffuseFresnelFalloff(),\n        diffuseFresnelTangentFalloff: behavior._getDiffuseFresnelTangentFalloff(),\n        retroReflection:              behavior._getRetroReflection(),\n        retroReflectionFalloff:       behavior._getRetroReflectionFalloff(),\n        retroReflectionTangentFalloff:behavior._getRetroReflectionTangentFalloff(),\n        smoothTerminator:             behavior._getSmoothTerminator(),\n        smoothTerminatorLength:       behavior._getSmoothTerminatorLength()\n      };\n    }\n\n    function apply(object, p) {\n      var root = getThreeObject(object);\n      if (!root) return;\n      var uniforms = makeUniforms(p);\n\n      root.traverse(function (child) {\n        if (!child.isMesh || !child.geometry) return;\n        var existing = child.material;\n        if (!existing) return;\n        var mats = Array.isArray(existing) ? existing : [existing];\n        var result = mats.map(function (m) {\n          if (m.userData.__brdfPatched) {\n            m.onBeforeCompile = function(){};\n            m.needsUpdate = true;\n          }\n          var src = m.userData.__brdfOriginal || m;\n          var clone = src.clone();\n          clone.userData.__brdfOriginal = src;\n          patchMaterial(clone, uniforms);\n          return clone;\n        });\n        child.material = Array.isArray(existing) ? result : result[0];\n      });\n\n      if (!root.userData.__brdf) root.userData.__brdf = {};\n      root.userData.__brdf.uniforms = uniforms;\n      root.userData.__brdf.mode     = (p.mode || 'lambert').toLowerCase();\n    }\n\n    function updateUniforms(object, p) {\n      var root = getThreeObject(object);\n      if (!root || !root.userData.__brdf) { apply(object, p); return; }\n      var newMode = (p.mode || 'lambert').toLowerCase();\n      if (root.userData.__brdf.mode !== newMode) { apply(object, p); return; }\n      syncUniforms(root.userData.__brdf.uniforms, p);\n    }\n\n    function dispose(object) {\n      var root = getThreeObject(object);\n      if (!root) return;\n      root.traverse(function (child) {\n        if (!child.isMesh) return;\n        var m = child.material;\n        if (!m) return;\n        var mats = Array.isArray(m) ? m : [m];\n        mats.forEach(function (mat) {\n          if (mat.userData.__brdfPatched) {\n            var orig = mat.userData.__brdfOriginal;\n            if (orig) {\n              var arr = Array.isArray(child.material);\n              if (arr) {\n                child.material = child.material.map(function(x){ return x===mat?orig:x; });\n              } else if (child.material === mat) {\n                child.material = orig;\n              }\n            }\n            mat.dispose();\n          }\n        });\n      });\n      if (root.userData.__brdf) root.userData.__brdf = null;\n    }\n\n    return { apply:apply, updateUniforms:updateUniforms, dispose:dispose,\n             readParams:readParams, getThreeObject:getThreeObject };\n  })();\n}\n\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nif (objs.length === 0) return;\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  gdjs._brdfMaterials.apply(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "",
+          "fullName": "",
+          "functionType": "Action",
+          "group": "",
+          "name": "onDestroy",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nfor (var i = 0; i < objs.length; i++) {\n  gdjs._brdfMaterials.dispose(objs[i]);\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Switch the diffuse BRDF model and rebuild the shader.",
+          "fullName": "Set BRDF model",
+          "functionType": "Action",
+          "group": "BRDF Material",
+          "name": "SetBRDFModel",
+          "private": false,
+          "sentence": "Set BRDF model of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar mode = String(eventsFunctionContext.getArgument(\"Model\"));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setBRDFModel(mode);\n  gdjs._brdfMaterials.apply(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "\"lambert\"",
+              "description": "BRDF model",
+              "longDescription": "",
+              "name": "Model",
+              "optional": false,
+              "supplementaryInformation": "[\"lambert\", \"burley\", \"oren-nayar\", \"minnaert\", \"toon\", \"callisto\", \"half-lambert\", \"wrap\", \"lommel-seeliger\", \"velvet\", \"ashikhmin-shirley\", \"fresnel-diffuse\", \"kajiya-kay\"]",
+              "type": "stringWithSelector"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Set the base/albedo color.",
+          "fullName": "Set base color (RGB 0-1)",
+          "functionType": "Action",
+          "group": "BRDF Material",
+          "name": "SetColor",
+          "private": false,
+          "sentence": "Set base color of _PARAM0_ to R _PARAM2_ G _PARAM3_ B _PARAM4_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar r = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"R\"))));\nvar g = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"G\"))));\nvar b = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"B\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setColorR(r);\n  behavior._setColorG(g);\n  behavior._setColorB(b);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Red (0-1)",
+              "longDescription": "",
+              "name": "R",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Green (0-1)",
+              "longDescription": "",
+              "name": "G",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Blue (0-1)",
+              "longDescription": "",
+              "name": "B",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Set surface roughness (0-1).",
+          "fullName": "Set roughness",
+          "functionType": "Action",
+          "group": "BRDF Material",
+          "name": "SetRoughness",
+          "private": false,
+          "sentence": "Set roughness of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setRoughness(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Roughness (0-1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: rim brightening intensity.",
+          "fullName": "Set diffuse Fresnel (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetDiffuseFresnel",
+          "private": false,
+          "sentence": "Set diffuse Fresnel of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Number(eventsFunctionContext.getArgument(\"Value\"));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setDiffuseFresnel(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Diffuse Fresnel (0-256)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: diffuse Fresnel edge falloff speed.",
+          "fullName": "Set diffuse Fresnel falloff (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetDiffuseFresnelFalloff",
+          "private": false,
+          "sentence": "Set diffuse Fresnel falloff of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setDiffuseFresnelFalloff(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Falloff (0-1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: diffuse Fresnel tangential falloff.",
+          "fullName": "Set diffuse Fresnel tangent falloff (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetDiffuseFresnelTangentFalloff",
+          "private": false,
+          "sentence": "Set diffuse Fresnel tangent falloff of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setDiffuseFresnelTangentFalloff(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Tangent falloff (0-1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: front-lit enhancement.",
+          "fullName": "Set retroreflection (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetRetroReflection",
+          "private": false,
+          "sentence": "Set retroreflection of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Number(eventsFunctionContext.getArgument(\"Value\"));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setRetroReflection(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Retroreflection (0-256)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: retroreflection falloff rate.",
+          "fullName": "Set retroreflection falloff (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetRetroReflectionFalloff",
+          "private": false,
+          "sentence": "Set retroreflection falloff of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setRetroReflectionFalloff(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Falloff (0-1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: retroreflection tangential falloff.",
+          "fullName": "Set retroreflection tangent falloff (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetRetroReflectionTangentFalloff",
+          "private": false,
+          "sentence": "Set retroreflection tangent falloff of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setRetroReflectionTangentFalloff(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Tangent falloff (0-1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: shadow boundary softening (positive softens).",
+          "fullName": "Set smooth terminator (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetSmoothTerminator",
+          "private": false,
+          "sentence": "Set smooth terminator of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(-1, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setSmoothTerminator(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Smooth terminator (-1 to 1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Callisto: extent of the terminator smoothing.",
+          "fullName": "Set smooth terminator length (Callisto)",
+          "functionType": "Action",
+          "group": "BRDF Material (Callisto)",
+          "name": "SetSmoothTerminatorLength",
+          "private": false,
+          "sentence": "Set smooth terminator length of _PARAM0_ to _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (!gdjs._brdfMaterials) return;\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar value = Math.max(0, Math.min(1, Number(eventsFunctionContext.getArgument(\"Value\"))));\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (!behavior) continue;\n  behavior._setSmoothTerminatorLength(value);\n  gdjs._brdfMaterials.updateUniforms(objs[i], gdjs._brdfMaterials.readParams(behavior));\n}",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Length (0-1)",
+              "longDescription": "",
+              "name": "Value",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "expression"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Check the current BRDF model.",
+          "fullName": "BRDF model is",
+          "functionType": "Condition",
+          "group": "BRDF Material",
+          "name": "IsBRDFModel",
+          "private": false,
+          "sentence": "BRDF model of _PARAM0_ is _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "var objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar mode = String(eventsFunctionContext.getArgument(\"Model\")).toLowerCase();\nvar result = false;\nfor (var i = 0; i < objs.length; i++) {\n  var behavior = objs[i].getBehavior(behaviorName);\n  if (behavior && String(behavior._getBRDFModel()).toLowerCase() === mode) { result = true; break; }\n}\neventsFunctionContext.returnValue = result;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "\"lambert\"",
+              "description": "BRDF model",
+              "longDescription": "",
+              "name": "Model",
+              "optional": false,
+              "supplementaryInformation": "[\"lambert\", \"burley\", \"oren-nayar\", \"minnaert\", \"toon\", \"callisto\", \"half-lambert\", \"wrap\", \"lommel-seeliger\", \"velvet\", \"ashikhmin-shirley\", \"fresnel-diffuse\", \"kajiya-kay\"]",
+              "type": "stringWithSelector"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Get the current BRDF model name.",
+          "fullName": "Current BRDF model",
+          "functionType": "StringExpression",
+          "group": "BRDF Material",
+          "name": "CurrentBRDFModel",
+          "private": false,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "var objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar val = \"\";\nif (objs.length > 0) {\n  var behavior = objs[0].getBehavior(behaviorName);\n  if (behavior) val = String(behavior._getBRDFModel());\n}\neventsFunctionContext.returnValue = val;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Get the current BRDF model as a numeric index (0-12).",
+          "fullName": "Current BRDF index",
+          "functionType": "Expression",
+          "group": "BRDF Material",
+          "name": "CurrentBRDFIndex",
+          "private": false,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "var MAP={'lambert':0,'burley':1,'oren-nayar':2,'minnaert':3,'toon':4,'callisto':5,'half-lambert':6,'wrap':7,'lommel-seeliger':8,'velvet':9,'ashikhmin-shirley':10,'fresnel-diffuse':11,'kajiya-kay':12};\nvar objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar val = 0;\nif (objs.length > 0) {\n  var behavior = objs[0].getBehavior(behaviorName);\n  if (behavior) {\n    var k = String(behavior._getBRDFModel()).toLowerCase();\n    val = (MAP[k] !== undefined) ? MAP[k] : 0;\n  }\n}\neventsFunctionContext.returnValue = val;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Get the current roughness value.",
+          "fullName": "Current roughness",
+          "functionType": "Expression",
+          "group": "BRDF Material",
+          "name": "CurrentRoughness",
+          "private": false,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "var objs = eventsFunctionContext.getObjects(\"Object\");\nvar behaviorName = eventsFunctionContext.getBehaviorName(\"Behavior\");\nvar val = 0;\nif (objs.length > 0) {\n  var behavior = objs[0].getBehavior(behaviorName);\n  if (behavior) val = Number(behavior._getRoughness());\n}\neventsFunctionContext.returnValue = val;",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Object",
+              "longDescription": "",
+              "name": "Object",
+              "optional": false,
+              "supplementaryInformation": "",
+              "type": "object"
+            },
+            {
+              "codeOnly": false,
+              "defaultValue": "",
+              "description": "Behavior",
+              "longDescription": "",
+              "name": "Behavior",
+              "optional": false,
+              "supplementaryInformation": "BRDFMaterials::BRDFMaterial",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        }
+      ],
+      "propertyDescriptors": [
+        {
+          "value": "lambert",
+          "type": "Choice",
+          "label": "BRDF model",
+          "description": "Diffuse model. lambert, burley, oren-nayar, minnaert, toon, callisto, half-lambert, wrap, lommel-seeliger, velvet, ashikhmin-shirley, fresnel-diffuse, kajiya-kay",
+          "group": "",
+          "extraInformation": [
+            "lambert",
+            "burley",
+            "oren-nayar",
+            "minnaert",
+            "toon",
+            "callisto",
+            "half-lambert",
+            "wrap",
+            "lommel-seeliger",
+            "velvet",
+            "ashikhmin-shirley",
+            "fresnel-diffuse",
+            "kajiya-kay"
+          ],
+          "hidden": false,
+          "name": "BRDFModel"
+        },
+        {
+          "value": "0.8",
+          "type": "Number",
+          "label": "Base color R (0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "ColorR"
+        },
+        {
+          "value": "0.8",
+          "type": "Number",
+          "label": "Base color G (0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "ColorG"
+        },
+        {
+          "value": "0.8",
+          "type": "Number",
+          "label": "Base color B (0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "ColorB"
+        },
+        {
+          "value": "0.5",
+          "type": "Number",
+          "label": "Roughness (0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "Roughness"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Diffuse Fresnel (Callisto, 0-256; 1=neutral/Lambert)",
+          "description": "Rim brightening intensity. 1 matches Lambert; raise toward 175+ for skin/eyes.",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "DiffuseFresnel"
+        },
+        {
+          "value": "0.75",
+          "type": "Number",
+          "label": "Diffuse Fresnel falloff (Callisto, 0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "DiffuseFresnelFalloff"
+        },
+        {
+          "value": "0.75",
+          "type": "Number",
+          "label": "Diffuse Fresnel tangent falloff (Callisto, 0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "DiffuseFresnelTangentFalloff"
+        },
+        {
+          "value": "1",
+          "type": "Number",
+          "label": "Retroreflection (Callisto, 0-256; 1=neutral)",
+          "description": "Front-lit enhancement. 1 matches Lambert.",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "RetroReflection"
+        },
+        {
+          "value": "0.75",
+          "type": "Number",
+          "label": "Retroreflection falloff (Callisto, 0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "RetroReflectionFalloff"
+        },
+        {
+          "value": "0.75",
+          "type": "Number",
+          "label": "Retroreflection tangent falloff (Callisto, 0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "RetroReflectionTangentFalloff"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Smooth terminator (Callisto, -1 to 1; +softens)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "SmoothTerminator"
+        },
+        {
+          "value": "0.5",
+          "type": "Number",
+          "label": "Smooth terminator length (Callisto, 0-1)",
+          "description": "",
+          "group": "",
+          "extraInformation": [],
+          "hidden": false,
+          "name": "SmoothTerminatorLength"
+        }
+      ],
+      "sharedPropertyDescriptors": []
+    }
+  ],
+  "eventsBasedObjects": []
+}

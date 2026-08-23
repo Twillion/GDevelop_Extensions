@@ -1,0 +1,114 @@
+3DCRT+ Extension — License
+Copyright (c) 2026 Twillion. All rights reserved.
+
+================================================================
+PLAIN-ENGLISH SUMMARY (not the license itself — see terms below)
+================================================================
+You CAN:
+  • Use 3DCRT+ in any number of your own projects, personal or
+    commercial, free of charge.
+  • Modify it however you like for use in your own projects.
+  • Ship finished works — games, films, videos, animations, streams,
+    or other creative projects, including paid ones — that include
+    3DCRT+, modified or not, embedded or rendered into them.
+
+You CANNOT:
+  • Sell, give away, repackage, sublicense, or otherwise distribute
+    3DCRT+ — original OR modified — as a standalone asset, file,
+    extension, template, or product, on any asset platform or
+    anywhere else.
+  • Claim that you created 3DCRT+, or remove/obscure the author
+    credit.
+
+If you can do it without handing someone else a copy of the
+extension to use as an extension, you're fine. The moment you'd be
+redistributing the tool itself (changed or unchanged), you're not.
+
+The original Timothy Lottes CRT shader code that 3DCRT+ builds on
+is public domain and is not restricted by this license — only the
+additions and the combined work are.
+
+================================================================
+LICENSE TERMS
+================================================================
+
+1. DEFINITIONS
+   "The Extension" means the 3DCRT+ GDevelop extension authored by
+   Twillion — its shader code, behavior, event-sheet API, and
+   accompanying scripts and documentation — in original or modified
+   form, in whole or in substantial part.
+   "You" means any individual or entity exercising rights under this
+   license.
+   "Your Project" means any work created by You in which the
+   Extension is used as a component — including but not limited to
+   games, interactive applications, films, videos, animations,
+   streams, recordings, images, and other creative or commercial
+   works, whether interactive or non-interactive.
+
+2. GRANT OF USE
+   Subject to the conditions below, the author grants You a
+   worldwide, royalty-free, non-exclusive license to:
+   (a) use the Extension in any number of Your Projects, whether
+       personal, commercial, or otherwise;
+   (b) modify and adapt the Extension for use within Your Projects;
+       and
+   (c) distribute the Extension as an embedded, integral component
+       of Your Project (for example, inside an exported game, or
+       rendered into a film, video, or other finished work),
+       including Projects that are sold.
+
+3. RESTRICTIONS
+   You may NOT:
+   (a) sell, license, sublicense, rent, lease, give away, publish,
+       upload, or otherwise distribute the Extension — in original
+       or modified form — as a standalone asset, file, library,
+       extension, template, sample, or product, whether for payment
+       or for free, on any asset store, marketplace, repository,
+       package index, or by any other means;
+   (b) repackage, rebrand, or present the Extension (modified or
+       not) as Your own asset or product for others to use as an
+       extension or development tool;
+   (c) claim authorship or ownership of the Extension, or
+       misrepresent its origin; or
+   (d) remove, alter, or obscure this license, the copyright notice,
+       or the author attribution in any copy of the Extension You
+       are permitted to distribute under Section 2(c).
+
+   For clarity: embedding the Extension inside Your Project per
+   Section 2(c) is permitted use, not prohibited distribution. The
+   prohibition in Section 3(a)–(b) targets redistribution of the
+   Extension itself as a usable tool, separate from a finished end
+   work.
+
+4. ATTRIBUTION
+   Reasonable credit to "Twillion" as the author of 3DCRT+ must be
+   retained in the Extension's files and is appreciated (though not
+   required) in the credits of Your Project.
+
+5. THIRD-PARTY / PUBLIC-DOMAIN COMPONENTS
+   The Extension incorporates and adapts CRT shader code originally
+   released into the public domain by Timothy Lottes. Those original
+   public-domain portions are not subject to this license and may be
+   obtained and used independently from their original source. This
+   license governs only Twillion's original contributions and the
+   Extension as a combined work.
+
+6. NO WARRANTY
+   THE EXTENSION IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+   CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+   CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+   CONNECTION WITH THE EXTENSION OR THE USE OR OTHER DEALINGS IN THE
+   EXTENSION.
+
+7. TERMINATION
+   Any breach of Section 3 automatically terminates the rights
+   granted to You under this license. Upon termination You must stop
+   distributing the Extension; rights properly exercised by end users
+   who received Your Project before termination are unaffected.
+
+================================================================
+Contact: [your email / itch page / forum handle]
+================================================================
