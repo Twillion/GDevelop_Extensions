@@ -1,6 +1,6 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.8.1**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.8.2**, tested against **GDevelop 5.6.271**.
 
 Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
 
@@ -102,6 +102,8 @@ All take a single number unless noted. Ranges below are the practical/intended r
 | **Set CRT grain size** | 1–100 | Cell size: fine static → coarse VHS. |
 | **Set CRT grain colour** | 0–100 | 0 = mono film grain, 100 = full RGB static. |
 | **Set CRT grain speed** | 0–100 | Frozen → fast. |
+
+> **Units (since 0.8.2).** Bloom radius, camera blur radius and pixelate block size are all measured in **real screen pixels**, independent of Pixel size and Scanline count. Before 0.8.2 the bloom radius switched to *emulated* pixels whenever scanlines were on, so pixel size silently multiplied it — radius 1 at pixel size 6 spread like radius 6, and changing either setting moved your bloom. If you tuned bloom before 0.8.2, multiply your old radius by your pixel size to get the same look. Chromatic aberration is the one effect still measured in emulated pixels, deliberately: it is a signal artifact, so it should ride the emulated grid.
 
 ### Camera softness (groups: `Blur`, `Pixelate`)
 
