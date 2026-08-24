@@ -1,6 +1,6 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.6.0**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.7.0**, tested against **GDevelop 5.6.271**.
 
 Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
 
@@ -34,7 +34,7 @@ Each effect belongs to a group that can be switched on or off independently. Eve
 
 **Accepted `Effect` values** (type one of these exactly — the editor dropdown does not list them):
 
-`Scanlines` · `Bulge` · `Border` · `Mask` · `Brightness` · `Bloom` · `Aberration` · `Roll` · `Flicker` · `Interlace` · `Color` · `Grain`
+`Scanlines` · `Bulge` · `Border` · `Mask` · `Brightness` · `Bloom` · `Aberration` · `Roll` · `Flicker` · `Interlace` · `Color` · `Grain` · `Blur` · `Pixelate`
 
 > Note: `Color` covers saturation/contrast/gamma/tint. `Grain` covers all four grain parameters. Opacity and image stretch are not gated by any group — they always apply.
 
@@ -102,6 +102,21 @@ All take a single number unless noted. Ranges below are the practical/intended r
 | **Set CRT grain size** | 1–100 | Cell size: fine static → coarse VHS. |
 | **Set CRT grain colour** | 0–100 | 0 = mono film grain, 100 = full RGB static. |
 | **Set CRT grain speed** | 0–100 | Frozen → fast. |
+
+### Camera softness (groups: `Blur`, `Pixelate`)
+
+A **prepass on the filmed world**, applied before a called 2D/UI layer composites — so the camera can be soft while the UI drawn on the screen stays sharp. Both are off by default and independent of each other.
+
+| Action label | Group | Range | Notes |
+|---|---|---|---|
+| **Set camera blur** | `Blur` | 0–100 | Defocus. Maps to a 0–16 px gaussian radius. |
+| **Set camera pixelate block size** | `Pixelate` | 1–64 | Block size in **real screen pixels**. 1 = no pixelation. |
+
+**How it sits in the chain.** The prepass runs at the point the scene is sampled, so bloom and colour grading see the soft image — a real soft lens blooms a soft frame, not a sharp one. The overlay composites afterwards and the whole display stage (shadow mask, interlacing, roll, flicker, grain, bezel) still runs over both, because those belong to the glass rather than the lens.
+
+**Pixelate vs. Pixel size.** These are different knobs. `Set CRT pixel size` / `Set CRT scanline count` drive the emulated scanline grid (`res`) and only mean something with scanlines on. **Set camera pixelate block size** is independent: it works with scanlines off and does not change your scanline count.
+
+**Blur and scanlines.** Blur resolves the scene through a gaussian, so as the radius climbs the scanline detail softens with the picture. Small values stay close to the sharp image. Chromatic aberration is carried through the blur rather than dropped.
 
 ### Master
 | Action label | Range | Notes |
@@ -181,6 +196,8 @@ All return a number. Use anywhere an expression is accepted (e.g. `CRTScreenBulg
 | `ShaderRenderGrainSize()` | Grain size |
 | `ShaderRenderGrainColor()` | Grain colour |
 | `ShaderRenderGrainSpeed()` | Grain speed |
+| `ShaderRenderBlur()` | Camera blur (0–100) |
+| `ShaderRenderPixelateSize()` | Camera pixelate block size in real pixels (1–64) |
 
 ---
 
