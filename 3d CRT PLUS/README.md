@@ -1,6 +1,6 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.8.3**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.9.0**, tested against **GDevelop 5.6.271**.
 
 Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
 
@@ -49,13 +49,13 @@ All take a single number unless noted. Ranges below are the practical/intended r
 |---|---|---|
 | **Set CRT scanline thickness** | 0–100 | Darkness/width of the scanline gaps. |
 | **Set CRT pixel sharpness** | 0–100 | Sharpness of the reconstructed pixels. |
-| **Set CRT scanline count** | 0, or ~60–600 | Number of scanlines. Set to **0** to switch to fixed pixel-size mode instead. |
-| **Set CRT pixel size** | 1–16 | Pixel block size; used when scanline count is 0. |
+| **Set CRT scanline count** | 0–2000 | Number of scanlines. Set to **0** to switch to fixed pixel-size mode instead. |
+| **Set CRT pixel size** | 1–64 | Pixel block size; used when scanline count is 0. |
 
 ### Screen shape
 | Action label | Group | Range | Notes |
 |---|---|---|---|
-| **Set CRT screen bulge** | `Bulge` | 0–2 | Barrel curvature, 0 = flat. |
+| **Set CRT screen bulge** | `Bulge` | 0–5 | Barrel curvature, 0 = flat. |
 | **Set CRT border size** | `Border` | 0–45 | Master black border inset. |
 | **Set CRT border left (extra)** | `Border` | 0–45 | Extra inset added to the left side. |
 | **Set CRT border right (extra)** | `Border` | 0–45 | Extra inset on the right. |
@@ -66,23 +66,23 @@ All take a single number unless noted. Ranges below are the practical/intended r
 | Action label | Range | Notes |
 |---|---|---|
 | **Set CRT shadow mask dark level** | 0–100 | How dark the unlit sub-pixels go. |
-| **Set CRT shadow mask light level** | 1–3 | Brightness boost of the lit sub-pixels. |
+| **Set CRT shadow mask light level** | 0.1–5 | Brightness boost of the lit sub-pixels. |
 
 ### Light & Bloom (groups: `Brightness`, `Bloom`)
 | Action label | Group | Range | Notes |
 |---|---|---|---|
-| **Set shader render brightness** | `Brightness` | 0–2 | 1 = neutral. |
+| **Set shader render brightness** | `Brightness` | 0–5 | 1 = neutral. |
 | **Set shader render bloom** | `Bloom` | 0–100+ | Bloom intensity scale. 0 = none. Values > 100 boost glow. |
-| **Set shader render bloom threshold** | `Bloom` | 0–200 | Brightness cutoff point (default: 70 = 0.7). Lower = more glow on midtones. |
-| **Set shader render bloom blur radius** | `Bloom` | 1–50 | Spread radius of the multi-tier glow across the screen (default: 4). |
+| **Set shader render bloom threshold** | `Bloom` | 0–200 | Luminance cutoff where bloom starts (default: 25 = 0.25). Lower = more glow on ordinary surfaces. |
+| **Set shader render bloom blur radius** | `Bloom` | 1–50 | Spread of the glow in **real screen pixels** (default: 5). 1–10 is the useful range. |
 | **Set shader render bloom soft knee** | `Bloom` | 0–100 | Transition softness curve (default: 50 = 0.5). |
-| **Set shader render bloom tint** | `Bloom` | R, G, B | RGB color multipliers for the glowing halos (1, 1, 1 = neutral white). |
+| **Set shader render bloom tint** | `Bloom` | R, G, B (0–4 each) | RGB color multipliers for the glowing halos (1, 1, 1 = neutral white). |
 
 ### Signal & motion
 | Action label | Group | Range | Notes |
 |---|---|---|---|
-| **Set shader render chromatic aberration** | `Aberration` | 0–3 | Channel-split fringe, scales from screen center. |
-| **Set shader render roll speed** | `Roll` | 0–2 | Speed of the rolling bar. |
+| **Set shader render chromatic aberration** | `Aberration` | 0–10 | Channel-split fringe, scales from screen center. |
+| **Set shader render roll speed** | `Roll` | −5 to 5 | Speed of the rolling bar. |
 | **Set shader render roll height** | `Roll` | 0–1 | Height of the rolling bar. |
 | **Set shader render flicker** | `Flicker` | 0–20 | Per-frame brightness instability. |
 | **Set shader render interlacing** | `Interlace` | 0–1 | Alternating-line dimming. |
@@ -90,10 +90,10 @@ All take a single number unless noted. Ranges below are the practical/intended r
 ### Color grading (group: `Color`)
 | Action label | Range | Notes |
 |---|---|---|
-| **Set shader render saturation** | 0–2 | 1 = neutral, 0 = greyscale. |
-| **Set shader render contrast** | 0–2 | 1 = neutral. |
-| **Set shader render gamma** | 0.2–3 | 1 = neutral. Below 1 lifts midtones, above 1 darkens them. Hard-clamped to 0.1–5 — by 4–5 the picture is essentially black. |
-| **Set shader render phosphor tint** | R, G, B | Three numbers. `1, 1, 1` = no tint; lower a channel to tint toward the others (e.g. `1, 0.78, 0.55` = warm amber). |
+| **Set shader render saturation** | 0–5 | 1 = neutral, 0 = greyscale. |
+| **Set shader render contrast** | 0–5 | 1 = neutral. |
+| **Set shader render gamma** | 0.1–5 | 1 = neutral. Below 1 lifts midtones, above 1 darkens them. Hard-clamped to 0.1–5 — by 4–5 the picture is essentially black. |
+| **Set shader render phosphor tint** | R, G, B (0–4 each) | Three numbers. `1, 1, 1` = no tint; lower a channel to tint toward the others (e.g. `1, 0.78, 0.55` = warm amber). |
 
 ### Grain (group: `Grain`)
 | Action label | Range | Notes |
@@ -137,8 +137,8 @@ How it works: the named 2D layer is captured into a texture (shared GPU texture,
 |---|---|---|---|
 | **Render 2D layer through the CRT effect** | `OverlayLayer` (layer) | — | Start compositing the named 2D layer inside the effect. |
 | **Stop rendering the 2D overlay layer through the CRT effect** | — | — | Stop compositing the overlay; the layer goes back to drawing normally on top. |
-| **Set CRT overlay opacity** | `Value` (number) | 0–1 | Fade for the overlay only (1 = fully visible). |
-| **Set CRT overlay UI glow** | `Value` (number) | 0+ | Phosphor bloom on the overlay's own bright pixels. 0 = none. |
+| **Set CRT overlay opacity** | `Value` (number) | 0–1 | Fade for the overlay only (1 = fully visible). **Note the scale:** this is 0–1, unlike the master **Set shader render opacity** which is 0–255. |
+| **Set CRT overlay UI glow** | `Value` (number) | 0–5 | Phosphor bloom on the overlay's own bright pixels. 0 = none. |
 
 **Avoiding the double-draw.** When a layer is composited through the effect, you usually don't want GDevelop *also* drawing it normally on top — if it does, that raw crisp copy lands over the finished quad and the HUD escapes the effect. There are two ways to handle this:
 
