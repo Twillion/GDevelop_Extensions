@@ -1,6 +1,6 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.8.2**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.8.3**, tested against **GDevelop 5.6.271**.
 
 Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
 
@@ -92,7 +92,7 @@ All take a single number unless noted. Ranges below are the practical/intended r
 |---|---|---|
 | **Set shader render saturation** | 0–2 | 1 = neutral, 0 = greyscale. |
 | **Set shader render contrast** | 0–2 | 1 = neutral. |
-| **Set shader render gamma** | 0.5–2 | 1 = neutral (clamped to ≥ 0.01). |
+| **Set shader render gamma** | 0.2–3 | 1 = neutral. Below 1 lifts midtones, above 1 darkens them. Hard-clamped to 0.1–5 — by 4–5 the picture is essentially black. |
 | **Set shader render phosphor tint** | R, G, B | Three numbers. `1, 1, 1` = no tint; lower a channel to tint toward the others (e.g. `1, 0.78, 0.55` = warm amber). |
 
 ### Grain (group: `Grain`)
