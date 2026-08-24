@@ -1,6 +1,6 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.9.0**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **1.0.0**, tested against **GDevelop 5.6.271**.
 
 Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
 
@@ -34,7 +34,7 @@ Each effect belongs to a group that can be switched on or off independently. Eve
 
 **Accepted `Effect` values** (type one of these exactly — the editor dropdown does not list them):
 
-`Scanlines` · `Bulge` · `Border` · `Mask` · `Brightness` · `Bloom` · `Aberration` · `Roll` · `Flicker` · `Interlace` · `Color` · `Grain` · `Blur` · `Pixelate`
+`Scanlines` · `Bulge` · `Border` · `Mask` · `Aberration` · `Roll` · `Flicker` · `Interlace` · `Color` · `Grain` · `Blur` · `Pixelate`
 
 > Note: `Color` covers saturation/contrast/gamma/tint. `Grain` covers all four grain parameters. Opacity and image stretch are not gated by any group — they always apply.
 
@@ -68,16 +68,6 @@ All take a single number unless noted. Ranges below are the practical/intended r
 | **Set CRT shadow mask dark level** | 0–100 | How dark the unlit sub-pixels go. |
 | **Set CRT shadow mask light level** | 0.1–5 | Brightness boost of the lit sub-pixels. |
 
-### Light & Bloom (groups: `Brightness`, `Bloom`)
-| Action label | Group | Range | Notes |
-|---|---|---|---|
-| **Set shader render brightness** | `Brightness` | 0–5 | 1 = neutral. |
-| **Set shader render bloom** | `Bloom` | 0–100+ | Bloom intensity scale. 0 = none. Values > 100 boost glow. |
-| **Set shader render bloom threshold** | `Bloom` | 0–200 | Luminance cutoff where bloom starts (default: 25 = 0.25). Lower = more glow on ordinary surfaces. |
-| **Set shader render bloom blur radius** | `Bloom` | 1–50 | Spread of the glow in **real screen pixels** (default: 5). 1–10 is the useful range. |
-| **Set shader render bloom soft knee** | `Bloom` | 0–100 | Transition softness curve (default: 50 = 0.5). |
-| **Set shader render bloom tint** | `Bloom` | R, G, B (0–4 each) | RGB color multipliers for the glowing halos (1, 1, 1 = neutral white). |
-
 ### Signal & motion
 | Action label | Group | Range | Notes |
 |---|---|---|---|
@@ -90,8 +80,6 @@ All take a single number unless noted. Ranges below are the practical/intended r
 ### Color grading (group: `Color`)
 | Action label | Range | Notes |
 |---|---|---|
-| **Set shader render saturation** | 0–5 | 1 = neutral, 0 = greyscale. |
-| **Set shader render contrast** | 0–5 | 1 = neutral. |
 | **Set shader render gamma** | 0.1–5 | 1 = neutral. Below 1 lifts midtones, above 1 darkens them. Hard-clamped to 0.1–5 — by 4–5 the picture is essentially black. |
 | **Set shader render phosphor tint** | R, G, B (0–4 each) | Three numbers. `1, 1, 1` = no tint; lower a channel to tint toward the others (e.g. `1, 0.78, 0.55` = warm amber). |
 
@@ -103,7 +91,7 @@ All take a single number unless noted. Ranges below are the practical/intended r
 | **Set CRT grain colour** | 0–100 | 0 = mono film grain, 100 = full RGB static. |
 | **Set CRT grain speed** | 0–100 | Frozen → fast. |
 
-> **Units (since 0.8.2).** Bloom radius, camera blur radius and pixelate block size are all measured in **real screen pixels**, independent of Pixel size and Scanline count. Before 0.8.2 the bloom radius switched to *emulated* pixels whenever scanlines were on, so pixel size silently multiplied it — radius 1 at pixel size 6 spread like radius 6, and changing either setting moved your bloom. If you tuned bloom before 0.8.2, multiply your old radius by your pixel size to get the same look. Chromatic aberration is the one effect still measured in emulated pixels, deliberately: it is a signal artifact, so it should ride the emulated grid.
+> **Units.** Camera blur radius and pixelate block size are measured in **real screen pixels**, independent of Pixel size and Scanline count, so changing the emulated grid does not move them. Chromatic aberration is the one effect measured in *emulated* pixels, deliberately: it is a signal artifact, so it should ride the scanline grid.
 
 ### Camera softness (groups: `Blur`, `Pixelate`)
 
@@ -114,7 +102,7 @@ A **prepass on the filmed world**, applied before a called 2D/UI layer composite
 | **Set camera blur** | `Blur` | 0–100 | Defocus. Maps to a 0–16 px gaussian radius. |
 | **Set camera pixelate block size** | `Pixelate` | 1–64 | Block size in **real screen pixels**. 1 = no pixelation. |
 
-**How it sits in the chain.** The prepass runs at the point the scene is sampled, so bloom and colour grading see the soft image — a real soft lens blooms a soft frame, not a sharp one. The overlay composites afterwards and the whole display stage (shadow mask, interlacing, roll, flicker, grain, bezel) still runs over both, because those belong to the glass rather than the lens.
+**How it sits in the chain.** The prepass runs at the point the scene is sampled, so the colour grading sees the soft image. The overlay composites afterwards, and the whole display stage (shadow mask, interlacing, roll, flicker, grain, bezel) still runs over both, because those belong to the glass rather than the lens.
 
 **Pixelate vs. Pixel size.** These are different knobs. `Set CRT pixel size` / `Set CRT scanline count` drive the emulated scanline grid (`res`) and only mean something with scanlines on. **Set camera pixelate block size** is independent: it works with scanlines off and does not change your scanline count.
 
@@ -175,21 +163,11 @@ All return a number. Use anywhere an expression is accepted (e.g. `CRTScreenBulg
 | `CRTBorder()` | Border size |
 | `CRTShadowMaskDarkLevel()` | Shadow mask dark level |
 | `CRTShadowMaskLightLevel()` | Shadow mask light level |
-| `ShaderRenderBrightness()` | Brightness |
-| `ShaderRenderBloom()` | Bloom intensity |
-| `ShaderRenderBloomThreshold()` | Bloom threshold |
-| `ShaderRenderBloomRadius()` | Bloom blur radius |
-| `ShaderRenderBloomKnee()` | Bloom soft knee |
-| `ShaderRenderBloomTintRed()` | Bloom tint — red channel |
-| `ShaderRenderBloomTintGreen()` | Bloom tint — green channel |
-| `ShaderRenderBloomTintBlue()` | Bloom tint — blue channel |
 | `ShaderRenderAberration()` | Chromatic aberration |
 | `ShaderRenderRollSpeed()` | Roll speed |
 | `ShaderRenderRollHeight()` | Roll height |
 | `ShaderRenderFlicker()` | Flicker |
 | `ShaderRenderInterlace()` | Interlacing |
-| `ShaderRenderSaturation()` | Saturation |
-| `ShaderRenderContrast()` | Contrast |
 | `ShaderRenderGamma()` | Gamma |
 | `ShaderRenderTintRed()` | Tint — red channel |
 | `ShaderRenderTintGreen()` | Tint — green channel |
@@ -203,13 +181,32 @@ All return a number. Use anywhere an expression is accepted (e.g. `CRTScreenBulg
 
 ---
 
+## Moved to GDevelop's built-in effects (1.0.0)
+
+**Bloom, Brightness, Saturation and Contrast were removed in 1.0.0.** GDevelop's own 3D layer effects cover them, and since 0.8.0 those compose correctly with this extension, so carrying duplicates was pointless. Use the layer effect list instead:
+
+| Removed from 3DCRT+ | Use instead |
+|---|---|
+| `Set shader render bloom` (+ threshold, radius, soft knee, tint) | **Bloom** |
+| `Set shader render brightness` | **Brightness and contrast** |
+| `Set shader render contrast` | **Brightness and contrast** |
+| `Set shader render saturation` | **Hue and saturation** (which also gives you hue rotation, which 3DCRT+ never had) |
+
+The `Bloom` and `Brightness` effect groups are gone from **Enable or disable a CRT effect** too.
+
+**Gamma and phosphor tint stayed** — GDevelop has no equivalent for either. Exposure is not gamma, and hue rotation cannot do a per-channel multiply, which is what a monochrome amber or green phosphor needs.
+
+**One visible difference with bloom.** 3DCRT+ added its glow *after* scanline reconstruction, so it stayed smooth over the scanlines. The native Bloom runs *before* this extension's pass, so the CRT's `Tri()` reconstruction re-samples the glow and it comes out following the scanline structure. Both get clipped by the bezel, since the border kill is the last thing the shader does.
+
+---
+
 ## Working alongside GDevelop's built-in 3D effects
 
 Since **0.8.0** the effect runs as a real post-processing pass inside the target layer's `EffectComposer` — the same chain, through the same `addPostProcessingPass` entry point, that GDevelop's own 3D effects use. So you can stack 3DCRT+ with **Bloom**, **Brightness and contrast**, **Exposure**, **Hue and saturation**, and they compose properly instead of fighting.
 
 Two consequences worth knowing:
 
-- **3DCRT+ runs before the built-ins.** Passes insert ahead of the antialiasing and output passes, so a native Bloom placed on the same layer blooms the CRT image (scanlines included), not the raw scene.
+- **3DCRT+ runs last.** The built-in effects grade the raw 3D scene, then the CRT pass applies the tube look on top of the result. That is the order you want: a native Bloom or Hue shift affects the scene, and the scanlines, mask and bezel go over the finished image.
 - **Antialiasing softens scanlines.** GDevelop adds an `SMAAPass` after your passes unless the project's antialiasing is set to **None**. For a crisp scanline look, turn it off.
 
 **Multiple 3D layers now work.** Each layer owns its own composer, so pointing the effect at a layer no longer means every other 3D layer gets overwritten.
@@ -221,8 +218,8 @@ Two consequences worth knowing:
 - **Image stretch (X/Y)** can be set in the **behavior properties** but has **no runtime action or expression** in this version — you can't change it from events yet. Default is no stretch.
 - **The effect-group selector has no preset list.** Type the group name exactly as spelled above; an unknown name is ignored.
 - **Everything is off by default.** Adding the extension changes nothing until you enable a group (in the properties panel or via *Enable or disable a CRT effect*).
-- **Bloom needs bright sources** to show, and **shadow-mask** strength varies with display DPI — tune per project.
-- **Performance.** Cost scales with the number of enabled effects and the output resolution. Bloom, the shadow mask, and grain are the most expensive; enable those selectively on lower-end or mobile hardware. The overlay grab adds one layer render + composite per frame *only while it's switched on*.
+- **Shadow-mask** strength varies with display DPI — tune per project.
+- **Performance.** Cost scales with the number of enabled effects and the output resolution. The shadow mask, grain and camera blur are the most expensive; enable those selectively on lower-end or mobile hardware. The overlay grab adds one layer render + composite per frame *only while it's switched on*.
 - **Overlay across scenes.** The overlay grab resolves the layer against the current scene each frame, so it works after a scene change — including in projects where the effect persists across scenes.
 
 ---
