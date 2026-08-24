@@ -1,6 +1,6 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.7.0**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **0.8.0**, tested against **GDevelop 5.6.271**.
 
 Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
 
@@ -198,6 +198,19 @@ All return a number. Use anywhere an expression is accepted (e.g. `CRTScreenBulg
 | `ShaderRenderGrainSpeed()` | Grain speed |
 | `ShaderRenderBlur()` | Camera blur (0–100) |
 | `ShaderRenderPixelateSize()` | Camera pixelate block size in real pixels (1–64) |
+
+---
+
+## Working alongside GDevelop's built-in 3D effects
+
+Since **0.8.0** the effect runs as a real post-processing pass inside the target layer's `EffectComposer` — the same chain, through the same `addPostProcessingPass` entry point, that GDevelop's own 3D effects use. So you can stack 3DCRT+ with **Bloom**, **Brightness and contrast**, **Exposure**, **Hue and saturation**, and they compose properly instead of fighting.
+
+Two consequences worth knowing:
+
+- **3DCRT+ runs before the built-ins.** Passes insert ahead of the antialiasing and output passes, so a native Bloom placed on the same layer blooms the CRT image (scanlines included), not the raw scene.
+- **Antialiasing softens scanlines.** GDevelop adds an `SMAAPass` after your passes unless the project's antialiasing is set to **None**. For a crisp scanline look, turn it off.
+
+**Multiple 3D layers now work.** Each layer owns its own composer, so pointing the effect at a layer no longer means every other 3D layer gets overwritten.
 
 ---
 
