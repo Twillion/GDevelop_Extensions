@@ -1,15 +1,15 @@
 # 3DCRT+ — API Reference
 
-A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **1.0.0**, tested against **GDevelop 5.6.271**.
+A configurable retro-screen post-processing toolkit for GDevelop's built-in 3D engine. This document lists the runtime **actions**, **conditions**, and **expressions** the extension exposes. Version **1.0.0**, tested against **GDevelop 5.6.280**.
 
-Unlike standard layer effects, 3DCRT+ operates directly on GDevelop's Three.js 3D renderer, applying post-processing across an entire 3D scene — this is true 3D post-processing, not a 2D CRT overlay. It runs as a single fullscreen pass.
+3DCRT+ applies post-processing across an entire 3D scene — true 3D post-processing, not a 2D CRT overlay. Since 1.0.0 it runs as a single fullscreen pass inside the target layer's own effect chain, alongside GDevelop's built-in 3D layer effects.
 
 There are two ways to control 3DCRT+:
 
 1. **Behavior properties** — add the **3DCRT+** behavior to an object on your 3D layer and set values in the properties panel. Good for static, set-once configuration.
 2. **Events (this doc)** — actions, conditions, and expressions for driving any parameter at runtime.
 
-All effect parameters are global to the 3D rendering, not per-object. The behavior on the object exists to host the settings and install the renderer hook; you don't need one behavior per effect.
+All effect parameters are global to the 3D rendering, not per-object. The behavior on the object exists to host the settings and attach the pass; you don't need one behavior per effect. You can also skip the behavior entirely and drive everything from events.
 
 ---
 
@@ -32,11 +32,11 @@ Each effect belongs to a group that can be switched on or off independently. Eve
 |---|---|---|
 | **Enable or disable a CRT effect** | `Effect` (string), `Enable` (yes/no) | Turns one effect group on or off. |
 
-**Accepted `Effect` values** (type one of these exactly — the editor dropdown does not list them):
+**Accepted `Effect` values** (the parameter is a dropdown, so the editor offers these; typing one works too):
 
 `Scanlines` · `Bulge` · `Border` · `Mask` · `Aberration` · `Roll` · `Flicker` · `Interlace` · `Color` · `Grain` · `Blur` · `Pixelate`
 
-> Note: `Color` covers saturation/contrast/gamma/tint. `Grain` covers all four grain parameters. Opacity and image stretch are not gated by any group — they always apply.
+> Note: `Color` covers gamma and phosphor tint (saturation and contrast moved to GDevelop's built-in effects in 1.0.0). `Grain` covers all four grain parameters. Opacity and image stretch are not gated by any group — they always apply.
 
 ---
 
@@ -123,10 +123,10 @@ How it works: the named 2D layer is captured into a texture (shared GPU texture,
 
 | Action label | Parameters | Range | Description |
 |---|---|---|---|
-| **Render 2D layer through the CRT effect** | `OverlayLayer` (layer) | — | Start compositing the named 2D layer inside the effect. |
-| **Stop rendering the 2D overlay layer through the CRT effect** | — | — | Stop compositing the overlay; the layer goes back to drawing normally on top. |
-| **Set CRT overlay opacity** | `Value` (number) | 0–1 | Fade for the overlay only (1 = fully visible). **Note the scale:** this is 0–1, unlike the master **Set shader render opacity** which is 0–255. |
-| **Set CRT overlay UI glow** | `Value` (number) | 0–5 | Phosphor bloom on the overlay's own bright pixels. 0 = none. |
+| **Render a 2D layer through the effect** | `OverlayLayer` (layer) | — | Start compositing the named 2D layer inside the effect. |
+| **Stop rendering the 2D layer through the effect** | — | — | Stop compositing the overlay; the layer goes back to drawing normally on top. |
+| **Set overlay layer opacity** | `Value` (number) | 0–1 | Fade for the overlay only (1 = fully visible). **Note the scale:** this is 0–1, unlike the master **Set shader render opacity** which is 0–255. |
+| **Set overlay UI glow** | `Value` (number) | 0–5 | Phosphor bloom on the overlay's own bright pixels. 0 = none. |
 
 **Avoiding the double-draw.** When a layer is composited through the effect, you usually don't want GDevelop *also* drawing it normally on top — if it does, that raw crisp copy lands over the finished quad and the HUD escapes the effect. There are two ways to handle this:
 
@@ -216,7 +216,7 @@ Two consequences worth knowing:
 ## Notes & known gaps
 
 - **Image stretch (X/Y)** can be set in the **behavior properties** but has **no runtime action or expression** in this version — you can't change it from events yet. Default is no stretch.
-- **The effect-group selector has no preset list.** Type the group name exactly as spelled above; an unknown name is ignored.
+- **Unknown group names are ignored silently.** The selector offers the valid names, but if you type one from events, a misspelling fails quietly rather than erroring.
 - **Everything is off by default.** Adding the extension changes nothing until you enable a group (in the properties panel or via *Enable or disable a CRT effect*).
 - **Shadow-mask** strength varies with display DPI — tune per project.
 - **Performance.** Cost scales with the number of enabled effects and the output resolution. The shadow mask, grain and camera blur are the most expensive; enable those selectively on lower-end or mobile hardware. The overlay grab adds one layer render + composite per frame *only while it's switched on*.
@@ -238,8 +238,8 @@ Then ramp `Set shader render opacity` from 0 toward 255 over time for a power-on
 To run a HUD through the same tube (put the HUD on its own 2D layer and hide that layer in the editor):
 
 ```
-Action: Render 2D layer through the CRT effect (layer: "HUD")
-Action: Set CRT overlay UI glow to 0.4
+Action: Render a 2D layer through the effect (layer: "HUD")
+Action: Set overlay UI glow to 0.4
 ```
 
 ---
