@@ -1,0 +1,15 @@
+{
+  "name": "wglexe-packager",
+  "productName": "WGLEXE Packager",
+  "version": "0.1.0",
+  "description": "Portable packager for GDevelop 5 Electron exports.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node cli.js check",
+    "package": "node cli.js package"
+  },
+  "devDependencies": {
+    "electron": "32.3.3"
+  }
+}

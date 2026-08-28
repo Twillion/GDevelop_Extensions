@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="probeGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#ffd54f"/>
+      <stop offset="80%" stop-color="#ff8f00"/>
+      <stop offset="100%" stop-color="#e65100"/>
+    </radialGradient>
+    <radialGradient id="probeBlueGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#e1f5fe"/>
+      <stop offset="50%" stop-color="#29b6f6"/>
+      <stop offset="100%" stop-color="#0277bd"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Isometric Grid Lines -->
+  <g stroke="#37474f" stroke-width="1.2" stroke-dasharray="2 2" fill="none">
+    <!-- Bottom layer -->
+    <path d="M 32 46 L 12 36 L 32 26 L 52 36 Z"/>
+    <!-- Middle layer -->
+    <path d="M 32 36 L 12 26 L 32 16 L 52 26 Z"/>
+    <!-- Top layer -->
+    <path d="M 32 26 L 12 16 L 32 6 L 52 16 Z"/>
+
+    <!-- Vertical connectors -->
+    <path d="M 12 16 L 12 36 M 52 16 L 52 36 M 32 6 L 32 46"/>
+    <path d="M 22 11 L 22 41 M 42 11 L 42 41 M 22 21 L 22 51 M 42 21 L 42 51"/>
+  </g>
+
+  <!-- Probes with Glow -->
+  <g filter="url(#glow)">
+    <!-- Bottom row probes (ground bounce / warm) -->
+    <circle cx="32" cy="46" r="4.5" fill="url(#probeGrad)"/>
+    <circle cx="12" cy="36" r="3.5" fill="url(#probeGrad)"/>
+    <circle cx="52" cy="36" r="3.5" fill="url(#probeGrad)"/>
+
+    <!-- Middle row probes -->
+    <circle cx="22" cy="31" r="3.8" fill="url(#probeGrad)"/>
+    <circle cx="42" cy="31" r="3.8" fill="url(#probeGrad)"/>
+    <circle cx="32" cy="36" r="5" fill="url(#probeGrad)"/>
+
+    <!-- Top row probes (sky bounce / cool light) -->
+    <circle cx="12" cy="16" r="3.5" fill="url(#probeBlueGrad)"/>
+    <circle cx="52" cy="16" r="3.5" fill="url(#probeBlueGrad)"/>
+    <circle cx="32" cy="26" r="4.2" fill="url(#probeBlueGrad)"/>
+    <circle cx="32" cy="6" r="5" fill="url(#probeBlueGrad)"/>
+    <circle cx="22" cy="11" r="3.5" fill="url(#probeBlueGrad)"/>
+    <circle cx="42" cy="11" r="3.5" fill="url(#probeBlueGrad)"/>
+  </g>
+</svg>

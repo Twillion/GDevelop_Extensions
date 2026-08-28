@@ -1,0 +1,11 @@
+# Third-party binaries — populate once, see each folder's README
+runtime/*/
+vendor/node_modules/
+tools/*.exe
+
+# Build output and per-machine state
+dist/
+data/
+settings.json
+electron-manifest.json
+node_modules/

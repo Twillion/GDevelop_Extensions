@@ -1,0 +1,1315 @@
+{
+  "name": "AnimatedPBR3D",
+  "fullName": "Animated & Custom PBR Material 3D",
+  "description": "Attach custom PBR textures (Albedo, Normal, Roughness, Metalness, AO, Emissive) from project image resources to 3D objects, and animate textures with real-time UV scrolling, flipbook/spritesheet frame animation, UV rotation, and video textures.",
+  "category": "3D",
+  "author": "Christopher Monhollen",
+  "license": "MIT",
+  "version": "2.0.0",
+  "tags": [
+    "3D",
+    "material",
+    "PBR",
+    "texture",
+    "animated texture",
+    "UV scroll",
+    "flipbook",
+    "spritesheet",
+    "video texture",
+    "Three.js",
+    "water",
+    "lava"
+  ],
+  "extensionNamespace": "AnimatedPBR3D",
+  "dependencies": [],
+  "eventsFunctions": [],
+  "eventsFunctionsFolderStructure": {
+    "folderName": "__ROOT",
+    "children": []
+  },
+  "eventsBasedBehaviors": [
+    {
+      "description": "Controls PBR materials and real-time texture animations (UV scroll, flipbook spritesheet, video) on a 3D object.",
+      "fullName": "Animated PBR Material 3D",
+      "name": "AnimatedPBR3D",
+      "objectType": "",
+      "eventsFunctions": [
+        {
+          "name": "doStepPreEvents",
+          "fullName": "doStepPreEvents",
+          "functionType": "Action",
+          "private": true,
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (typeof THREE === 'undefined') return;\n\nif (!gdjs.__animatedPBR3D) {\n    gdjs.__animatedPBR3D = (function() {\n        const DEG_TO_RAD = Math.PI / 180;\n\n        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));\n        const isMesh = (node) => node && node.isMesh === true && node.material;\n\n        // Finite guard for every value that reaches a Three.js numeric field. A NaN in\n        // texture.offset or texture.repeat poisons the whole UV matrix and the surface\n        // renders undefined, so nothing untrusted gets through without passing here.\n        const finite = (value, def) => {\n            const v = Number(value);\n            return Number.isFinite(v) ? v : def;\n        };\n\n        // Slots holding colour data, which must be sRGB-decoded. Everything else is\n        // data (normals, roughness, metalness, occlusion) and must stay linear.\n        const COLOR_SLOTS = { albedo: true, emissive: true };\n\n        const TEXTURE_SLOTS = [\n            { key: 'albedo', property: 'AlbedoMap', target: 'map' },\n            { key: 'normal', property: 'NormalMap', target: 'normalMap' },\n            { key: 'roughness', property: 'RoughnessMap', target: 'roughnessMap' },\n            { key: 'metalness', property: 'MetalnessMap', target: 'metalnessMap' },\n            { key: 'ao', property: 'AOMap', target: 'aoMap' },\n            { key: 'emissive', property: 'EmissiveMap', target: 'emissiveMap' }\n        ];\n\n        const getRootObject3D = (object) => {\n            if (!object) return null;\n            if (typeof object.get3DRendererObject === 'function') {\n                try {\n                    const obj = object.get3DRendererObject();\n                    if (obj) return obj;\n                } catch(e) {}\n            }\n            return null;\n        };\n\n        const getBehaviorState = (behavior) => {\n            if (!behavior.__animatedPBR3DState) {\n                behavior.__animatedPBR3DState = {\n                    state: 'Uninitialized',\n                    error: '',\n                    warned: false,\n                    retryCount: 0,\n                    animationInitialized: false,\n                    meshesCount: 0,\n                    materialsCount: 0,\n                    targetMaterials: [],\n                    originalMaterials: new Map(),\n                    ownedMaterials: new Set(),\n                    ownedTextures: new Map(), // cacheKey -> THREE.Texture owned by this behavior\n                    animatedTextures: [], // textures whose UV transform this behavior drives\n                    videoElement: null,\n                    videoTexture: null,\n\n                    // Base UV transform, read from the behavior properties when the\n                    // material is applied and left alone from then on.\n                    baseTilingX: 1,\n                    baseTilingY: 1,\n                    baseOffsetX: 0,\n                    baseOffsetY: 0,\n                    baseRotation: 0,\n                    centerX: 0.5,\n                    centerY: 0.5,\n\n                    // UV animation runtime state\n                    uvOffset: { x: 0, y: 0 },\n                    uvRotation: 0,\n                    isScrolling: false,\n                    scrollSpeedX: 0,\n                    scrollSpeedY: 0,\n                    scrollRotSpeed: 0,\n\n                    // Flipbook runtime state\n                    flipbook: {\n                        enabled: false,\n                        isPlaying: false,\n                        columns: 1,\n                        rows: 1,\n                        fps: 12,\n                        loop: true,\n                        totalFrames: 1,\n                        currentFrame: 0,\n                        timer: 0,\n                        isFinished: false\n                    }\n                };\n            }\n            return behavior.__animatedPBR3DState;\n        };\n\n        const fail = (state, message) => {\n            state.error = message;\n            state.state = 'Failed';\n            if (!state.warned) {\n                state.warned = true;\n                console.warn('[AnimatedPBR3D] ' + message);\n            }\n        };\n\n        const getBoolean = (behavior, name, def) => {\n            const g = behavior['_get' + name];\n            if (typeof g !== 'function') return def;\n            const v = g.call(behavior);\n            return v === true || v === 'true' || v === 1 || v === '1';\n        };\n\n        const getNumber = (behavior, name, def) => {\n            const g = behavior['_get' + name];\n            if (typeof g !== 'function') return def;\n            return finite(g.call(behavior), def);\n        };\n\n        const getString = (behavior, name, def) => {\n            const g = behavior['_get' + name];\n            return typeof g === 'function' ? String(g.call(behavior)) : def;\n        };\n\n        const parseColor = (colorString) => {\n            const color = new THREE.Color();\n            if (!colorString) return color.setRGB(1, 1, 1, THREE.SRGBColorSpace);\n            const parts = String(colorString).split(';');\n            if (parts.length < 3) {\n                try { color.set(colorString); return color; } catch(e) { return color.setRGB(1, 1, 1, THREE.SRGBColorSpace); }\n            }\n            const r = clamp(finite(parts[0], 0), 0, 255) / 255;\n            const g = clamp(finite(parts[1], 0), 0, 255) / 255;\n            const b = clamp(finite(parts[2], 0), 0, 255) / 255;\n            color.setRGB(r, g, b, THREE.SRGBColorSpace);\n            return color;\n        };\n\n        const collectMeshRecords = (root, includeChildren) => {\n            const records = [];\n            if (isMesh(root)) records.push(root);\n            if (includeChildren && typeof root.traverse === 'function') {\n                root.traverse((child) => {\n                    if (child !== root && isMesh(child)) records.push(child);\n                });\n            }\n            return records;\n        };\n\n        const resolveTargets = (meshes, behavior) => {\n            const targetMode = getString(behavior, 'TargetMode', 'All materials');\n            const targetMatIndex = getNumber(behavior, 'MaterialIndex', 0);\n            const targetMatName = getString(behavior, 'MaterialName', '');\n            const targetMeshName = getString(behavior, 'MeshName', '');\n            const results = [];\n            let firstFound = false;\n\n            for (const mesh of meshes) {\n                if (targetMode === 'Mesh name' && mesh.name !== targetMeshName) continue;\n                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];\n                for (let i = 0; i < mats.length; i++) {\n                    const mat = mats[i];\n                    if (!mat) continue;\n                    let match = false;\n                    if (targetMode === 'All materials' || targetMode === 'Mesh name') match = true;\n                    else if (targetMode === 'First material' && !firstFound) { match = true; firstFound = true; }\n                    else if (targetMode === 'Material index' && i === targetMatIndex) match = true;\n                    else if (targetMode === 'Material name' && mat.name === targetMatName) match = true;\n\n                    if (match) {\n                        results.push({ mesh, material: mat, index: i });\n                        if (targetMode === 'First material') return results;\n                    }\n                }\n            }\n            return results;\n        };\n\n        // Resolve a project image resource to a texture this behavior owns.\n        //\n        // gdjs.PixiImageManager.getThreeTexture() is the engine's public loader. It keeps\n        // one texture per resource and disposes it on scene unload, so the shared instance\n        // must not be handed out here: this behavior animates offset/repeat/rotation, and\n        // mutating the shared texture would drag every other user of that image along.\n        // clone() gives an independent UV transform while Texture.copy() carries the same\n        // `source` across, so the decoded image and its GPU upload are still shared.\n        const loadTexture = (game, resourceName, slotKey, filterMode, state, usedKeys) => {\n            if (typeof resourceName !== 'string') return null;\n            const resName = resourceName.trim();\n            if (resName === '') return null;\n\n            const cacheKey = slotKey + ':' + resName + ':' + filterMode;\n            const cached = state.ownedTextures.get(cacheKey);\n            if (cached) {\n                usedKeys.add(cacheKey);\n                return cached;\n            }\n\n            const imageManager = game.getImageManager();\n            if (!imageManager || typeof imageManager.getThreeTexture !== 'function') return null;\n\n            let texture = null;\n            try {\n                const shared = imageManager.getThreeTexture(resName);\n                if (shared) texture = shared.clone();\n            } catch(e) {\n                fail(state, 'Could not load image resource \"' + resName + '\": ' + e.message);\n                return null;\n            }\n            if (!texture) return null;\n\n            texture.wrapS = THREE.RepeatWrapping;\n            texture.wrapT = THREE.RepeatWrapping;\n            // getThreeTexture marks every texture sRGB, which is right for colour maps\n            // and wrong for the data maps, where an sRGB decode corrupts the values.\n            texture.colorSpace = COLOR_SLOTS[slotKey] ? THREE.SRGBColorSpace : THREE.NoColorSpace;\n            if (filterMode === 'Nearest') {\n                texture.magFilter = THREE.NearestFilter;\n                texture.minFilter = THREE.NearestFilter;\n                texture.generateMipmaps = false;\n            } else if (filterMode === 'Linear') {\n                texture.magFilter = THREE.LinearFilter;\n                texture.minFilter = THREE.LinearMipmapLinearFilter;\n            }\n            // Once, so the clone's colour space and filters reach the GPU. This must not\n            // be repeated per frame: it forces a full re-upload of the image.\n            texture.needsUpdate = true;\n\n            state.ownedTextures.set(cacheKey, texture);\n            usedKeys.add(cacheKey);\n            return texture;\n        };\n\n        // Push the current UV transform onto the animated textures. Called every frame\n        // while something is animating, so it stays allocation-free and never touches\n        // needsUpdate: Texture.matrixAutoUpdate is true by default, so the renderer\n        // rebuilds the UV matrix from offset/repeat/rotation/center on its own.\n        const applyUVTransform = (state) => {\n            const textures = state.animatedTextures;\n            if (textures.length === 0) return;\n\n            let repeatX = state.baseTilingX;\n            let repeatY = state.baseTilingY;\n            let offsetX = state.baseOffsetX + state.uvOffset.x;\n            let offsetY = state.baseOffsetY + state.uvOffset.y;\n\n            const fb = state.flipbook;\n            if (fb.enabled) {\n                const cols = fb.columns;\n                const rows = fb.rows;\n                const frameW = 1 / cols;\n                const frameH = 1 / rows;\n                const colIdx = fb.currentFrame % cols;\n                const rowIdx = Math.floor(fb.currentFrame / cols) % rows;\n\n                repeatX = frameW * state.baseTilingX;\n                repeatY = frameH * state.baseTilingY;\n                offsetX += colIdx * frameW;\n                offsetY += 1 - frameH - rowIdx * frameH;\n            }\n\n            const rotation = (state.baseRotation + state.uvRotation) * DEG_TO_RAD;\n\n            for (let i = 0; i < textures.length; i++) {\n                const texture = textures[i];\n                texture.repeat.set(repeatX, repeatY);\n                texture.offset.set(offsetX, offsetY);\n                texture.rotation = rotation;\n                texture.center.set(state.centerX, state.centerY);\n            }\n        };\n\n        const applyMaterialSettings = (mat, behavior) => {\n            if (getBoolean(behavior, 'UseBaseColor', false) && mat.color) {\n                mat.color.copy(parseColor(getString(behavior, 'BaseColor', '255;255;255')));\n            }\n\n            if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {\n                mat.metalness = clamp(getNumber(behavior, 'Metalness', 0), 0, 1);\n                mat.roughness = clamp(getNumber(behavior, 'Roughness', 0.5), 0, 1);\n\n                if (mat.emissive) mat.emissive.copy(parseColor(getString(behavior, 'EmissiveColor', '0;0;0')));\n                if (mat.emissiveIntensity !== undefined) {\n                    mat.emissiveIntensity = Math.max(0, getNumber(behavior, 'EmissiveStrength', 1));\n                }\n            }\n\n            const alphaMode = getString(behavior, 'AlphaMode', 'Opaque');\n            const alpha = clamp(getNumber(behavior, 'Alpha', 1), 0, 1);\n            const alphaCutoff = clamp(getNumber(behavior, 'AlphaCutoff', 0.1), 0, 1);\n\n            mat.depthWrite = getBoolean(behavior, 'DepthWrite', true);\n            mat.blending = THREE.NormalBlending;\n\n            if (alphaMode === 'Blend') {\n                mat.transparent = true;\n                mat.opacity = alpha;\n                mat.alphaTest = 0;\n            } else if (alphaMode === 'Cutout') {\n                mat.transparent = false;\n                mat.opacity = 1;\n                mat.alphaTest = alphaCutoff;\n            } else if (alphaMode === 'Additive') {\n                mat.transparent = true;\n                mat.opacity = alpha;\n                mat.alphaTest = 0;\n                mat.blending = THREE.AdditiveBlending;\n            } else if (alphaMode === 'Multiply') {\n                mat.transparent = true;\n                mat.opacity = alpha;\n                mat.alphaTest = 0;\n                mat.blending = THREE.MultiplyBlending;\n            } else {\n                mat.transparent = false;\n                mat.opacity = 1;\n                mat.alphaTest = 0;\n            }\n\n            const sideMode = getString(behavior, 'MaterialSide', 'Front');\n            mat.side = sideMode === 'Back' ? THREE.BackSide : sideMode === 'Double' ? THREE.DoubleSide : THREE.FrontSide;\n            if (mat.wireframe !== undefined) mat.wireframe = getBoolean(behavior, 'Wireframe', false);\n\n            mat.needsUpdate = true;\n        };\n\n        // Resolve every texture slot and bind it to the target materials. Runs on apply\n        // and whenever an action changes a texture, never per frame.\n        const bindTextures = (state, behavior, game) => {\n            const filterMode = getString(behavior, 'TextureFiltering', 'Keep Original');\n            const normalScale = getNumber(behavior, 'NormalScale', 1);\n            const aoIntensity = getNumber(behavior, 'AOIntensity', 1);\n\n            state.animatedTextures.length = 0;\n\n            const usedKeys = new Set();\n            const resolved = {};\n            for (const slot of TEXTURE_SLOTS) {\n                let texture = null;\n                if (slot.key === 'albedo' && state.videoTexture) {\n                    texture = state.videoTexture;\n                } else {\n                    texture = loadTexture(game, getString(behavior, slot.property, ''), slot.key, filterMode, state, usedKeys);\n                }\n                resolved[slot.target] = texture;\n                if (texture) state.animatedTextures.push(texture);\n            }\n\n            for (const mat of state.targetMaterials) {\n                if (!mat) continue;\n                // Slots with no resource assigned fall back to whatever the object's own\n                // material already had, so a 3D model keeps its baked-in maps instead of\n                // losing them to an empty slot.\n                const base = mat.__pbrBaseMaps || {};\n                for (const slot of TEXTURE_SLOTS) {\n                    mat[slot.target] = resolved[slot.target] || base[slot.target] || null;\n                }\n                if (resolved.normalMap && mat.normalScale) mat.normalScale.set(normalScale, normalScale);\n                if (resolved.aoMap) mat.aoMapIntensity = aoIntensity;\n                mat.needsUpdate = true;\n            }\n\n            // Drop textures this behavior owns that nothing references any more, so\n            // repeatedly swapping a texture at runtime does not accumulate GPU memory.\n            // Safe only because every slot above is now assigned unconditionally.\n            for (const [key, texture] of state.ownedTextures) {\n                if (usedKeys.has(key)) continue;\n                try { texture.dispose(); } catch(e) {}\n                state.ownedTextures.delete(key);\n            }\n\n            applyUVTransform(state);\n        };\n\n        const applyToBehavior = (behavior, object, game) => {\n            const state = getBehaviorState(behavior);\n            const root = getRootObject3D(object);\n            if (!root) {\n                if (state.state === 'Uninitialized' || state.state === 'WaitingForRenderer') {\n                    state.state = 'WaitingForRenderer';\n                    state.retryCount++;\n                    if (state.retryCount > 180) {\n                        fail(state, 'No 3D renderer on this object. This behavior needs a 3D object (3D Box, 3D Model, or another object exposing get3DRendererObject).');\n                    }\n                }\n                return;\n            }\n\n            try {\n                const allMeshes = collectMeshRecords(root, getBoolean(behavior, 'IncludeChildren', true));\n                if (allMeshes.length === 0) {\n                    fail(state, 'No compatible meshes found on this 3D object.');\n                    return;\n                }\n\n                const targets = resolveTargets(allMeshes, behavior);\n                state.meshesCount = new Set(targets.map(t => t.mesh)).size;\n                state.materialsCount = targets.length;\n\n                if (targets.length === 0) {\n                    fail(state, 'No materials matched the current Target Mode.');\n                    return;\n                }\n\n                const cloneMaterials = getBoolean(behavior, 'CloneMaterials', true);\n                const castShadow = getBoolean(behavior, 'CastShadow', true);\n                const receiveShadow = getBoolean(behavior, 'ReceiveShadow', true);\n                const appliedMaterials = [];\n\n                for (const target of targets) {\n                    const mesh = target.mesh;\n                    if (!state.originalMaterials.has(mesh.uuid)) {\n                        const wasArray = Array.isArray(mesh.material);\n                        state.originalMaterials.set(mesh.uuid, {\n                            wasArray: wasArray,\n                            materials: wasArray ? mesh.material.slice() : [mesh.material]\n                        });\n                    }\n\n                    const origArray = state.originalMaterials.get(mesh.uuid).materials;\n                    const baseMat = origArray[target.index] || origArray[0];\n\n                    let newMat;\n                    if (cloneMaterials) {\n                        newMat = (baseMat && baseMat.isMeshStandardMaterial) ? baseMat.clone() : new THREE.MeshStandardMaterial();\n                        if (baseMat) {\n                            newMat.name = baseMat.name;\n                            if (baseMat.color && newMat.color) newMat.color.copy(baseMat.color);\n                            if (baseMat.map) newMat.map = baseMat.map;\n                            newMat.roughness = baseMat.roughness !== undefined ? baseMat.roughness : 0.5;\n                            newMat.metalness = baseMat.metalness !== undefined ? baseMat.metalness : 0;\n                        }\n                        state.ownedMaterials.add(newMat);\n                    } else {\n                        newMat = baseMat;\n                    }\n                    if (!newMat) continue;\n\n                    // Remember the maps the object shipped with, once, so empty texture\n                    // slots can fall back to them instead of blanking the material.\n                    // Captured before this behavior writes anything, and never re-captured.\n                    if (!newMat.__pbrBaseMaps) {\n                        const baseMaps = {};\n                        for (const slot of TEXTURE_SLOTS) {\n                            baseMaps[slot.target] = (baseMat && baseMat[slot.target]) || null;\n                        }\n                        newMat.__pbrBaseMaps = baseMaps;\n                    }\n\n                    applyMaterialSettings(newMat, behavior);\n\n                    if (Array.isArray(mesh.material)) {\n                        mesh.material[target.index] = newMat;\n                    } else {\n                        mesh.material = newMat;\n                    }\n\n                    mesh.castShadow = castShadow;\n                    mesh.receiveShadow = receiveShadow;\n\n                    appliedMaterials.push(newMat);\n                }\n\n                state.targetMaterials = appliedMaterials;\n\n                // Cache the base UV transform so the per-frame path never re-reads properties.\n                state.baseTilingX = getNumber(behavior, 'TilingX', 1);\n                state.baseTilingY = getNumber(behavior, 'TilingY', 1);\n                state.baseOffsetX = getNumber(behavior, 'OffsetX', 0);\n                state.baseOffsetY = getNumber(behavior, 'OffsetY', 0);\n                state.baseRotation = getNumber(behavior, 'RotationAngle', 0);\n                state.centerX = getNumber(behavior, 'RotationCenterX', 0.5);\n                state.centerY = getNumber(behavior, 'RotationCenterY', 0.5);\n\n                // Seeded from the properties once. A later re-apply (triggered by a\n                // texture action) must not discard scroll speeds or flipbook settings\n                // that events have since configured.\n                if (!state.animationInitialized) {\n                    state.animationInitialized = true;\n\n                    state.isScrolling = getBoolean(behavior, 'EnableScroll', false);\n                    state.scrollSpeedX = getNumber(behavior, 'ScrollSpeedX', 0);\n                    state.scrollSpeedY = getNumber(behavior, 'ScrollSpeedY', 0);\n                    state.scrollRotSpeed = getNumber(behavior, 'ScrollRotationSpeed', 0);\n\n                    const fb = state.flipbook;\n                    fb.enabled = getBoolean(behavior, 'EnableFlipbook', false);\n                    fb.columns = Math.max(1, Math.floor(getNumber(behavior, 'FlipbookColumns', 1)));\n                    fb.rows = Math.max(1, Math.floor(getNumber(behavior, 'FlipbookRows', 1)));\n                    fb.fps = Math.max(0.01, getNumber(behavior, 'FlipbookFPS', 12));\n                    fb.loop = getBoolean(behavior, 'FlipbookLoop', true);\n                    const declaredFrames = Math.floor(getNumber(behavior, 'FlipbookTotalFrames', 0));\n                    fb.totalFrames = declaredFrames > 0 ? Math.min(declaredFrames, fb.columns * fb.rows) : fb.columns * fb.rows;\n                    fb.isPlaying = fb.enabled;\n                }\n\n                bindTextures(state, behavior, game);\n\n                state.state = 'Ready';\n                state.error = '';\n            } catch(e) {\n                fail(state, 'Material setup error: ' + e.message);\n                console.error('[AnimatedPBR3D]', e);\n            }\n        };\n\n        // Force a full re-apply. Actions that change a behavior property call this so the\n        // change reaches the material; there is no per-frame polling for it.\n        const reapply = (behavior, object, game) => {\n            const state = getBehaviorState(behavior);\n\n            // Hold the previous clones aside rather than disposing up front: if the\n            // re-apply fails the meshes would otherwise be left holding disposed\n            // materials. They are only released once the new set is in place.\n            const previous = state.ownedMaterials;\n            state.ownedMaterials = new Set();\n            state.targetMaterials = [];\n            state.state = 'Uninitialized';\n            state.retryCount = 0;\n\n            applyToBehavior(behavior, object, game);\n\n            if (state.state === 'Ready') {\n                for (const mat of previous) {\n                    if (state.ownedMaterials.has(mat)) continue;\n                    try { mat.dispose(); } catch(e) {}\n                }\n            } else {\n                for (const mat of previous) state.ownedMaterials.add(mat);\n            }\n        };\n\n        const disposeVideo = (state) => {\n            if (state.videoTexture) {\n                try { state.videoTexture.dispose(); } catch(e) {}\n                state.videoTexture = null;\n            }\n            if (state.videoElement) {\n                try {\n                    state.videoElement.pause();\n                    // removeAttribute rather than src = '': an empty src resolves to the\n                    // document URL and the browser fetches the page again as media.\n                    state.videoElement.removeAttribute('src');\n                    state.videoElement.load();\n                } catch(e) {}\n                state.videoElement = null;\n            }\n        };\n\n        const setVideo = (behavior, object, runtimeScene, videoUrl, loop, muted) => {\n            const state = getBehaviorState(behavior);\n            if (typeof videoUrl !== 'string' || videoUrl.trim() === '') return;\n\n            if (!state.videoElement) {\n                state.videoElement = document.createElement('video');\n                state.videoElement.crossOrigin = 'anonymous';\n                state.videoElement.playsInline = true;\n            }\n\n            state.videoElement.src = videoUrl;\n            state.videoElement.loop = loop === true;\n            state.videoElement.muted = muted === true;\n\n            if (!state.videoTexture) {\n                state.videoTexture = new THREE.VideoTexture(state.videoElement);\n                state.videoTexture.wrapS = THREE.RepeatWrapping;\n                state.videoTexture.wrapT = THREE.RepeatWrapping;\n                // Without this the renderer skips the sRGB decode for video frames\n                // (its decodeVideoTexture path keys off the texture's colour space).\n                state.videoTexture.colorSpace = THREE.SRGBColorSpace;\n            }\n\n            const playback = state.videoElement.play();\n            if (playback && typeof playback.catch === 'function') {\n                playback.catch((err) => {\n                    console.warn('[AnimatedPBR3D] Video playback was blocked by the browser. ' +\n                        'Autoplay usually requires the video to be muted, or a user interaction first. (' + err + ')');\n                });\n            }\n\n            reapply(behavior, object, runtimeScene.getGame());\n        };\n\n        const tick = (behavior, object, runtimeScene) => {\n            const state = getBehaviorState(behavior);\n\n            if (state.state === 'Uninitialized' || state.state === 'WaitingForRenderer') {\n                if (!getBoolean(behavior, 'ApplyOnCreation', true)) {\n                    state.state = 'Idle';\n                    return;\n                }\n                applyToBehavior(behavior, object, runtimeScene.getGame());\n                return;\n            }\n            if (state.state !== 'Ready') return;\n\n            // VideoTexture drives its own uploads through requestVideoFrameCallback where\n            // the browser has it; update() is the documented fallback and a no-op otherwise.\n            // Setting needsUpdate here unconditionally would re-upload even on frames the\n            // video has not advanced.\n            if (state.videoTexture) state.videoTexture.update();\n\n            const dt = runtimeScene.getTimeManager().getElapsedTime() / 1000;\n            let uvDirty = false;\n\n            if (state.isScrolling && (state.scrollSpeedX !== 0 || state.scrollSpeedY !== 0 || state.scrollRotSpeed !== 0)) {\n                // Wrapped, because UV offsets are periodic and an unbounded accumulator\n                // loses float precision in the texture matrix over a long session.\n                state.uvOffset.x = (state.uvOffset.x + state.scrollSpeedX * dt) % 1;\n                state.uvOffset.y = (state.uvOffset.y + state.scrollSpeedY * dt) % 1;\n                state.uvRotation = (state.uvRotation + state.scrollRotSpeed * dt) % 360;\n                uvDirty = true;\n            }\n\n            const fb = state.flipbook;\n            if (fb.enabled && fb.isPlaying && !fb.isFinished && fb.totalFrames > 0) {\n                fb.timer += dt;\n                const frameDuration = 1 / fb.fps;\n                if (fb.timer >= frameDuration) {\n                    const advance = Math.floor(fb.timer / frameDuration);\n                    fb.timer -= advance * frameDuration;\n                    fb.currentFrame += advance;\n\n                    if (fb.currentFrame >= fb.totalFrames) {\n                        if (fb.loop) {\n                            fb.currentFrame = fb.currentFrame % fb.totalFrames;\n                        } else {\n                            fb.currentFrame = fb.totalFrames - 1;\n                            fb.isFinished = true;\n                            fb.isPlaying = false;\n                        }\n                    }\n                    uvDirty = true;\n                }\n            }\n\n            if (uvDirty) applyUVTransform(state);\n        };\n\n        const restoreOriginalMaterials = (state, allMeshes) => {\n            for (const mesh of allMeshes) {\n                const orig = state.originalMaterials.get(mesh.uuid);\n                if (!orig) continue;\n                // Restore the shape that was saved, not whatever is currently attached:\n                // a single-material array must go back as an array.\n                mesh.material = orig.wasArray ? orig.materials.slice() : orig.materials[0];\n            }\n            for (const mat of state.ownedMaterials) {\n                try { mat.dispose(); } catch(e) {}\n            }\n            for (const tex of state.ownedTextures.values()) {\n                try { tex.dispose(); } catch(e) {}\n            }\n            disposeVideo(state);\n\n            state.ownedMaterials.clear();\n            state.ownedTextures.clear();\n            state.originalMaterials.clear();\n            state.targetMaterials = [];\n            state.animatedTextures.length = 0;\n            state.state = 'Uninitialized';\n            state.retryCount = 0;\n            state.animationInitialized = false;\n        };\n\n        return {\n            getBehaviorState,\n            getRootObject3D,\n            collectMeshRecords,\n            applyToBehavior,\n            applyUVTransform,\n            bindTextures,\n            reapply,\n            disposeVideo,\n            setVideo,\n            tick,\n            restoreOriginalMaterials\n        };\n    })();\n}\n\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\ngdjs.__animatedPBR3D.tick(behavior, object, runtimeScene);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "parameters": []
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "onDestroy",
+          "functionType": "Action",
+          "private": true,
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nconst root = gdjs.__animatedPBR3D.getRootObject3D(object);\nconst allMeshes = root ? gdjs.__animatedPBR3D.collectMeshRecords(root, true) : [];\ngdjs.__animatedPBR3D.restoreOriginalMaterials(state, allMeshes);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "parameters": []
+        },
+        {
+          "name": "SetAlbedoTexture",
+          "fullName": "Set albedo / base texture",
+          "description": "Set the albedo base color texture from an image resource.",
+          "functionType": "Action",
+          "sentence": "Set albedo texture of _PARAM0_ to _PARAM2_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ResourceName",
+              "type": "imageResource",
+              "description": "Image resource",
+              "supplementaryInformation": "image"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nif (typeof behavior._setAlbedoMap !== 'function') return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\n// Setting a still image replaces any video on this slot, so tear the video down\n// rather than just dropping the reference and leaving it decoding forever.\ngdjs.__animatedPBR3D.disposeVideo(state);\nbehavior._setAlbedoMap(eventsFunctionContext.getArgument(\"ResourceName\"));\ngdjs.__animatedPBR3D.reapply(behavior, object, runtimeScene.getGame());\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "PBR textures"
+        },
+        {
+          "name": "SetNormalTexture",
+          "fullName": "Set normal map texture",
+          "description": "Set the normal bump map texture and scale.",
+          "functionType": "Action",
+          "sentence": "Set normal map of _PARAM0_ to _PARAM2_ (scale: _PARAM3_)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ResourceName",
+              "type": "imageResource",
+              "description": "Image resource",
+              "supplementaryInformation": "image"
+            },
+            {
+              "name": "Scale",
+              "type": "expression",
+              "description": "Normal scale (e.g. 1.0)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nif (typeof behavior._setNormalMap !== 'function') return;\nbehavior._setNormalMap(eventsFunctionContext.getArgument(\"ResourceName\"));\nconst scale = Number(eventsFunctionContext.getArgument(\"Scale\"));\nbehavior._setNormalScale(Number.isFinite(scale) ? scale : 1);\ngdjs.__animatedPBR3D.reapply(behavior, object, runtimeScene.getGame());\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "PBR textures"
+        },
+        {
+          "name": "SetRoughnessTexture",
+          "fullName": "Set roughness map & factor",
+          "description": "Set the roughness texture map and factor value (0 to 1).",
+          "functionType": "Action",
+          "sentence": "Set roughness map of _PARAM0_ to _PARAM2_ (factor: _PARAM3_)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ResourceName",
+              "type": "imageResource",
+              "description": "Image resource",
+              "supplementaryInformation": "image"
+            },
+            {
+              "name": "Roughness",
+              "type": "expression",
+              "description": "Roughness factor (0 to 1)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nif (typeof behavior._setRoughnessMap !== 'function') return;\nbehavior._setRoughnessMap(eventsFunctionContext.getArgument(\"ResourceName\"));\nconst roughness = Number(eventsFunctionContext.getArgument(\"Roughness\"));\nbehavior._setRoughness(Number.isFinite(roughness) ? Math.max(0, Math.min(1, roughness)) : 0.5);\ngdjs.__animatedPBR3D.reapply(behavior, object, runtimeScene.getGame());\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "PBR textures"
+        },
+        {
+          "name": "SetMetalnessTexture",
+          "fullName": "Set metalness map & factor",
+          "description": "Set the metalness texture map and factor value (0 to 1).",
+          "functionType": "Action",
+          "sentence": "Set metalness map of _PARAM0_ to _PARAM2_ (factor: _PARAM3_)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ResourceName",
+              "type": "imageResource",
+              "description": "Image resource",
+              "supplementaryInformation": "image"
+            },
+            {
+              "name": "Metalness",
+              "type": "expression",
+              "description": "Metalness factor (0 to 1)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nif (typeof behavior._setMetalnessMap !== 'function') return;\nbehavior._setMetalnessMap(eventsFunctionContext.getArgument(\"ResourceName\"));\nconst metalness = Number(eventsFunctionContext.getArgument(\"Metalness\"));\nbehavior._setMetalness(Number.isFinite(metalness) ? Math.max(0, Math.min(1, metalness)) : 0);\ngdjs.__animatedPBR3D.reapply(behavior, object, runtimeScene.getGame());\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "PBR textures"
+        },
+        {
+          "name": "SetEmissiveTexture",
+          "fullName": "Set emissive map & glow",
+          "description": "Set the emissive glow texture map, color, and strength.",
+          "functionType": "Action",
+          "sentence": "Set emissive map of _PARAM0_ to _PARAM2_ with color _PARAM3_;_PARAM4_;_PARAM5_ (strength: _PARAM6_)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ResourceName",
+              "type": "imageResource",
+              "description": "Image resource",
+              "supplementaryInformation": "image"
+            },
+            {
+              "name": "Red",
+              "type": "expression",
+              "description": "Red (0-255)"
+            },
+            {
+              "name": "Green",
+              "type": "expression",
+              "description": "Green (0-255)"
+            },
+            {
+              "name": "Blue",
+              "type": "expression",
+              "description": "Blue (0-255)"
+            },
+            {
+              "name": "Strength",
+              "type": "expression",
+              "description": "Emissive strength"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nif (typeof behavior._setEmissiveMap !== 'function') return;\nconst channel = (value) => {\n    const v = Number(value);\n    return Number.isFinite(v) ? Math.max(0, Math.min(255, v)) : 0;\n};\nbehavior._setEmissiveMap(eventsFunctionContext.getArgument(\"ResourceName\"));\nbehavior._setEmissiveColor(\n    channel(eventsFunctionContext.getArgument(\"Red\")) + \";\" +\n    channel(eventsFunctionContext.getArgument(\"Green\")) + \";\" +\n    channel(eventsFunctionContext.getArgument(\"Blue\"))\n);\nconst strength = Number(eventsFunctionContext.getArgument(\"Strength\"));\nbehavior._setEmissiveStrength(Number.isFinite(strength) ? Math.max(0, strength) : 1);\ngdjs.__animatedPBR3D.reapply(behavior, object, runtimeScene.getGame());\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "PBR textures"
+        },
+        {
+          "name": "SetScrollSpeed",
+          "fullName": "Set UV scroll speed",
+          "description": "Set the UV scrolling and rotation speeds. This does not switch scrolling on by itself: use \"Enable/disable UV scrolling\" for that.",
+          "functionType": "Action",
+          "sentence": "Set UV scroll speed of _PARAM0_ to X: _PARAM2_, Y: _PARAM3_ (rotation: _PARAM4_ deg/s)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "SpeedX",
+              "type": "expression",
+              "description": "Scroll Speed X (units/sec)"
+            },
+            {
+              "name": "SpeedY",
+              "type": "expression",
+              "description": "Scroll Speed Y (units/sec)"
+            },
+            {
+              "name": "RotSpeed",
+              "type": "expression",
+              "description": "Rotation Speed (deg/sec)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nconst speed = (value) => {\n    const v = Number(value);\n    return Number.isFinite(v) ? v : 0;\n};\nstate.scrollSpeedX = speed(eventsFunctionContext.getArgument(\"SpeedX\"));\nstate.scrollSpeedY = speed(eventsFunctionContext.getArgument(\"SpeedY\"));\nstate.scrollRotSpeed = speed(eventsFunctionContext.getArgument(\"RotSpeed\"));\n// Deliberately does not switch scrolling on: use \"Enable/disable UV scrolling\"\n// for that, so setting a speed cannot silently undo a prior disable.\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV scrolling"
+        },
+        {
+          "name": "EnableScrolling",
+          "fullName": "Enable/disable UV scrolling",
+          "description": "Turn UV scrolling animation on or off.",
+          "functionType": "Action",
+          "sentence": "Set UV scrolling for _PARAM0_ to _PARAM2_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable scrolling"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nstate.isScrolling = eventsFunctionContext.getArgument(\"Enable\") === true;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV scrolling"
+        },
+        {
+          "name": "SetTiling",
+          "fullName": "Set texture tiling / repeat",
+          "description": "Set the horizontal and vertical texture repetition factors.",
+          "functionType": "Action",
+          "sentence": "Set texture tiling of _PARAM0_ to X: _PARAM2_, Y: _PARAM3_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "TilingX",
+              "type": "expression",
+              "description": "Tiling X"
+            },
+            {
+              "name": "TilingY",
+              "type": "expression",
+              "description": "Tiling Y"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nif (typeof behavior._setTilingX !== 'function') return;\nconst tiling = (value, def) => {\n    const v = Number(value);\n    return Number.isFinite(v) ? v : def;\n};\nconst tilingX = tiling(eventsFunctionContext.getArgument(\"TilingX\"), 1);\nconst tilingY = tiling(eventsFunctionContext.getArgument(\"TilingY\"), 1);\nbehavior._setTilingX(tilingX);\nbehavior._setTilingY(tilingY);\n// Mirrored into the cached base transform so the change shows this frame without\n// a full material re-apply.\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nstate.baseTilingX = tilingX;\nstate.baseTilingY = tilingY;\ngdjs.__animatedPBR3D.applyUVTransform(state);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV mapping"
+        },
+        {
+          "name": "SetFlipbookConfig",
+          "fullName": "Configure flipbook spritesheet",
+          "description": "Configure spritesheet columns, rows, FPS, and loop mode.",
+          "functionType": "Action",
+          "sentence": "Set flipbook animation on _PARAM0_ (columns: _PARAM2_, rows: _PARAM3_, FPS: _PARAM4_, loop: _PARAM5_)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Columns",
+              "type": "expression",
+              "description": "Columns (X frames)"
+            },
+            {
+              "name": "Rows",
+              "type": "expression",
+              "description": "Rows (Y frames)"
+            },
+            {
+              "name": "FPS",
+              "type": "expression",
+              "description": "Frames per second"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop animation"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nconst count = (value, def) => {\n    const v = Math.floor(Number(value));\n    return Number.isFinite(v) && v >= 1 ? v : def;\n};\nconst fps = Number(eventsFunctionContext.getArgument(\"FPS\"));\nstate.flipbook.enabled = true;\nstate.flipbook.columns = count(eventsFunctionContext.getArgument(\"Columns\"), 1);\nstate.flipbook.rows = count(eventsFunctionContext.getArgument(\"Rows\"), 1);\nstate.flipbook.fps = Number.isFinite(fps) ? Math.max(0.01, fps) : 12;\nstate.flipbook.loop = eventsFunctionContext.getArgument(\"Loop\") === true;\nstate.flipbook.totalFrames = state.flipbook.columns * state.flipbook.rows;\nstate.flipbook.currentFrame = Math.min(state.flipbook.currentFrame, state.flipbook.totalFrames - 1);\nstate.flipbook.timer = 0;\nstate.flipbook.isPlaying = true;\nstate.flipbook.isFinished = false;\ngdjs.__animatedPBR3D.applyUVTransform(state);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "SetFlipbookFrame",
+          "fullName": "Set flipbook frame",
+          "description": "Jump directly to a specific animation frame index (0-based). This also clears the finished state, so a non-looping animation can be restarted.",
+          "functionType": "Action",
+          "sentence": "Set current flipbook frame of _PARAM0_ to _PARAM2_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "FrameIndex",
+              "type": "expression",
+              "description": "Frame index (0-based)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nconst total = Math.max(1, state.flipbook.totalFrames);\nconst requested = Math.floor(Number(eventsFunctionContext.getArgument(\"FrameIndex\")));\nconst frame = Number.isFinite(requested) ? Math.max(0, requested) % total : 0;\nstate.flipbook.currentFrame = frame;\nstate.flipbook.timer = 0;\n// Jumping to a frame takes the animation off its finished state, otherwise a\n// non-looping flipbook could never be restarted from an event.\nstate.flipbook.isFinished = false;\ngdjs.__animatedPBR3D.applyUVTransform(state);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "PlayFlipbook",
+          "fullName": "Play flipbook animation",
+          "description": "Resume or start playing the flipbook spritesheet animation.",
+          "functionType": "Action",
+          "sentence": "Play flipbook animation on _PARAM0_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nstate.flipbook.enabled = true;\nstate.flipbook.isPlaying = true;\nstate.flipbook.isFinished = false;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "PauseFlipbook",
+          "fullName": "Pause flipbook animation",
+          "description": "Pause the flipbook spritesheet animation on current frame.",
+          "functionType": "Action",
+          "sentence": "Pause flipbook animation on _PARAM0_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\ngdjs.__animatedPBR3D.getBehaviorState(behavior).flipbook.isPlaying = false;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "SetVideoTexture",
+          "fullName": "Set video texture",
+          "description": "Load and play an MP4/WebM video file as the 3D surface texture. The URL is used as-is; for a file inside your project use \"Set video texture (from resource)\" instead, so the path survives export. Browsers block autoplay unless the video is muted.",
+          "functionType": "Action",
+          "sentence": "Set video texture on _PARAM0_ from URL _PARAM2_ (loop: _PARAM3_, muted: _PARAM4_)",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "VideoURL",
+              "type": "string",
+              "description": "Video URL (http/https, or a path relative to the exported game)"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop video"
+            },
+            {
+              "name": "Muted",
+              "type": "yesorno",
+              "description": "Mute video"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\ngdjs.__animatedPBR3D.setVideo(\n    behavior,\n    object,\n    runtimeScene,\n    eventsFunctionContext.getArgument(\"VideoURL\"),\n    eventsFunctionContext.getArgument(\"Loop\") === true,\n    eventsFunctionContext.getArgument(\"Muted\") === true\n);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Video texture"
+        },
+        {
+          "name": "SetVideoTextureFromResource",
+          "fullName": "Set video texture (from resource)",
+          "description": "Play a video from the project resources as the 3D surface texture. Unlike the URL version, the path is resolved through the resource loader, so it keeps working after export.",
+          "sentence": "Set video texture on _PARAM0_ from resource _PARAM2_ (loop: _PARAM3_, muted: _PARAM4_)",
+          "functionType": "Action",
+          "group": "Video texture",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst resourceName = eventsFunctionContext.getArgument(\"VideoResource\");\nif (typeof resourceName !== 'string' || resourceName.trim() === '') return;\n\n// Resolve through the resource loader so the path survives export, where GDevelop\n// rewrites resource files into the packaged output.\nlet url = resourceName.trim();\ntry {\n    const loader = runtimeScene.getGame().getResourceLoader();\n    const resource = loader.getResource(url);\n    if (resource && resource.file) url = loader.getFullUrl(resource.file);\n} catch(e) {\n    console.warn('[AnimatedPBR3D] Could not resolve video resource \"' + resourceName + '\":', e);\n}\n\ngdjs.__animatedPBR3D.setVideo(\n    behavior,\n    object,\n    runtimeScene,\n    url,\n    eventsFunctionContext.getArgument(\"Loop\") === true,\n    eventsFunctionContext.getArgument(\"Muted\") === true\n);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "VideoResource",
+              "type": "videoResource",
+              "description": "Video resource (.mp4, .webm)",
+              "supplementaryInformation": "video"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop video"
+            },
+            {
+              "name": "Muted",
+              "type": "yesorno",
+              "description": "Mute video"
+            }
+          ]
+        },
+        {
+          "name": "PlayVideo",
+          "fullName": "Play video texture",
+          "description": "Play or resume video texture playback.",
+          "functionType": "Action",
+          "sentence": "Play video texture on _PARAM0_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nif (!state.videoElement) return;\nconst playback = state.videoElement.play();\nif (playback && typeof playback.catch === 'function') {\n    playback.catch((err) => {\n        console.warn('[AnimatedPBR3D] Video playback was blocked by the browser. ' +\n            'Autoplay usually requires the video to be muted, or a user interaction first. (' + err + ')');\n    });\n}\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Video texture"
+        },
+        {
+          "name": "PauseVideo",
+          "fullName": "Pause video texture",
+          "description": "Pause video texture playback.",
+          "functionType": "Action",
+          "sentence": "Pause video texture on _PARAM0_",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst state = gdjs.__animatedPBR3D.getBehaviorState(behavior);\nif (state.videoElement) state.videoElement.pause();\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Video texture"
+        },
+        {
+          "name": "IsFlipbookPlaying",
+          "fullName": "Is flipbook playing",
+          "description": "Check if the flipbook spritesheet animation is currently playing.",
+          "functionType": "Condition",
+          "sentence": "Flipbook animation on _PARAM0_ is playing",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = false;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\nconst fb = gdjs.__animatedPBR3D.getBehaviorState(behavior).flipbook;\neventsFunctionContext.returnValue = fb.enabled === true && fb.isPlaying === true && fb.isFinished === false;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "IsFlipbookFinished",
+          "fullName": "Is flipbook finished",
+          "description": "Check if the non-looping flipbook animation reached its last frame.",
+          "functionType": "Condition",
+          "sentence": "Flipbook animation on _PARAM0_ is finished",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = false;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).flipbook.isFinished === true;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "IsScrollingEnabled",
+          "fullName": "Is UV scrolling enabled",
+          "description": "Check if UV scrolling is currently active.",
+          "functionType": "Condition",
+          "sentence": "UV scrolling on _PARAM0_ is active",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = false;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).isScrolling === true;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV scrolling"
+        },
+        {
+          "name": "IsMaterialReady",
+          "fullName": "Is material ready",
+          "description": "Check if the 3D material has been successfully initialized.",
+          "functionType": "Condition",
+          "sentence": "3D material on _PARAM0_ is ready",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = false;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).state === 'Ready';\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Material"
+        },
+        {
+          "name": "CurrentFrame",
+          "fullName": "Current flipbook frame",
+          "description": "Get the current active flipbook frame index (0-based).",
+          "functionType": "Expression",
+          "expressionType": "number",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = 0;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).flipbook.currentFrame;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "TotalFrames",
+          "fullName": "Total flipbook frames",
+          "description": "Get the total number of frames in the active flipbook animation.",
+          "functionType": "Expression",
+          "expressionType": "number",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = 0;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).flipbook.totalFrames;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "Flipbook animation"
+        },
+        {
+          "name": "ScrollOffsetX",
+          "fullName": "Scroll UV offset X",
+          "description": "Get the current accumulated horizontal UV scroll offset.",
+          "functionType": "Expression",
+          "expressionType": "number",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = 0;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).uvOffset.x;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV scrolling"
+        },
+        {
+          "name": "ScrollOffsetY",
+          "fullName": "Scroll UV offset Y",
+          "description": "Get the current accumulated vertical UV scroll offset.",
+          "functionType": "Expression",
+          "expressionType": "number",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = 0;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).uvOffset.y;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV scrolling"
+        },
+        {
+          "name": "ScrollRotation",
+          "fullName": "Scroll UV rotation",
+          "description": "Get the current accumulated UV rotation angle in degrees.",
+          "functionType": "Expression",
+          "expressionType": "number",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "eventsFunctionContext.returnValue = 0;\nconst __pbrObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __pbrObjects.length ? __pbrObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__animatedPBR3D) return;\neventsFunctionContext.returnValue = gdjs.__animatedPBR3D.getBehaviorState(behavior).uvRotation;\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "group": "UV scrolling"
+        }
+      ],
+      "propertyDescriptors": [
+        {
+          "name": "ApplyOnCreation",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Apply On Creation",
+          "group": "General",
+          "description": "Automatically apply the configured material when the 3D renderer is ready."
+        },
+        {
+          "name": "IncludeChildren",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Include Children",
+          "group": "General",
+          "description": "Apply material to all child meshes inside the 3D model."
+        },
+        {
+          "name": "TargetMode",
+          "type": "Choice",
+          "value": "All materials",
+          "label": "Target Mode",
+          "group": "General",
+          "description": "Which materials inside the 3D object to modify.",
+          "extraInformation": [
+            "All materials",
+            "First material",
+            "Material index",
+            "Material name",
+            "Mesh name"
+          ]
+        },
+        {
+          "name": "MaterialIndex",
+          "type": "Number",
+          "value": "0",
+          "label": "Material Index",
+          "group": "General",
+          "description": "Index of the material to target (when Target Mode is 'Material index')."
+        },
+        {
+          "name": "MaterialName",
+          "type": "String",
+          "value": "",
+          "label": "Material Name",
+          "group": "General",
+          "description": "Name of the material to target (when Target Mode is 'Material name')."
+        },
+        {
+          "name": "MeshName",
+          "type": "String",
+          "value": "",
+          "label": "Mesh Name",
+          "group": "General",
+          "description": "Name of the mesh to target (when Target Mode is 'Mesh name')."
+        },
+        {
+          "name": "CloneMaterials",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Clone Materials",
+          "group": "General",
+          "description": "Clone materials so modifications do not affect other object instances."
+        },
+        {
+          "name": "AlbedoMap",
+          "type": "Resource",
+          "value": "",
+          "label": "Albedo / Base Color Map",
+          "group": "PBR Textures",
+          "description": "Base color texture image from project resources.",
+          "extraInformation": [
+            "image"
+          ]
+        },
+        {
+          "name": "UseBaseColor",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Use Base Color Tint",
+          "group": "PBR Textures",
+          "description": "Apply a base color tint over the albedo texture."
+        },
+        {
+          "name": "BaseColor",
+          "type": "Color",
+          "value": "255;255;255",
+          "label": "Base Color Tint",
+          "group": "PBR Textures",
+          "description": "Base color tint (RGB)."
+        },
+        {
+          "name": "NormalMap",
+          "type": "Resource",
+          "value": "",
+          "label": "Normal Map",
+          "group": "PBR Textures",
+          "description": "Surface normal bump texture image.",
+          "extraInformation": [
+            "image"
+          ]
+        },
+        {
+          "name": "NormalScale",
+          "type": "Number",
+          "value": "1.0",
+          "label": "Normal Map Scale",
+          "group": "PBR Textures",
+          "description": "Intensity of the normal map bump effect."
+        },
+        {
+          "name": "RoughnessMap",
+          "type": "Resource",
+          "value": "",
+          "label": "Roughness Map",
+          "group": "PBR Textures",
+          "description": "Micro-surface roughness texture image.",
+          "extraInformation": [
+            "image"
+          ]
+        },
+        {
+          "name": "Roughness",
+          "type": "Number",
+          "value": "0.5",
+          "label": "Roughness Factor (0-1)",
+          "group": "PBR Textures",
+          "description": "Overall surface roughness (0.0 = mirror smooth, 1.0 = rough matte)."
+        },
+        {
+          "name": "MetalnessMap",
+          "type": "Resource",
+          "value": "",
+          "label": "Metalness Map",
+          "group": "PBR Textures",
+          "description": "Metallic reflection mask texture image.",
+          "extraInformation": [
+            "image"
+          ]
+        },
+        {
+          "name": "Metalness",
+          "type": "Number",
+          "value": "0.0",
+          "label": "Metalness Factor (0-1)",
+          "group": "PBR Textures",
+          "description": "Overall surface metalness (0.0 = dielectric / wood / stone, 1.0 = metal)."
+        },
+        {
+          "name": "AOMap",
+          "type": "Resource",
+          "value": "",
+          "label": "Ambient Occlusion (AO) Map",
+          "group": "PBR Textures",
+          "description": "Ambient occlusion crevice shadow map image.",
+          "extraInformation": [
+            "image"
+          ]
+        },
+        {
+          "name": "AOIntensity",
+          "type": "Number",
+          "value": "1.0",
+          "label": "AO Intensity (0-1)",
+          "group": "PBR Textures",
+          "description": "Strength of the ambient occlusion shadow darkening."
+        },
+        {
+          "name": "EmissiveMap",
+          "type": "Resource",
+          "value": "",
+          "label": "Emissive Map",
+          "group": "PBR Textures",
+          "description": "Glow / self-illumination mask texture image.",
+          "extraInformation": [
+            "image"
+          ]
+        },
+        {
+          "name": "EmissiveColor",
+          "type": "Color",
+          "value": "0;0;0",
+          "label": "Emissive Color",
+          "group": "PBR Textures",
+          "description": "Color of the self-illuminating glow."
+        },
+        {
+          "name": "EmissiveStrength",
+          "type": "Number",
+          "value": "1.0",
+          "label": "Emissive Strength",
+          "group": "PBR Textures",
+          "description": "Intensity of the emissive glow."
+        },
+        {
+          "name": "TextureFiltering",
+          "type": "Choice",
+          "value": "Keep Original",
+          "label": "Texture Filtering",
+          "group": "PBR Textures",
+          "description": "Pixel interpolation filtering mode.",
+          "extraInformation": [
+            "Keep Original",
+            "Nearest",
+            "Linear"
+          ]
+        },
+        {
+          "name": "TilingX",
+          "type": "Number",
+          "value": "1.0",
+          "label": "Tiling X (Repeat)",
+          "group": "UV Mapping",
+          "description": "Horizontal texture repetition multiplier."
+        },
+        {
+          "name": "TilingY",
+          "type": "Number",
+          "value": "1.0",
+          "label": "Tiling Y (Repeat)",
+          "group": "UV Mapping",
+          "description": "Vertical texture repetition multiplier."
+        },
+        {
+          "name": "OffsetX",
+          "type": "Number",
+          "value": "0.0",
+          "label": "Offset X",
+          "group": "UV Mapping",
+          "description": "Base horizontal UV offset."
+        },
+        {
+          "name": "OffsetY",
+          "type": "Number",
+          "value": "0.0",
+          "label": "Offset Y",
+          "group": "UV Mapping",
+          "description": "Base vertical UV offset."
+        },
+        {
+          "name": "RotationAngle",
+          "type": "Number",
+          "value": "0.0",
+          "label": "UV Rotation (Degrees)",
+          "group": "UV Mapping",
+          "description": "Texture rotation angle in degrees."
+        },
+        {
+          "name": "RotationCenterX",
+          "type": "Number",
+          "value": "0.5",
+          "label": "Rotation Center X",
+          "group": "UV Mapping",
+          "description": "Pivot point X for texture rotation (0.5 = center)."
+        },
+        {
+          "name": "RotationCenterY",
+          "type": "Number",
+          "value": "0.5",
+          "label": "Rotation Center Y",
+          "group": "UV Mapping",
+          "description": "Pivot point Y for texture rotation (0.5 = center)."
+        },
+        {
+          "name": "EnableScroll",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable UV Scrolling",
+          "group": "UV Scrolling",
+          "description": "Continuously animate UV offset and rotation every frame (e.g. lava, water, conveyor)."
+        },
+        {
+          "name": "ScrollSpeedX",
+          "type": "Number",
+          "value": "0.0",
+          "label": "Scroll Speed X",
+          "group": "UV Scrolling",
+          "description": "Horizontal scrolling speed (UV units per second)."
+        },
+        {
+          "name": "ScrollSpeedY",
+          "type": "Number",
+          "value": "0.0",
+          "label": "Scroll Speed Y",
+          "group": "UV Scrolling",
+          "description": "Vertical scrolling speed (UV units per second)."
+        },
+        {
+          "name": "ScrollRotationSpeed",
+          "type": "Number",
+          "value": "0.0",
+          "label": "Rotation Speed (deg/sec)",
+          "group": "UV Scrolling",
+          "description": "Texture rotation speed (degrees per second)."
+        },
+        {
+          "name": "EnableFlipbook",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable Flipbook Animation",
+          "group": "Flipbook Animation",
+          "description": "Animate the texture across a 2D spritesheet grid of frames (e.g. animated faces, screens)."
+        },
+        {
+          "name": "FlipbookColumns",
+          "type": "Number",
+          "value": "1",
+          "label": "Flipbook Columns (X frames)",
+          "group": "Flipbook Animation",
+          "description": "Number of horizontal frames in the spritesheet."
+        },
+        {
+          "name": "FlipbookRows",
+          "type": "Number",
+          "value": "1",
+          "label": "Flipbook Rows (Y frames)",
+          "group": "Flipbook Animation",
+          "description": "Number of vertical frames in the spritesheet."
+        },
+        {
+          "name": "FlipbookFPS",
+          "type": "Number",
+          "value": "12",
+          "label": "Animation FPS",
+          "group": "Flipbook Animation",
+          "description": "Playback frame rate (frames per second)."
+        },
+        {
+          "name": "FlipbookLoop",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Loop Animation",
+          "group": "Flipbook Animation",
+          "description": "Loop the spritesheet animation continuously."
+        },
+        {
+          "name": "FlipbookTotalFrames",
+          "type": "Number",
+          "value": "0",
+          "label": "Total Frames (0 = all)",
+          "group": "Flipbook Animation",
+          "description": "Total frames in animation sequence (0 uses Columns * Rows)."
+        },
+        {
+          "name": "AlphaMode",
+          "type": "Choice",
+          "value": "Opaque",
+          "label": "Alpha Mode",
+          "group": "Rendering",
+          "description": "Transparency and alpha blending mode.",
+          "extraInformation": [
+            "Opaque",
+            "Blend",
+            "Cutout",
+            "Additive",
+            "Multiply"
+          ]
+        },
+        {
+          "name": "Alpha",
+          "type": "Number",
+          "value": "1.0",
+          "label": "Alpha Opacity (0-1)",
+          "group": "Rendering",
+          "description": "Overall opacity transparency (for Blend mode)."
+        },
+        {
+          "name": "AlphaCutoff",
+          "type": "Number",
+          "value": "0.1",
+          "label": "Alpha Cutoff (Cutout Mode)",
+          "group": "Rendering",
+          "description": "Alpha threshold for Cutout mode."
+        },
+        {
+          "name": "DepthWrite",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Depth Write",
+          "group": "Rendering",
+          "description": "Write to depth buffer (disable for transparent overlays/particles)."
+        },
+        {
+          "name": "MaterialSide",
+          "type": "Choice",
+          "value": "Front",
+          "label": "Material Side",
+          "group": "Rendering",
+          "description": "Render front faces, back faces, or double sided.",
+          "extraInformation": [
+            "Front",
+            "Double",
+            "Back"
+          ]
+        },
+        {
+          "name": "Wireframe",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Wireframe",
+          "group": "Rendering",
+          "description": "Render polygon mesh wireframe."
+        },
+        {
+          "name": "CastShadow",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Cast Shadow",
+          "group": "Rendering",
+          "description": "Object casts shadows from directional/point lights."
+        },
+        {
+          "name": "ReceiveShadow",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Receive Shadow",
+          "group": "Rendering",
+          "description": "Object receives shadows cast by other objects."
+        }
+      ]
+    }
+  ],
+  "shortDescription": "Custom PBR textures on 3D objects, animated with UV scrolling, flipbook spritesheets and video."
+}
