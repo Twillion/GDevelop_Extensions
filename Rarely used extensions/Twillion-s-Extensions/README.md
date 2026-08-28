@@ -9,7 +9,7 @@ GDevelop extensions created by Twillion.
 | Advanced 3D Material | `extensions/Advanced3DMaterial.json` |
 | Advanced Materials | `extensions/AdvancedMaterials.json` |
 | BRDF Materials | `extensions/BRDFMaterials_v3_2.json` |
-| Extruded Sprite 3D | `extensions/ExtrudedSprite3D-v0.3.5.json` |
+| Extruded Sprite 3D | `extensions/ExtrudedSprite3D.json` |
 | 3DCRT+ | `extensions/3DCRTplus.json` |
 | 3D Game Post Processing Base | `extensions/GamePostProcess3D.json` |
 | Soft Body 3D | `extensions/SoftBody3D.json` |

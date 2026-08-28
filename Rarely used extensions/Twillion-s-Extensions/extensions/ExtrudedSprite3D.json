@@ -10,7 +10,7 @@
   "name": "ExtrudedSprite3D",
   "previewIconUrl": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiBpZD0ibWRpLWN1YmUtb3V0bGluZSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGQ9Ik0yMSAxNi41QzIxIDE2Ljg4IDIwLjc5IDE3LjIxIDIwLjQ3IDE3LjM4TDEyLjU3IDIxLjgyQzEyLjQxIDIxLjk0IDEyLjIxIDIyIDEyIDIyUzExLjU5IDIxLjk0IDExLjQzIDIxLjgyTDMuNTMgMTcuMzhDMy4yMSAxNy4yMSAzIDE2Ljg4IDMgMTYuNVY3LjVDMyA3LjEyIDMuMjEgNi43OSAzLjUzIDYuNjJMMTEuNDMgMi4xOEMxMS41OSAyLjA2IDExLjc5IDIgMTIgMlMxMi40MSAyLjA2IDEyLjU3IDIuMThMMjAuNDcgNi42MkMyMC43OSA2Ljc5IDIxIDcuMTIgMjEgNy41VjE2LjVNMTIgNC4xNUw2LjA0IDcuNUwxMiAxMC44NUwxNy45NiA3LjVMMTIgNC4xNU01IDE1LjkxTDExIDE5LjI5VjEyLjU4TDUgOS4yMVYxNS45MU0xOSAxNS45MVY5LjIxTDEzIDEyLjU4VjE5LjI5TDE5IDE1LjkxWiIgLz48L3N2Zz4=",
   "shortDescription": "Turns 2D sprite animations into extruded 3D meshes with optional static pixel-mesh physics.",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "An animated sprite extruded into a real 3D mesh. Edit animations like a regular Sprite, then use the normal 3D object width, height, and depth controls to size it. Front and back faces are textured with the sprite image, side walls are generated where solid pixels touch transparent pixels, so the object can receive 3D lights and cast silhouette-accurate shadows. Includes an optional Pixel Art Physics Mesh behavior for Static Physics3D objects.",
   "tags": [
     "3d",
@@ -940,7 +940,8 @@
             }
           ],
           "parameters": [],
-          "objectGroups": []
+          "objectGroups": [],
+          "sentence": ""
         },
         {
           "name": "onDestroy",
@@ -957,7 +958,8 @@
             }
           ],
           "parameters": [],
-          "objectGroups": []
+          "objectGroups": [],
+          "sentence": ""
         },
         {
           "name": "ApplyPixelPhysicsMesh",
@@ -1150,7 +1152,8 @@
               "type": "behavior"
             }
           ],
-          "objectGroups": []
+          "objectGroups": [],
+          "sentence": ""
         },
         {
           "name": "PhysicsVertexCount",
@@ -1183,7 +1186,8 @@
               "type": "behavior"
             }
           ],
-          "objectGroups": []
+          "objectGroups": [],
+          "sentence": ""
         },
         {
           "name": "LastError",
@@ -1216,7 +1220,8 @@
               "type": "behavior"
             }
           ],
-          "objectGroups": []
+          "objectGroups": [],
+          "sentence": ""
         }
       ],
       "eventsFunctionsFolderStructure": {
@@ -1282,7 +1287,11 @@
             "propertyName": "FollowVisualFlip"
           }
         ]
-      }
+      },
+      "helpPath": "",
+      "iconUrl": "",
+      "objectType": "",
+      "previewIconUrl": ""
     }
   ],
   "eventsBasedObjects": [
