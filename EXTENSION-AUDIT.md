@@ -100,13 +100,33 @@ future demotions — `InGameCamera3D` (prototype) is the likeliest next occupant
 
 ## 5. Version clutter to prune inside folders
 
-`ExtrudedSprite3D/` holds four files: `v0.3.3`, `v0.3.4`, `v0.3.5`, and `ExtrudedSprite3D.json`
-(**byte-identical to v0.3.5**). The publish folder mirrors three of them. That is ~860 KB of the same
-extension four times.
+`ExtrudedSprite3D/` holds four files: `v0.3.3`, `v0.3.4`, `v0.3.5`, and `ExtrudedSprite3D.json`.
+The publish folder mirrors three of them. That is ~860 KB of the same extension four times.
 
-**Disposition:** keep `v0.3.5` (or the unsuffixed file, but not both) and let git hold the history.
-Same for `3d CRT PLUS/3d_CRT_Twillion_V0_5_0.zip` — a superseded release artifact next to the current
-`V1_0_0.zip`.
+**Correction to an earlier draft of this audit:** `ExtrudedSprite3D.json` is *not* byte-identical to
+`ExtrudedSprite3D-v0.3.5.json`. It is 51 KB larger. Both declare **v0.3.5**, both carry the same two
+behaviors and one object, and their 31 runtime code blocks are identical apart from trailing
+newlines — but their **metadata has diverged in both directions**:
+
+| Field | `ExtrudedSprite3D.json` | `ExtrudedSprite3D-v0.3.5.json` |
+| :--- | :--- | :--- |
+| `category` | `General` | `3D` |
+| `author` | *(empty)* | `Twillion` |
+| `iconUrl`, `previewIconUrl`, `helpPath`, `objectType` | present | **absent** |
+| function `sentence` fields | present on 5 functions | **absent** |
+| property / function `group` fields | absent | **present** |
+| `inlineCode` serialization | mixed list/string | mixed list/string |
+
+**Neither is a superset of the other**, so this is not a delete-one situation. The suffixed file has
+the correct category and author; the unsuffixed one has the icons, help path and action sentences
+that GDevelop shows in the editor. They need to be merged into a single v0.3.6 before either is
+discarded, and the version bumped so the divergence cannot recur silently.
+
+Same-version-different-content also affects `YAxisPhysicsCharacter3D` (§2). Two instances of the same
+failure mode: **the version string is not being bumped when the file changes.**
+
+`3d CRT PLUS/3d_CRT_Twillion_V0_5_0.zip` is a straightforward superseded release artifact next to the
+current `V1_0_0.zip` and can go.
 
 ---
 
