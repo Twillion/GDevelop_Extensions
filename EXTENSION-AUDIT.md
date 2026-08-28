@@ -25,9 +25,16 @@ here — anyone downloading them gets an extension whose settings do nothing.
 
 ---
 
-## 2. Publish folder is out of sync with the working folders
+## 2. Publish folder out of sync — RESOLVED 2026-08-28
 
-`Twillion-s-Extensions/` is the distribution repo. It has drifted:
+> **Framing correction.** An earlier draft treated `Twillion-s-Extensions/` as a live distribution
+> channel and weighed changes against "what downloaders would get". That is wrong: **extensions are
+> released on itch.io; this git repo is a personal record.** Nothing here is withdrawn from or pushed
+> to users by editing it. That removes the only objection to syncing the folder, and it also means
+> superseded release artifacts (the old `.zip`s) are *records worth keeping*, not clutter — see §5.
+
+All eight extensions that exist in both a working folder and the publish folder are now
+**byte-identical**. What had drifted:
 
 - **3DCRT+ is stale.** Published `3DCRTplus.json` is **v0.6.0** (51 properties, 74 functions); the
   working `3d CRT PLUS/3DCRTplus.json` is **v1.0.0** (43 properties, 60 functions — the 1.0.0 release
@@ -42,9 +49,14 @@ here — anyone downloading them gets an extension whose settings do nothing.
 - **Identical, no action:** AdvancedMaterials, BRDFMaterials, GamePostProcess3D, ExtrudedSprite3D
   0.3.3/0.3.4/0.3.5 all match their working copies content-for-content.
 
-**Disposition:** re-export 3DCRT+ and YAxis into the publish folder, decide whether MidiSynthPlayer is
-ready to be there, and update the README table. Consider a one-line sync check so this cannot drift
-silently again.
+**Done.** 3DCRT+ (now v1.0.0), YAxis and ExtrudedSprite3D (now v0.3.6) were re-exported; the README
+table was rebuilt with a version column, MidiSynthPlayer added to it, and `SoftBody3D` /
+`Advanced3DMaterial` moved to a **Known broken** section so the record does not present them as
+usable. All eight pairs verified byte-identical afterwards.
+
+**Still worth doing:** a one-line sync check, so this cannot drift silently again. The root cause in
+both drifted cases was the same — **the version string was not bumped when the file changed**, so
+nothing signalled the divergence.
 
 ---
 
@@ -125,8 +137,10 @@ discarded, and the version bumped so the divergence cannot recur silently.
 Same-version-different-content also affects `YAxisPhysicsCharacter3D` (§2). Two instances of the same
 failure mode: **the version string is not being bumped when the file changes.**
 
-`3d CRT PLUS/3d_CRT_Twillion_V0_5_0.zip` is a straightforward superseded release artifact next to the
-current `V1_0_0.zip` and can go.
+**Revised:** `3d CRT PLUS/3d_CRT_Twillion_V0_5_0.zip` was listed here as a superseded artifact to
+delete. Given that this repo is a **personal record** and releases go out on itch.io, an old release
+zip is exactly the kind of thing the record should hold — it is the only copy of what v0.5.0 actually
+shipped as. **Keep it.** Same reasoning applies to any future superseded release zip.
 
 ---
 
