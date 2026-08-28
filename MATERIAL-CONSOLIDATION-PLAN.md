@@ -45,15 +45,78 @@ and 15.
 
 What each contributes:
 
-| Source | Unique capability to absorb | Properties |
-| :--- | :--- | :--- |
-| **AnimatedPBR3D** *(base)* | Albedo/Normal/Roughness/Metalness/AO/Emissive maps; UV tiling, offset, rotation; scroll; flipbook; video | 47 |
-| **AdvancedMaterials** | **Transmission, IOR, Thickness, Clearcoat, ClearcoatRoughness** — requires `MeshPhysicalMaterial` | 5 of 15 |
-| **Advanced3DMaterial** | **UpdateMode, ShaderType, Fog, RenderOrder** | 4 of 27 |
-| **BRDFMaterials** | *(not merged)* | — |
+| Source | Unique capability to absorb | Properties | Functions |
+| :--- | :--- | :--- | :--- |
+| **AnimatedPBR3D** *(base)* | Albedo/Normal/Roughness/Metalness/AO/Emissive maps; UV tiling, offset, rotation; scroll; flipbook; video | 47 | 27 |
+| **AdvancedMaterials** | **Transmission, IOR, Thickness, Clearcoat, ClearcoatRoughness** — requires `MeshPhysicalMaterial` | 5 of 15 | 32 |
+| **Advanced3DMaterial** | `UpdateMode`, `ShaderType`, `Fog`, `RenderOrder` — **plus three whole API layers, see §2a** | 4 of 27 | 51 |
+| **BRDFMaterials** | *(not merged)* | — | 17 |
 
-Everything else in the two smaller extensions is already covered by the base. The merge adds **9 new
-properties** to AnimatedPBR3D's 47 → **56 total**.
+On properties alone the merge adds **9** to AnimatedPBR3D's 47 → **56 total**. But properties are the
+smaller half of what `Advanced3DMaterial` is carrying.
+
+---
+
+## 2a. `Advanced3DMaterial` is the diagnostics and runtime-control layer
+
+**Correction to an earlier draft of the audit,** which called this extension "fully covered by the
+other three" and the clear candidate to retire. That is true of its *properties* and false of its
+*API*. **34 of its 51 functions have names that appear in no other material extension.** It is the
+richest of the four by event surface, and the three layers below exist nowhere else.
+
+### Layer 1 — application state and diagnostics *(nothing else has any of this)*
+
+| Function | Type | |
+| :--- | :--- | :--- |
+| `IsReady` / `IsWaiting` / `IsSuccess` / `IsFailed` | Conditions | material application lifecycle |
+| `State` | String expression | the state as text |
+| `RetryCount` | Expression | how many times application retried |
+| `HasMatchingMaterials` / `HasMatchingMeshes` | Conditions | did the targeting match anything |
+| `MatchingMaterialCount` / `MatchingMeshCount` | Expressions | how many it matched |
+
+This matters more than it looks. **3D material work in GDevelop fails silently** — a wrong mesh name,
+a material that was not cloned, a renderer that was not ready yet, all render as "nothing happened"
+with a clean console. `AnimatedPBR3D` offers one condition (`IsMaterialReady`) against this entire
+class of problem; `AdvancedMaterials` offers `LastError`. This extension is the only one that can
+answer *"did it apply, to how many meshes, and if not why."*
+
+### Layer 2 — runtime retargeting *(nothing else has this)*
+
+`SetTargetMode`, `SetMaterialIndex`, `SetMaterialName`, `SetMeshName`, plus `ReapplyMaterial` and
+`MarkSettingsChanged`.
+
+In `AnimatedPBR3D` the targeting properties — which mesh, which material slot, which name — are
+**editor-only**. You choose at design time and cannot change which material the behavior drives while
+the game runs. This extension makes targeting a runtime decision.
+
+### Layer 3 — render-state setters
+
+`SetCastShadow`, `SetReceiveShadow`, `SetWireframe`, `SetTextureFiltering`, `SetMaterialSide`,
+`SetAlphaCutoff`, `SetRenderOrder`, `SetEmissionEnabled`.
+
+### The coverage gap this exposes in the base
+
+Counting how many properties are reachable from events at all — action, condition or expression:
+
+| Extension | Reachable | Editor-only |
+| :--- | :---: | :---: |
+| `AnimatedPBR3D` | 29 of 47 | **18** |
+| `Advanced3DMaterial` | 23 of 27 | 4 |
+| `AdvancedMaterials` | 15 of 15 | 0 |
+
+`AnimatedPBR3D`'s 18 editor-only properties are `ApplyOnCreation`, `IncludeChildren`, `TargetMode`,
+`CloneMaterials`, `UseBaseColor`, `BaseColor`, `AOIntensity`, `EmissiveColor`, `TextureFiltering`,
+`RotationAngle`, `AlphaMode`, `Alpha`, `AlphaCutoff`, `DepthWrite`, `MaterialSide`, `Wireframe`,
+`CastShadow`, `ReceiveShadow`. **`Advanced3DMaterial` already exposes 13 of those 18 to events.**
+
+Its actions are also *grouped by task* where AnimatedPBR3D's are not — `SetEmissiveTexture` takes map,
+R, G, B and strength in one action rather than five. Both styles are defensible; the merged extension
+should pick one deliberately rather than inheriting a mix.
+
+**Revised disposition:** `Advanced3DMaterial` is not the one to retire quietly. Its properties are
+redundant; **its API is the most valuable single thing in this consolidation.** Port the three layers
+above into the merged behavior before retiring the extension, and treat that port as the main body of
+work, not an afterthought.
 
 ### The material-class problem
 
@@ -165,6 +228,8 @@ Each step is independently useful. Stop at any point and nothing is half-done.
 | 4 | Agree the naming table (§3) and default table (§4). | — |
 | 5 | Widen `ShaderType` to `Basic / Standard / Physical / Keep Original`; add the material-class selection logic to AnimatedPBR3D. | 4 |
 | 6 | Absorb the 4 Advanced3DMaterial properties (`UpdateMode`, `Fog`, `RenderOrder`, and `ShaderType` from step 5). | 1, 5 |
+| 6a | **Port Advanced3DMaterial's three API layers (§2a)** — diagnostics/state, runtime retargeting, render-state setters. This is the largest single piece of work in the plan and the one with the most value. | 1, 6 |
+| 6b | Close the base's coverage gap: give the remaining 5 of its 18 editor-only properties a runtime path, or decide deliberately that they stay editor-only. | 6a |
 | 7 | Add the 5 physical properties — absorbed or reimplemented per step 2. | 2, 5 |
 | 8 | Rename per §3, bump to **v3.0.0** (breaking: property names change). | 4, 6, 7 |
 | 9 | Make BRDF compose (§6). | 8 |
@@ -199,7 +264,9 @@ bug), the object renders, and the console is clean.
 
 **Buys:** one behavior instead of three; 56 properties instead of 47 + 27 + 15 with 22 overlapping
 names; one naming convention; the `Advanced3DMaterial` breakage retired rather than fixed; the
-BRDF-collision bug fixed; the licensing exposure closed.
+BRDF-collision bug fixed; the licensing exposure closed. **And the thing that is easiest to miss —
+a material behavior that can tell you whether it actually worked** (§2a), which none of the four can
+do today except the broken one.
 
 **Costs:** a breaking version bump, a real appearance change for projects relying on the `Opaque`
 default, and a `MeshPhysicalMaterial` path that is heavier than `MeshStandardMaterial` if the class
