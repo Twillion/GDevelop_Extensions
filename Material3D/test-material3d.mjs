@@ -38,7 +38,26 @@ class BaseMat {
     this.needsUpdate = false;
     this.disposed = false;
   }
-  clone() { const c = new this.constructor(); Object.assign(c, this); c.color = new StubColor().copy(this.color); c.userData = {}; return c; }
+  /**
+   * Models THREE.Material.copy() faithfully, which the first version of this stub did not:
+   *   - userData is JSON round-tripped, so an object stored there loses its prototype
+   *   - custom direct properties (__brdfPatched, __brdfOriginalRef) are NOT carried over
+   *   - onBeforeCompile is NOT carried over
+   * Getting this wrong is what let "src.clone is not a function" reach GDevelop.
+   */
+  clone() {
+    const c = new this.constructor();
+    for (const k of ['name', 'wireframe', 'fog', 'transparent', 'opacity', 'alphaTest',
+                     'side', 'depthWrite', 'roughness', 'metalness', 'emissiveIntensity',
+                     'transmission', 'ior', 'thickness', 'clearcoat', 'clearcoatRoughness',
+                     'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) {
+      if (this[k] !== undefined) c[k] = this[k];
+    }
+    if (this.color) c.color = new StubColor().copy(this.color);
+    if (this.emissive) c.emissive = new StubColor().copy(this.emissive);
+    c.userData = JSON.parse(JSON.stringify(this.userData ?? {}));
+    return c;
+  }
   dispose() { this.disposed = true; }
 }
 class MeshBasicMaterial extends BaseMat { constructor() { super(); this.isMeshBasicMaterial = true; this.type = 'MeshBasicMaterial'; } }
@@ -262,8 +281,30 @@ console.log('\n7. BRDF composition hook');
   check('  and records params for re-patching', !!a.mesh.userData.__brdf || !!a.object.get3DRendererObject().userData.__brdf);
 
   M3.applyToBehavior(a.behavior, a.object, a.game);
-  check('BRDF patch survives a Material3D apply', a.mesh.material.userData.__brdfPatched === true,
+  check('BRDF patch survives a Material3D apply', a.mesh.material.__brdfPatched === true,
     'patch was lost — the composition hook did not fire');
+  check('  and the live material has an onBeforeCompile hook',
+    typeof a.mesh.material.onBeforeCompile === 'function');
+
+  // Regression: reported from GDevelop as "TypeError: src.clone is not a function".
+  // THREE.Material.copy() JSON round-trips userData, so a Material stored there came back as a
+  // plain object on the next clone. Repeated apply/clone cycles must stay stable.
+  let threw = null;
+  try {
+    for (let i = 0; i < 4; i++) {
+      M3.applyToBehavior(a.behavior, a.object, a.game);
+      B.reapplyIfPatched(a.object);
+    }
+  } catch (e) { threw = e; }
+  check('repeated apply + re-patch cycles do not throw', threw === null, threw && threw.message);
+  check('  material is still patched after 4 cycles', a.mesh.material.__brdfPatched === true);
+  check('  and the original reference is still a real material',
+    typeof a.mesh.material.__brdfOriginalRef?.clone === 'function');
+
+  // A clone of a patched material must not claim to be patched — it has no hook.
+  const stray = a.mesh.material.clone();
+  check('a clone of a patched material reads as unpatched',
+    stray.__brdfPatched === undefined, 'clone inherited a stale patched flag');
 }
 
 console.log(`\n${'='.repeat(46)}`);

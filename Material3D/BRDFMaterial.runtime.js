@@ -147,9 +147,22 @@ if (!gdjs.__brdfMaterial3D) {
       u.uSmoothTermLen.value      = p.smoothTerminatorLength;
     }
 
+    // The patch markers live as DIRECT properties on the material, never in userData.
+    //
+    // Three.js Material.copy() does `this.userData = JSON.parse(JSON.stringify(source.userData))`.
+    // Anything stored in userData is therefore JSON round-tripped on clone: a Material kept there
+    // comes back as a plain object with no .clone(), which threw "src.clone is not a function" the
+    // moment anything cloned a patched material. copy() also does NOT carry onBeforeCompile, so a
+    // clone that inherited a userData "patched" flag claimed to be patched while rendering
+    // unpatched — a silent revert.
+    //
+    // Direct properties are not touched by copy(), so a clone reads as unpatched, which is the
+    // truth: it has no hook. It then gets patched fresh.
     function patchMaterial(mat, uniforms) {
-      mat.userData.__brdfPatched  = true;
-      mat.userData.__brdfUniforms = uniforms;
+      mat.__brdfPatched  = true;
+      mat.__brdfUniforms = uniforms;
+      // Mirrored into userData for inspection only. Never read back as an object.
+      mat.userData.__brdfPatched = true;
 
       mat.onBeforeCompile = function (shader) {
         Object.assign(shader.uniforms, uniforms);
@@ -230,13 +243,18 @@ if (!gdjs.__brdfMaterial3D) {
         if (!existing) return;
         var mats = Array.isArray(existing) ? existing : [existing];
         var result = mats.map(function (m) {
-          if (m.userData.__brdfPatched) {
+          if (m.__brdfPatched) {
             m.onBeforeCompile = function(){};
             m.needsUpdate = true;
           }
-          var src = m.userData.__brdfOriginal || m;
+          // Re-derive from the unpatched source when this material is one we patched, so
+          // repeated applies do not stack patch on patch. The typeof guard is the backstop for
+          // a reference that came through a userData JSON round-trip in older saved data.
+          var prev = m.__brdfOriginalRef;
+          var src = (prev && typeof prev.clone === 'function') ? prev : m;
+          if (typeof src.clone !== 'function') return m;
           var clone = src.clone();
-          clone.userData.__brdfOriginal = src;
+          clone.__brdfOriginalRef = src;
           patchMaterial(clone, uniforms);
           return clone;
         });
@@ -279,9 +297,9 @@ if (!gdjs.__brdfMaterial3D) {
         if (!m) return;
         var mats = Array.isArray(m) ? m : [m];
         mats.forEach(function (mat) {
-          if (mat.userData.__brdfPatched) {
-            var orig = mat.userData.__brdfOriginal;
-            if (orig) {
+          if (mat.__brdfPatched) {
+            var orig = mat.__brdfOriginalRef;
+            if (orig && typeof orig.clone === 'function') {
               var arr = Array.isArray(child.material);
               if (arr) {
                 child.material = child.material.map(function(x){ return x===mat?orig:x; });
