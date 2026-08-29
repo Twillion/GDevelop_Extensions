@@ -778,25 +778,23 @@ const brdfFunctions = [
     `  ${BRDF_NS}.updateUniforms(objs[i], ${BRDF_NS}.readParams(b));\n` +
     `}\n`, { group: 'BRDF' }),
 
-  bfn('SetColor', 'Set BRDF base colour (RGB 0-1)', 'Set _PARAM0_ BRDF colour to _PARAM2_, _PARAM3_, _PARAM4_',
-    'Base colour fed to the diffuse model, as three 0-1 channels.', 'Action',
-    [num('R', 'Red (0-1)', '0.8'), num('G', 'Green (0-1)', '0.8'), num('B', 'Blue (0-1)', '0.8')],
+  brdfSetter('Roughness', 'Set BRDF roughness', 'Set _PARAM0_ BRDF roughness to _PARAM2_',
+    'Roughness fed to the diffuse model, 0 to 1. Ignored while Follow material roughness is on.', C01),
+
+  bfn('SetFollowMaterialRoughness', 'Set follow material roughness',
+    'Set _PARAM0_ follow material roughness to _PARAM2_',
+    'When on, the diffuse model uses the Material 3D roughness so the two agree.', 'Action',
+    [bool('Value', 'Follow material roughness')],
     `if (!${BRDF_NS}) return;\n` +
     `var objs = eventsFunctionContext.getObjects("Object");\n` +
     `var behaviorName = eventsFunctionContext.getBehaviorName("Behavior");\n` +
-    `var cl = function(v) { return Math.max(0, Math.min(1, Number(v))); };\n` +
-    `var r = cl(eventsFunctionContext.getArgument("R"));\n` +
-    `var g = cl(eventsFunctionContext.getArgument("G"));\n` +
-    `var b2 = cl(eventsFunctionContext.getArgument("B"));\n` +
+    `var v = eventsFunctionContext.getArgument("Value");\n` +
     `for (var i = 0; i < objs.length; i++) {\n` +
     `  var b = objs[i].getBehavior(behaviorName);\n` +
     `  if (!b) continue;\n` +
-    `  b._setColorR(r); b._setColorG(g); b._setColorB(b2);\n` +
-    `  ${BRDF_NS}.updateUniforms(objs[i], ${BRDF_NS}.readParams(b));\n` +
+    `  b._setFollowMaterialRoughness(v);\n` +
+    `  ${BRDF_NS}.apply(objs[i], ${BRDF_NS}.readParams(b));\n` +
     `}\n`, { group: 'BRDF' }),
-
-  brdfSetter('Roughness', 'Set BRDF roughness', 'Set _PARAM0_ BRDF roughness to _PARAM2_',
-    'Roughness fed to the diffuse model, 0 to 1.', C01),
   brdfSetter('DiffuseFresnel', 'Set diffuse Fresnel (Callisto)', 'Set _PARAM0_ diffuse Fresnel to _PARAM2_',
     'Callisto diffuse Fresnel, 0 to 256. 1 is neutral.', C0256),
   brdfSetter('DiffuseFresnelFalloff', 'Set diffuse Fresnel falloff (Callisto)', 'Set _PARAM0_ diffuse Fresnel falloff to _PARAM2_',
@@ -871,12 +869,30 @@ const brdfBehavior = {
     'Composes on top of Material 3D rather than replacing it.',
   objectType: '',
   propertyDescriptors: [
-    brdfProp('BRDFModel', 'Choice', 'BRDF model', 'Which diffuse lighting model to use.', 'lambert',
+    brdfProp('BRDFModel', 'Choice', 'BRDF model',
+      'Which diffuse lighting model replaces GDevelop\'s built-in Lambert. '
+      + 'lambert: the stock look. burley: softer, film-like skin and plastic. '
+      + 'oren-nayar: rough matte — clay, concrete, unfinished wood. '
+      + 'minnaert: dusty, backlit — moons, powder, old fabric. '
+      + 'toon: hard bands for cel-shaded and anime looks. '
+      + 'callisto: the fully tunable one — skin and cloth, driven by the Callisto parameters below. '
+      + 'half-lambert / wrap: soft wraparound light that never goes fully black, good for stylised characters. '
+      + 'lommel-seeliger: dark porous surfaces — asteroids, ash, charcoal. '
+      + 'velvet: fabric that catches light at grazing angles. '
+      + 'ashikhmin-shirley / fresnel-diffuse: physically-flavoured falloff at edges. '
+      + 'kajiya-kay: strand shading for hair and fur.',
+      'lambert',
       { extraInformation: BRDF_MODELS, group: G_BRDF_MODEL }),
-    brdfProp('ColorR', 'Number', 'Base colour R (0-1)', 'Red channel fed to the diffuse model.', '0.8', { group: G_BRDF_MODEL }),
-    brdfProp('ColorG', 'Number', 'Base colour G (0-1)', 'Green channel fed to the diffuse model.', '0.8', { group: G_BRDF_MODEL }),
-    brdfProp('ColorB', 'Number', 'Base colour B (0-1)', 'Blue channel fed to the diffuse model.', '0.8', { group: G_BRDF_MODEL }),
-    brdfProp('Roughness', 'Number', 'Roughness (0-1)', 'Roughness fed to the diffuse model.', '0.5', { group: G_BRDF_MODEL }),
+    // ColorR/G/B were removed in 3.2.0. They were read from the behavior and never reached the
+    // shader — brdfCustom receives `material.diffuseColor`, and no colour uniform ever existed.
+    // Surface colour comes from Material 3D's Base colour, which is what it always actually did.
+    brdfProp('FollowMaterialRoughness', 'Boolean', 'Follow material roughness',
+      'Use the Material 3D roughness for the diffuse model instead of the value below. On by default, '
+      + 'so the diffuse and the specular highlight agree — and so Wetness affects both.',
+      'true', { group: G_BRDF_MODEL }),
+    brdfProp('Roughness', 'Number', 'Roughness (0-1)',
+      'Roughness fed to the diffuse model. Ignored while "Follow material roughness" is on.',
+      '0.5', { group: G_BRDF_MODEL }),
     brdfProp('DiffuseFresnel', 'Number', 'Diffuse Fresnel', 'Callisto only. 0-256; 1 is neutral (Lambert).', '1', { group: G_BRDF_CALLISTO }),
     brdfProp('DiffuseFresnelFalloff', 'Number', 'Diffuse Fresnel falloff', 'Callisto only, 0-1.', '0.75', { group: G_BRDF_CALLISTO }),
     brdfProp('DiffuseFresnelTangentFalloff', 'Number', 'Diffuse Fresnel tangent falloff', 'Callisto only, 0-1.', '0.75', { group: G_BRDF_CALLISTO }),

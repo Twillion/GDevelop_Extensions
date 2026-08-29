@@ -34,6 +34,8 @@ mindmap
       MidiSynthPlayer (WebAudio MIDI & SoundFont OST Engine)
     Physics & Deformation
       MeshDeformation3D (Blacksmithing, Sculpting & Plasticity)
+    Post-Processing & Optics
+      CinematicPostFX3D (SSR, GTAO, Karis Bloom, Bokeh DOF)
 ```
 
 ---
@@ -46,6 +48,7 @@ mindmap
 | 📁 **[`AutoMeshLOD3D/`](./AutoMeshLOD3D)** | Single-Model QEM Decimation in Web Workers & Shared Vertex Index Swapping | Complete Blueprint | [README](./AutoMeshLOD3D/README.md) · [Plan](./AutoMeshLOD3D/IMPLEMENTATION_PLAN.md) · [API](./AutoMeshLOD3D/API_REFERENCE.md) |
 | 📁 **[`CameraTweens3d/`](./CameraTweens3d)** | 8-Module Procedural Motion, Shakes, Spring-Dampers & 4 Genre Presets | Implemented | [README](./CameraTweens3d/README.md) · [Plan](./CameraTweens3d/IMPLEMENTATION_PLAN.md) · [API](./CameraTweens3d/API_REFERENCE.md) |
 | 📁 **[`CascadedShadowMaps3D/`](./CascadedShadowMaps3D)** | 3–4 Depth Cascades, Texel Snapping, 16-Tap Poisson PCF & Contact Shadows | Complete Blueprint | [README](./CascadedShadowMaps3D/README.md) · [Plan](./CascadedShadowMaps3D/IMPLEMENTATION_PLAN.md) · [API](./CascadedShadowMaps3D/API_REFERENCE.md) |
+| 📁 **[`CinematicPostFX3D/`](./CinematicPostFX3D)** | All-in-One SSR Reflections, GTAO Ambient Occlusion, 13-Tap Karis Bloom, Bokeh DOF | Complete Blueprint | [README](./CinematicPostFX3D/README.md) · [Plan](./CinematicPostFX3D/IMPLEMENTATION_PLAN.md) · [API](./CinematicPostFX3D/API_REFERENCE.md) |
 | 📁 **[`ClusteredLightManager3D/`](./ClusteredLightManager3D)** | 16x9x24 Frustum Clustered Multi-Lights (500+ Lights, Karis Area Specular, Volumetric Fog, SSCS) | Complete Blueprint | [README](./ClusteredLightManager3D/README.md) · [Plan](./ClusteredLightManager3D/IMPLEMENTATION_PLAN.md) · [API](./ClusteredLightManager3D/API_REFERENCE.md) |
 | 📁 **[`ExternalSkeletalAnimator3D/`](./ExternalSkeletalAnimator3D)** | Multi-Clip External GLB Animation Player, Bone Sockets & Jolt Ragdoll Physics | Implemented / Active | [README](./ExternalSkeletalAnimator3D/README.md) · [Plan](./ExternalSkeletalAnimator3D/PLAN.md) |
 | 📁 **[`Material3D/`](./Material3D)** | Universal PBR & BRDF Material Engine + v3.5 FX (POM 3D Relief, SSS Skin, Triplanar, Wetness) | Implemented / Active Plan | [README](./Material3D/README.md) · [v3.5 Plan](./Material3D/ADVANCED_MATERIAL_ENHANCEMENT_PLAN.md) |
@@ -301,7 +304,24 @@ mindmap
 
 ---
 
-## 8. Summary Matrix: Extension Possibilities by Priority
+## 8. Post-Processing, Optics & Screen-Space FX
+
+### 8.1 `CinematicPostFX3D` (SSR, GTAO, Karis Bloom & Bokeh DOF) — *[Folder: CinematicPostFX3D/](./CinematicPostFX3D)*
+* **Type:** Layer Effect / Post-Processing Behavior
+* **Purpose:** Consolidated, buffer-sharing AAA optical and screen-space post-processing suite replacing 5 fragmented plugins with a single high-performance compositing pipeline ($< 2.0\text{ ms}$ total frame overhead).
+* **Key Features:**
+  - **Screen-Space Reflections (SSR):** Real-time raymarched reflections of live characters, dynamic lights, and particle explosions on wet streets and polished floors.
+  - **Ground Truth Ambient Occlusion (GTAO):** Multi-bounce horizon-based contact shadowing in wall seams and clothing folds with zero black halos.
+  - **13-Tap Progressive Karis HDR Bloom:** Cinema-grade HDR bloom with anti-firefly luma weighting and anamorphic horizontal flare streaks.
+  - **Optical Bokeh Depth of Field (DOF):** Circle of Confusion (CoC) autofocus raycaster dynamically focusing on crosshairs or targets.
+  - **Per-Pixel Velocity Motion Blur:** Reconstructs camera & dynamic object velocity vectors for fluid 60 FPS motion.
+  - **5 One-Click Genre Presets:** `CyberpunkNeon`, `CinematicMovie`, `HorrorGrim`, `CleanRealistic`, `PerformanceLite`.
+* **Technical Mechanism:** Multi-render-target (MRT) GBuffer capture with shared depth/normal buffers, running cleanly before retro display filters like `3DCRT+`.
+* **Impact / Priority:** ⭐⭐⭐⭐⭐ *(Instant AAA visual polish; consolidates 5 post-process passes into 1)*
+
+---
+
+## 9. Summary Matrix: Extension Possibilities by Priority
 
 | Extension Concept | Primary Category | Complexity | Performance / Value Impact | Status |
 | :--- | :--- | :---: | :---: | :---: |
@@ -312,6 +332,7 @@ mindmap
 | **`MidiSynthPlayer`** | Audio & Dynamic OST | Low | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`MidiSynthPlayer/`) |
 | **`CascadedShadowMaps3D`** | Lighting & Shadows | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`CascadedShadowMaps3D/`) |
 | **`MeshDeformation3D`** | Physics & Deformation | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`MeshDeformation3D/`) |
+| **`CinematicPostFX3D`** | Post-Processing & Optics| High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`CinematicPostFX3D/`) |
 | **`SpatialChunkStreamer3D`** | Open World / Streaming | High | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
 | **`AutoInstancer3D`** | Draw Call Batching | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
 | **`ProceduralFoliageScatterer3D`** | Environment & Foliage | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |

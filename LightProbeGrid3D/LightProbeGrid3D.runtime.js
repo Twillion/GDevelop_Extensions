@@ -93,6 +93,10 @@
     return a + (b - a) * t;
   }
 
+  function colorsEqual(a, b) {
+    return !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+  }
+
   function lerpColor(c1, c2, t) {
     return [
       lerp(c1[0], c2[0], t),
@@ -118,6 +122,18 @@
     }
     return rays;
   })();
+
+  /* --------------------------------------------------- Reusable scratch values */
+
+  var _fallbackMin = null;
+  var _fallbackSize = null;
+  function fallbackBounds() {
+    if (!_fallbackMin && THREE_OK) {
+      _fallbackMin = new THREE.Vector3(0, 0, 0);
+      _fallbackSize = new THREE.Vector3(1, 1, 1);
+    }
+    return _fallbackMin;
+  }
 
   /* ----------------------------------------------------------- Scene State */
 
@@ -281,16 +297,21 @@
         return;
       }
 
-      // Initialize uniforms
+      // Initialize uniforms. Intensity starts at 0 so that the frames between this
+      // compile and the first syncReceiverUniforms() add no light, rather than adding
+      // a full-strength sample from an unbound (black) texture.
       shader.uniforms.u_LPG_VolumeDay = { value: null };
       shader.uniforms.u_LPG_VolumeNight = { value: null };
       shader.uniforms.u_LPG_VolumeMin = { value: new THREE.Vector3() };
       shader.uniforms.u_LPG_VolumeSize = { value: new THREE.Vector3(1, 1, 1) };
-      shader.uniforms.u_LPG_Intensity = { value: 1.0 };
+      shader.uniforms.u_LPG_Intensity = { value: 0.0 };
       shader.uniforms.u_LPG_DayNightBlend = { value: 0.0 };
       shader.uniforms.u_LPG_NormalBias = { value: receiverRecord.normalBias };
 
-      receiverRecord.uniformHolders.push(shader.uniforms);
+      // Held on the material rather than in a list on the record: three calls
+      // onBeforeCompile again for every new program cache key, and a list would
+      // accumulate one dead uniform set per recompile for the object's lifetime.
+      clonedMaterial.__lpgUniforms = shader.uniforms;
 
       // Injections
       shader.fragmentShader = GLSL_PRELUDE + '\n' + shader.fragmentShader;
@@ -328,6 +349,12 @@
         autoBakeOnStart: !!options.autoBakeOnStart,
         bakedOnce: false,
 
+        // Regeneration / invalidation flags
+        gradientDirty: true,   // colors changed -> altitude gradient must be rebuilt
+        isBaked: false,        // dataDay holds baked results, not a generated gradient
+        boundsLocked: false,   // bounds came from a loaded file; stop syncing from the cube
+        debugDirty: true,      // debug instance buffers need a rewrite
+
         // Bounds in GDevelop space
         minX: 0, minY: 0, minZ: 0,
         maxX: 1000, maxY: 1000, maxZ: 500,
@@ -345,8 +372,12 @@
         // Debug visualizer
         debugMesh: null
       };
-      state.volume = vol;
     }
+
+    // Assigned unconditionally: a record that already exists on the behavior would
+    // otherwise never be published to this scene's state, leaving state.volume null
+    // and every lookup (bake, receivers, expressions) silently finding no volume.
+    state.volume = vol;
 
     updateVolumeProperties(vol, options);
     syncVolumeBoundsFromObject(vol, object);
@@ -366,9 +397,19 @@
     if (options.resX !== undefined) vol.resX = Math.max(2, Math.min(64, Math.floor(options.resX)));
     if (options.resY !== undefined) vol.resY = Math.max(2, Math.min(64, Math.floor(options.resY)));
     if (options.resZ !== undefined) vol.resZ = Math.max(2, Math.min(64, Math.floor(options.resZ)));
-    if (options.skyColor !== undefined) vol.skyColor = parseColor(options.skyColor, vol.skyColor);
-    if (options.groundColor !== undefined) vol.groundColor = parseColor(options.groundColor, vol.groundColor);
-    if (options.horizonColor !== undefined) vol.horizonColor = parseColor(options.horizonColor, vol.horizonColor);
+    if (options.skyColor !== undefined) {
+      var newSky = parseColor(options.skyColor, vol.skyColor);
+      if (!colorsEqual(newSky, vol.skyColor)) { vol.skyColor = newSky; vol.gradientDirty = true; }
+    }
+    if (options.groundColor !== undefined) {
+      var newGround = parseColor(options.groundColor, vol.groundColor);
+      if (!colorsEqual(newGround, vol.groundColor)) { vol.groundColor = newGround; vol.gradientDirty = true; }
+    }
+    if (options.horizonColor !== undefined) {
+      var newHorizon = parseColor(options.horizonColor, vol.horizonColor);
+      if (!colorsEqual(newHorizon, vol.horizonColor)) { vol.horizonColor = newHorizon; vol.gradientDirty = true; }
+    }
+    if (vol.gradientDirty) vol.nightDirty = true;
     if (options.volumeIntensity !== undefined) vol.volumeIntensity = options.volumeIntensity;
     if (options.dayNightMode !== undefined) vol.dayNightMode = !!options.dayNightMode;
     if (options.showDebugSpheres !== undefined) vol.showDebugSpheres = !!options.showDebugSpheres;
@@ -377,6 +418,15 @@
 
   function syncVolumeBoundsFromObject(vol, object) {
     if (!vol || !object) return;
+    // Loaded probe data carries its own bounds; the authoring cube must not clobber
+    // them every frame or the volume and its data drift apart.
+    if (vol.boundsLocked) return;
+    if (typeof object.getZ !== 'function' || typeof object.getDepth !== 'function') {
+      warnOnce('volumeNot3D',
+        'LightProbeVolume3D is attached to an object with no Z/depth (not a 3D object). ' +
+        'Attach it to a Cube3D, or set bounds explicitly with SetBounds.');
+      return;
+    }
     var x = object.getX ? object.getX() : 0;
     var y = object.getY ? object.getY() : 0;
     var z = object.getZ ? object.getZ() : 0;
@@ -392,6 +442,9 @@
     vol.maxZ = z + Math.max(1, d);
 
     // C2: Y-Mirrored three-space bounds: [minX, -maxY, minZ]
+    if (vol.threeMin.x !== vol.minX || vol.threeMin.y !== -vol.maxY || vol.threeMin.z !== vol.minZ) {
+      vol.debugDirty = true;
+    }
     vol.threeMin.set(vol.minX, -vol.maxY, vol.minZ);
     vol.threeSize.set(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
   }
@@ -408,19 +461,36 @@
   function ensureVolumeTextures(vol) {
     if (!vol) return;
     var totalProbes = vol.resX * vol.resY * vol.resZ;
-    var neededBytes = totalProbes * 4 * 2; // Uint16Array
 
-    if (!vol.dataDay || vol.dataDay.length !== totalProbes * 4) {
+    // A resolution change invalidates any bake: the buffer no longer matches the grid.
+    var resolutionChanged = !vol.dataDay || vol.dataDay.length !== totalProbes * 4;
+    if (resolutionChanged) {
+      vol.isBaked = false;
+      vol.gradientDirty = true;
+      vol.debugDirty = true;
+    }
+
+    // Colors changed after a bake: regenerating would silently throw the bake away,
+    // so keep the baked data and tell the user a re-bake is what they want.
+    if (vol.gradientDirty && vol.isBaked && !resolutionChanged) {
+      warnOnce('colorAfterBake',
+        'Volume colors changed after baking. Baked probe data is kept; call StartBake again to apply the new colors.');
+      vol.gradientDirty = false;
+    }
+
+    if (resolutionChanged || vol.gradientDirty) {
       vol.dataDay = generateAltitudeGradientBuffer(
         vol.resX, vol.resY, vol.resZ,
         vol.skyColor, vol.groundColor, vol.horizonColor
       );
       if (vol.textureDay) vol.textureDay.dispose();
       vol.textureDay = makeData3DTexture(vol.dataDay, vol.resX, vol.resY, vol.resZ);
+      vol.gradientDirty = false;
+      vol.debugDirty = true;
     }
 
     if (vol.dayNightMode) {
-      if (!vol.dataNight || vol.dataNight.length !== totalProbes * 4) {
+      if (!vol.dataNight || vol.dataNight.length !== totalProbes * 4 || vol.nightDirty) {
         // Fallback night gradient: darker, cooler
         var nightSky = [vol.skyColor[0] * 0.15, vol.skyColor[1] * 0.15, vol.skyColor[2] * 0.35];
         var nightGround = [vol.groundColor[0] * 0.1, vol.groundColor[1] * 0.1, vol.groundColor[2] * 0.15];
@@ -431,6 +501,7 @@
         );
         if (vol.textureNight) vol.textureNight.dispose();
         vol.textureNight = makeData3DTexture(vol.dataNight, vol.resX, vol.resY, vol.resZ);
+        vol.nightDirty = false;
       }
     } else {
       if (vol.textureNight) {
@@ -460,6 +531,26 @@
   }
 
   /* ---------------------------------------------------- Receiver Management (C3, C10, C18) */
+
+  // Model3D swaps its whole mesh tree (new SkeletonUtils.clone, original shared
+  // materials) inside _updateModel, which fires from updateFromObjectData on a live
+  // preview reload. Comparing this reference detects that the clones went stale.
+  function modelTreeOf(object) {
+    var renderer = object && object.getRenderer && object.getRenderer();
+    if (!renderer) return null;
+    return renderer._threeObject ||
+      (renderer.get3DRendererObject ? renderer.get3DRendererObject() : null);
+  }
+
+  function layerNameOf(object) {
+    return (object && typeof object.getLayer === 'function') ? object.getLayer() : '';
+  }
+
+  function threeRootOf(object) {
+    var renderer = object && object.getRenderer && object.getRenderer();
+    if (!renderer) return null;
+    return renderer.get3DRendererObject ? renderer.get3DRendererObject() : renderer._threeObject;
+  }
 
   function collectMeshesAndCloneMaterials(rootObject, receiverRecord) {
     var clones = [];
@@ -505,6 +596,13 @@
     if (!THREE_OK) return null;
     if (!isWebGL2Available(runtimeScene)) return null;
 
+    if (typeof object.getZ !== 'function') {
+      warnOnce('receiverNot3D',
+        'ReceiveLightProbes is attached to an object with no Z coordinate (not a 3D object). ' +
+        'Attach it to a Model3D or Cube3D.');
+      return null;
+    }
+
     var state = stateOf(runtimeScene);
     var rec = behavior.__lpgReceiver;
     if (!rec) {
@@ -516,17 +614,17 @@
         updateFrequency: options.updateFrequency || 'Continuous',
         enabled: options.enabled !== undefined ? !!options.enabled : true,
         materialClones: [],
-        uniformHolders: [],
+        collectedFrom: null,   // the three object the clones were taken from
         stepCounter: 0,
         effectiveIntensity: 1.0
       };
       state.receivers.add(rec);
 
       // Clone materials on object's 3D tree (C3)
-      var renderer = object.getRenderer && object.getRenderer();
-      var threeRoot = renderer && (renderer.get3DRendererObject ? renderer.get3DRendererObject() : renderer._threeObject);
+      var threeRoot = threeRootOf(object);
       if (threeRoot) {
         rec.materialClones = collectMeshesAndCloneMaterials(threeRoot, rec);
+        rec.collectedFrom = modelTreeOf(object);
       }
     }
 
@@ -543,9 +641,11 @@
   }
 
   function syncReceiverUniforms(runtimeScene, rec) {
-    if (!rec || !rec.enabled) {
-      for (var j = 0; j < rec.uniformHolders.length; j++) {
-        var uZero = rec.uniformHolders[j];
+    if (!rec) return;
+
+    if (!rec.enabled) {
+      for (var j = 0; j < rec.materialClones.length; j++) {
+        var uZero = rec.materialClones[j].clone.__lpgUniforms;
         if (uZero && uZero.u_LPG_Intensity) uZero.u_LPG_Intensity.value = 0.0;
       }
       return;
@@ -560,11 +660,11 @@
 
     var dayTex = (vol && vol.textureDay) ? vol.textureDay : getDummyTexture(state);
     var nightTex = (vol && vol.dayNightMode && vol.textureNight) ? vol.textureNight : dayTex;
-    var vMin = vol ? vol.threeMin : THREE.Vector3 ? new THREE.Vector3() : null;
-    var vSize = vol ? vol.threeSize : THREE.Vector3 ? new THREE.Vector3(1, 1, 1) : null;
+    var vMin = vol ? vol.threeMin : fallbackBounds();
+    var vSize = vol ? vol.threeSize : _fallbackSize;
 
-    for (var i = 0; i < rec.uniformHolders.length; i++) {
-      var u = rec.uniformHolders[i];
+    for (var i = 0; i < rec.materialClones.length; i++) {
+      var u = rec.materialClones[i].clone.__lpgUniforms;
       if (!u) continue;
       if (u.u_LPG_VolumeDay) u.u_LPG_VolumeDay.value = dayTex;
       if (u.u_LPG_VolumeNight) u.u_LPG_VolumeNight.value = nightTex;
@@ -581,16 +681,20 @@
     if (!rec) return;
 
     rec.stepCounter++;
-    if (rec.updateFrequency === 'Throttled' && rec.stepCounter % 5 !== 0) {
+    // Always sync on the first step: uniforms are created lazily at first compile and
+    // hold intensity 0 until something writes them.
+    if (rec.updateFrequency === 'Throttled' && rec.stepCounter > 1 && rec.stepCounter % 5 !== 0) {
       return;
     }
 
-    // Re-check mesh attachments in case model reloaded
-    if (rec.materialClones.length === 0) {
-      var renderer = object.getRenderer && object.getRenderer();
-      var threeRoot = renderer && (renderer.get3DRendererObject ? renderer.get3DRendererObject() : renderer._threeObject);
+    // Re-collect if the mesh tree was rebuilt under us (see modelTreeOf) or if the
+    // first attempt found nothing.
+    var currentTree = modelTreeOf(object);
+    if (rec.materialClones.length === 0 || (rec.collectedFrom && currentTree !== rec.collectedFrom)) {
+      var threeRoot = threeRootOf(object);
       if (threeRoot) {
         rec.materialClones = collectMeshesAndCloneMaterials(threeRoot, rec);
+        rec.collectedFrom = currentTree;
       }
     }
 
@@ -621,11 +725,26 @@
       } catch (e2) {}
     }
     rec.materialClones = [];
-    rec.uniformHolders = [];
+    rec.collectedFrom = null;
     behavior.__lpgReceiver = null;
   }
 
   /* ---------------------------------------------------- Raycast Occlusion Baker (C13, C16) */
+
+  // Every mesh belonging to an object that receives probe light. Baking these would
+  // record each dynamic object's own occlusion into the volume permanently — a
+  // character standing still during a bake would leave a dark blob behind it.
+  function collectReceiverMeshes(state) {
+    var excluded = new Set();
+    state.receivers.forEach(function (rec) {
+      var root = threeRootOf(rec.object);
+      if (!root || !root.traverse) return;
+      root.traverse(function (node) {
+        if (node.isMesh) excluded.add(node);
+      });
+    });
+    return excluded;
+  }
 
   function collectBakeGeometry(runtimeScene, layerName) {
     var layer = runtimeScene.getLayer(layerName || '');
@@ -634,10 +753,14 @@
     var meshes = [];
     if (!scene) return meshes;
 
+    var state = stateOf(runtimeScene);
+    var excluded = collectReceiverMeshes(state);
+
     scene.traverse(function (node) {
-      // Exclude invisible, debug meshes, helper lines
+      // Exclude invisible meshes, debug spheres, and probe receivers
       if (node.isMesh && node.visible && node.geometry) {
         if (node.name && node.name.indexOf('LPG_DEBUG') !== -1) return;
+        if (excluded.has(node)) return;
         meshes.push(node);
       }
     });
@@ -656,11 +779,13 @@
     }
 
     var totalProbes = vol.resX * vol.resY * vol.resZ;
-    var meshes = collectBakeGeometry(runtimeScene, vol.object ? vol.object.getLayer() : '');
+    var meshes = collectBakeGeometry(runtimeScene, layerNameOf(vol.object));
 
     state.bakeState = {
       inProgress: true,
       currentProbe: 0,
+      rayIndex: 0,           // lets a probe resume mid-way when the budget runs out
+      accR: 0, accG: 0, accB: 0,
       totalProbes: totalProbes,
       buffer: new Uint16Array(totalProbes * 4),
       meshes: meshes,
@@ -668,6 +793,10 @@
       originVec: new THREE.Vector3(),
       dirVec: new THREE.Vector3()
     };
+
+    console.log('[LightProbeGrid3D] Baking ' + totalProbes + ' probes x ' + NUM_RAYS +
+      ' rays = ' + (totalProbes * NUM_RAYS).toLocaleString() + ' raycasts against ' +
+      meshes.length + ' meshes. Poll GetBakeProgress() for progress.');
     state.bakeState.raycaster.far = Math.max(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
     state.isBakeComplete = false;
     return true;
@@ -677,6 +806,7 @@
     var state = stateOf(runtimeScene);
     if (state.bakeState) {
       state.bakeState.inProgress = false;
+      state.bakeState.rayIndex = 0;
       state.bakeState = null;
     }
   }
@@ -727,11 +857,14 @@
       // C2: Mirrored space position: (px, -py, pz)
       bs.originVec.set(px, -py, pz);
 
-      var accR = 0;
-      var accG = 0;
-      var accB = 0;
+      // Resume where the previous frame ran out of budget.
+      if (bs.rayIndex === 0) { bs.accR = 0; bs.accG = 0; bs.accB = 0; }
+      var accR = bs.accR;
+      var accG = bs.accG;
+      var accB = bs.accB;
+      var outOfBudget = false;
 
-      for (var r = 0; r < NUM_RAYS; r++) {
+      for (var r = bs.rayIndex; r < NUM_RAYS; r++) {
         var sRay = SPHERE_RAYS[r];
         // Mirror Y direction to match three mirrored space
         bs.dirVec.set(sRay.x, -sRay.y, sRay.z).normalize();
@@ -762,7 +895,23 @@
           accG += bounceG;
           accB += bounceB;
         }
+
+        // Checked per ray, not per probe: a single probe against a heavy scene can
+        // exceed the whole frame budget on its own, which would pin the bake to one
+        // probe per frame no matter how large the budget is.
+        if ((r & 7) === 7) {
+          var rayNow = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+          if (rayNow - start >= budget) {
+            bs.rayIndex = r + 1;
+            bs.accR = accR; bs.accG = accG; bs.accB = accB;
+            outOfBudget = true;
+            break;
+          }
+        }
       }
+
+      if (outOfBudget) return;   // same probe resumes next frame
+      bs.rayIndex = 0;
 
       var inv = 1.0 / NUM_RAYS;
       var bufIdx = pIdx * 4;
@@ -782,6 +931,9 @@
       vol.dataDay = bs.buffer;
       if (vol.textureDay) vol.textureDay.dispose();
       vol.textureDay = makeData3DTexture(vol.dataDay, resX, resY, resZ);
+      vol.isBaked = true;
+      vol.gradientDirty = false;
+      vol.debugDirty = true;
 
       // Re-sync debug visualizer if active
       if (vol.debugMesh) updateDebugVisualizerMesh(runtimeScene, vol);
@@ -796,7 +948,7 @@
 
   function updateDebugVisualizerMesh(runtimeScene, vol) {
     if (!THREE_OK || !vol) return;
-    var layer = runtimeScene.getLayer(vol.object ? vol.object.getLayer() : '');
+    var layer = runtimeScene.getLayer(layerNameOf(vol.object));
     var lr = layer && layer.getRenderer && layer.getRenderer();
     var scene = lr && lr.getThreeScene ? lr.getThreeScene() : null;
     if (!scene) return;
@@ -857,6 +1009,7 @@
 
     vol.debugMesh.instanceMatrix.needsUpdate = true;
     if (vol.debugMesh.instanceColor) vol.debugMesh.instanceColor.needsUpdate = true;
+    vol.debugDirty = false;
   }
 
   /* ---------------------------------------------------- Serialization (.lpg.bin) (Phase 7, C15) */
@@ -931,12 +1084,37 @@
     }
 
     var version = view.getUint32(4, true);
+    if (version !== 1) {
+      warnOnce('badVersion', 'Probe file version ' + version + ' is not supported (expected 1).');
+      return false;
+    }
+
+    var encoding = view.getUint8(20);
+    if (encoding !== 0) {
+      warnOnce('badEncoding', 'Probe file encoding ' + encoding +
+        ' is not supported (expected 0 = RGBA16F).');
+      return false;
+    }
+
     var rx = view.getUint32(8, true);
     var ry = view.getUint32(12, true);
     var rz = view.getUint32(16, true);
-    var encoding = view.getUint8(20);
+    if (rx < 2 || ry < 2 || rz < 2 || rx > 64 || ry > 64 || rz > 64) {
+      warnOnce('badRes', 'Probe file resolution ' + rx + 'x' + ry + 'x' + rz +
+        ' is outside the supported range [2, 64] per axis.');
+      return false;
+    }
+
     var flags = view.getUint8(21);
     var hasNight = (flags & 1) !== 0;
+
+    // Without this the Uint16Array views below throw a RangeError on a truncated file.
+    var expectedBytes = 56 + rx * ry * rz * 4 * 2 * (hasNight ? 2 : 1);
+    if (arrayBuffer.byteLength < expectedBytes) {
+      warnOnce('shortFile', 'Probe file is truncated: expected at least ' + expectedBytes +
+        ' bytes for a ' + rx + 'x' + ry + 'x' + rz + ' volume, got ' + arrayBuffer.byteLength + '.');
+      return false;
+    }
 
     var minX = view.getFloat32(32, true);
     var minY = view.getFloat32(36, true);
@@ -954,6 +1132,19 @@
       return false;
     }
 
+    // The file's bounds are the ones its data was baked against. Warn if the authoring
+    // cube disagrees, then take the file's and stop syncing from the cube — otherwise
+    // doStepPreEvents would overwrite them on the very next frame and the data would
+    // be sampled against the wrong volume.
+    var boundsDiffer =
+      Math.abs(vol.minX - minX) > 1 || Math.abs(vol.minY - minY) > 1 || Math.abs(vol.minZ - minZ) > 1 ||
+      Math.abs(vol.maxX - maxX) > 1 || Math.abs(vol.maxY - maxY) > 1 || Math.abs(vol.maxZ - maxZ) > 1;
+    if (boundsDiffer) {
+      warnOnce('boundsMismatch',
+        'Loaded probe data was baked for different bounds than the current volume cube. ' +
+        'Using the file\'s bounds; the cube no longer controls this volume.');
+    }
+
     vol.resX = rx;
     vol.resY = ry;
     vol.resZ = rz;
@@ -963,6 +1154,10 @@
     vol.maxX = maxX;
     vol.maxY = maxY;
     vol.maxZ = maxZ;
+    vol.boundsLocked = true;
+    vol.isBaked = true;
+    vol.gradientDirty = false;
+    vol.debugDirty = true;
 
     vol.threeMin.set(minX, -maxY, minZ);
     vol.threeSize.set(maxX - minX, maxY - minY, maxZ - minZ);
@@ -981,7 +1176,7 @@
       vol.textureNight = makeData3DTexture(vol.dataNight, rx, ry, rz);
     }
 
-    if (vol.debugMesh) updateDebugVisualizerMesh(runtimeScene, vol);
+    if (vol.debugMesh && vol.showDebugSpheres) updateDebugVisualizerMesh(runtimeScene, vol);
     return true;
   }
 
@@ -997,8 +1192,9 @@
       stepBake(runtimeScene);
     }
 
-    // Keep debug visualizer in sync if enabled
-    if (state.volume && state.volume.showDebugSpheres) {
+    // Rebuild the debug instance buffers only when something actually changed —
+    // rewriting 1024 matrices and colors every frame is pure waste.
+    if (state.volume && state.volume.showDebugSpheres && state.volume.debugDirty) {
       updateDebugVisualizerMesh(runtimeScene, state.volume);
     }
   }
@@ -1071,6 +1267,9 @@
       vol.maxX = Math.max(minX + 1, maxX);
       vol.maxY = Math.max(minY + 1, maxY);
       vol.maxZ = Math.max(minZ + 1, maxZ);
+      // Explicit bounds win over the authoring cube from here on.
+      vol.boundsLocked = true;
+      vol.debugDirty = true;
       vol.threeMin.set(vol.minX, -vol.maxY, vol.minZ);
       vol.threeSize.set(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
     },
@@ -1158,6 +1357,7 @@
       var vol = state.volume;
       if (vol) {
         vol.showDebugSpheres = !!enable;
+        vol.debugDirty = true;
         updateDebugVisualizerMesh(runtimeScene, vol);
       }
     },
@@ -1196,6 +1396,19 @@
         return true;
       }
       return false;
+    },
+
+    // Synchronous counterpart to loadProbeDataFromFile, for callers that already
+    // hold the bytes. Returns true only if the file validated and was applied.
+    loadProbeDataFromBuffer: function (runtimeScene, arrayBuffer) {
+      return loadBinary(runtimeScene, arrayBuffer);
+    },
+
+    // Internal seams for the unit test harness. Not part of the events API and not
+    // referenced by any generated JsCode block.
+    __internals: {
+      collectBakeGeometry: collectBakeGeometry,
+      stateOf: stateOf
     },
 
     loadProbeDataFromFile: function (runtimeScene, filePath) {

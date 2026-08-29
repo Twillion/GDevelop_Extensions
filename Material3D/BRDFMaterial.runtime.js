@@ -162,14 +162,21 @@ if (!gdjs.__brdfMaterial3D) {
     // material. onBeforeCompile is a single function property: two behaviors that both assign it do
     // not compose, the last one silently wins. The chain owns the hook; injectors register into it.
     //
-    // order 800 is late on purpose. BRDF rewrites the diffuse term in lights_physical_pars_fragment,
-    // so it should see the output of injectors that alter UVs, normals or roughness earlier in the
-    // fragment stage (triplanar, detail normals, wetness) rather than racing them.
+    // ORDER 100 — the base layer, and first in the chain.
+    //
+    // BRDF establishes *how the surface responds to light*. Everything else (triplanar UVs,
+    // parallax relief, detail normals, wetness) modifies the inputs that response is computed
+    // from, so those layer on top of a base that is already decided. Running the base first also
+    // means a later injector can detect that a custom diffuse is in place and integrate with it
+    // rather than assuming stock Lambert — which is what subsurface scattering will need, since
+    // it edits the same lighting stage.
+    //
+    // See ORDER BANDS in ShaderChain.runtime.js for where a new module should slot in.
     if (gdjs.__m3dShaderChain) {
       gdjs.__m3dShaderChain.register({
         id: 'brdf',
         chunk: 'lights_physical_pars_fragment',
-        order: 800,
+        order: 100,
         isActive: function (mat) { return mat.__brdfPatched === true && !!mat.__brdfUniforms; },
         key: function (mat) { return String(mat.__brdfUniforms.uBrdfMode.value); },
         inject: function (shader, mat) {
@@ -181,29 +188,58 @@ if (!gdjs.__brdfMaterial3D) {
             '#include <common>\n' + BRDF_UNIFORMS_AND_HELPERS
           );
 
-          var physChunk = THREE.ShaderChunk['lights_physical_pars_fragment'];
-          if (physChunk) {
-            var patched = physChunk.replace(
-              /(void\s+RE_Direct_Physical[\s\S]*?)(?=void\s+RE_IndirectDiffuse_Physical|$)/,
-              function(match) {
-                return match.replace(
-                  /BRDF_Lambert\s*\(\s*material\.diffuseColor\s*\)/g,
-                  'brdfCustom(material.diffuseColor, geometryNormal, directLight.direction, geometryViewDir)'
-                );
-              }
-            );
-            shader.fragmentShader = shader.fragmentShader.replace(
-              '#include <lights_physical_pars_fragment>',
-              patched
+          // An unlit (MeshBasicMaterial) surface has no lighting code at all, so there is nothing
+          // here to rewrite and the whole behavior is a no-op. Throwing makes that visible: the
+          // chain catches it, logs it, and leaves 'brdf' out of the injected list — so
+          // "Shader injector is active" correctly answers false instead of lying.
+          if (shader.fragmentShader.indexOf('#include <lights_physical_pars_fragment>') < 0) {
+            throw new Error(
+              'no lighting stage to patch — this material is unlit. Set Material class to ' +
+              'Standard or Physical (BRDF rewrites lighting, and unlit surfaces have none).'
             );
           }
+
+          var physChunk = THREE.ShaderChunk['lights_physical_pars_fragment'];
+          if (!physChunk) throw new Error('THREE.ShaderChunk.lights_physical_pars_fragment missing');
+
+          var patched = physChunk.replace(
+            /(void\s+RE_Direct_Physical[\s\S]*?)(?=void\s+RE_IndirectDiffuse_Physical|$)/,
+            function(match) {
+              return match.replace(
+                /BRDF_Lambert\s*\(\s*material\.diffuseColor\s*\)/g,
+                'brdfCustom(material.diffuseColor, geometryNormal, directLight.direction, geometryViewDir)'
+              );
+            }
+          );
+
+          // If Three.js ever renames the call this hooks, the replace above silently no-ops and
+          // the surface renders stock Lambert with everything reporting success. Verify instead.
+          if (patched.indexOf('brdfCustom(') < 0) {
+            throw new Error(
+              'BRDF_Lambert call not found in lights_physical_pars_fragment — the Three.js ' +
+              'version in use may have changed this chunk.'
+            );
+          }
+
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <lights_physical_pars_fragment>',
+            patched
+          );
         }
       });
     }
 
-    function patchMaterial(mat, uniforms) {
+    function patchMaterial(mat, uniforms, followRoughness) {
       mat.__brdfPatched  = true;
       mat.__brdfUniforms = uniforms;
+      // Read by Material 3D after it finishes writing material.roughness, so the diffuse model
+      // tracks the same roughness the specular uses instead of drifting from it. This is also
+      // what makes Wetness work on a BRDF surface — wetness drives material.roughness, and
+      // without this the diffuse would keep behaving dry.
+      mat.__brdfFollowRoughness = followRoughness !== false;
+      if (mat.__brdfFollowRoughness && typeof mat.roughness === 'number') {
+        uniforms.uBrdfRoughness.value = mat.roughness;
+      }
       // Mirrored into userData for inspection only. Never read back as an object.
       mat.userData.__brdfPatched = true;
 
@@ -234,13 +270,14 @@ if (!gdjs.__brdfMaterial3D) {
       return null;
     }
 
+    // ColorR / ColorG / ColorB used to be read here and were never used: the shader receives
+    // `material.diffuseColor`, and no colour uniform exists. Three sliders that did nothing.
+    // Removed in 3.2.0 — Material 3D's Base colour is, and always was, the real control.
     function readParams(behavior) {
       return {
         mode:                         behavior._getBRDFModel(),
-        r:                            behavior._getColorR(),
-        g:                            behavior._getColorG(),
-        b:                            behavior._getColorB(),
         roughness:                    behavior._getRoughness(),
+        followMaterialRoughness:      behavior._getFollowMaterialRoughness(),
         diffuseFresnel:               behavior._getDiffuseFresnel(),
         diffuseFresnelFalloff:        behavior._getDiffuseFresnelFalloff(),
         diffuseFresnelTangentFalloff: behavior._getDiffuseFresnelTangentFalloff(),
@@ -278,7 +315,7 @@ if (!gdjs.__brdfMaterial3D) {
           if (typeof src.clone !== 'function') return m;
           var clone = src.clone();
           clone.__brdfOriginalRef = src;
-          patchMaterial(clone, uniforms);
+          patchMaterial(clone, uniforms, p.followMaterialRoughness);
           return clone;
         });
         child.material = Array.isArray(existing) ? result : result[0];

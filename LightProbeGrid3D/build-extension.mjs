@@ -88,7 +88,10 @@ const freeFn = (name, fullName, description, functionType, parameters, code, opt
   ...(opts.sentence ? { sentence: opts.sentence } : {}),
   private: false,
   parameters,
-  events: evFree((opts.withRuntime ? runtime + '\n' : '') + `if (!${NS}) return;\nconst LPG = ${NS};\n` + code, opts),
+  // evFree already prepends the runtime when opts.withRuntime is set. Prepending it
+  // here too embedded a second, inert copy in every free function and doubled the
+  // size of the generated JSON.
+  events: evFree(`if (!${NS}) return;\nconst LPG = ${NS};\n` + code, opts),
   ...(opts.expressionType ? { expressionType: opts.expressionType } : {}),
 });
 
@@ -220,7 +223,9 @@ const volumeBehavior = {
   name: 'LightProbeVolume3D',
   fullName: 'Light Probe Volume 3D',
   description: 'Attach to a 3D Box (Cube3D) to define the spatial bounds, resolution, and ambient colors of a light probe grid. The box transform sets the volume bounds.',
-  objectType: '',
+  // Restricted to Cube3D: the volume reads getZ/getDepth off the object, and an
+  // unrestricted behavior can be dropped on a Sprite where those do not exist.
+  objectType: 'Scene3D::Cube3DObject',
   private: false,
   propertyDescriptors: [
     prop('ResolutionX', 'Number', 'Resolution X', 'Probes along world X. Clamped to [2, 64].', '16'),

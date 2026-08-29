@@ -84,6 +84,21 @@ globalThis.THREE = {
   RepeatWrapping: 1000, Vector2: class { constructor(x = 0, y = 0) { this.x = x; this.y = y; } set(x, y) { this.x = x; this.y = y; return this; } },
   Matrix3: class { setUvTransform() { return this; } identity() { return this; } },
   Texture: class { constructor() { this.userData = {}; } dispose() {} },
+  // A minimal stand-in for the real chunk, carrying the one call BRDF rewrites. Without this the
+  // injector cannot be exercised at all, which is how a shader edit reaches the engine untested.
+  ShaderChunk: {
+    lights_physical_pars_fragment: [
+      'void RE_Direct_Physical( const in IncidentLight directLight, const in vec3 geometryPosition,',
+      '  const in vec3 geometryNormal, const in vec3 geometryViewDir, inout ReflectedLight reflectedLight ) {',
+      '  float dotNL = saturate( dot( geometryNormal, directLight.direction ) );',
+      '  vec3 irradiance = dotNL * directLight.color;',
+      '  reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
+      '}',
+      'void RE_IndirectDiffuse_Physical( const in vec3 irradiance, inout ReflectedLight reflectedLight ) {',
+      '  reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
+      '}',
+    ].join('\n'),
+  },
 };
 
 globalThis.gdjs = {};
@@ -282,7 +297,7 @@ console.log('\n7. BRDF composition hook');
 
   // Patch, then let Material3D swap the material out from under it.
   B.apply(a.object, B.readParams(makeBehavior({
-    BRDFModel: 'oren-nayar', ColorR: 0.8, ColorG: 0.8, ColorB: 0.8, Roughness: 0.5,
+    BRDFModel: 'oren-nayar', Roughness: 0.5, FollowMaterialRoughness: false,
     DiffuseFresnel: 1, DiffuseFresnelFalloff: 0.75, DiffuseFresnelTangentFalloff: 0.75,
     RetroReflection: 1, RetroReflectionFalloff: 0.75, RetroReflectionTangentFalloff: 0.75,
     SmoothTerminator: 0, SmoothTerminatorLength: 0.5,
@@ -461,7 +476,7 @@ console.log('\n11. Chain survives a Material3D apply');
   const B = globalThis.gdjs.__brdfMaterial3D;
   const a = setup();
   B.apply(a.object, B.readParams(makeBehavior({
-    BRDFModel: 'toon', ColorR: 0.8, ColorG: 0.8, ColorB: 0.8, Roughness: 0.5,
+    BRDFModel: 'toon', Roughness: 0.5, FollowMaterialRoughness: false,
     DiffuseFresnel: 1, DiffuseFresnelFalloff: 0.75, DiffuseFresnelTangentFalloff: 0.75,
     RetroReflection: 1, RetroReflectionFalloff: 0.75, RetroReflectionTangentFalloff: 0.75,
     SmoothTerminator: 0, SmoothTerminatorLength: 0.5,
@@ -473,6 +488,85 @@ console.log('\n11. Chain survives a Material3D apply');
     'the ensure() pass in applyToBehavior did not run');
   check('  and BRDF is still an active injector on it',
     chain.activeFor(a.mesh.material).some((i) => i.id === 'brdf'));
+}
+
+
+console.log('\n12. BRDF polish: ordering, dead sliders, honest diagnostics');
+{
+  const chain = globalThis.gdjs.__m3dShaderChain;
+  const B = globalThis.gdjs.__brdfMaterial3D;
+
+  const brdfBehavior = (over = {}) => makeBehavior({
+    BRDFModel: 'oren-nayar', Roughness: 0.5, FollowMaterialRoughness: true,
+    DiffuseFresnel: 1, DiffuseFresnelFalloff: 0.75, DiffuseFresnelTangentFalloff: 0.75,
+    RetroReflection: 1, RetroReflectionFalloff: 0.75, RetroReflectionTangentFalloff: 0.75,
+    SmoothTerminator: 0, SmoothTerminatorLength: 0.5, ...over,
+  });
+
+  // The dead sliders are gone: readParams must not reach for colour getters that no longer exist.
+  const params = B.readParams(brdfBehavior());
+  check('readParams no longer reads colour', !('r' in params) && !('g' in params) && !('b' in params),
+    Object.keys(params).join(','));
+  check('  and does read the follow toggle', params.followMaterialRoughness === true);
+
+  // BRDF is the base layer and must sort ahead of the modifier bands.
+  const ids = chain.registeredIds();
+  const early = { id: 'z-late-probe', chunk: 'roughnessmap_fragment', order: 500,
+    isActive: (m) => m.__probe === true, key: () => 'v', inject: () => {} };
+  chain.register(early);
+  const mat = new MeshStandardMaterial();
+  mat.__probe = true;
+  const a = setup();
+  B.apply(a.object, B.readParams(brdfBehavior()));
+  a.mesh.material.__probe = true;
+  const order = chain.activeFor(a.mesh.material).map((i) => i.id);
+  check('BRDF sorts before a band-400 modifier', order.indexOf('brdf') === 0, order.join(','));
+
+  // Follow-material-roughness: the diffuse uniform tracks material.roughness.
+  const b = setup({ Roughness: 0.9 });
+  B.apply(b.object, B.readParams(brdfBehavior()));
+  M3.applyToBehavior(b.behavior, b.object, b.game);
+  check('diffuse roughness follows the material',
+    Math.abs(b.mesh.material.__brdfUniforms.uBrdfRoughness.value - 0.9) < 1e-9,
+    String(b.mesh.material.__brdfUniforms.uBrdfRoughness.value));
+
+  // ...and therefore wetness reaches the diffuse model too, which was the whole point.
+  M3.setOverride(b.behavior, 'Wetness', 1);
+  M3.refreshSettings(b.behavior);
+  check('wetness reaches the diffuse model',
+    Math.abs(b.mesh.material.__brdfUniforms.uBrdfRoughness.value - 0.02) < 1e-9,
+    String(b.mesh.material.__brdfUniforms.uBrdfRoughness.value));
+
+  // With the toggle off, the behavior's own number is authoritative again.
+  const c = setup();
+  B.apply(c.object, B.readParams(brdfBehavior({ FollowMaterialRoughness: false, Roughness: 0.25 })));
+  M3.applyToBehavior(c.behavior, c.object, c.game);
+  check('toggle off keeps the behavior roughness',
+    Math.abs(c.mesh.material.__brdfUniforms.uBrdfRoughness.value - 0.25) < 1e-9,
+    String(c.mesh.material.__brdfUniforms.uBrdfRoughness.value));
+
+  // Unlit: BRDF has no lighting stage to patch. It must report that, not claim success.
+  const d = setup();
+  B.apply(d.object, B.readParams(brdfBehavior()));
+  const unlitShader = { uniforms: {}, fragmentShader: 'void main(){ gl_FragColor = vec4(1.0); }', vertexShader: '' };
+  let unlitThrew = null;
+  try { d.mesh.material.onBeforeCompile(unlitShader); } catch (e) { unlitThrew = e; }
+  check('an unlit shader does not crash the chain', unlitThrew === null, unlitThrew && unlitThrew.message);
+  check('  and brdf is NOT reported as injected', chain.hasInjector(d.mesh.material, 'brdf') === false,
+    'it claimed to be active on a material with no lighting stage');
+
+  // A lit shader: brdf must be reported as injected, and the diffuse call must be present.
+  const e = setup();
+  B.apply(e.object, B.readParams(brdfBehavior()));
+  const litShader = {
+    uniforms: {},
+    fragmentShader: '#include <common>\n#include <lights_physical_pars_fragment>\nvoid main(){}',
+    vertexShader: '',
+  };
+  e.mesh.material.onBeforeCompile(litShader);
+  check('a lit shader reports brdf injected', chain.hasInjector(e.mesh.material, 'brdf') === true);
+  check('  and the custom diffuse call is in the source', litShader.fragmentShader.includes('brdfCustom('));
+  check('  and the helper library was added', litShader.fragmentShader.includes('brdf_orenNayar'));
 }
 
 console.log(`\n${'='.repeat(46)}`);

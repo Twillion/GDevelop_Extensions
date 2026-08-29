@@ -23,9 +23,21 @@
 if (typeof THREE !== 'undefined' && !gdjs.__m3dShaderChain) {
     gdjs.__m3dShaderChain = (function () {
 
-        // Ordered low to high. An injector editing an earlier stage of the fragment shader should
-        // sort before one editing a later stage, so that a later injector sees the earlier one's
-        // output rather than racing it.
+        // ORDER BANDS — where a new module slots in.
+        //
+        // Ordered low to high, and the principle is layering, not shader execution order: the
+        // BASE decides how the surface responds to light, and everything after it modifies the
+        // inputs that response is computed from. A module registering in a later band can assume
+        // the earlier bands are already in place and integrate with them.
+        //
+        //   100-199  BASE SHADING     the lighting model itself           — brdf
+        //   200-399  UV SYNTHESIS     what texture coordinates are used   — triplanar, parallax
+        //   400-599  SURFACE INPUTS   normals, roughness, albedo          — detail normals, ripples
+        //   600-799  LIGHTING ADD-ONS extra light response                — subsurface scattering
+        //   800-999  OVERRIDES        anything that must have the last word
+        //
+        // Two injectors in the same band editing the same chunk is allowed but must be deliberate;
+        // the build prints a note when it sees a chunk claimed twice.
         var injectors = [];
 
         /**

@@ -92,7 +92,8 @@ const mockCubeObject = {
   getHeight: () => 300,
   getDepth: () => 150,
   setOpacity: () => {},
-  hide: () => {}
+  hide: () => {},
+  getLayer: () => ''
 };
 
 const mockBehavior = {};
@@ -183,8 +184,13 @@ const mockRoot = {
   traverse(fn) { fn(mockMesh); }
 };
 const mockObject = {
+  // getZ is required: registerReceiver now refuses objects that are not 3D.
+  getX: () => 0,
+  getY: () => 0,
+  getZ: () => 0,
   getRenderer: () => ({
-    get3DRendererObject: () => mockRoot
+    get3DRendererObject: () => mockRoot,
+    _threeObject: mockRoot
   })
 };
 const mockRecBehavior = {};
@@ -220,4 +226,173 @@ assert.ok(Math.abs(mockShader.uniforms.u_LPG_Intensity.value - expectedIntensity
 
 console.log('  Passed: Shader hooks, precision qualifiers, and PI scaling verified.');
 
-console.log('\nALL 5 UNIT TESTS PASSED CLEANLY!\n');
+
+console.log('--- Test 6: Color changes regenerate the gradient (regression) ---');
+{
+  // Before the fix, ensureVolumeTextures only rebuilt when the buffer LENGTH changed,
+  // so SetSkyColor / SetGroundColor / SetHorizonColor were silent no-ops.
+  const v = LPG.volumeOf(mockBehavior);
+  // Sky is the TOP slice (z = resZ-1) and ground is the bottom one (z = 0); the
+  // gradient runs along Z (C1), so each color has to be checked at its own end.
+  const topIdx = ((v.resZ - 1) * v.resY) * v.resX * 4;
+  const before = v.dataDay.slice(topIdx, topIdx + 4);
+
+  LPG.updateVolume(mockScene, mockCubeObject, mockBehavior, { skyColor: [255, 0, 0] });
+  assert.notDeepStrictEqual(
+    Array.from(v.dataDay.slice(topIdx, topIdx + 4)), Array.from(before),
+    'Changing SkyColor must regenerate the gradient buffer'
+  );
+
+  // Ground is the bottom slice; check the very first probe (z = 0).
+  const beforeGround = v.dataDay.slice(0, 4);
+  LPG.updateVolume(mockScene, mockCubeObject, mockBehavior, { groundColor: [0, 255, 0] });
+  assert.notDeepStrictEqual(
+    Array.from(v.dataDay.slice(0, 4)), Array.from(beforeGround),
+    'Changing GroundColor must regenerate the gradient buffer'
+  );
+
+  // Setting the same color again must NOT dirty anything (no needless rebuilds).
+  v.gradientDirty = false;
+  LPG.updateVolume(mockScene, mockCubeObject, mockBehavior, { groundColor: [0, 255, 0] });
+  assert.strictEqual(v.gradientDirty, false, 'Re-setting an identical color must not mark the gradient dirty');
+
+  // A bake must not be silently thrown away by a later color change.
+  v.isBaked = true;
+  const baked = v.dataDay.slice(0, 4);
+  LPG.updateVolume(mockScene, mockCubeObject, mockBehavior, { skyColor: [10, 20, 30] });
+  assert.deepStrictEqual(
+    Array.from(v.dataDay.slice(0, 4)), Array.from(baked),
+    'Baked probe data must survive a color change (warn instead of discarding)'
+  );
+  v.isBaked = false;
+}
+console.log('  Passed: color changes rebuild the gradient and never discard a bake.');
+
+console.log('--- Test 7: loadBinary rejects malformed files (regression) ---');
+{
+  // Previously only the magic was checked, so a truncated file threw an uncaught
+  // RangeError out of `new Uint16Array(buffer, 56, n)`.
+  const good = LPG.volumeOf(mockBehavior);
+  const makeHeader = (version, encoding, rx, ry, rz, totalBytes) => {
+    const buf = new ArrayBuffer(totalBytes);
+    const dv = new DataView(buf);
+    dv.setUint8(0, 0x4c); dv.setUint8(1, 0x50); dv.setUint8(2, 0x47); dv.setUint8(3, 0x33);
+    dv.setUint32(4, version, true);
+    dv.setUint32(8, rx, true); dv.setUint32(12, ry, true); dv.setUint32(16, rz, true);
+    dv.setUint8(20, encoding);
+    dv.setUint8(21, 0);
+    return buf;
+  };
+
+  const payload = (rx, ry, rz) => 56 + rx * ry * rz * 4 * 2;
+
+  assert.strictEqual(
+    LPG.loadProbeDataFromBuffer(mockScene, makeHeader(2, 0, 4, 4, 4, payload(4, 4, 4))), false,
+    'Unsupported version must be rejected');
+  assert.strictEqual(
+    LPG.loadProbeDataFromBuffer(mockScene, makeHeader(1, 1, 4, 4, 4, payload(4, 4, 4))), false,
+    'Unsupported encoding must be rejected');
+  assert.strictEqual(
+    LPG.loadProbeDataFromBuffer(mockScene, makeHeader(1, 0, 999, 4, 4, payload(4, 4, 4))), false,
+    'Out-of-range resolution must be rejected');
+  assert.strictEqual(
+    LPG.loadProbeDataFromBuffer(mockScene, makeHeader(1, 0, 8, 8, 8, 200)), false,
+    'Truncated payload must be rejected, not throw');
+  assert.strictEqual(
+    LPG.loadProbeDataFromBuffer(mockScene, new ArrayBuffer(16)), false,
+    'Undersized buffer must be rejected');
+
+  // A well-formed file still loads, and takes ownership of the bounds.
+  const okBuf = makeHeader(1, 0, 4, 4, 4, payload(4, 4, 4));
+  const dv = new DataView(okBuf);
+  dv.setFloat32(32, 0, true); dv.setFloat32(36, 0, true); dv.setFloat32(40, 0, true);
+  dv.setFloat32(44, 100, true); dv.setFloat32(48, 100, true); dv.setFloat32(52, 100, true);
+  assert.strictEqual(LPG.loadProbeDataFromBuffer(mockScene, okBuf), true, 'A valid file must load');
+  assert.strictEqual(good.boundsLocked, true, 'Loading must lock bounds against the authoring cube');
+  assert.strictEqual(good.isBaked, true, 'Loaded data counts as baked');
+
+  // The cube must no longer be able to overwrite the loaded bounds.
+  LPG.updateVolume(mockScene, mockCubeObject, mockBehavior, {});
+  assert.strictEqual(good.maxX, 100, 'Locked bounds must survive a doStepPreEvents sync');
+  good.boundsLocked = false;
+}
+console.log('  Passed: malformed probe files are rejected and loaded bounds are protected.');
+
+console.log('--- Test 8: receivers are excluded from bake geometry (regression) ---');
+{
+  // A character standing still during a bake used to record its own occlusion into
+  // the volume permanently.
+  const receiverMesh = { isMesh: true, visible: true, geometry: {}, name: 'character' };
+  const levelMesh = { isMesh: true, visible: true, geometry: {}, name: 'floor' };
+  const debugMesh = { isMesh: true, visible: true, geometry: {}, name: 'LPG_DEBUG_SPHERES' };
+  const hiddenMesh = { isMesh: true, visible: false, geometry: {}, name: 'hidden' };
+
+  const recRoot = { traverse(fn) { fn(recRoot); fn(receiverMesh); }, isMesh: false };
+  const sceneGraph = {
+    traverse(fn) { [receiverMesh, levelMesh, debugMesh, hiddenMesh].forEach(fn); }
+  };
+
+  const bakeScene = {
+    getGame: mockScene.getGame,
+    getLayer: () => ({ getRenderer: () => ({ getThreeScene: () => sceneGraph }) })
+  };
+
+  const recObject = {
+    getX: () => 0, getY: () => 0, getZ: () => 0,
+    getRenderer: () => ({ get3DRendererObject: () => recRoot, _threeObject: recRoot })
+  };
+  const recBehavior = {};
+  LPG.registerReceiver(bakeScene, recObject, recBehavior, {});
+
+  const meshes = LPG.__internals.collectBakeGeometry(bakeScene, '');
+  const names = meshes.map((m) => m.name);
+  assert.ok(names.includes('floor'), 'Level geometry must be baked');
+  assert.ok(!names.includes('character'), 'Receiver meshes must be excluded from the bake');
+  assert.ok(!names.includes('LPG_DEBUG_SPHERES'), 'Debug spheres must be excluded from the bake');
+  assert.ok(!names.includes('hidden'), 'Invisible meshes must be excluded from the bake');
+
+  LPG.disposeReceiver(bakeScene, recBehavior);
+}
+console.log('  Passed: only level geometry reaches the baker.');
+
+console.log('--- Test 9: bake resumes mid-probe under a tight budget (regression) ---');
+{
+  // The budget used to be checked only after a whole probe, pinning the bake to one
+  // probe per frame regardless of budget size.
+  const v = LPG.volumeOf(mockBehavior);
+  v.resX = 4; v.resY = 4; v.resZ = 2;
+  v.boundsLocked = false;
+
+  let rayCount = 0;
+  const realRaycaster = globalThis.THREE.Raycaster;
+  globalThis.THREE.Raycaster = class {
+    set() { rayCount++; }
+    intersectObjects() { return []; }
+  };
+
+  const bakeScene = {
+    getGame: mockScene.getGame,
+    getLayer: () => ({ getRenderer: () => ({ getThreeScene: () => ({ traverse() {} }) }) })
+  };
+  // Force the tightest possible budget so a probe cannot finish in one step.
+  LPG.setBakeBudgetMs(bakeScene, 1);
+  const volForBake = LPG.registerVolume(bakeScene, mockCubeObject, mockBehavior, { resX: 4, resY: 4, resZ: 2 });
+  assert.ok(volForBake, 'Volume must register on the bake scene');
+
+  LPG.startBake(bakeScene);
+  assert.strictEqual(LPG.isBakeInProgress(bakeScene), true, 'Bake must start');
+
+  let guard = 0;
+  while (LPG.isBakeInProgress(bakeScene) && guard++ < 10000) {
+    registeredCallbacks.postEvents(bakeScene);
+  }
+  assert.ok(guard < 10000, 'Bake must terminate');
+  assert.strictEqual(LPG.isBakeComplete(bakeScene), true, 'Bake must report completion');
+  assert.strictEqual(LPG.getBakeProgress(bakeScene), 1.0, 'Progress must reach 1.0');
+  assert.strictEqual(rayCount, 4 * 4 * 2 * 32, 'Every probe must cast exactly its full ray budget, once');
+
+  globalThis.THREE.Raycaster = realRaycaster;
+}
+console.log('  Passed: bake resumes mid-probe and casts each ray exactly once.');
+
+console.log('\nALL 9 UNIT TESTS PASSED CLEANLY!');

@@ -429,6 +429,18 @@ if (!gdjs.__material3D) {
             }
         };
 
+        // BRDF Material computes its diffuse from its own roughness uniform, not from
+        // material.roughness. Left alone the two drift apart, and a wet surface ends up with a
+        // wet-looking specular highlight over a diffuse that still behaves dry.
+        //
+        // This runs after every write to material.roughness. Uniform objects are read by Three.js
+        // each frame, so assigning .value is enough — no recompile.
+        const syncBrdfRoughness = (mat) => {
+            if (!mat.__brdfFollowRoughness || !mat.__brdfUniforms) return;
+            if (typeof mat.roughness !== 'number') return;
+            mat.__brdfUniforms.uBrdfRoughness.value = mat.roughness;
+        };
+
         const applyMaterialSettings = (mat, behavior) => {
             if (getBoolean(behavior, 'UseBaseColor', false) && mat.color) {
                 mat.color.copy(parseColor(getString(behavior, 'BaseColor', '255;255;255')));
@@ -483,6 +495,7 @@ if (!gdjs.__material3D) {
             }
 
             applyWetness(mat, behavior);
+            syncBrdfRoughness(mat);
 
             const alphaMode = getString(behavior, 'AlphaMode', 'Preserve');
             const alpha = clamp(getNumber(behavior, 'Alpha', 1), 0, 1);
@@ -690,7 +703,21 @@ if (!gdjs.__material3D) {
                 // the stock diffuse with nothing logged. Rebuild it on top of the new materials.
                 // No-op when the BRDF behavior is not attached.
                 if (gdjs.__brdfMaterial3D && typeof gdjs.__brdfMaterial3D.reapplyIfPatched === 'function') {
-                    try { gdjs.__brdfMaterial3D.reapplyIfPatched(object); } catch(e) {}
+                    let rePatched = false;
+                    try { rePatched = gdjs.__brdfMaterial3D.reapplyIfPatched(object); } catch(e) {}
+
+                    // BRDF re-patches by CLONING and swapping mesh.material again, so the objects
+                    // collected above are no longer the ones on the meshes. Left stale, every later
+                    // settings refresh would write to discarded materials and appear to do nothing.
+                    if (rePatched) {
+                        const live = [];
+                        for (const mesh of appliedMeshes) {
+                            if (!mesh || !mesh.material) continue;
+                            if (Array.isArray(mesh.material)) live.push(...mesh.material.filter(Boolean));
+                            else live.push(mesh.material);
+                        }
+                        if (live.length) state.targetMaterials = live;
+                    }
                 }
 
                 // THREE.Material.copy() carries neither onBeforeCompile nor customProgramCacheKey,
