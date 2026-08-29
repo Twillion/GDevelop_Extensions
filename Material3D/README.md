@@ -1,17 +1,17 @@
 # Material 3D
 
-**Author:** Christopher Monhollen (`Twillion`) · **Version:** 3.0.0 · **Category:** 3D
+**Author:** Christopher Monhollen (`Twillion`) · **Version:** 3.1.0 · **Category:** 3D
 **Tested against:** GDevelop 5 with Three.js r160 / PIXI 7.4.2
 
 One extension, two behaviors, replacing four.
 
 | Behavior | What it does |
 | :--- | :--- |
-| **Material 3D** | Sets material fields — PBR maps, colour, glass, alpha, shadows. 57 properties, 76 functions. |
+| **Material 3D** | Sets material fields — PBR maps, colour, glass, sheen, wetness, alpha, shadows. 68 properties, 89 functions. |
 | **BRDF Material** | Patches the material's shader to swap the diffuse lighting model. 13 properties, 17 functions. |
 
 > **Status: built and unit-tested, NOT yet run in GDevelop.** `node Material3D/test-material3d.mjs`
-> passes 38 checks against the real runtime under a stub Three.js, and the build script validates
+> passes 75 checks against the real runtime under a stub Three.js, and the build script validates
 > every JS block, property key and parameter binding. None of that is a substitute for loading the
 > extension in the editor — see [Verifying](#verifying) for the scene that would.
 
@@ -49,6 +49,45 @@ the stock Three.js diffuse and nothing appeared in the console.
 Material 3D now calls `gdjs.__brdfMaterial3D.reapplyIfPatched()` immediately after it applies, so the
 patch is rebuilt on top of the new material. Stack them in either order and both survive. The
 **BRDF patch is active** condition reports the state directly if you want to assert it.
+
+---
+
+## The shared shader chain
+
+`material.onBeforeCompile` is **one function property, not a list**. Two behaviors that both assign
+it do not compose — whichever assigns last silently wins, and the loser's shader edits never appear.
+
+Since Material 3D, BRDF Material, and every planned v3.5 module (parallax occlusion, subsurface
+scattering, triplanar, detail normals, rain ripples) all need to edit the compiled shader, **nobody
+assigns the hook directly**. `ShaderChain.runtime.js` owns it; injectors register into an ordered
+chain, each declaring the Three.js chunk it edits.
+
+- `customProgramCacheKey` is composed from the active set, so two materials with different features
+  never share one compiled program.
+- A throwing injector is caught and logged; the others still apply.
+- `Material.copy()` carries neither the hook nor the cache key, so the chain is re-installed after
+  every material rebuild. Forgetting that is the same silent-revert class of bug as the userData
+  trap below.
+- The build refuses to compile if any runtime assigns `onBeforeCompile` directly.
+
+**Shader injector is active** and `ShaderInjectors()` report what actually reached the compiler —
+empty until the object has drawn one frame.
+
+---
+
+## Sheen, iridescence, anisotropy, wetness
+
+Added in 3.1.0, and neither needs a shader.
+
+**Sheen / iridescence / anisotropy** are native `MeshPhysicalMaterial` fields in Three.js r160, so
+they are plain assignments like transmission and clearcoat. They exist **only** on the Physical
+class — `Auto` accounts for all five physical triggers, so raising any of them promotes the material
+rather than dropping the assignment silently.
+
+**Wetness** is two field assignments: porous surfaces darken as water fills their pores
+(`albedo × (1 − wetness × porosity × 0.35)`), and the water film drives roughness toward `0.02`.
+Set **Porosity** to 0 for metal — it goes glossy without darkening. Animated rain ripples are a
+separate module and do need a shader.
 
 ---
 
@@ -148,7 +187,7 @@ a behavior parameter is bound to the wrong type, a condition never assigns
 node Material3D/test-material3d.mjs
 ```
 
-38 checks covering material-class selection, the Preserve defaults, the override layer, the
+75 checks covering material-class selection, the Preserve defaults, the override layer, the
 diagnostics, mesh-name targeting, restore, and the BRDF composition hook.
 
 ---
@@ -170,6 +209,18 @@ loads the extension. A scene that would exercise the parts they cannot:
 
 Check for each: the properties appear in the editor panel at all, the object renders, and the console
 is clean.
+
+---
+
+## Upcoming Enhancements (v3.5 Roadmap)
+
+A comprehensive enhancement plan has been formulated in [`ADVANCED_MATERIAL_ENHANCEMENT_PLAN.md`](./ADVANCED_MATERIAL_ENHANCEMENT_PLAN.md) to integrate 6 advanced visual shader modules directly into `Material3D`:
+1. **Parallax Occlusion Mapping (POM):** 3D height relief depth and self-shadowing on cobblestones and bricks without adding polygons.
+2. **Subsurface Scattering (SSS):** Translucent skin, ear, wax, and leaf light diffusion.
+3. **Triplanar World Mapping:** Seamless, distortion-free texturing across steep cliffs and boulders with zero UV unwrapping.
+4. **Micro-Detail Textures:** Reoriented normal mapping (RNM) for skin pores, fabric weaves, and metal scratches up close.
+5. **Sheen, Iridescence & Anisotropy:** Velvet cloth sheen, thin-film soap/oil iridescence, and brushed metal anisotropic reflections.
+6. **Dynamic Wetness & Puddle Ripples:** Surface darkening, mirror roughness, and animated rain puddles.
 
 ---
 

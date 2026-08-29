@@ -350,9 +350,16 @@ if (!gdjs.__material3D) {
         // keeps the common case on the cheaper Standard path.
         const chooseMaterialClass = (behavior) => {
             const mode = getString(behavior, 'ShaderType', 'Auto');
+            // Every field that exists only on MeshPhysicalMaterial has to be listed here. If one is
+            // missed, setting it under "Auto" builds a Standard material, Three.js drops the
+            // assignment on the floor, and nothing is logged — the exact silent failure this
+            // extension's diagnostics exist to prevent.
             const wantsPhysical =
                 getNumber(behavior, 'Transmission', 0) > 0 ||
-                getNumber(behavior, 'Clearcoat', 0) > 0;
+                getNumber(behavior, 'Clearcoat', 0) > 0 ||
+                getNumber(behavior, 'Sheen', 0) > 0 ||
+                getNumber(behavior, 'Iridescence', 0) > 0 ||
+                getNumber(behavior, 'Anisotropy', 0) > 0;
 
             if (mode === 'Basic (unlit)') {
                 return { Ctor: THREE.MeshBasicMaterial, matches: (m) => m.isMeshBasicMaterial === true };
@@ -372,6 +379,54 @@ if (!gdjs.__material3D) {
             return wantsPhysical
                 ? { Ctor: THREE.MeshPhysicalMaterial, matches: (m) => m.isMeshPhysicalMaterial === true }
                 : { Ctor: THREE.MeshStandardMaterial, matches: (m) => m.isMeshStandardMaterial === true };
+        };
+
+        // ---------------------------------------------------------------- Wetness
+        //
+        // The visible part of "wet surface" is two field assignments, not a shader: porous
+        // materials darken as water fills their surface pores, and the water film drives roughness
+        // toward mirror. Both are computed here on the CPU, so the whole effect works with no
+        // shader injection and no recompile. Only animated rain ripples need a shader, and they
+        // are a separate module.
+        const applyWetness = (mat, behavior) => {
+            const wetness = clamp(getNumber(behavior, 'Wetness', 0), 0, 1);
+            const porosity = clamp(getNumber(behavior, 'Porosity', 0.5), 0, 1);
+
+            // This runs at the END of applyMaterialSettings, so roughness has just been written
+            // from its property and is authoritative — read it fresh every pass, or a later change
+            // to the Roughness property would be ignored while wet.
+            //
+            // Colour is different: it is only rewritten when UseBaseColor is on. With it off, the
+            // colour on the material may already be darkened by a previous wet pass, so reading it
+            // fresh would compound the darkening every frame until the surface went black. That
+            // case has to use the cached original.
+            const colorIsManaged = getBoolean(behavior, 'UseBaseColor', false);
+            if (!mat.__m3dDryState || colorIsManaged) {
+                mat.__m3dDryState = {
+                    r: mat.color ? mat.color.r : 1,
+                    g: mat.color ? mat.color.g : 1,
+                    b: mat.color ? mat.color.b : 1,
+                };
+            }
+            const dry = mat.__m3dDryState;
+            dry.roughness = mat.roughness !== undefined ? mat.roughness : 0.5;
+
+            if (wetness <= 0) {
+                if (mat.color) mat.color.setRGB(dry.r, dry.g, dry.b, THREE.SRGBColorSpace);
+                return;
+            }
+
+            // Water filling surface pores darkens the diffuse albedo. Metal has no pores, so
+            // porosity 0 leaves colour untouched while still going glossy.
+            const darken = 1 - wetness * porosity * 0.35;
+            if (mat.color) {
+                mat.color.setRGB(dry.r * darken, dry.g * darken, dry.b * darken, THREE.SRGBColorSpace);
+            }
+            // A water film is close to a mirror. 0.02 rather than 0 keeps the specular highlight a
+            // shape rather than a single blown-out pixel.
+            if (mat.roughness !== undefined) {
+                mat.roughness = dry.roughness + (0.02 - dry.roughness) * wetness;
+            }
         };
 
         const applyMaterialSettings = (mat, behavior) => {
@@ -403,7 +458,31 @@ if (!gdjs.__material3D) {
                 mat.thickness = Math.max(0, getNumber(behavior, 'Thickness', 0.1));
                 mat.clearcoat = clamp(getNumber(behavior, 'Clearcoat', 0), 0, 1);
                 mat.clearcoatRoughness = clamp(getNumber(behavior, 'ClearcoatRoughness', 0), 0, 1);
+
+                // Sheen, iridescence and anisotropy are native MeshPhysicalMaterial fields in
+                // Three.js r160 — no shader injection needed, which is why they sit here with the
+                // other physical fields rather than in the shader chain.
+                mat.sheen = clamp(getNumber(behavior, 'Sheen', 0), 0, 1);
+                if (mat.sheenColor) {
+                    mat.sheenColor.copy(parseColor(getString(behavior, 'SheenColor', '255;255;255')));
+                }
+                mat.sheenRoughness = clamp(getNumber(behavior, 'SheenRoughness', 1), 0, 1);
+
+                mat.iridescence = clamp(getNumber(behavior, 'Iridescence', 0), 0, 1);
+                mat.iridescenceIOR = clamp(getNumber(behavior, 'IridescenceIOR', 1.3), 1, 2.5);
+                if (Array.isArray(mat.iridescenceThicknessRange)) {
+                    // Clamped so a min above max cannot produce an inverted range.
+                    const thinMin = Math.max(0, getNumber(behavior, 'IridescenceThicknessMin', 100));
+                    const thinMax = Math.max(thinMin, getNumber(behavior, 'IridescenceThicknessMax', 400));
+                    mat.iridescenceThicknessRange[0] = thinMin;
+                    mat.iridescenceThicknessRange[1] = thinMax;
+                }
+
+                mat.anisotropy = clamp(getNumber(behavior, 'Anisotropy', 0), 0, 1);
+                mat.anisotropyRotation = getNumber(behavior, 'AnisotropyRotation', 0) * DEG_TO_RAD;
             }
+
+            applyWetness(mat, behavior);
 
             const alphaMode = getString(behavior, 'AlphaMode', 'Preserve');
             const alpha = clamp(getNumber(behavior, 'Alpha', 1), 0, 1);
@@ -612,6 +691,16 @@ if (!gdjs.__material3D) {
                 // No-op when the BRDF behavior is not attached.
                 if (gdjs.__brdfMaterial3D && typeof gdjs.__brdfMaterial3D.reapplyIfPatched === 'function') {
                     try { gdjs.__brdfMaterial3D.reapplyIfPatched(object); } catch(e) {}
+                }
+
+                // THREE.Material.copy() carries neither onBeforeCompile nor customProgramCacheKey,
+                // so every material built above lost the shader chain. Re-install on any that has
+                // an active injector. Skipping this is the same silent-revert failure the userData
+                // patch markers caused, one level up.
+                if (gdjs.__m3dShaderChain) {
+                    for (const mat of state.targetMaterials) {
+                        if (mat) gdjs.__m3dShaderChain.ensure(mat);
+                    }
                 }
 
                 // Cache the base UV transform so the per-frame path never re-reads properties.
@@ -859,6 +948,26 @@ if (!gdjs.__material3D) {
             getRetryCount: (behavior) => getBehaviorState(behavior).retryCount,
             getMeshCount: (behavior) => getBehaviorState(behavior).meshesCount,
             getMaterialCount: (behavior) => getBehaviorState(behavior).materialsCount,
+            // Read through the same override-aware getter the runtime uses, so a value events just
+            // set is reported even before the change has been applied to the material.
+            getWetness: (behavior) => clamp(getNumber(behavior, 'Wetness', 0), 0, 1),
+
+            // What actually reached the shader compiler on this object's first material. Empty
+            // until the object has rendered at least one frame — onBeforeCompile has not run
+            // before that, so an empty result means "not drawn yet", not "injection failed".
+            getShaderInjectors: (behavior) => {
+                const st = getBehaviorState(behavior);
+                const mat = st.targetMaterials && st.targetMaterials[0];
+                if (!mat || !gdjs.__m3dShaderChain) return [];
+                return gdjs.__m3dShaderChain.injectedIds(mat);
+            },
+            hasShaderInjector: (behavior, id) => {
+                const st = getBehaviorState(behavior);
+                const mat = st.targetMaterials && st.targetMaterials[0];
+                if (!mat || !gdjs.__m3dShaderChain) return false;
+                return gdjs.__m3dShaderChain.hasInjector(mat, String(id));
+            },
+
             getMaterialClassName: (behavior) => {
                 const st = getBehaviorState(behavior);
                 const mat = st.targetMaterials && st.targetMaterials[0];

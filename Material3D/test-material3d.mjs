@@ -67,7 +67,11 @@ class MeshStandardMaterial extends BaseMat {
 }
 class MeshPhysicalMaterial extends MeshStandardMaterial {
   constructor() { super(); this.isMeshPhysicalMaterial = true; this.type = 'MeshPhysicalMaterial';
-    this.transmission = 0; this.ior = 1.5; this.thickness = 0.01; this.clearcoat = 0; this.clearcoatRoughness = 0; }
+    this.transmission = 0; this.ior = 1.5; this.thickness = 0.01; this.clearcoat = 0; this.clearcoatRoughness = 0;
+    // Native r160 fields used by the sheen / iridescence / anisotropy module.
+    this.sheen = 0; this.sheenColor = new StubColor(); this.sheenRoughness = 1;
+    this.iridescence = 0; this.iridescenceIOR = 1.3; this.iridescenceThicknessRange = [100, 400];
+    this.anisotropy = 0; this.anisotropyRotation = 0; }
 }
 
 globalThis.THREE = {
@@ -86,6 +90,8 @@ globalThis.gdjs = {};
 
 /* ------------------------------------------------------------------ load runtime */
 
+const chainSrc = fs.readFileSync(path.join(here, 'ShaderChain.runtime.js'), 'utf8');
+new Function('runtimeScene', 'eventsFunctionContext', chainSrc)(null, null);
 const runtimeSrc = fs.readFileSync(path.join(here, 'Material3D.runtime.js'), 'utf8');
 new Function('runtimeScene', 'eventsFunctionContext', runtimeSrc)(null, null);
 const M3 = globalThis.gdjs.__material3D;
@@ -124,6 +130,10 @@ const DEFAULTS = {
   AlphaMode: 'Preserve', Alpha: 1, AlphaCutoff: 0.1, DepthWrite: true,
   MaterialSide: 'Preserve', Wireframe: false, Fog: true,
   CastShadow: true, ReceiveShadow: true, RenderOrder: 0,
+  Sheen: 0, SheenColor: '255;255;255', SheenRoughness: 1,
+  Iridescence: 0, IridescenceIOR: 1.3, IridescenceThicknessMin: 100, IridescenceThicknessMax: 400,
+  Anisotropy: 0, AnisotropyRotation: 0,
+  Wetness: 0, Porosity: 0.5,
 };
 
 const setup = (overrideProps = {}, baseMat = new MeshStandardMaterial()) => {
@@ -305,6 +315,164 @@ console.log('\n7. BRDF composition hook');
   const stray = a.mesh.material.clone();
   check('a clone of a patched material reads as unpatched',
     stray.__brdfPatched === undefined, 'clone inherited a stale patched flag');
+}
+
+
+console.log('\n8. Sheen / iridescence / anisotropy (native r160 fields)');
+{
+  const a = setup({ Sheen: 0.8, SheenRoughness: 0.3 });
+  M3.applyToBehavior(a.behavior, a.object, a.game);
+  check('Auto picks Physical for sheen', a.mesh.material.isMeshPhysicalMaterial === true, a.mesh.material.type);
+  check('  sheen assigned', a.mesh.material.sheen === 0.8, String(a.mesh.material.sheen));
+  check('  sheenRoughness assigned', a.mesh.material.sheenRoughness === 0.3, String(a.mesh.material.sheenRoughness));
+
+  const b = setup({ Iridescence: 0.6, IridescenceIOR: 2.0, IridescenceThicknessMin: 200, IridescenceThicknessMax: 700 });
+  M3.applyToBehavior(b.behavior, b.object, b.game);
+  check('Auto picks Physical for iridescence', b.mesh.material.isMeshPhysicalMaterial === true);
+  check('  iridescence assigned', b.mesh.material.iridescence === 0.6, String(b.mesh.material.iridescence));
+  check('  thickness range assigned', b.mesh.material.iridescenceThicknessRange[0] === 200 &&
+    b.mesh.material.iridescenceThicknessRange[1] === 700, JSON.stringify(b.mesh.material.iridescenceThicknessRange));
+
+  const c = setup({ Anisotropy: 0.5, AnisotropyRotation: 90 });
+  M3.applyToBehavior(c.behavior, c.object, c.game);
+  check('Auto picks Physical for anisotropy', c.mesh.material.isMeshPhysicalMaterial === true);
+  check('  anisotropyRotation converted to radians',
+    Math.abs(c.mesh.material.anisotropyRotation - Math.PI / 2) < 1e-9, String(c.mesh.material.anisotropyRotation));
+
+  // Min > max would produce an inverted range; the runtime clamps max up to min.
+  const d = setup({ Iridescence: 0.5, IridescenceThicknessMin: 500, IridescenceThicknessMax: 100 });
+  M3.applyToBehavior(d.behavior, d.object, d.game);
+  check('inverted thickness range is corrected',
+    d.mesh.material.iridescenceThicknessRange[1] >= d.mesh.material.iridescenceThicknessRange[0],
+    JSON.stringify(d.mesh.material.iridescenceThicknessRange));
+}
+
+console.log('\n9. Wetness (CPU-side, no shader)');
+{
+  const a = setup();
+  M3.applyToBehavior(a.behavior, a.object, a.game);
+  const dryRough = a.mesh.material.roughness;
+  check('dry roughness untouched', dryRough === 0.5, String(dryRough));
+
+  M3.setOverride(a.behavior, 'Wetness', 1);
+  M3.refreshSettings(a.behavior);
+  check('fully wet drives roughness to the water film', Math.abs(a.mesh.material.roughness - 0.02) < 1e-9,
+    String(a.mesh.material.roughness));
+
+  M3.setOverride(a.behavior, 'Wetness', 0);
+  M3.refreshSettings(a.behavior);
+  check('drying restores the original roughness', Math.abs(a.mesh.material.roughness - 0.5) < 1e-9,
+    String(a.mesh.material.roughness));
+
+  // The ratchet bug: colour is not rewritten from a property when UseBaseColor is off, so a naive
+  // implementation re-darkens the already-darkened colour every pass until the surface is black.
+  const b = setup({ Porosity: 1 });
+  M3.applyToBehavior(b.behavior, b.object, b.game);
+  const before = b.mesh.material.color.r;
+  M3.setOverride(b.behavior, 'Wetness', 0.5);
+  for (let i = 0; i < 10; i++) M3.refreshSettings(b.behavior);
+  const after = b.mesh.material.color.r;
+  check('repeated wet passes do not compound the darkening',
+    Math.abs(after - before * (1 - 0.5 * 1 * 0.35)) < 1e-6, `${before} -> ${after}`);
+
+  M3.setOverride(b.behavior, 'Wetness', 0);
+  M3.refreshSettings(b.behavior);
+  check('drying restores the original colour', Math.abs(b.mesh.material.color.r - before) < 1e-6,
+    String(b.mesh.material.color.r));
+
+  // Metal has no pores: it goes glossy without darkening.
+  const c = setup({ Porosity: 0 });
+  M3.applyToBehavior(c.behavior, c.object, c.game);
+  const metalBefore = c.mesh.material.color.r;
+  M3.setOverride(c.behavior, 'Wetness', 1);
+  M3.refreshSettings(c.behavior);
+  check('zero porosity does not darken', Math.abs(c.mesh.material.color.r - metalBefore) < 1e-9);
+  check('  but still goes glossy', Math.abs(c.mesh.material.roughness - 0.02) < 1e-9);
+}
+
+console.log('\n10. Shared shader chain');
+{
+  const chain = globalThis.gdjs.__m3dShaderChain;
+  check('chain registered', !!chain);
+  check('BRDF registered itself as an injector', chain.registeredIds().indexOf('brdf') >= 0,
+    JSON.stringify(chain.registeredIds()));
+
+  // Two injectors must both run. Before the chain, whichever assigned onBeforeCompile last won.
+  const ran = [];
+  chain.register({
+    id: 'test-early', chunk: 'map_fragment', order: 100,
+    isActive: (m) => m.__testEarly === true,
+    key: () => 'v1',
+    inject: (shader) => { ran.push('test-early'); shader.fragmentShader += '\n// early'; },
+  });
+  chain.register({
+    id: 'test-late', chunk: 'roughnessmap_fragment', order: 900,
+    isActive: (m) => m.__testLate === true,
+    key: () => 'v1',
+    inject: (shader) => { ran.push('test-late'); shader.fragmentShader += '\n// late'; },
+  });
+
+  const mat = new MeshStandardMaterial();
+  mat.__testEarly = true;
+  mat.__testLate = true;
+  chain.install(mat);
+  const shader = { uniforms: {}, fragmentShader: 'void main(){}', vertexShader: '' };
+  mat.onBeforeCompile(shader);
+
+  check('both injectors ran', ran.join(',') === 'test-early,test-late', ran.join(','));
+  check('  ordered by declared order', ran[0] === 'test-early');
+  check('  both edits are present in the shader',
+    shader.fragmentShader.includes('// early') && shader.fragmentShader.includes('// late'));
+  check('injectedIds reports what ran', chain.injectedIds(mat).join(',') === 'test-early,test-late',
+    chain.injectedIds(mat).join(','));
+  check('hasInjector answers per id', chain.hasInjector(mat, 'test-late') === true);
+
+  // Cache key must distinguish feature combinations, or Three.js reuses one compiled program
+  // across materials whose generated source differs.
+  const keyBoth = mat.customProgramCacheKey();
+  mat.__testLate = false;
+  const keyOne = mat.customProgramCacheKey();
+  check('cache key varies with the active set', keyBoth !== keyOne, `${keyBoth} vs ${keyOne}`);
+
+  // A failing injector must not cost the others their edits.
+  chain.register({
+    id: 'test-throws', chunk: 'map_fragment', order: 50,
+    isActive: (m) => m.__testEarly === true,
+    key: () => 'v1',
+    inject: () => { throw new Error('deliberate'); },
+  });
+  const shader2 = { uniforms: {}, fragmentShader: 'void main(){}', vertexShader: '' };
+  let threw2 = null;
+  try { mat.onBeforeCompile(shader2); } catch (e) { threw2 = e; }
+  check('a throwing injector does not break the chain', threw2 === null, threw2 && threw2.message);
+  check('  and the healthy injector still applied', shader2.fragmentShader.includes('// early'));
+
+  // The copy() trap again, one level up: clones lose onBeforeCompile entirely.
+  const cloned = mat.clone();
+  check('a clone loses the chain hook', chain.isInstalled(cloned) === false);
+  cloned.__testEarly = true;
+  check('ensure() re-installs it', chain.ensure(cloned) === true);
+  check('  and the clone is now hooked', chain.isInstalled(cloned) === true);
+}
+
+console.log('\n11. Chain survives a Material3D apply');
+{
+  const chain = globalThis.gdjs.__m3dShaderChain;
+  const B = globalThis.gdjs.__brdfMaterial3D;
+  const a = setup();
+  B.apply(a.object, B.readParams(makeBehavior({
+    BRDFModel: 'toon', ColorR: 0.8, ColorG: 0.8, ColorB: 0.8, Roughness: 0.5,
+    DiffuseFresnel: 1, DiffuseFresnelFalloff: 0.75, DiffuseFresnelTangentFalloff: 0.75,
+    RetroReflection: 1, RetroReflectionFalloff: 0.75, RetroReflectionTangentFalloff: 0.75,
+    SmoothTerminator: 0, SmoothTerminatorLength: 0.5,
+  })));
+  check('BRDF installed the chain, not a raw hook', chain.isInstalled(a.mesh.material) === true);
+
+  M3.applyToBehavior(a.behavior, a.object, a.game);
+  check('chain is still installed after a material rebuild', chain.isInstalled(a.mesh.material) === true,
+    'the ensure() pass in applyToBehavior did not run');
+  check('  and BRDF is still an active injector on it',
+    chain.activeFor(a.mesh.material).some((i) => i.id === 'brdf'));
 }
 
 console.log(`\n${'='.repeat(46)}`);

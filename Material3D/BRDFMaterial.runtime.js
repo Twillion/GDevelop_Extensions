@@ -158,41 +158,61 @@ if (!gdjs.__brdfMaterial3D) {
     //
     // Direct properties are not touched by copy(), so a clone reads as unpatched, which is the
     // truth: it has no hook. It then gets patched fresh.
+    // The shader edit itself, registered once into the shared chain rather than assigned onto each
+    // material. onBeforeCompile is a single function property: two behaviors that both assign it do
+    // not compose, the last one silently wins. The chain owns the hook; injectors register into it.
+    //
+    // order 800 is late on purpose. BRDF rewrites the diffuse term in lights_physical_pars_fragment,
+    // so it should see the output of injectors that alter UVs, normals or roughness earlier in the
+    // fragment stage (triplanar, detail normals, wetness) rather than racing them.
+    if (gdjs.__m3dShaderChain) {
+      gdjs.__m3dShaderChain.register({
+        id: 'brdf',
+        chunk: 'lights_physical_pars_fragment',
+        order: 800,
+        isActive: function (mat) { return mat.__brdfPatched === true && !!mat.__brdfUniforms; },
+        key: function (mat) { return String(mat.__brdfUniforms.uBrdfMode.value); },
+        inject: function (shader, mat) {
+          var uniforms = mat.__brdfUniforms;
+          Object.assign(shader.uniforms, uniforms);
+
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <common>',
+            '#include <common>\n' + BRDF_UNIFORMS_AND_HELPERS
+          );
+
+          var physChunk = THREE.ShaderChunk['lights_physical_pars_fragment'];
+          if (physChunk) {
+            var patched = physChunk.replace(
+              /(void\s+RE_Direct_Physical[\s\S]*?)(?=void\s+RE_IndirectDiffuse_Physical|$)/,
+              function(match) {
+                return match.replace(
+                  /BRDF_Lambert\s*\(\s*material\.diffuseColor\s*\)/g,
+                  'brdfCustom(material.diffuseColor, geometryNormal, directLight.direction, geometryViewDir)'
+                );
+              }
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+              '#include <lights_physical_pars_fragment>',
+              patched
+            );
+          }
+        }
+      });
+    }
+
     function patchMaterial(mat, uniforms) {
       mat.__brdfPatched  = true;
       mat.__brdfUniforms = uniforms;
       // Mirrored into userData for inspection only. Never read back as an object.
       mat.userData.__brdfPatched = true;
 
-      mat.onBeforeCompile = function (shader) {
-        Object.assign(shader.uniforms, uniforms);
-
-        shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <common>',
-          '#include <common>\n' + BRDF_UNIFORMS_AND_HELPERS
-        );
-
-        var physChunk = THREE.ShaderChunk['lights_physical_pars_fragment'];
-        if (physChunk) {
-          var patched = physChunk.replace(
-            /(void\s+RE_Direct_Physical[\s\S]*?)(?=void\s+RE_IndirectDiffuse_Physical|$)/,
-            function(match) {
-              return match.replace(
-                /BRDF_Lambert\s*\(\s*material\.diffuseColor\s*\)/g,
-                'brdfCustom(material.diffuseColor, geometryNormal, directLight.direction, geometryViewDir)'
-              );
-            }
-          );
-          shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <lights_physical_pars_fragment>',
-            patched
-          );
-        }
-      };
-
-      mat.customProgramCacheKey = function () {
-        return 'brdf3.1-' + String(uniforms.uBrdfMode.value);
-      };
+      // Claim the hook through the shared chain. Direct assignment here would clobber every other
+      // injector on this material — and be clobbered by the next one to try. See
+      // ShaderChain.runtime.js.
+      if (gdjs.__m3dShaderChain) {
+        gdjs.__m3dShaderChain.install(mat);
+      }
       mat.needsUpdate = true;
     }
 
@@ -244,7 +264,10 @@ if (!gdjs.__brdfMaterial3D) {
         var mats = Array.isArray(existing) ? existing : [existing];
         var result = mats.map(function (m) {
           if (m.__brdfPatched) {
-            m.onBeforeCompile = function(){};
+            // Stubbing onBeforeCompile here would disable every other injector on this material.
+            // Clearing the marker deactivates only this injector — the chain reads it via isActive.
+            m.__brdfPatched = false;
+            m.__brdfUniforms = null;
             m.needsUpdate = true;
           }
           // Re-derive from the unpatched source when this material is one we patched, so

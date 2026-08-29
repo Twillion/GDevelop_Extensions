@@ -23,11 +23,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 const rawRuntime = fs.readFileSync(path.join(here, 'Material3D.runtime.js'), 'utf8');
 const rawBrdfRuntime = fs.readFileSync(path.join(here, 'BRDFMaterial.runtime.js'), 'utf8');
+const rawChainRuntime = fs.readFileSync(path.join(here, 'ShaderChain.runtime.js'), 'utf8');
 const iconSvg = fs.readFileSync(path.join(here, 'icon.svg'), 'utf8');
 const iconUrl = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg, 'utf8').toString('base64');
 
-const runtime = rawRuntime;
-const brdfRuntime = rawBrdfRuntime;
+const runtime = rawChainRuntime + '\n' + rawRuntime;
+const brdfRuntime = rawChainRuntime + '\n' + rawBrdfRuntime;
 const NS = 'gdjs.__material3D';
 
 const EXTENSION_NAME = 'Material3D';
@@ -116,6 +117,8 @@ const G_UV = 'UV Animation';
 const G_FLIP = 'Flipbook & Video';
 const G_RENDER = 'Render State';
 const G_DIAG = 'Diagnostics';
+const G_SHEEN = 'Sheen, Iridescence & Anisotropy';
+const G_WET = 'Wetness';
 
 /* ================================================================= Setter generator
  *
@@ -488,6 +491,45 @@ const behaviorFunctions = [
     `M3.getBehaviorState(behavior).uvOffset.y`, G_UV),
   numExpr('ScrollRotation', 'Scroll UV rotation', 'Current accumulated UV scroll rotation, degrees.',
     `M3.getBehaviorState(behavior).uvRotation`, G_UV),
+
+  /* ---------------------------------------------------------------- Sheen / iridescence / anisotropy */
+  setter('Sheen', 'Set sheen', 'Set _PARAM0_ sheen to _PARAM2_',
+    'Velvet and satin back-scatter, 0 to 1. Needs the Physical material class.', 'number', G_SHEEN),
+  setter('SheenColor', 'Set sheen colour', 'Set _PARAM0_ sheen colour to _PARAM2_',
+    'Colour of the sheen highlight.', 'color', G_SHEEN),
+  setter('SheenRoughness', 'Set sheen roughness', 'Set _PARAM0_ sheen roughness to _PARAM2_',
+    'How tight the sheen highlight is, 0 to 1.', 'number', G_SHEEN),
+  setter('Iridescence', 'Set iridescence', 'Set _PARAM0_ iridescence to _PARAM2_',
+    'Thin-film interference, 0 to 1. Needs the Physical material class.', 'number', G_SHEEN),
+  setter('IridescenceIOR', 'Set iridescence IOR', 'Set _PARAM0_ iridescence IOR to _PARAM2_',
+    'Refractive index of the thin film, 1 to 2.5.', 'number', G_SHEEN),
+  setter('Anisotropy', 'Set anisotropy', 'Set _PARAM0_ anisotropy to _PARAM2_',
+    'Directional stretched specular, 0 to 1. Needs the Physical material class.', 'number', G_SHEEN),
+  setter('AnisotropyRotation', 'Set anisotropy rotation', 'Set _PARAM0_ anisotropy rotation to _PARAM2_',
+    'Direction of the stretch, in degrees.', 'number', G_SHEEN),
+
+  /* ---------------------------------------------------------------- Wetness */
+  setter('Wetness', 'Set wetness', 'Set _PARAM0_ wetness to _PARAM2_',
+    'How wet the surface is, 0 to 1.', 'number', G_WET),
+  setter('Porosity', 'Set porosity', 'Set _PARAM0_ porosity to _PARAM2_',
+    'How much the surface darkens when wet. Metal is 0.', 'number', G_WET),
+
+  cond('IsWet', 'Surface is wet', '_PARAM0_ surface is wet',
+    'Wetness is above zero.', [], `M3.getWetness(behavior) > 0`, G_WET),
+  numExpr('WetnessLevel', 'Wetness', 'Current wetness, 0 to 1.', `M3.getWetness(behavior)`, G_WET),
+
+  /* ---------------------------------------------------------------- Shader chain diagnostics
+   *
+   * onBeforeCompile is shared between this behavior, BRDF Material, and every planned v3.5 module.
+   * These report what actually reached the compiler, which is otherwise unknowable: a failed
+   * injection renders a plausible surface and logs nothing. */
+  cond('HasShaderInjector', 'Shader injector is active', '_PARAM0_ has shader injector _PARAM2_ active',
+    'Whether the named injector ran at the last shader compile. Empty until the object first renders.',
+    [str('InjectorId', 'Injector id, for example "brdf"')],
+    `M3.hasShaderInjector(behavior, eventsFunctionContext.getArgument("InjectorId"))`, G_DIAG),
+  strExpr('ShaderInjectors', 'Active shader injectors',
+    'Comma-separated ids of the injectors that ran at the last compile.',
+    `M3.getShaderInjectors(behavior).join(",")`, G_DIAG),
 ];
 
 /* ================================================================= Behavior properties */
@@ -505,6 +547,8 @@ const P_UV = 'UV Transform';
 const P_SCROLL = 'UV Scrolling';
 const P_FLIP = 'Flipbook';
 const P_RENDER = 'Render State';
+const P_SHEEN = 'Sheen, Iridescence & Anisotropy';
+const P_WET = 'Wetness';
 
 const properties = [
   /* Apply & targeting */
@@ -611,6 +655,33 @@ const properties = [
   prop('CastShadow', 'Boolean', 'Casts shadows', 'The mesh casts shadows.', 'true', { group: P_RENDER }),
   prop('ReceiveShadow', 'Boolean', 'Receives shadows', 'The mesh receives shadows.', 'true', { group: P_RENDER }),
   prop('RenderOrder', 'Number', 'Render order', 'Higher draws later. Useful for sorting transparency.', '0', { group: P_RENDER }),
+
+  /* Sheen, iridescence and anisotropy are native MeshPhysicalMaterial fields in Three.js r160 —
+   * plain assignments, like transmission and clearcoat, with no shader injection. They only exist
+   * on the Physical class, so set Material class to Physical (or raise transmission/clearcoat and
+   * let Auto pick it) or these do nothing. */
+  prop('Sheen', 'Number', 'Sheen',
+    'Micro-fibre back-scatter for velvet, satin and brushed fabric, 0 to 1.', '0', { group: P_SHEEN }),
+  prop('SheenColor', 'Color', 'Sheen colour', 'Colour of the sheen highlight.', '255;255;255', { group: P_SHEEN }),
+  prop('SheenRoughness', 'Number', 'Sheen roughness', 'How tight the sheen highlight is, 0 to 1.', '1', { group: P_SHEEN }),
+  prop('Iridescence', 'Number', 'Iridescence',
+    'Thin-film interference for soap bubbles, oil slicks and beetle shells, 0 to 1.', '0', { group: P_SHEEN }),
+  prop('IridescenceIOR', 'Number', 'Iridescence IOR', 'Refractive index of the thin film, 1 to 2.5.', '1.3', { group: P_SHEEN }),
+  prop('IridescenceThicknessMin', 'Number', 'Iridescence thickness min (nm)',
+    'Thin-film thickness at the low end, in nanometres.', '100', { group: P_SHEEN }),
+  prop('IridescenceThicknessMax', 'Number', 'Iridescence thickness max (nm)',
+    'Thin-film thickness at the high end, in nanometres.', '400', { group: P_SHEEN }),
+  prop('Anisotropy', 'Number', 'Anisotropy',
+    'Directional stretched specular for brushed metal, vinyl and hair, 0 to 1.', '0', { group: P_SHEEN }),
+  prop('AnisotropyRotation', 'Number', 'Anisotropy rotation (degrees)',
+    'Direction of the stretch.', '0', { group: P_SHEEN }),
+
+  /* Wetness is computed on the CPU — two field assignments, no shader and no recompile. Animated
+   * rain ripples are a separate module and do need one. */
+  prop('Wetness', 'Number', 'Wetness',
+    'How wet the surface is, 0 to 1. Darkens porous albedo and drives roughness toward mirror.', '0', { group: P_WET }),
+  prop('Porosity', 'Number', 'Porosity',
+    'How much the surface darkens when wet, 0 to 1. Stone and fabric are high; metal is 0.', '0.5', { group: P_WET }),
 ];
 
 /* ================================================================= BRDF behavior
@@ -909,6 +980,39 @@ const checkControlChars = (text, where) => {
 
 checkControlChars(rawRuntime, 'Material3D.runtime.js');
 checkControlChars(rawBrdfRuntime, 'BRDFMaterial.runtime.js');
+checkControlChars(rawChainRuntime, 'ShaderChain.runtime.js');
+
+/* The house rule the shader chain depends on: onBeforeCompile is ONE function property, so any
+ * runtime that assigns it directly silently disables every other injector on that material — and
+ * gets silently disabled by the next one to try. Only ShaderChain.runtime.js may own it.
+ * This is the cheapest possible guard against re-introducing that bug in a future module. */
+for (const [src, name] of [[rawRuntime, 'Material3D.runtime.js'], [rawBrdfRuntime, 'BRDFMaterial.runtime.js']]) {
+  const offenders = [...src.matchAll(/^(?!\s*(?:\/\/|\*)).*\.onBeforeCompile\s*=/gm)];
+  if (offenders.length) {
+    const line = src.slice(0, offenders[0].index).split('\n').length;
+    console.error(
+      `\n${name}:${line} assigns onBeforeCompile directly.\n` +
+      `Only ShaderChain.runtime.js may own that hook — register an injector instead, or every\n` +
+      `other injector on the material stops working with no error. See ShaderChain.runtime.js.\n`
+    );
+    process.exit(1);
+  }
+}
+
+/* Each injector names the Three.js shader chunk it edits. Two injectors editing the same chunk is
+ * allowed but must be deliberate, so the declared chunks are surfaced at build time rather than
+ * discovered when two modules quietly fight over one region of the fragment shader. */
+const declaredChunks = [...rawRuntime.matchAll(/id:\s*'([^']+)',\s*\n?\s*chunk:\s*'([^']+)'/g),
+                        ...rawBrdfRuntime.matchAll(/id:\s*'([^']+)',\s*\n?\s*chunk:\s*'([^']+)'/g)]
+  .map((m) => ({ id: m[1], chunk: m[2] }));
+const byChunk = {};
+for (const d of declaredChunks) (byChunk[d.chunk] ||= []).push(d.id);
+const contested = Object.entries(byChunk).filter(([, ids]) => ids.length > 1);
+if (contested.length) {
+  console.log('\nNote: shader chunks claimed by more than one injector —');
+  for (const [chunk, ids] of contested) console.log(`  ${chunk}: ${ids.join(', ')}`);
+  console.log('  Confirm their declared order makes the interaction deliberate.\n');
+}
 
 let blocks = 0;
 const walkEvents = (fns, where) => {
