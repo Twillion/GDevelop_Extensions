@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rhombic Dodecahedron Explorer</title>
+  <style>
+    :root{color-scheme:dark;--bg:#111318;--panel:#191d25;--text:#eef2f8;--muted:#9ca8ba;--blue:#399bf5;--green:#2dd4a2;--orange:#f6a83b;--line:#d7e7ff;--border:#303847}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:18px}.top{display:flex;gap:16px;justify-content:space-between;align-items:end;flex-wrap:wrap;margin-bottom:12px}h1{font-size:21px;margin:0 0 3px}p{margin:0;color:var(--muted)}select,button,input{font:inherit}select,button{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 11px}button{cursor:pointer}button.primary{background:#2469a8}.stage{position:relative;height:min(70vh,650px);min-height:420px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:radial-gradient(circle at 50% 40%,#1b2635,var(--bg) 70%)}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}.hud{position:absolute;left:14px;top:13px;pointer-events:none}.hud strong,.hud span{display:block}.hud span{color:var(--muted);margin-top:4px}.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:12px}.range{display:flex;align-items:center;gap:8px;margin-left:auto;color:var(--muted)}.range input{width:160px}.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:13px}.swatch:before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--c)}@media(max-width:600px){main{padding:10px}.stage{height:500px}.range{width:100%;margin-left:0}.range input{flex:1}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Rhombic Dodecahedron Geometry Explorer</h1><p>Exact 14-vertex solid and gapless FCC packing</p></div>
+    <label>View&nbsp;
+      <select id="mode">
+        <option value="solid">Single solid</option>
+        <option value="faces">12 face directions</option>
+        <option value="neighbors">12 nearest neighbors</option>
+        <option value="layer">(1,1,1) triangular layer</option>
+        <option value="stack">One-over-three stacking</option>
+      </select>
+    </label>
+  </div>
+  <div class="stage">
+    <canvas id="gl" aria-label="Interactive WebGL rhombic dodecahedron explorer"></canvas>
+    <div class="hud"><strong id="title">Single solid</strong><span id="detail">12 congruent rhombus faces · 14 vertices</span></div>
+  </div>
+  <div class="controls">
+    <button id="previous" type="button">Previous face</button>
+    <button id="next" type="button">Next face</button>
+    <button id="rotate" class="primary" type="button">Pause rotation</button>
+    <button id="reset" type="button">Reset view</button>
+    <label class="range">Layer spacing <input id="spacing" type="range" min="100" max="190" value="118"><output id="spacingValue">1.18×</output></label>
+  </div>
+  <div class="legend">
+    <span class="swatch" style="--c:var(--blue)">Primary block</span>
+    <span class="swatch" style="--c:var(--orange)">Selected/contact face</span>
+    <span class="swatch" style="--c:var(--green)">Next FCC layer</span>
+  </div>
+</main>
+<script>
+(()=>{
+  const canvas=document.getElementById('gl'),gl=canvas.getContext('webgl',{alpha:true,antialias:true});
+  if(!gl){document.getElementById('detail').textContent='WebGL is unavailable';return}
+  const vs='attribute vec3 p;attribute vec4 c;varying vec4 v;void main(){gl_Position=vec4(p,1.0);v=c;}';
+  const fs='precision mediump float;varying vec4 v;void main(){gl_FragColor=v;}';
+  function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s}
+  const prog=gl.createProgram();gl.attachShader(prog,compile(gl.VERTEX_SHADER,vs));gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(prog);gl.useProgram(prog);
+  const pb=gl.createBuffer(),cb=gl.createBuffer(),pl=gl.getAttribLocation(prog,'p'),cl=gl.getAttribLocation(prog,'c');gl.enableVertexAttribArray(pl);gl.enableVertexAttribArray(cl);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+  const A=.5,S=[-1,1],corners={},X={},Y={},Z={};
+  const key=(x,y,z)=>`${x},${y},${z}`;
+  for(const x of S)for(const y of S)for(const z of S)corners[key(x,y,z)]=[A*x,A*y,A*z];
+  for(const s of S){X[s]=[2*A*s,0,0];Y[s]=[0,2*A*s,0];Z[s]=[0,0,2*A*s]}
+  const faces=[];
+  for(const s of S)for(const t of S)faces.push([X[s],corners[key(s,t,1)],Y[t],corners[key(s,t,-1)]]);
+  for(const s of S)for(const u of S)faces.push([X[s],corners[key(s,1,u)],Z[u],corners[key(s,-1,u)]]);
+  for(const t of S)for(const u of S)faces.push([Y[t],corners[key(1,t,u)],Z[u],corners[key(-1,t,u)]]);
+  const neighborDirs=[];for(const s of S)for(const t of S)neighborDirs.push([2*A*s,2*A*t,0]);for(const s of S)for(const u of S)neighborDirs.push([2*A*s,0,2*A*u]);for(const t of S)for(const u of S)neighborDirs.push([0,2*A*t,2*A*u]);
+  const UP=norm([1,1,1]),RIGHT=norm([1,-1,0]),BACK=norm([1,1,-2]);
+  const blue=[.22,.61,.96,1],blueGhost=[.22,.61,.96,.24],green=[.18,.84,.63,.62],orange=[.98,.64,.2,1],line=[.82,.9,1,.62];
+  let mode='solid',faceIndex=0,yaw=-.65,pitch=.58,zoom=1,auto=true,drag=false,lx=0,ly=0,spacing=1.18;
+  const title=document.getElementById('title'),detail=document.getElementById('detail'),modeSelect=document.getElementById('mode');
+  function norm(v){const m=Math.hypot(...v);return v.map(n=>n/m)}function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]}function add(a,b){return[a[0]+b[0],a[1]+b[1],a[2]+b[2]]}function mul(a,s){return a.map(n=>n*s)}
+  function layerBasis(v){return[dot(v,RIGHT),dot(v,BACK),dot(v,UP)]}
+  function centerOf(f){return mul(f.reduce((q,v)=>add(q,v),[0,0,0]),1/4)}
+  function layerCenters(level,radius){const out=[];for(let i=-3;i<=3;i++)for(let j=-3;j<=3;j++){const k=level-i-j;const p=[2*A*(i+j),2*A*(i+k),2*A*(j+k)],q=layerBasis(p);if(Math.hypot(q[0],q[1])<=radius)out.push(q)}return out}
+  function instances(){
+    if(mode==='solid'||mode==='faces')return[{p:[0,0,0],c:blue,selected:mode==='faces',basis:false}];
+    if(mode==='neighbors')return[{p:[0,0,0],c:blue,basis:false},...neighborDirs.map(p=>({p,c:blueGhost,basis:false}))];
+    if(mode==='layer')return layerCenters(0,3.2).map((p,i)=>({p,c:i===Math.floor(layerCenters(0,3.2).length/2)?blue:blueGhost,basis:true}));
+    const lower=layerCenters(0,3.25).map(p=>({p:[p[0],p[1],p[2]*spacing],c:blueGhost,basis:true}));
+    const upper=layerCenters(1,3.25).map(p=>({p:[p[0],p[1],p[2]*spacing],c:green,basis:true}));return [...lower,...upper];
+  }
+  function geometry(){const tris=[],edges=[];const list=instances();for(const inst of list){for(let fi=0;fi<faces.length;fi++){let f=faces[fi].map(v=>inst.basis?layerBasis(v):v).map(v=>add(v,inst.p));const selected=inst.selected&&fi===faceIndex,col=selected?orange:inst.c;for(let i=1;i<f.length-1;i++)tris.push({q:[f[0],f[i],f[i+1]],c:col});for(let i=0;i<4;i++)edges.push([f[i],f[(i+1)%4]])}}return{tris,edges}}
+  function project(v,aspect){const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),x=v[0]*cy-v[1]*sy,y=v[0]*sy+v[1]*cy,yy=y*cp+v[2]*sp,depth=y*sp-v[2]*cp;const scale=.46*zoom/(mode==='solid'||mode==='faces'?1:2.15);return[x*scale/aspect,yy*scale,depth*.07]}
+  function setMode(v){mode=v;faceIndex=0;const labels={solid:['Single solid','12 congruent rhombi · 14 vertices · volume 16a³'],faces:['12 face directions','Selected face '+(faceIndex+1)+' of 12'],neighbors:['12 nearest neighbors','Face-to-face FCC contacts at distance 2√2a'],layer:['(1,1,1) triangular layer','Every center lies on a triangular grid'],stack:['One-over-three stacking','Upper centers sit over triangular pockets']};title.textContent=labels[v][0];detail.textContent=labels[v][1];document.getElementById('previous').disabled=v!=='faces';document.getElementById('next').disabled=v!=='faces'}
+  function oppositeFace(i){const c=centerOf(faces[i]);let best=-1,bestError=Infinity;for(let j=0;j<faces.length;j++){const q=centerOf(faces[j]),error=Math.hypot(c[0]+q[0],c[1]+q[1],c[2]+q[2]);if(error<bestError){bestError=error;best=j}}return best}
+  function changeFace(d){faceIndex=(faceIndex+d+12)%12;detail.textContent='Selected face '+(faceIndex+1)+' of 12 · opposite face '+(oppositeFace(faceIndex)+1)}
+  modeSelect.onchange=()=>setMode(modeSelect.value);document.getElementById('previous').onclick=()=>changeFace(-1);document.getElementById('next').onclick=()=>changeFace(1);document.getElementById('rotate').onclick=e=>{auto=!auto;e.currentTarget.textContent=auto?'Pause rotation':'Resume rotation'};document.getElementById('reset').onclick=()=>{yaw=-.65;pitch=.58;zoom=1};document.getElementById('spacing').oninput=e=>{spacing=e.target.value/100;document.getElementById('spacingValue').value=spacing.toFixed(2)+'×'};
+  canvas.onpointerdown=e=>{drag=true;lx=e.clientX;ly=e.clientY;canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-lx)*.009;pitch=Math.max(-1.35,Math.min(1.35,pitch+(e.clientY-ly)*.009));lx=e.clientX;ly=e.clientY};canvas.onpointerup=()=>drag=false;canvas.onpointercancel=()=>drag=false;canvas.onwheel=e=>{e.preventDefault();zoom=Math.max(.55,Math.min(2.1,zoom-e.deltaY*.001))};
+  let last=performance.now();function render(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(auto&&!drag)yaw+=dt*.18;const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const aspect=r.width/r.height,g=geometry(),p=[],c=[];g.tris.sort((a,b)=>a.q.reduce((s,v)=>s+project(v,aspect)[2],0)-b.q.reduce((s,v)=>s+project(v,aspect)[2],0));for(const t of g.tris)for(const v of t.q){p.push(...project(v,aspect));c.push(...t.c)}draw(gl.TRIANGLES,p,c);const ep=[],ec=[];for(const e of g.edges)for(const v of e){ep.push(...project(v,aspect));ec.push(...line)}draw(gl.LINES,ep,ec);requestAnimationFrame(render)}
+  function draw(type,p,c){gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(p),gl.DYNAMIC_DRAW);gl.vertexAttribPointer(pl,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,cb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(c),gl.DYNAMIC_DRAW);gl.vertexAttribPointer(cl,4,gl.FLOAT,false,0,0);gl.drawArrays(type,0,p.length/3)}
+  setMode('solid');requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>

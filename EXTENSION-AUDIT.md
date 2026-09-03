@@ -2,8 +2,8 @@
 
 A review of every top-level folder: what it is, whether it works, and a proposed disposition.
 **Nothing has been moved, renamed or deleted.** This is a plan only. Other agents are working in
-`AutoMeshLOD3D/`, `CameraTweens3d/`, `CascadedShadowMaps3D/`, `ClusteredLightManager3D/`,
-`ExternalSkeletalAnimator3D/`, `InGameCamera3D/`, `LightProbeGrid3D/`, `MeshDeformation3D/`,
+`AutoMeshLOD3D/`, `CameraTweens3d/`, `CascadedShadowMaps3D/`, `AdvancedLighting3D/`,
+`ExternalSkeletalAnimator3D/`, `InGameCamera3D/`, `MeshDeformation3D/`,
 `MidiSynthPlayer/` and `WGLEXE_Packager/` right now — none of those are proposed for deletion.
 
 How the verdicts were reached: every `.json` was parsed and checked for the three failure modes
@@ -78,7 +78,7 @@ clear call is `Advanced3DMaterial`: broken, sourceless, and fully covered by the
 
 Two smaller overlaps, **both resolved by deletion on 2026-08-28** (see §4):
 `Custom3DShaderBackend`'s CRT pass was superseded by 3DCRT+ 1.0.0, and `VolumetricFog` is superseded
-by `ClusteredLightManager3D`'s clustered volumetric fog.
+by `AdvancedLighting3D`'s clustered volumetric fog.
 
 ---
 
@@ -92,7 +92,7 @@ were simply not worth keeping.
 | :--- | :--- | :--- |
 | `ThreeJsTweaks` | v0.1.0, 8.6 KB, 6 properties | Renderer shadow-map type and tone mapping. To be superseded by `CascadedShadowMaps3D`. |
 | `TweenLightRadius` | v1.1.1 | Tweened a 2D light object's radius — unrelated to the 3D line of work. |
-| `VolumetricFog` | v0.1.0, debug `console.log` still in runtime | Superseded by `ClusteredLightManager3D`. |
+| `VolumetricFog` | v0.1.0, debug `console.log` still in runtime | Superseded by `AdvancedLighting3D`. |
 | `Custom3DShaderBackend` | v0.1.0, 17 functions | CRT half superseded by 3DCRT+ 1.0.0. |
 
 All ten files were committed and unmodified at deletion, so `git checkout <commit> -- <folder>`
@@ -193,8 +193,9 @@ read as shipped extensions at a glance because the READMEs are written in the pr
 so the top-level listing distinguishes design from code.
 
 Related: `Extension-explored-possibilities-list.md` is stale. It marks `AutoMeshLOD3D`,
-`LightProbeGrid3D`, `ClusteredLightManager3D` and `MidiSynthPlayer` as "Complete Blueprint" when all
-four now have built JSON and runtimes.
+`LightProbeGrid3D`, `AdvancedLighting3D` and `MidiSynthPlayer` as "Complete Blueprint" when all
+four now have built JSON and runtimes. `LightProbeGrid3D` no longer exists as a separate folder at
+all — see the consolidation note below.
 
 ---
 
@@ -204,16 +205,39 @@ Not a disposition question, but the thing that determines what is safe to publis
 
 | Extension | Verified in GDevelop? |
 | :--- | :--- |
-| `LightProbeGrid3D` | README claims implemented and verified against the installed runtime. |
 | `CameraTweens3d` | `REVIEW.md`: build reproduces byte-for-byte, all 7 test phases pass, findings measured in a Node harness. Not stated as run in-engine. |
 | `AutoMeshLOD3D` | `REVIEW.md` states plainly: **"Nothing has been run inside GDevelop yet."** Open findings remain. |
 | `ExternalSkeletalAnimator3D` | README lists bone sockets, `Drive object` root motion and skeleton layers as **not verified in-engine**. |
 | `InGameCamera3D` | Self-described prototype, v0.3.0. |
-| `ClusteredLightManager3D` | No `REVIEW.md`. 1.4 MB JSON. |
+| `AdvancedLighting3D` | No `REVIEW.md`. Carries the former `LightProbeGrid3D` since 2.0.0; 11 unit tests pass in a Node harness, nothing run in-engine yet. |
 | `MidiSynthPlayer` | No `REVIEW.md` — **yet already copied into the publish folder** (§2). |
 
-Two of these have JSON files large enough to be worth watching in the editor:
-`LightProbeGrid3D.json` at 2.1 MB and `ClusteredLightManager3D.json` at 1.4 MB.
+The JSON sizes that prompted this note are fixed. `AdvancedLighting3D.json` now holds both
+extensions' worth of functions in **509 KB**, because the runtime is installed once from an
+`onSceneLoaded` extension lifecycle function instead of being embedded in every JsCode block. Any
+other extension in this repo using the embed-per-block pattern can do the same.
+
+---
+
+## Consolidation: Advanced Lighting (2026-08-29)
+
+**Renamed.** The merged extension is now `AdvancedLighting3D/` (display name "Advanced Lighting 3D",
+namespace `gdjs.__advancedLighting3D`). Earlier entries in this document that predate 2026-08-29 have
+been updated to the new name for working links; the folder was called `ClusteredLightManager3D/`
+at the time those verdicts were reached.
+
+`LightProbeGrid3D/` was **merged into `AdvancedLighting3D/` and deleted**. The two are now one
+"Advanced Lighting" extension covering both halves of a scene's lighting: clustered forward dynamic
+lights (direct) and baked probe-grid GI (indirect).
+
+They could not safely coexist as separate extensions. Both injected into `lights_fragment_begin` on
+the same shared materials and both overrode `customProgramCacheKey` with a constant, so Three could
+hand a material the other one's compiled program — silently, because a broken 3D shader in GDevelop
+renders unlit rather than erroring. Merged, there is one injection, one cache key
+(`GD_ADVLIGHT3D_V1|CL1|G3D<0|1>|LP<0|1>`) and one post-events tick.
+
+The probe design record survives as `AdvancedLighting3D/PROBE_IMPLEMENTATION_PLAN.md`. The
+deleted files are recoverable with `git checkout <commit> -- LightProbeGrid3D`.
 
 ---
 

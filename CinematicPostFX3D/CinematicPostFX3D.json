@@ -1,0 +1,1957 @@
+{
+  "name": "CinematicPostFX3D",
+  "fullName": "Cinematic Post-Processing 3D",
+  "version": "2.2.0",
+  "description": "Consolidated post-processing suite for GDevelop 5 3D layers: Screen-Space Reflections, Ground Truth Ambient Occlusion, 13-Tap Karis HDR Bloom with anamorphic flares, Bokeh Depth of Field with centre-screen autofocus, camera-velocity Motion Blur, Chromatic Aberration, ACES/Reinhard/Cineon tone mapping and 5 genre presets. All world-space settings are in GDevelop world units.",
+  "shortDescription": "Post-processing suite for 3D layers: SSR, GTAO, Karis Bloom, Bokeh DOF & presets.",
+  "category": "3D",
+  "author": "Twillion",
+  "previewIconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwYTBlMTciLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiMxMjE4MjYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDcwOTBlIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJzdHJlYWtHcmFkIiB4MT0iMCUiIHkxPSI1MCUiIHgyPSIxMDAlIiB5Mj0iNTAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwZmZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMjUlIiBzdG9wLWNvbG9yPSIjMDBiNGQ4IiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNzUlIiBzdG9wLWNvbG9yPSIjNzIwOWI3IiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmNzI1ODUiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmluZ0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDBmNWQ0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjN2IyY2JmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2Y3MjU4NSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9ImJsb29tR2xvdyIgeD0iLTMwJSIgeT0iLTMwJSIgd2lkdGg9IjE2MCUiIGhlaWdodD0iMTYwJSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjgiIHJlc3VsdD0iYmx1ciIvPgogICAgICA8ZmVNZXJnZT4KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz4KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz4KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz4KICAgICAgPC9mZU1lcmdlPgogICAgPC9maWx0ZXI+CiAgPC9kZWZzPgoKICA8IS0tIFJvdW5kZWQgQXBwIFRpbGUgLS0+CiAgPHJlY3Qgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHJ4PSI0OCIgZmlsbD0idXJsKCNiZ0dyYWQpIi8+CiAgPHJlY3Qgd2lkdGg9IjI1MiIgaGVpZ2h0PSIyNTIiIHg9IjIiIHk9IjIiIHJ4PSI0NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmEzYjVjIiBzdHJva2Utd2lkdGg9IjIiLz4KCiAgPCEtLSBBbmFtb3JwaGljIENpbmVtYSBIb3Jpem9udGFsIEZsYXJlIFN0cmVhayAtLT4KICA8cGF0aCBkPSJNIDAgMTI4IEwgMjU2IDEyOCIgc3Ryb2tlPSJ1cmwoI3N0cmVha0dyYWQpIiBzdHJva2Utd2lkdGg9IjYiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGVsbGlwc2UgY3g9IjEyOCIgY3k9IjEyOCIgcng9IjcwIiByeT0iNiIgZmlsbD0iIzAwZmZmZiIgb3BhY2l0eT0iMC44IiBmaWx0ZXI9InVybCgjYmxvb21HbG93KSIvPgogIDxlbGxpcHNlIGN4PSIxMjgiIGN5PSIxMjgiIHJ4PSIyMCIgcnk9IjMiIGZpbGw9IiNmZmZmZmYiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CgogIDwhLS0gT3V0ZXIgQ2FtZXJhIEFwZXJ0dXJlIFJpbmcgLS0+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTI4IiByPSI3NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI3JpbmdHcmFkKSIgc3Ryb2tlLXdpZHRoPSI3IiBzdHJva2UtZGFzaGFycmF5PSIxNiA4Ii8+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTI4IiByPSI2NCIgZmlsbD0iIzA5MGQxNiIgZmlsbC1vcGFjaXR5PSIwLjc1IiBzdHJva2U9IiM0Y2M5ZjAiIHN0cm9rZS13aWR0aD0iMi41Ii8+CgogIDwhLS0gQXBlcnR1cmUgQmxhZGVzIChCb2tlaCBJcmlzKSAtLT4KICA8cGF0aCBkPSJNIDEyOCA2OCBMIDE2OCA5NiBMIDE1MiAxNDQgWiIgZmlsbD0iIzFiMmE0NyIgc3Ryb2tlPSIjMDBmNWQ0IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTY4IDk2IEwgMTc2IDE0OCBMIDEyOCAxNjggWiIgZmlsbD0iIzFlMWI0YiIgc3Ryb2tlPSIjNzIwOWI3IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTc2IDE0OCBMIDEzOCAxODQgTCA5OCAxNjAgWiIgZmlsbD0iIzJlMTA2NSIgc3Ryb2tlPSIjZjcyNTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTM4IDE4NCBMIDg4IDE2MCBMIDEwNCAxMTIgWiIgZmlsbD0iIzFlMWI0YiIgc3Ryb2tlPSIjNzIwOWI3IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gODggMTYwIEwgODAgMTA4IEwgMTI4IDg4IFoiIGZpbGw9IiMxYjJhNDciIHN0cm9rZT0iIzAwZjVkNCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cGF0aCBkPSJNIDgwIDEwOCBMIDExOCA3MiBMIDE1OCA5NiBaIiBmaWxsPSIjMTUyNDM4IiBzdHJva2U9IiM0Y2M5ZjAiIHN0cm9rZS13aWR0aD0iMS41Ii8+CgogIDwhLS0gSW5uZXIgT3B0aWNhbCBGb2N1cyBJcmlzIC0tPgogIDxwb2x5Z29uIHBvaW50cz0iMTI4LDEwNCAxNDksMTE2IDE0OSwxNDAgMTI4LDE1MiAxMDcsMTQwIDEwNywxMTYiIGZpbGw9IiMwMDAwMDAiIHN0cm9rZT0iIzAwZjVkNCIgc3Ryb2tlLXdpZHRoPSIyLjUiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTI4IiByPSIxNCIgZmlsbD0iI2ZmZmZmZiIgZmlsdGVyPSJ1cmwoI2Jsb29tR2xvdykiLz4KICA8Y2lyY2xlIGN4PSIxMjgiIGN5PSIxMjgiIHI9IjgiIGZpbGw9IiMwMGY1ZDQiLz4KCiAgPCEtLSBDb3JuZXIgTGVucyBGbGFyZSBTdGFycyAtLT4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjcwIiByPSIzIiBmaWxsPSIjMDBmNWQ0IiBvcGFjaXR5PSIwLjYiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTk2IiBjeT0iMTg2IiByPSI0IiBmaWxsPSIjZjcyNTg1IiBvcGFjaXR5PSIwLjciIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTkwIiBjeT0iNjUiIHI9IjIuNSIgZmlsbD0iI2ZmZmZmZiIgb3BhY2l0eT0iMC44Ii8+Cjwvc3ZnPgo=",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwYTBlMTciLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiMxMjE4MjYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDcwOTBlIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJzdHJlYWtHcmFkIiB4MT0iMCUiIHkxPSI1MCUiIHgyPSIxMDAlIiB5Mj0iNTAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwZmZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMjUlIiBzdG9wLWNvbG9yPSIjMDBiNGQ4IiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNzUlIiBzdG9wLWNvbG9yPSIjNzIwOWI3IiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmNzI1ODUiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmluZ0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDBmNWQ0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjN2IyY2JmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2Y3MjU4NSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9ImJsb29tR2xvdyIgeD0iLTMwJSIgeT0iLTMwJSIgd2lkdGg9IjE2MCUiIGhlaWdodD0iMTYwJSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjgiIHJlc3VsdD0iYmx1ciIvPgogICAgICA8ZmVNZXJnZT4KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz4KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz4KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz4KICAgICAgPC9mZU1lcmdlPgogICAgPC9maWx0ZXI+CiAgPC9kZWZzPgoKICA8IS0tIFJvdW5kZWQgQXBwIFRpbGUgLS0+CiAgPHJlY3Qgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHJ4PSI0OCIgZmlsbD0idXJsKCNiZ0dyYWQpIi8+CiAgPHJlY3Qgd2lkdGg9IjI1MiIgaGVpZ2h0PSIyNTIiIHg9IjIiIHk9IjIiIHJ4PSI0NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmEzYjVjIiBzdHJva2Utd2lkdGg9IjIiLz4KCiAgPCEtLSBBbmFtb3JwaGljIENpbmVtYSBIb3Jpem9udGFsIEZsYXJlIFN0cmVhayAtLT4KICA8cGF0aCBkPSJNIDAgMTI4IEwgMjU2IDEyOCIgc3Ryb2tlPSJ1cmwoI3N0cmVha0dyYWQpIiBzdHJva2Utd2lkdGg9IjYiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGVsbGlwc2UgY3g9IjEyOCIgY3k9IjEyOCIgcng9IjcwIiByeT0iNiIgZmlsbD0iIzAwZmZmZiIgb3BhY2l0eT0iMC44IiBmaWx0ZXI9InVybCgjYmxvb21HbG93KSIvPgogIDxlbGxpcHNlIGN4PSIxMjgiIGN5PSIxMjgiIHJ4PSIyMCIgcnk9IjMiIGZpbGw9IiNmZmZmZmYiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CgogIDwhLS0gT3V0ZXIgQ2FtZXJhIEFwZXJ0dXJlIFJpbmcgLS0+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTI4IiByPSI3NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI3JpbmdHcmFkKSIgc3Ryb2tlLXdpZHRoPSI3IiBzdHJva2UtZGFzaGFycmF5PSIxNiA4Ii8+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTI4IiByPSI2NCIgZmlsbD0iIzA5MGQxNiIgZmlsbC1vcGFjaXR5PSIwLjc1IiBzdHJva2U9IiM0Y2M5ZjAiIHN0cm9rZS13aWR0aD0iMi41Ii8+CgogIDwhLS0gQXBlcnR1cmUgQmxhZGVzIChCb2tlaCBJcmlzKSAtLT4KICA8cGF0aCBkPSJNIDEyOCA2OCBMIDE2OCA5NiBMIDE1MiAxNDQgWiIgZmlsbD0iIzFiMmE0NyIgc3Ryb2tlPSIjMDBmNWQ0IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTY4IDk2IEwgMTc2IDE0OCBMIDEyOCAxNjggWiIgZmlsbD0iIzFlMWI0YiIgc3Ryb2tlPSIjNzIwOWI3IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTc2IDE0OCBMIDEzOCAxODQgTCA5OCAxNjAgWiIgZmlsbD0iIzJlMTA2NSIgc3Ryb2tlPSIjZjcyNTg1IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTM4IDE4NCBMIDg4IDE2MCBMIDEwNCAxMTIgWiIgZmlsbD0iIzFlMWI0YiIgc3Ryb2tlPSIjNzIwOWI3IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gODggMTYwIEwgODAgMTA4IEwgMTI4IDg4IFoiIGZpbGw9IiMxYjJhNDciIHN0cm9rZT0iIzAwZjVkNCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cGF0aCBkPSJNIDgwIDEwOCBMIDExOCA3MiBMIDE1OCA5NiBaIiBmaWxsPSIjMTUyNDM4IiBzdHJva2U9IiM0Y2M5ZjAiIHN0cm9rZS13aWR0aD0iMS41Ii8+CgogIDwhLS0gSW5uZXIgT3B0aWNhbCBGb2N1cyBJcmlzIC0tPgogIDxwb2x5Z29uIHBvaW50cz0iMTI4LDEwNCAxNDksMTE2IDE0OSwxNDAgMTI4LDE1MiAxMDcsMTQwIDEwNywxMTYiIGZpbGw9IiMwMDAwMDAiIHN0cm9rZT0iIzAwZjVkNCIgc3Ryb2tlLXdpZHRoPSIyLjUiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTI4IiByPSIxNCIgZmlsbD0iI2ZmZmZmZiIgZmlsdGVyPSJ1cmwoI2Jsb29tR2xvdykiLz4KICA8Y2lyY2xlIGN4PSIxMjgiIGN5PSIxMjgiIHI9IjgiIGZpbGw9IiMwMGY1ZDQiLz4KCiAgPCEtLSBDb3JuZXIgTGVucyBGbGFyZSBTdGFycyAtLT4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjcwIiByPSIzIiBmaWxsPSIjMDBmNWQ0IiBvcGFjaXR5PSIwLjYiIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTk2IiBjeT0iMTg2IiByPSI0IiBmaWxsPSIjZjcyNTg1IiBvcGFjaXR5PSIwLjciIGZpbHRlcj0idXJsKCNibG9vbUdsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTkwIiBjeT0iNjUiIHI9IjIuNSIgZmlsbD0iI2ZmZmZmZiIgb3BhY2l0eT0iMC44Ii8+Cjwvc3ZnPgo=",
+  "helpPath": "",
+  "tags": [
+    "3d",
+    "post-processing",
+    "ssr",
+    "screen space reflections",
+    "gtao",
+    "ambient occlusion",
+    "bloom",
+    "bokeh",
+    "depth of field",
+    "dof",
+    "motion blur",
+    "aces",
+    "tone mapping",
+    "cinematic",
+    "camera",
+    "optics",
+    "shader"
+  ],
+  "authorIds": [],
+  "dependencies": [],
+  "globalVariables": [],
+  "sceneVariables": [],
+  "eventsFunctions": [],
+  "eventsBasedBehaviors": [
+    {
+      "name": "CinematicPostFX3D",
+      "fullName": "Cinematic Post-Processing 3D",
+      "description": "Consolidated post-processing pipeline: Screen-Space Reflections (SSR), Ground Truth Ambient Occlusion (GTAO), 13-Tap Karis HDR Bloom, Bokeh Depth of Field with centre-screen autofocus, camera-velocity Motion Blur, and ACES Filmic Tone Mapping. Attaches a depth texture to the layer composer so the depth-dependent passes have real data to work with.",
+      "objectType": "",
+      "defaultName": "CinematicPostFX3D",
+      "propertyDescriptors": [
+        {
+          "name": "Preset",
+          "type": "Choice",
+          "value": "Custom",
+          "label": "Preset Profile",
+          "description": "Applied once when the behavior is created, overwriting the properties below with the preset values. Leave on \"Custom\" to use the values you set here as-is.",
+          "group": "Master & Presets",
+          "extraInformation": [
+            "Custom",
+            "CyberpunkNeon",
+            "CinematicMovie",
+            "HorrorGrim",
+            "CleanRealistic",
+            "PerformanceLite"
+          ]
+        },
+        {
+          "name": "MasterIntensity",
+          "type": "Number",
+          "value": "1.0",
+          "label": "Master Intensity",
+          "description": "Crossfade between the untouched scene and the fully graded result. 0.0 is a true bypass.",
+          "group": "Master & Presets"
+        },
+        {
+          "name": "ToneMapping",
+          "type": "Choice",
+          "value": "ACESFilmic",
+          "label": "Tone Mapping",
+          "description": "Color grading curve: ACESFilmic, Reinhard, Cineon, Linear.",
+          "group": "Master & Presets",
+          "extraInformation": [
+            "ACESFilmic",
+            "Reinhard",
+            "Cineon",
+            "Linear"
+          ]
+        },
+        {
+          "name": "EffectQuality",
+          "type": "Choice",
+          "value": "Half",
+          "label": "Effect Buffer Quality",
+          "description": "Resolution of the ambient occlusion, reflection and reflectivity-mask buffers. \"Half\" is the sensible default; \"Full\" sharpens AO and reflections at roughly four times the cost; \"Quarter\" is for low-end hardware. Bloom, depth of field and the composite always run at full resolution.",
+          "group": "Master & Presets",
+          "extraInformation": [
+            "Full",
+            "Half",
+            "Quarter"
+          ]
+        },
+        {
+          "name": "TargetLayer",
+          "type": "String",
+          "value": "",
+          "label": "Target Layer",
+          "description": "Name of the 3D layer to post-process. Leave empty for the base layer. The layer must be rendering in 3D, otherwise it has no effect composer to attach to.",
+          "group": "Master & Presets"
+        },
+        {
+          "name": "Diagnostics",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Log Diagnostics",
+          "description": "Print one console line at startup: composer found, depth texture attached, camera near/far and distance. Use this first when an effect appears to do nothing.",
+          "group": "Master & Presets"
+        },
+        {
+          "name": "EnableGTAO",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable GTAO",
+          "description": "Horizon-based ambient occlusion in crevices and contact points. Needs the depth buffer.",
+          "group": "Ambient Occlusion (GTAO)"
+        },
+        {
+          "name": "GTAORadius",
+          "type": "Number",
+          "value": "50",
+          "label": "GTAO Radius (world units)",
+          "description": "Occlusion search radius in GDevelop world units — scene scale, not metres. A default 3D layer puts the camera around 724 units back, so useful values are in the tens.",
+          "group": "Ambient Occlusion (GTAO)"
+        },
+        {
+          "name": "GTAOIntensity",
+          "type": "Number",
+          "value": "1.0",
+          "label": "GTAO Intensity",
+          "description": "Occlusion contrast. Applied as an exponent, so 1.0 is neutral and higher is darker.",
+          "group": "Ambient Occlusion (GTAO)"
+        },
+        {
+          "name": "GTAOMultiBounce",
+          "type": "Boolean",
+          "value": "true",
+          "label": "GTAO Multi-Bounce",
+          "description": "Polynomial multi-bounce fit so coloured crevices keep their bounce light instead of going black.",
+          "group": "Ambient Occlusion (GTAO)"
+        },
+        {
+          "name": "EnableSSR",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable SSR",
+          "description": "Raymarched reflections of on-screen geometry. Needs the depth buffer.",
+          "group": "Screen-Space Reflections (SSR)"
+        },
+        {
+          "name": "SSRIntensity",
+          "type": "Number",
+          "value": "0.6",
+          "label": "SSR Intensity",
+          "description": "Reflection brightness and blend opacity (0.0 to 1.0).",
+          "group": "Screen-Space Reflections (SSR)"
+        },
+        {
+          "name": "SSRMaxDistance",
+          "type": "Number",
+          "value": "400",
+          "label": "SSR Max Distance (world units)",
+          "description": "How far a reflection ray may travel, in GDevelop world units.",
+          "group": "Screen-Space Reflections (SSR)"
+        },
+        {
+          "name": "SSRFresnel",
+          "type": "Number",
+          "value": "0.6",
+          "label": "SSR Fresnel Falloff",
+          "description": "How strongly reflections favour grazing angles. 0 = uniform mirror everywhere, 1 = pure Schlick Fresnel so only glancing surfaces reflect.",
+          "group": "Screen-Space Reflections (SSR)"
+        },
+        {
+          "name": "SSRSurfaces",
+          "type": "Choice",
+          "value": "MaterialBased",
+          "label": "SSR Reflective Surfaces",
+          "description": "Which surfaces reflect. \"MaterialBased\" renders a reflectivity mask from each material's roughness and metalness, so only smooth or metallic surfaces reflect — GDevelop's default material is fully rough, so nothing reflects until you make it shiny. \"Everything\" mirrors the scene onto every surface, which is rarely what you want.",
+          "group": "Screen-Space Reflections (SSR)",
+          "extraInformation": [
+            "MaterialBased",
+            "Everything"
+          ]
+        },
+        {
+          "name": "SSRRaySteps",
+          "type": "Choice",
+          "value": "32",
+          "label": "SSR Ray Steps",
+          "description": "Quality step count: 16 (Fast), 32 (Balanced), 64 (High).",
+          "group": "Screen-Space Reflections (SSR)",
+          "extraInformation": [
+            "16",
+            "32",
+            "64"
+          ]
+        },
+        {
+          "name": "EnableBloom",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable Bloom",
+          "description": "13-tap Karis HDR bloom with additive mip recombination. Works without the depth buffer.",
+          "group": "Bloom & Anamorphic Flares"
+        },
+        {
+          "name": "BloomIntensity",
+          "type": "Number",
+          "value": "0.8",
+          "label": "Bloom Intensity",
+          "description": "Glow brightness multiplier (0.0 to 3.0).",
+          "group": "Bloom & Anamorphic Flares"
+        },
+        {
+          "name": "BloomThreshold",
+          "type": "Number",
+          "value": "0.9",
+          "label": "Bloom Threshold",
+          "description": "Minimum luminance required to emit bloom (0.5 to 2.0).",
+          "group": "Bloom & Anamorphic Flares"
+        },
+        {
+          "name": "AnamorphicFlares",
+          "type": "Number",
+          "value": "0.3",
+          "label": "Anamorphic Flares",
+          "description": "Horizontal cinema streak flare strength (0.0 to 1.0).",
+          "group": "Bloom & Anamorphic Flares"
+        },
+        {
+          "name": "FlareTintColor",
+          "type": "Color",
+          "value": "100;180;255",
+          "label": "Flare Tint Color",
+          "description": "Color tint for anamorphic lens streaks (e.g. sci-fi blue).",
+          "group": "Bloom & Anamorphic Flares"
+        },
+        {
+          "name": "EnableDOF",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable DOF",
+          "description": "Circle of Confusion bokeh lens defocus. Needs the depth buffer.",
+          "group": "Depth of Field (DOF)"
+        },
+        {
+          "name": "Autofocus",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Autofocus Mode",
+          "description": "Raycast the centre of the screen and ease the focus plane onto whatever it hits. Falls back to the manual focus distance when nothing is in front of the camera.",
+          "group": "Depth of Field (DOF)"
+        },
+        {
+          "name": "ManualFocusDistance",
+          "type": "Number",
+          "value": "700",
+          "label": "Manual Focus Distance (world units)",
+          "description": "Focus plane position in GDevelop world units, used when autofocus is off. A default 3D layer puts the camera about 724 units from the z=0 plane.",
+          "group": "Depth of Field (DOF)"
+        },
+        {
+          "name": "ApertureFStop",
+          "type": "Number",
+          "value": "2.8",
+          "label": "Aperture F-Stop",
+          "description": "Lens aperture (f/1.4 heavy blur, f/16.0 deep focus). Defocus is measured relative to the focus distance, so the same value looks the same at any scene scale.",
+          "group": "Depth of Field (DOF)"
+        },
+        {
+          "name": "MaxBokehRadius",
+          "type": "Number",
+          "value": "12.0",
+          "label": "Max Bokeh Radius (px)",
+          "description": "Maximum pixel blur radius for out-of-focus highlights.",
+          "group": "Depth of Field (DOF)"
+        },
+        {
+          "name": "EnableMotionBlur",
+          "type": "Boolean",
+          "value": "false",
+          "label": "Enable Motion Blur",
+          "description": "Camera-velocity motion blur reconstructed from depth. Needs the depth buffer.",
+          "group": "Motion Blur & Optical FX"
+        },
+        {
+          "name": "MotionBlurStrength",
+          "type": "Number",
+          "value": "0.5",
+          "label": "Motion Blur Strength",
+          "description": "Velocity streak length scale (0.0 to 1.0).",
+          "group": "Motion Blur & Optical FX"
+        },
+        {
+          "name": "ChromaticAberration",
+          "type": "Number",
+          "value": "0.003",
+          "label": "Chromatic Aberration",
+          "description": "Optical lens color fringing at screen edges (0.0 to 0.02). Works without the depth buffer.",
+          "group": "Motion Blur & Optical FX"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "onCreated",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * CinematicPostFX3D — Post-Processing, SSR, GTAO & Optics Suite for GDevelop 5\n *\n * Consolidated multi-pass post-processing compositing engine:\n *  - Native GDevelop 5 EffectComposer integration via layerRenderer.addPostProcessingPass(pass).\n *  - A real depth attachment: the composer's ping-pong render targets are rebuilt with a\n *    DepthTexture so depth-dependent passes have something to read. Without this every\n *    depth-based effect silently reads 0.0.\n *  - Ground Truth Ambient Occlusion (GTAO): slice-based horizon search with the Jimenez\n *    arc-integral and polynomial multi-bounce.\n *  - Screen-Space Reflections (SSR): DDA raymarch, 4-step binary refinement, Schlick\n *    Fresnel weighting and distance/edge fade.\n *  - 13-Tap Progressive Karis HDR Bloom with additive mip recombination, plus anamorphic\n *    streaks from a dedicated wide horizontal blur pass.\n *  - Optical Bokeh Depth of Field with a scale-invariant Circle of Confusion and a\n *    real center-screen autofocus raycast.\n *  - Camera-velocity Motion Blur & Chromatic Aberration.\n *  - ACES Filmic, Reinhard, Cineon, and Linear Tone Mapping.\n *  - 5 One-Click Genre Presets: CyberpunkNeon, CinematicMovie, HorrorGrim, CleanRealistic,\n *    PerformanceLite.\n *\n * UNITS: every world-space parameter (GTAO radius, SSR distance, focus distance) is in\n * GDevelop world units, NOT metres. A default GDevelop 3D layer places the camera at\n * 0.5 * height / tan(fov/2) — about 724 units for a 600px-tall game at 45 degrees — so\n * scene-scale defaults live in the hundreds, not single digits.\n */\n(function () {\n  if (typeof gdjs === 'undefined') return;\n  if (gdjs.__cinematicPostFX3D) return; // Singleton installation\n\n  var THREE_OK = typeof THREE !== 'undefined';\n\n  /* ------------------------------------------------------------- Helpers & Math */\n\n  function clamp(val, min, max) {\n    return Math.max(min, Math.min(max, val));\n  }\n\n  function saturate(val) {\n    return Math.max(0.0, Math.min(1.0, val));\n  }\n\n  function lerp(a, b, t) {\n    return a + (b - a) * t;\n  }\n\n  function parseColor(input, fallback) {\n    if (Array.isArray(input)) return input;\n    if (typeof input === 'number') {\n      return [(input >> 16) & 255, (input >> 8) & 255, input & 255];\n    }\n    if (typeof input === 'string') {\n      var parts = input.split(';').map(function (v) { return parseFloat(v); });\n      if (parts.length >= 3 && !isNaN(parts[0])) {\n        return [parts[0], parts[1], parts[2]];\n      }\n      if (input.startsWith('#') && typeof gdjs.hexToRGBColor === 'function') {\n        return gdjs.hexToRGBColor(input);\n      }\n    }\n    return fallback || [100, 180, 255];\n  }\n\n  // Full/Half/Quarter -> the divisor applied to the GTAO, SSR and reflectivity-mask buffers.\n  var QUALITY_DIVISORS = { Full: 1, Half: 2, Quarter: 4 };\n\n  function qualityDivisor(name) {\n    return QUALITY_DIVISORS[name] || 2;\n  }\n\n  function warnOnce(key, message) {\n    if (!warnOnce._seen) warnOnce._seen = {};\n    if (warnOnce._seen[key]) return;\n    warnOnce._seen[key] = true;\n    console.warn('[CinematicPostFX3D] ' + message);\n  }\n\n  /* ------------------------------------------------------------- 5 Genre Presets\n   * World-space values are in GDevelop units. A typical 3D scene sits 400-1200 units\n   * from the camera, so GTAO radii live in the tens and focus distances in the hundreds.\n   */\n\n  var PRESETS = {\n    CyberpunkNeon: {\n      masterIntensity: 1.0,\n      effectQuality: 'Half',\n      toneMapping: 'ACESFilmic',\n      enableGTAO: true,\n      gtaoRadius: 60.0,\n      gtaoIntensity: 1.0,\n      gtaoMultiBounce: true,\n      enableSSR: true,\n      ssrIntensity: 0.9,\n      ssrMaxDistance: 500.0,\n      ssrSurfaces: 'MaterialBased',\n      ssrFresnel: 0.5,\n      ssrRaySteps: 32,\n      enableBloom: true,\n      bloomIntensity: 1.5,\n      bloomThreshold: 0.8,\n      anamorphicFlares: 0.6,\n      flareTintColor: '80;160;255',\n      enableDOF: true,\n      autofocus: true,\n      manualFocusDistance: 700.0,\n      apertureFStop: 5.6,\n      maxBokehRadius: 8.0,\n      enableMotionBlur: true,\n      motionBlurStrength: 0.3,\n      chromaticAberration: 0.004,\n    },\n    CinematicMovie: {\n      masterIntensity: 1.0,\n      effectQuality: 'Half',\n      toneMapping: 'ACESFilmic',\n      enableGTAO: true,\n      gtaoRadius: 70.0,\n      gtaoIntensity: 1.2,\n      gtaoMultiBounce: true,\n      enableSSR: true,\n      ssrIntensity: 0.4,\n      ssrMaxDistance: 400.0,\n      ssrSurfaces: 'MaterialBased',\n      ssrFresnel: 0.7,\n      ssrRaySteps: 32,\n      enableBloom: true,\n      bloomIntensity: 0.8,\n      bloomThreshold: 0.9,\n      anamorphicFlares: 0.2,\n      flareTintColor: '100;180;255',\n      enableDOF: true,\n      autofocus: true,\n      manualFocusDistance: 700.0,\n      apertureFStop: 2.4,\n      maxBokehRadius: 12.0,\n      enableMotionBlur: true,\n      motionBlurStrength: 0.5,\n      chromaticAberration: 0.002,\n    },\n    HorrorGrim: {\n      masterIntensity: 1.0,\n      effectQuality: 'Half',\n      toneMapping: 'ACESFilmic',\n      enableGTAO: true,\n      gtaoRadius: 90.0,\n      gtaoIntensity: 1.8,\n      gtaoMultiBounce: false,\n      enableSSR: false,\n      ssrIntensity: 0.0,\n      ssrMaxDistance: 300.0,\n      ssrSurfaces: 'MaterialBased',\n      ssrFresnel: 0.8,\n      ssrRaySteps: 16,\n      enableBloom: true,\n      bloomIntensity: 0.3,\n      bloomThreshold: 1.2,\n      anamorphicFlares: 0.0,\n      flareTintColor: '255;255;255',\n      enableDOF: true,\n      autofocus: false,\n      manualFocusDistance: 320.0,\n      apertureFStop: 1.8,\n      maxBokehRadius: 14.0,\n      enableMotionBlur: true,\n      motionBlurStrength: 0.2,\n      chromaticAberration: 0.006,\n    },\n    CleanRealistic: {\n      masterIntensity: 1.0,\n      effectQuality: 'Half',\n      toneMapping: 'ACESFilmic',\n      enableGTAO: true,\n      gtaoRadius: 55.0,\n      gtaoIntensity: 1.0,\n      gtaoMultiBounce: true,\n      enableSSR: true,\n      ssrIntensity: 0.6,\n      ssrMaxDistance: 400.0,\n      ssrSurfaces: 'MaterialBased',\n      ssrFresnel: 0.6,\n      ssrRaySteps: 32,\n      enableBloom: true,\n      bloomIntensity: 0.6,\n      bloomThreshold: 0.9,\n      anamorphicFlares: 0.0,\n      flareTintColor: '255;255;255',\n      enableDOF: false,\n      autofocus: false,\n      manualFocusDistance: 700.0,\n      apertureFStop: 2.8,\n      maxBokehRadius: 10.0,\n      enableMotionBlur: true,\n      motionBlurStrength: 0.2,\n      chromaticAberration: 0.001,\n    },\n    PerformanceLite: {\n      masterIntensity: 1.0,\n      effectQuality: 'Quarter',\n      toneMapping: 'Reinhard',\n      enableGTAO: false,\n      gtaoRadius: 40.0,\n      gtaoIntensity: 0.6,\n      gtaoMultiBounce: false,\n      enableSSR: false,\n      ssrIntensity: 0.0,\n      ssrMaxDistance: 250.0,\n      ssrSurfaces: 'MaterialBased',\n      ssrFresnel: 0.6,\n      ssrRaySteps: 16,\n      enableBloom: true,\n      bloomIntensity: 0.5,\n      bloomThreshold: 1.0,\n      anamorphicFlares: 0.0,\n      flareTintColor: '255;255;255',\n      enableDOF: false,\n      autofocus: false,\n      manualFocusDistance: 700.0,\n      apertureFStop: 4.0,\n      maxBokehRadius: 8.0,\n      enableMotionBlur: false,\n      motionBlurStrength: 0.0,\n      chromaticAberration: 0.0,\n    }\n  };\n\n  var DEFAULT_SETTINGS = {\n    preset: 'Custom',\n    masterIntensity: 1.0,\n    toneMapping: 'ACESFilmic',\n    enableGTAO: false,\n    gtaoRadius: 50.0,\n    gtaoIntensity: 1.0,\n    gtaoMultiBounce: true,\n    enableSSR: false,\n    ssrIntensity: 0.6,\n    ssrMaxDistance: 400.0,\n    ssrFresnel: 0.6,\n    ssrSurfaces: 'MaterialBased',\n    ssrRaySteps: 32,\n    effectQuality: 'Half',\n    enableBloom: false,\n    bloomIntensity: 0.8,\n    bloomThreshold: 0.9,\n    anamorphicFlares: 0.3,\n    flareTintColor: '100;180;255',\n    enableDOF: false,\n    autofocus: true,\n    manualFocusDistance: 700.0,\n    apertureFStop: 2.8,\n    maxBokehRadius: 12.0,\n    enableMotionBlur: false,\n    motionBlurStrength: 0.5,\n    chromaticAberration: 0.003,\n    targetLayer: '',\n    diagnostics: false,\n  };\n\n  /* ------------------------------------------------------------- CPU mirrors of the GLSL math\n   * These exist so the shader formulas can be unit tested off-GPU. Each one is the exact\n   * scalar equivalent of the corresponding GLSL function; if you change one, change both.\n   */\n\n  function applyACESFilmic(r, g, b) {\n    function curve(x) {\n      return (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);\n    }\n    return [saturate(curve(r)), saturate(curve(g)), saturate(curve(b))];\n  }\n\n  function applyReinhard(r, g, b) {\n    return [r / (1.0 + r), g / (1.0 + g), b / (1.0 + b)];\n  }\n\n  function applyCineon(r, g, b) {\n    function curve(x) {\n      x = Math.max(0.0, x - 0.004);\n      return (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);\n    }\n    return [saturate(curve(r)), saturate(curve(g)), saturate(curve(b))];\n  }\n\n  // Window depth [0,1] -> positive view-space distance from the camera.\n  function linearizeDepth(rawDepth, near, far, isOrtho) {\n    if (isOrtho) return near + rawDepth * (far - near);\n    var zNdc = rawDepth * 2.0 - 1.0;\n    return (2.0 * near * far) / (far + near - zNdc * (far - near));\n  }\n\n  // Circle of Confusion, normalised to [0, maxRadiusPx].\n  //\n  // The defocus term |z - zFocus| / z is dimensionless, so the same settings produce the\n  // same blur whether the scene is 5 units deep or 5000. A literal thin-lens CoC in world\n  // units would not: it scales with the focus distance, which is exactly why the old\n  // 50mm-lens formula saturated every pixel on a GDevelop scene sitting 700 units out.\n  //\n  // APERTURE_SCALE calibrates the f-stop: at f/2.8, a subject at twice the focus distance\n  // lands on half the maximum bokeh radius.\n  var APERTURE_SCALE = 2.8;\n\n  function computeCircleOfConfusion(z, zFocus, fStop, maxRadiusPx) {\n    if (z <= 0.001 || zFocus <= 0.001) return 0.0;\n    var zf = Math.max(0.001, zFocus);\n    var n = Math.max(0.5, fStop || 2.8);\n    var defocus = Math.abs(z - zf) / Math.max(0.001, z);\n    return saturate(defocus * (APERTURE_SCALE / n)) * (maxRadiusPx || 12.0);\n  }\n\n  // GTAO inner arc integral (Jimenez et al. 2016, eq. 7). theta1/theta2 are the horizon\n  // angles measured from the view vector, gamma the projected-normal angle.\n  function computeGTAOVisibility(theta1, theta2, gamma) {\n    var sinG = Math.sin(gamma);\n    var cosG = Math.cos(gamma);\n    var v1 = -Math.cos(2.0 * theta1 - gamma) + cosG + 2.0 * theta1 * sinG;\n    var v2 = -Math.cos(2.0 * theta2 - gamma) + cosG + 2.0 * theta2 * sinG;\n    return 0.25 * (v1 + v2);\n  }\n\n  // Polynomial multi-bounce fit. Always brightens (result >= visibility), which is the\n  // whole point: crevices on bright albedo should not go black.\n  function computeGTAOMultiBounce(visibility, albedo) {\n    var x = saturate(visibility);\n    var alb = saturate(albedo);\n    var a = 2.0404 * alb - 0.3324;\n    var b = -4.7951 * alb + 0.6417;\n    var c = 2.7552 * alb + 0.6903;\n    return clamp(x * (a * x * x + b * x + c), x, 1.0);\n  }\n\n  function karisLumaWeight(r, g, b) {\n    var luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;\n    return 1.0 / (1.0 + luma);\n  }\n\n  /* ------------------------------------------------------------- Shaders Source */\n\n  var commonVertexShader = [\n    'varying vec2 vUv;',\n    'void main() {',\n    '  vUv = uv;',\n    '  gl_Position = vec4(position.xy, 0.0, 1.0);',\n    '}'\n  ].join('\\n');\n\n  // Shared depth utilities. Every depth-reading pass needs the camera planes: a raw depth\n  // comparison against 0.999 is meaningless when near=0.1/far=2000 puts the whole scene\n  // above 0.999 anyway.\n  var DEPTH_UTILS = [\n    'uniform float uNear;',\n    'uniform float uFar;',\n    'uniform int uIsOrtho;',\n    '',\n    'float rawToLinear(float rawDepth) {',\n    '  if (uIsOrtho == 1) return uNear + rawDepth * (uFar - uNear);',\n    '  float zNdc = rawDepth * 2.0 - 1.0;',\n    '  return (2.0 * uNear * uFar) / (uFar + uNear - zNdc * (uFar - uNear));',\n    '}',\n    '',\n    'bool isSky(float linearZ) {',\n    '  return linearZ >= uFar * 0.995;',\n    '}',\n    ''\n  ].join('\\n');\n\n  var VIEW_POS_UTILS = [\n    'uniform mat4 uInverseProjectionMatrix;',\n    '',\n    'vec3 getViewPosition(vec2 uv, float rawDepth) {',\n    '  vec2 ndc = uv * 2.0 - 1.0;',\n    '  float zNdc = rawDepth * 2.0 - 1.0;',\n    '  vec4 clip = vec4(ndc, zNdc, 1.0);',\n    '  vec4 view = uInverseProjectionMatrix * clip;',\n    '  float w = abs(view.w) < 0.00001 ? 0.00001 : view.w;',\n    '  return view.xyz / w;',\n    '}',\n    ''\n  ].join('\\n');\n\n  // Depth-derived normals. There is no G-buffer to read real normals from, so the best\n  // available option is a best-of-four-neighbours reconstruction: it picks the closer\n  // neighbour on each axis so silhouettes do not smear across depth discontinuities.\n  var NORMAL_UTILS = [\n    'vec3 reconstructNormal(vec2 uv, float rawDepth, vec3 pC, vec2 texel) {',\n    '  float zR = texture2D(tDepth, uv + vec2(texel.x, 0.0)).r;',\n    '  float zL = texture2D(tDepth, uv - vec2(texel.x, 0.0)).r;',\n    '  float zT = texture2D(tDepth, uv + vec2(0.0, texel.y)).r;',\n    '  float zB = texture2D(tDepth, uv - vec2(0.0, texel.y)).r;',\n    '',\n    '  vec3 pR = getViewPosition(uv + vec2(texel.x, 0.0), zR);',\n    '  vec3 pL = getViewPosition(uv - vec2(texel.x, 0.0), zL);',\n    '  vec3 pT = getViewPosition(uv + vec2(0.0, texel.y), zT);',\n    '  vec3 pB = getViewPosition(uv - vec2(0.0, texel.y), zB);',\n    '',\n    '  vec3 dX = (abs(zR - rawDepth) < abs(zL - rawDepth)) ? (pR - pC) : (pC - pL);',\n    '  vec3 dY = (abs(zT - rawDepth) < abs(zB - rawDepth)) ? (pT - pC) : (pC - pB);',\n    '  vec3 n = cross(dX, dY);',\n    '  if (length(n) < 0.0001) return vec3(0.0, 0.0, 1.0);',\n    '  n = normalize(n);',\n    '  if (dot(n, -pC) < 0.0) n = -n;',\n    '  return n;',\n    '}',\n    ''\n  ].join('\\n');\n\n  // 1. GTAO — slice-based horizon search with the Jimenez arc integral.\n  var gtaoFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tDepth;',\n    'uniform vec2 uResolution;',\n    'uniform float uRadius;',\n    'uniform float uIntensity;',\n    'uniform float uProjScale;',\n    '',\n    DEPTH_UTILS,\n    VIEW_POS_UTILS,\n    NORMAL_UTILS,\n    '',\n    '#define PI 3.14159265359',\n    '#define HALF_PI 1.57079632679',\n    '#define NUM_SLICES 4',\n    '#define NUM_STEPS 6',\n    '',\n    'void main() {',\n    '  float rawDepth = texture2D(tDepth, vUv).r;',\n    '  float linZ = rawToLinear(rawDepth);',\n    '  if (isSky(linZ) || uIntensity <= 0.0) {',\n    '    gl_FragColor = vec4(1.0);',\n    '    return;',\n    '  }',\n    '',\n    '  vec2 texel = 1.0 / uResolution;',\n    '  vec3 P = getViewPosition(vUv, rawDepth);',\n    '  vec3 N = reconstructNormal(vUv, rawDepth, P, texel);',\n    '  vec3 V = normalize(-P);',\n    '',\n    '  // World radius -> screen radius in pixels at this depth.',\n    '  float radiusPixels = (uIsOrtho == 1)',\n    '    ? uRadius * uProjScale * 0.5 * uResolution.y',\n    '    : uRadius * uProjScale * 0.5 * uResolution.y / max(0.0001, linZ);',\n    '  radiusPixels = clamp(radiusPixels, 2.0, 128.0);',\n    '',\n    '  // Per-pixel slice rotation breaks up the 4-direction banding. Interleaved gradient',\n    '  // noise rather than a sin hash: it has a far better spatial distribution and does not',\n    '  // collapse into visible bands at mediump precision on mobile GPUs.',\n    '  vec2 pixel = vUv * uResolution;',\n    '  float noise = fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));',\n    '',\n    '  float visibility = 0.0;',\n    '',\n    '  for (int s = 0; s < NUM_SLICES; s++) {',\n    '    float phi = (float(s) + noise) * (PI / float(NUM_SLICES));',\n    '    vec3 sliceDir = vec3(cos(phi), sin(phi), 0.0);',\n    '',\n    '    vec3 planeN = cross(sliceDir, V);',\n    '    float planeLen = length(planeN);',\n    '    if (planeLen < 0.00001) continue;',\n    '    planeN /= planeLen;',\n    '',\n    '    vec3 tangent = cross(V, planeN);',\n    '',\n    '    vec3 projN = N - planeN * dot(N, planeN);',\n    '    float projLen = length(projN);',\n    '    if (projLen < 0.0001) continue;',\n    '    vec3 pn = projN / projLen;',\n    '',\n    '    float gamma = atan(dot(pn, tangent), dot(pn, V));',\n    '',\n    '    float h1 = HALF_PI;   // horizon on the +tangent side',\n    '    float h2 = -HALF_PI;  // horizon on the -tangent side',\n    '',\n    '    for (int t = 1; t <= NUM_STEPS; t++) {',\n    '      float stepPx = (float(t) / float(NUM_STEPS)) * radiusPixels;',\n    '      vec2 offset = sliceDir.xy * stepPx * texel;',\n    '',\n    '      vec2 uvP = vUv + offset;',\n    '      if (uvP.x > 0.0 && uvP.x < 1.0 && uvP.y > 0.0 && uvP.y < 1.0) {',\n    '        float rdP = texture2D(tDepth, uvP).r;',\n    '        if (!isSky(rawToLinear(rdP))) {',\n    '          vec3 d = getViewPosition(uvP, rdP) - P;',\n    '          float dl = length(d);',\n    '          float aT = dot(d, tangent);',\n    '          float aV = dot(d, V);',\n    '          if (dl > 0.0001 && (abs(aT) + abs(aV)) > 0.000001) {',\n    '            float a = atan(aT, aV);',\n    '            float fall = clamp(1.0 - dl / max(0.0001, uRadius), 0.0, 1.0);',\n    '            h1 = min(h1, mix(HALF_PI, a, fall));',\n    '          }',\n    '        }',\n    '      }',\n    '',\n    '      vec2 uvN = vUv - offset;',\n    '      if (uvN.x > 0.0 && uvN.x < 1.0 && uvN.y > 0.0 && uvN.y < 1.0) {',\n    '        float rdN = texture2D(tDepth, uvN).r;',\n    '        if (!isSky(rawToLinear(rdN))) {',\n    '          vec3 d = getViewPosition(uvN, rdN) - P;',\n    '          float dl = length(d);',\n    '          float aT = dot(d, tangent);',\n    '          float aV = dot(d, V);',\n    '          if (dl > 0.0001 && (abs(aT) + abs(aV)) > 0.000001) {',\n    '            float a = atan(aT, aV);',\n    '            float fall = clamp(1.0 - dl / max(0.0001, uRadius), 0.0, 1.0);',\n    '            h2 = max(h2, mix(-HALF_PI, a, fall));',\n    '          }',\n    '        }',\n    '      }',\n    '    }',\n    '',\n    '    // Clamp the visible arc to the normal-oriented hemisphere.',\n    '    float t1 = gamma + min(h1 - gamma, HALF_PI);',\n    '    float t2 = gamma + max(h2 - gamma, -HALF_PI);',\n    '',\n    '    float sinG = sin(gamma);',\n    '    float cosG = cos(gamma);',\n    '    float arc = 0.25 * (-cos(2.0 * t1 - gamma) + cosG + 2.0 * t1 * sinG)',\n    '              + 0.25 * (-cos(2.0 * t2 - gamma) + cosG + 2.0 * t2 * sinG);',\n    '',\n    '    visibility += projLen * arc;',\n    '  }',\n    '',\n    '  float ao = clamp(visibility / float(NUM_SLICES), 0.0, 1.0);',\n    '  ao = pow(ao, max(0.1, uIntensity));',\n    '  gl_FragColor = vec4(ao, ao, ao, 1.0);',\n    '}'\n  ].join('\\n');\n\n  // 2. Separable bilateral blur for the AO buffer. Run twice (H then V) — a single axis\n  // leaves visible streaking. Depth weighting is relative to the centre depth so it works\n  // at any scene scale.\n  var bilateralBlurFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tAO;',\n    'uniform sampler2D tDepth;',\n    'uniform vec2 uResolution;',\n    'uniform vec2 uDirection;',\n    '',\n    DEPTH_UTILS,\n    '',\n    'void main() {',\n    '  vec2 texel = 1.0 / uResolution;',\n    '  float centerAO = texture2D(tAO, vUv).r;',\n    '  float centerZ = rawToLinear(texture2D(tDepth, vUv).r);',\n    '',\n    '  // Edge-stopping tolerance scales with depth: a 5% depth change is an edge whether',\n    '  // the surface is 10 units away or 1000.',\n    '  float tolerance = max(0.01, centerZ * 0.05);',\n    '',\n    '  float sum = centerAO;',\n    '  float totalWeight = 1.0;',\n    '',\n    '  for (int i = 1; i <= 3; i++) {',\n    '    float weight = (i == 1) ? 0.28 : ((i == 2) ? 0.14 : 0.05);',\n    '    vec2 offset = uDirection * (float(i) * texel);',\n    '',\n    '    vec2 uvP = vUv + offset;',\n    '    float zP = rawToLinear(texture2D(tDepth, uvP).r);',\n    '    float wP = weight * max(0.0, 1.0 - abs(zP - centerZ) / tolerance);',\n    '    sum += texture2D(tAO, uvP).r * wP;',\n    '    totalWeight += wP;',\n    '',\n    '    vec2 uvN = vUv - offset;',\n    '    float zN = rawToLinear(texture2D(tDepth, uvN).r);',\n    '    float wN = weight * max(0.0, 1.0 - abs(zN - centerZ) / tolerance);',\n    '    sum += texture2D(tAO, uvN).r * wN;',\n    '    totalWeight += wN;',\n    '  }',\n    '',\n    '  float finalAO = sum / max(0.001, totalWeight);',\n    '  gl_FragColor = vec4(finalAO, finalAO, finalAO, 1.0);',\n    '}'\n  ].join('\\n');\n\n  // 3. SSR — DDA raymarch, binary refinement, Fresnel + distance + edge fade.\n  var ssrFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tColor;',\n    'uniform sampler2D tDepth;',\n    'uniform sampler2D tReflectivity;',\n    'uniform vec2 uResolution;',\n    'uniform mat4 uProjectionMatrix;',\n    'uniform int uUseReflectivityMask;',\n    'uniform float uIntensity;',\n    'uniform float uMaxDistance;',\n    'uniform float uFresnel;',\n    'uniform int uMaxSteps;',\n    '',\n    DEPTH_UTILS,\n    VIEW_POS_UTILS,\n    NORMAL_UTILS,\n    '',\n    'vec2 projectViewToUV(vec3 viewPos) {',\n    '  vec4 clip = uProjectionMatrix * vec4(viewPos, 1.0);',\n    '  vec3 ndc = clip.xyz / max(0.00001, clip.w);',\n    '  return ndc.xy * 0.5 + 0.5;',\n    '}',\n    '',\n    'void main() {',\n    '  float rawDepth = texture2D(tDepth, vUv).r;',\n    '  float linZ = rawToLinear(rawDepth);',\n    '  if (isSky(linZ) || uIntensity <= 0.0) {',\n    '    gl_FragColor = vec4(0.0);',\n    '    return;',\n    '  }',\n    '',\n    '  // How reflective is this surface? Without this the raymarch mirrors the world onto',\n    '  // every rough dielectric in the scene — floors, terrain, walls.',\n    '  float reflectivity = 1.0;',\n    '  if (uUseReflectivityMask == 1) {',\n    '    reflectivity = texture2D(tReflectivity, vUv).r;',\n    '    if (reflectivity < 0.01) {',\n    '      gl_FragColor = vec4(0.0);',\n    '      return;',\n    '    }',\n    '  }',\n    '',\n    '  vec2 texel = 1.0 / uResolution;',\n    '  vec3 P = getViewPosition(vUv, rawDepth);',\n    '  vec3 N = reconstructNormal(vUv, rawDepth, P, texel);',\n    '  vec3 V = normalize(P);',\n    '  vec3 R = normalize(reflect(V, N));',\n    '',\n    '  if (R.z > 0.0) {',\n    '    gl_FragColor = vec4(0.0);',\n    '    return;',\n    '  }',\n    '',\n    '  int steps = clamp(uMaxSteps, 8, 64);',\n    '',\n    '  // Ray length and surface thickness both scale with view depth, so the same settings',\n    '  // work for a 20-unit prop and a 2000-unit vista.',\n    '  float rayLen = min(uMaxDistance, max(1.0, linZ * 2.0));',\n    '  float thickness = max(0.5, linZ * 0.02);',\n    '',\n    '  vec3 startPos = P + N * max(0.05, linZ * 0.002);',\n    '  vec3 endPos = P + R * rayLen;',\n    '',\n    '  vec2 startUV = projectViewToUV(startPos);',\n    '  vec2 endUV = projectViewToUV(endPos);',\n    '',\n    '  vec2 rayStepUV = (endUV - startUV) / float(steps);',\n    '  vec3 rayStepView = (endPos - startPos) / float(steps);',\n    '',\n    '  vec2 currentUV = startUV;',\n    '  vec3 currentView = startPos;',\n    '  bool hit = false;',\n    '  vec2 hitUV = vec2(0.0);',\n    '  float travelled = 0.0;',\n    '',\n    '  for (int i = 0; i < 64; i++) {',\n    '    if (i >= steps) break;',\n    '    currentUV += rayStepUV;',\n    '    currentView += rayStepView;',\n    '    travelled = float(i + 1) / float(steps);',\n    '',\n    '    if (currentUV.x < 0.001 || currentUV.x > 0.999 || currentUV.y < 0.001 || currentUV.y > 0.999) break;',\n    '',\n    '    float sampleRaw = texture2D(tDepth, currentUV).r;',\n    '    if (isSky(rawToLinear(sampleRaw))) continue;',\n    '',\n    '    vec3 sampleView = getViewPosition(currentUV, sampleRaw);',\n    '    float deltaZ = currentView.z - sampleView.z;',\n    '',\n    '    if (deltaZ < 0.0 && deltaZ > -thickness) {',\n    '      vec2 rUV = currentUV;',\n    '      vec3 rView = currentView;',\n    '      vec2 hUV = rayStepUV * 0.5;',\n    '      vec3 hView = rayStepView * 0.5;',\n    '',\n    '      for (int b = 0; b < 4; b++) {',\n    '        hUV *= 0.5;',\n    '        hView *= 0.5;',\n    '        vec3 bPos = getViewPosition(rUV, texture2D(tDepth, rUV).r);',\n    '        if (rView.z < bPos.z) {',\n    '          rUV -= hUV;',\n    '          rView -= hView;',\n    '        } else {',\n    '          rUV += hUV;',\n    '          rView += hView;',\n    '        }',\n    '      }',\n    '',\n    '      hit = true;',\n    '      hitUV = rUV;',\n    '      break;',\n    '    }',\n    '  }',\n    '',\n    '  if (!hit) {',\n    '    gl_FragColor = vec4(0.0);',\n    '    return;',\n    '  }',\n    '',\n    '  vec2 edgeDist = abs(hitUV - 0.5) * 2.0;',\n    '  float edgeFade = smoothstep(0.0, 0.25, clamp(1.0 - max(edgeDist.x, edgeDist.y), 0.0, 1.0));',\n    '',\n    '  // Reflections weaken with ray length and strengthen at grazing angles.',\n    '  float distFade = 1.0 - clamp(travelled, 0.0, 1.0) * 0.75;',\n    '  float ndv = clamp(dot(N, -V), 0.0, 1.0);',\n    '  float schlick = pow(1.0 - ndv, 5.0);',\n    '  float fresnel = mix(1.0, schlick, clamp(uFresnel, 0.0, 1.0));',\n    '',\n    '  vec4 reflectedColor = texture2D(tColor, hitUV);',\n    '  float alpha = clamp(uIntensity * edgeFade * distFade * fresnel * reflectivity, 0.0, 1.0);',\n    '',\n    '  gl_FragColor = vec4(reflectedColor.rgb, alpha);',\n    '}'\n  ].join('\\n');\n\n  // 4. 13-Tap Karis downsample. The centre tap belongs in all four corner boxes; leaving\n  // it out (and substituting the inner diagonals) skews the kernel and wastes a fetch.\n  var karisDownsampleFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tDiffuse;',\n    'uniform vec2 uTexelSize;',\n    'uniform float uThreshold;',\n    'uniform int uIsFirstMip;',\n    '',\n    'float luma(vec3 c) {',\n    '  return dot(c, vec3(0.2126, 0.7152, 0.0722));',\n    '}',\n    '',\n    'vec3 karisBox(vec3 c1, vec3 c2, vec3 c3, vec3 c4) {',\n    '  if (uIsFirstMip == 1) {',\n    '    float w1 = 1.0 / (1.0 + luma(c1));',\n    '    float w2 = 1.0 / (1.0 + luma(c2));',\n    '    float w3 = 1.0 / (1.0 + luma(c3));',\n    '    float w4 = 1.0 / (1.0 + luma(c4));',\n    '    return (c1 * w1 + c2 * w2 + c3 * w3 + c4 * w4) / max(0.001, w1 + w2 + w3 + w4);',\n    '  }',\n    '  return (c1 + c2 + c3 + c4) * 0.25;',\n    '}',\n    '',\n    'void main() {',\n    '  vec2 x = vec2(uTexelSize.x, 0.0);',\n    '  vec2 y = vec2(0.0, uTexelSize.y);',\n    '',\n    '  vec3 a = texture2D(tDiffuse, vUv - x - y).rgb;',\n    '  vec3 b = texture2D(tDiffuse, vUv + x - y).rgb;',\n    '  vec3 c = texture2D(tDiffuse, vUv).rgb;',\n    '  vec3 d = texture2D(tDiffuse, vUv - 2.0 * x - 2.0 * y).rgb;',\n    '  vec3 e = texture2D(tDiffuse, vUv - 2.0 * y).rgb;',\n    '  vec3 f = texture2D(tDiffuse, vUv + 2.0 * x - 2.0 * y).rgb;',\n    '  vec3 g = texture2D(tDiffuse, vUv - 2.0 * x).rgb;',\n    '  vec3 h = texture2D(tDiffuse, vUv + 2.0 * x).rgb;',\n    '  vec3 i = texture2D(tDiffuse, vUv - x + y).rgb;',\n    '  vec3 j = texture2D(tDiffuse, vUv + x + y).rgb;',\n    '  vec3 k = texture2D(tDiffuse, vUv - 2.0 * x + 2.0 * y).rgb;',\n    '  vec3 l = texture2D(tDiffuse, vUv + 2.0 * y).rgb;',\n    '  vec3 m = texture2D(tDiffuse, vUv + 2.0 * x + 2.0 * y).rgb;',\n    '',\n    '  vec3 box1 = karisBox(a, b, i, j);',\n    '  vec3 box2 = karisBox(d, e, g, c);',\n    '  vec3 box3 = karisBox(e, f, c, h);',\n    '  vec3 box4 = karisBox(g, c, k, l);',\n    '  vec3 box5 = karisBox(c, h, l, m);',\n    '',\n    '  vec3 downsample = box1 * 0.5 + (box2 + box3 + box4 + box5) * 0.125;',\n    '',\n    '  if (uIsFirstMip == 1) {',\n    '    float brightness = max(downsample.r, max(downsample.g, downsample.b));',\n    '    float soft = brightness - uThreshold;',\n    '    if (soft < 0.0) downsample = vec3(0.0);',\n    '    else downsample *= max(0.0, soft / max(0.001, brightness));',\n    '  }',\n    '',\n    '  gl_FragColor = vec4(downsample, 1.0);',\n    '}'\n  ].join('\\n');\n\n  // 5. 9-tap tent upsample WITH additive mip recombination. Without the tAdd term the\n  // pyramid collapses to the smallest mip blurred N times and all mid-frequency glow is lost.\n  var tentUpsampleFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tDiffuse;',\n    'uniform sampler2D tAdd;',\n    'uniform vec2 uTexelSize;',\n    'uniform float uBloomRadius;',\n    'uniform int uHasAdd;',\n    '',\n    'void main() {',\n    '  float r = uBloomRadius;',\n    '  vec2 x = vec2(uTexelSize.x * r, 0.0);',\n    '  vec2 y = vec2(0.0, uTexelSize.y * r);',\n    '',\n    '  vec3 c = texture2D(tDiffuse, vUv).rgb * 4.0;',\n    '  c += (texture2D(tDiffuse, vUv - x).rgb + texture2D(tDiffuse, vUv + x).rgb +',\n    '        texture2D(tDiffuse, vUv - y).rgb + texture2D(tDiffuse, vUv + y).rgb) * 2.0;',\n    '  c += texture2D(tDiffuse, vUv - x - y).rgb + texture2D(tDiffuse, vUv + x - y).rgb +',\n    '       texture2D(tDiffuse, vUv - x + y).rgb + texture2D(tDiffuse, vUv + x + y).rgb;',\n    '',\n    '  vec3 result = c * (1.0 / 16.0);',\n    '  if (uHasAdd == 1) result += texture2D(tAdd, vUv).rgb;',\n    '',\n    '  gl_FragColor = vec4(result, 1.0);',\n    '}'\n  ].join('\\n');\n\n  // 5b. SSR resolve: a roughness-widened blur over the reflection buffer. Rough surfaces\n  // scatter their reflection over a wider cone; a mirror barely scatters at all, so the\n  // radius floor is only wide enough to clean up the raymarch's ragged hit boundary.\n  var ssrBlurFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tSSR;',\n    'uniform sampler2D tReflectivity;',\n    'uniform vec2 uTexelSize;',\n    'uniform float uMaxRadius;',\n    'uniform int uUseReflectivityMask;',\n    '',\n    'void main() {',\n    '  vec4 center = texture2D(tSSR, vUv);',\n    '',\n    '  // Never grow a reflection outward onto a surface that produced none: without this the',\n    '  // blur smears reflections past the edge of the object they belong to.',\n    '  if (center.a < 0.001) {',\n    '    gl_FragColor = center;',\n    '    return;',\n    '  }',\n    '',\n    '  float roughness = (uUseReflectivityMask == 1) ? texture2D(tReflectivity, vUv).g : 0.0;',\n    '  float radius = mix(1.0, uMaxRadius, clamp(roughness, 0.0, 1.0));',\n    '',\n    '  vec4 acc = center;',\n    '  float total = 1.0;',\n    '  for (int i = 0; i < 8; i++) {',\n    '    float a = float(i) * 0.78539816;',\n    '    vec2 o = vec2(cos(a), sin(a)) * radius * uTexelSize;',\n    '    vec4 sample0 = texture2D(tSSR, vUv + o);',\n    '    float w = sample0.a > 0.001 ? 1.0 : 0.0;',\n    '    acc += sample0 * w;',\n    '    total += w;',\n    '  }',\n    '',\n    '  gl_FragColor = acc / max(1.0, total);',\n    '}'\n  ].join('\\n');\n\n  // 6. Bokeh DOF — dimensionless Circle of Confusion, 16 golden-angle spiral taps.\n  var bokehDOFFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tColor;',\n    'uniform sampler2D tDepth;',\n    'uniform vec2 uResolution;',\n    'uniform float uFocusDistance;',\n    'uniform float uApertureFStop;',\n    'uniform float uMaxBokehRadius;',\n    '',\n    DEPTH_UTILS,\n    '',\n    '// Dimensionless defocus, so the same settings hold at any world scale. A literal',\n    '// thin-lens CoC in world units scales with the focus distance and saturates every',\n    '// pixel on a scene that sits hundreds of units from the camera.',\n    '#define APERTURE_SCALE 2.8',\n    '',\n    'float computeCoC(float z) {',\n    '  if (z <= 0.001) return 0.0;',\n    '  float zf = max(0.001, uFocusDistance);',\n    '  float n = max(0.5, uApertureFStop);',\n    '  float defocus = abs(z - zf) / max(0.001, z);',\n    '  return clamp(defocus * (APERTURE_SCALE / n), 0.0, 1.0) * uMaxBokehRadius;',\n    '}',\n    '',\n    'void main() {',\n    '  float rawDepth = texture2D(tDepth, vUv).r;',\n    '  float centerZ = rawToLinear(rawDepth);',\n    '',\n    '  if (isSky(centerZ)) {',\n    '    // Distant background still defocuses; clamp it to the far-field CoC.',\n    '    centerZ = uFar;',\n    '  }',\n    '',\n    '  float centerCoC = computeCoC(centerZ);',\n    '  if (centerCoC < 0.5) {',\n    '    gl_FragColor = texture2D(tColor, vUv);',\n    '    return;',\n    '  }',\n    '',\n    '  vec2 texel = 1.0 / uResolution;',\n    '  vec4 accColor = vec4(0.0);',\n    '  float totalWeight = 0.0;',\n    '',\n    '  const int SAMPLES = 16;',\n    '  for (int i = 0; i < SAMPLES; i++) {',\n    '    float theta = float(i) * 2.39996323;',\n    '    float r = sqrt(float(i + 1) / float(SAMPLES)) * centerCoC;',\n    '    vec2 sampleUv = vUv + vec2(cos(theta), sin(theta)) * r * texel;',\n    '    sampleUv = clamp(sampleUv, vec2(0.0), vec2(1.0));',\n    '',\n    '    float sZ = rawToLinear(texture2D(tDepth, sampleUv).r);',\n    '    float sCoC = computeCoC(sZ);',\n    '',\n    '    // Foreground samples may only bleed outward as far as their own CoC allows,',\n    '    // which is what stops sharp objects smearing over blurry backgrounds.',\n    '    float w = 1.0;',\n    '    if (sZ < centerZ) {',\n    '      w = clamp(sCoC / max(0.001, centerCoC), 0.0, 1.0);',\n    '    }',\n    '',\n    '    accColor += texture2D(tColor, sampleUv) * w;',\n    '    totalWeight += w;',\n    '  }',\n    '',\n    '  gl_FragColor = accColor / max(0.001, totalWeight);',\n    '}'\n  ].join('\\n');\n\n\n  // Depth-aware upsample for the half (or quarter) resolution AO and reflection buffers.\n  // Plain bilinear bleeds them across depth discontinuities, which reads as a halo around\n  // every object. The four depth taps are computed once and shared by both buffers.\n  var HALF_RES_UPSAMPLE = [\n    'uniform vec2 uLowResTexel;',\n    '',\n    'vec2 gUV0; vec2 gUV1; vec2 gUV2; vec2 gUV3;',\n    'float gW0; float gW1; float gW2; float gW3; float gWSum;',\n    '',\n    'void computeUpsampleWeights(vec2 uv, float centerZ) {',\n    '  vec2 h = uLowResTexel * 0.5;',\n    '  gUV0 = uv + vec2(-h.x, -h.y);',\n    '  gUV1 = uv + vec2( h.x, -h.y);',\n    '  gUV2 = uv + vec2(-h.x,  h.y);',\n    '  gUV3 = uv + vec2( h.x,  h.y);',\n    '',\n    '  // Tolerance scales with depth so edge detection works at any scene scale.',\n    '  float tol = max(1.0, centerZ * 0.05);',\n    '  gW0 = max(0.0, 1.0 - abs(rawToLinear(texture2D(tDepth, gUV0).r) - centerZ) / tol);',\n    '  gW1 = max(0.0, 1.0 - abs(rawToLinear(texture2D(tDepth, gUV1).r) - centerZ) / tol);',\n    '  gW2 = max(0.0, 1.0 - abs(rawToLinear(texture2D(tDepth, gUV2).r) - centerZ) / tol);',\n    '  gW3 = max(0.0, 1.0 - abs(rawToLinear(texture2D(tDepth, gUV3).r) - centerZ) / tol);',\n    '  gWSum = gW0 + gW1 + gW2 + gW3;',\n    '}',\n    '',\n    'vec4 gatherLowRes(sampler2D tex, vec2 uv) {',\n    '  // Every neighbour rejected (an isolated sliver): fall back to bilinear rather than',\n    '  // punching a hole in the buffer.',\n    '  if (gWSum < 0.0001) return texture2D(tex, uv);',\n    '  return (texture2D(tex, gUV0) * gW0 + texture2D(tex, gUV1) * gW1 +',\n    '          texture2D(tex, gUV2) * gW2 + texture2D(tex, gUV3) * gW3) / gWSum;',\n    '}',\n    ''\n  ].join('\\n');\n\n  // Shared by the merge pass and the composite so the AO/SSR application lives in exactly\n  // one place. Requires HALF_RES_UPSAMPLE and the tGTAO/tSSR/uEnable* uniforms.\n  var AO_SSR_APPLY = [\n    '// Jimenez multi-bounce fit: always >= visibility, so coloured crevices keep bounce light.',\n    'vec3 gtaoMultiBounce(float visibility, vec3 albedo) {',\n    '  vec3 a = 2.0404 * albedo - 0.3324;',\n    '  vec3 b = -4.7951 * albedo + 0.6417;',\n    '  vec3 c = 2.7552 * albedo + 0.6903;',\n    '  float x = visibility;',\n    '  return clamp(x * (a * x * x + b * x + c), vec3(x), vec3(1.0));',\n    '}',\n    '',\n    'vec3 applyAOandSSR(vec3 rgb, vec2 uv, float centerZ) {',\n    '  if (uEnableGTAO == 0 && uEnableSSR == 0) return rgb;',\n    '  computeUpsampleWeights(uv, centerZ);',\n    '',\n    '  if (uEnableGTAO == 1) {',\n    '    float ao = gatherLowRes(tGTAO, uv).r;',\n    '    if (uMultiBounce == 1) {',\n    '      rgb *= gtaoMultiBounce(ao, clamp(rgb, 0.0, 1.0));',\n    '    } else {',\n    '      rgb *= ao;',\n    '    }',\n    '  }',\n    '',\n    '  if (uEnableSSR == 1) {',\n    '    vec4 ssr = gatherLowRes(tSSR, uv);',\n    '    rgb = mix(rgb, ssr.rgb, ssr.a);',\n    '  }',\n    '',\n    '  return rgb;',\n    '}',\n    ''\n  ].join('\\n');\n\n  var AO_SSR_UNIFORMS = [\n    'uniform sampler2D tGTAO;',\n    'uniform sampler2D tSSR;',\n    'uniform int uEnableGTAO;',\n    'uniform int uEnableSSR;',\n    'uniform int uMultiBounce;',\n    ''\n  ].join('\\n');\n\n  // 6b. AO/SSR merge. Applied before Depth of Field so reflections and contact shadows\n  // defocus along with the surface they sit on, instead of staying razor sharp on a\n  // blurred background. Only runs when DOF is active alongside AO or SSR.\n  var mergeFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tColor;',\n    'uniform sampler2D tDepth;',\n    AO_SSR_UNIFORMS,\n    DEPTH_UTILS,\n    HALF_RES_UPSAMPLE,\n    AO_SSR_APPLY,\n    '',\n    'void main() {',\n    '  vec4 c = texture2D(tColor, vUv);',\n    '  float z = rawToLinear(texture2D(tDepth, vUv).r);',\n    '  gl_FragColor = vec4(applyAOandSSR(c.rgb, vUv, z), c.a);',\n    '}'\n  ].join('\\n');\n\n  // 6c. Anamorphic streak. A wide horizontal-only blur of the bloom buffer: the look comes\n  // from a lens whose aperture is far wider than it is tall, so highlights smear sideways\n  // and nowhere else. The old two-tap version was a lateral smear, not a streak.\n  var anamorphicStreakFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tDiffuse;',\n    'uniform vec2 uTexelSize;',\n    'uniform float uStride;',\n    '',\n    'void main() {',\n    '  vec3 acc = texture2D(tDiffuse, vUv).rgb * 0.2;',\n    '  float total = 0.2;',\n    '  for (int i = 1; i <= 6; i++) {',\n    '    float o = float(i) * uTexelSize.x * uStride;',\n    '    float k = 0.2 * (1.0 - float(i) / 7.0);',\n    '    acc += (texture2D(tDiffuse, vUv + vec2(o, 0.0)).rgb',\n    '          + texture2D(tDiffuse, vUv - vec2(o, 0.0)).rgb) * k;',\n    '    total += 2.0 * k;',\n    '  }',\n    '  gl_FragColor = vec4(acc / max(0.001, total), 1.0);',\n    '}'\n  ].join('\\n');\n\n  // 7. Master composite: AO (with multi-bounce), SSR, bloom, anamorphic streaks,\n  // motion blur, chromatic aberration, tone mapping.\n  var masterCompositeFragmentShader = [\n    'precision highp float;',\n    'varying vec2 vUv;',\n    '',\n    'uniform sampler2D tColor;',\n    'uniform sampler2D tBloom;',\n    'uniform sampler2D tStreak;',\n    'uniform sampler2D tDepth;',\n    AO_SSR_UNIFORMS,\n    'uniform float uMasterIntensity;',\n    'uniform int uToneMappingMode;',\n    'uniform float uBloomIntensity;',\n    'uniform float uAnamorphicFlares;',\n    'uniform vec3 uFlareTintColor;',\n    'uniform float uChromaticAberration;',\n    'uniform float uMotionBlurStrength;',\n    'uniform int uEnableBloom;',\n    'uniform int uEnableMotionBlur;',\n    'uniform mat4 uCurrentViewProjectionInverse;',\n    'uniform mat4 uPreviousViewProjection;',\n    '',\n    DEPTH_UTILS,\n    HALF_RES_UPSAMPLE,\n    AO_SSR_APPLY,\n    '',\n    'vec3 acesFilmic(vec3 x) {',\n    '  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);',\n    '}',\n    '',\n    'vec3 reinhard(vec3 x) {',\n    '  return x / (1.0 + x);',\n    '}',\n    '',\n    'vec3 cineon(vec3 x) {',\n    '  x = max(vec3(0.0), x - 0.004);',\n    '  return clamp((x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06), 0.0, 1.0);',\n    '}',\n    '',\n    'void main() {',\n    '  vec2 center = vec2(0.5);',\n    '  vec2 toCenter = vUv - center;',\n    '',\n    '  vec4 baseColor;',\n    '  if (uChromaticAberration > 0.0001) {',\n    '    vec2 uvR = vUv - toCenter * uChromaticAberration;',\n    '    vec2 uvB = vUv + toCenter * uChromaticAberration;',\n    '    vec4 mid = texture2D(tColor, vUv);',\n    '    baseColor = vec4(texture2D(tColor, uvR).r, mid.g, texture2D(tColor, uvB).b, mid.a);',\n    '  } else {',\n    '    baseColor = texture2D(tColor, vUv);',\n    '  }',\n    '',\n    '  vec3 finalRGB = baseColor.rgb;',\n    '',\n    '  // When Depth of Field is active these were already merged in before the defocus,',\n    '  // and the enable flags are zero here, so this is a no-op on that path.',\n    '  if (uEnableGTAO == 1 || uEnableSSR == 1) {',\n    '    finalRGB = applyAOandSSR(finalRGB, vUv, rawToLinear(texture2D(tDepth, vUv).r));',\n    '  }',\n    '',\n    '  if (uEnableBloom == 1 && uBloomIntensity > 0.0) {',\n    '    vec3 bloom = texture2D(tBloom, vUv).rgb * uBloomIntensity;',\n    '    if (uAnamorphicFlares > 0.0) {',\n    '      bloom += texture2D(tStreak, vUv).rgb * uAnamorphicFlares * uFlareTintColor;',\n    '    }',\n    '    finalRGB += bloom;',\n    '  }',\n    '',\n    '  if (uEnableMotionBlur == 1 && uMotionBlurStrength > 0.001) {',\n    '    float rawDepth = texture2D(tDepth, vUv).r;',\n    '    if (!isSky(rawToLinear(rawDepth))) {',\n    '      vec2 ndc = vUv * 2.0 - 1.0;',\n    '      float zNdc = rawDepth * 2.0 - 1.0;',\n    '      vec4 currentClip = vec4(ndc, zNdc, 1.0);',\n    '      vec4 worldPos = uCurrentViewProjectionInverse * currentClip;',\n    '      float wpW = abs(worldPos.w) < 0.0001 ? 0.0001 : worldPos.w;',\n    '      worldPos /= wpW;',\n    '',\n    '      vec4 prevClip = uPreviousViewProjection * vec4(worldPos.xyz, 1.0);',\n    '      float pcW = abs(prevClip.w) < 0.0001 ? 0.0001 : prevClip.w;',\n    '      prevClip /= pcW;',\n    '',\n    '      vec2 velocity = (currentClip.xy - prevClip.xy) * 0.5 * uMotionBlurStrength;',\n    '      float velLen = length(velocity);',\n    '      if (velLen > 0.0005 && velLen < 0.1) {',\n    '        vec3 blurAccum = finalRGB;',\n    '        const int MOTION_STEPS = 6;',\n    '        for (int m = 1; m < MOTION_STEPS; m++) {',\n    '          vec2 sampleCoord = clamp(vUv + velocity * (float(m) / float(MOTION_STEPS)), vec2(0.0), vec2(1.0));',\n    '          blurAccum += texture2D(tColor, sampleCoord).rgb;',\n    '        }',\n    '        finalRGB = blurAccum / float(MOTION_STEPS);',\n    '      }',\n    '    }',\n    '  }',\n    '',\n    '  vec3 toneMappedRGB = finalRGB;',\n    '  if (uToneMappingMode == 0) {',\n    '    toneMappedRGB = acesFilmic(finalRGB);',\n    '  } else if (uToneMappingMode == 1) {',\n    '    toneMappedRGB = reinhard(finalRGB);',\n    '  } else if (uToneMappingMode == 2) {',\n    '    toneMappedRGB = cineon(finalRGB);',\n    '  }',\n    '',\n    '  // MasterIntensity crossfades between the untouched scene colour and the graded result,',\n    '  // so 0.0 really is a bypass.',\n    '  vec3 outRGB = mix(baseColor.rgb, toneMappedRGB, clamp(uMasterIntensity, 0.0, 2.0));',\n    '  gl_FragColor = vec4(outRGB, baseColor.a);',\n    '}'\n  ].join('\\n');\n\n  /* ------------------------------------------------------------- Pipeline Compositor Class */\n\n  var BLOOM_MIPS = 5;\n\n  class PostProcessorPipeline {\n    constructor(renderer) {\n      this.renderer = renderer;\n      this._w = 0;\n      this._h = 0;\n      this._runtimeScene = null;\n      this.targetLayerRenderer = null;\n      this.activeBehavior = null;\n      this.customPass = null;\n      this.depthAttached = false;\n      this._loggedDiagnostics = false;\n\n      this.settings = Object.assign({}, DEFAULT_SETTINGS);\n\n      // Autofocus state\n      this.autofocusHitDistance = 0.0;\n      this.autofocusTracking = false;\n      this.activeFocusDistance = DEFAULT_SETTINGS.manualFocusDistance;\n      this._raycaster = null;\n      this._rayOrigin = null;\n      this._autofocusFrame = 0;\n\n      // Matrices\n      this.prevViewProjMatrix = null;\n      this.currViewProjMatrix = null;\n      this.invViewProjMatrix = null;\n      this._hasPrevMatrix = false;\n      this._sizeVec = null;\n\n      // Targets\n      this.gtaoTarget = null;\n      this.gtaoBlurTarget = null;\n      this.ssrTarget = null;\n      this.ssrBlurTarget = null;\n      this.ssrMaskTarget = null;\n      this.mergeTarget = null;\n      this.streakTarget = null;\n      this._quality = 0;\n      // WeakMap so a mask material never keeps the source material (and everything it\n      // references) alive after the object owning it is gone. The parallel array holds only\n      // our own materials, which is what dispose() needs to walk.\n      this._maskMaterials = null;\n      this._maskMaterialList = [];\n      this._maskSwap = [];\n      this.dofTarget = null;\n      this.bloomDownTargets = [];\n      this.bloomUpTargets = [];\n\n      // Quad & Materials\n      this._scene = null;\n      this._camera = null;\n      this._quad = null;\n      this._bgColor = null;\n\n      this.gtaoMaterial = null;\n      this.bilateralBlurMaterial = null;\n      this.ssrMaterial = null;\n      this.karisDownsampleMaterial = null;\n      this.tentUpsampleMaterial = null;\n      this.dofMaterial = null;\n      this.ssrBlurMaterial = null;\n      this.mergeMaterial = null;\n      this.anamorphicStreakMaterial = null;\n      this.compositeMaterial = null;\n\n      if (THREE_OK) {\n        this._initPipeline();\n      }\n\n      if (renderer) {\n        renderer.__cinematicPostProcessor = this;\n      }\n    }\n\n    _initPipeline() {\n      this._scene = new THREE.Scene();\n      this._camera = new THREE.Camera();\n      this._camera.position.z = 1;\n\n      this.prevViewProjMatrix = new THREE.Matrix4();\n      this.currViewProjMatrix = new THREE.Matrix4();\n      this.invViewProjMatrix = new THREE.Matrix4();\n      this._invProj = new THREE.Matrix4();\n      this._sizeVec = new THREE.Vector2();\n      this._rayOrigin = new THREE.Vector2(0, 0);\n\n      var depthUniforms = function () {\n        return {\n          uNear: { value: 0.1 },\n          uFar: { value: 2000.0 },\n          uIsOrtho: { value: 0 }\n        };\n      };\n\n      this.gtaoMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: gtaoFragmentShader,\n        uniforms: Object.assign({\n          tDepth: { value: null },\n          uResolution: { value: new THREE.Vector2(1, 1) },\n          uInverseProjectionMatrix: { value: new THREE.Matrix4() },\n          uRadius: { value: 50.0 },\n          uIntensity: { value: 1.0 },\n          uProjScale: { value: 2.414 }\n        }, depthUniforms()),\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.bilateralBlurMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: bilateralBlurFragmentShader,\n        uniforms: Object.assign({\n          tAO: { value: null },\n          tDepth: { value: null },\n          uResolution: { value: new THREE.Vector2(1, 1) },\n          uDirection: { value: new THREE.Vector2(1, 0) }\n        }, depthUniforms()),\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.ssrMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: ssrFragmentShader,\n        uniforms: Object.assign({\n          tColor: { value: null },\n          tDepth: { value: null },\n          tReflectivity: { value: null },\n          uResolution: { value: new THREE.Vector2(1, 1) },\n          uProjectionMatrix: { value: new THREE.Matrix4() },\n          uInverseProjectionMatrix: { value: new THREE.Matrix4() },\n          uUseReflectivityMask: { value: 1 },\n          uIntensity: { value: 0.6 },\n          uMaxDistance: { value: 400.0 },\n          uFresnel: { value: 0.6 },\n          uMaxSteps: { value: 32 }\n        }, depthUniforms()),\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.karisDownsampleMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: karisDownsampleFragmentShader,\n        uniforms: {\n          tDiffuse: { value: null },\n          uTexelSize: { value: new THREE.Vector2(1, 1) },\n          uThreshold: { value: 0.9 },\n          uIsFirstMip: { value: 1 }\n        },\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.tentUpsampleMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: tentUpsampleFragmentShader,\n        uniforms: {\n          tDiffuse: { value: null },\n          tAdd: { value: null },\n          uTexelSize: { value: new THREE.Vector2(1, 1) },\n          uBloomRadius: { value: 1.0 },\n          uHasAdd: { value: 0 }\n        },\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.dofMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: bokehDOFFragmentShader,\n        uniforms: Object.assign({\n          tColor: { value: null },\n          tDepth: { value: null },\n          uResolution: { value: new THREE.Vector2(1, 1) },\n          uFocusDistance: { value: 700.0 },\n          uApertureFStop: { value: 2.8 },\n          uMaxBokehRadius: { value: 12.0 }\n        }, depthUniforms()),\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.ssrBlurMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: ssrBlurFragmentShader,\n        uniforms: {\n          tSSR: { value: null },\n          tReflectivity: { value: null },\n          uTexelSize: { value: new THREE.Vector2(1, 1) },\n          uMaxRadius: { value: 4.0 },\n          uUseReflectivityMask: { value: 1 }\n        },\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.mergeMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: mergeFragmentShader,\n        uniforms: Object.assign({\n          tColor: { value: null },\n          tDepth: { value: null },\n          tGTAO: { value: null },\n          tSSR: { value: null },\n          uLowResTexel: { value: new THREE.Vector2(1, 1) },\n          uEnableGTAO: { value: 0 },\n          uEnableSSR: { value: 0 },\n          uMultiBounce: { value: 1 }\n        }, depthUniforms()),\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.anamorphicStreakMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: anamorphicStreakFragmentShader,\n        uniforms: {\n          tDiffuse: { value: null },\n          uTexelSize: { value: new THREE.Vector2(1, 1) },\n          uStride: { value: 12.0 }\n        },\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this.compositeMaterial = new THREE.ShaderMaterial({\n        vertexShader: commonVertexShader,\n        fragmentShader: masterCompositeFragmentShader,\n        uniforms: Object.assign({\n          tColor: { value: null },\n          tGTAO: { value: null },\n          tSSR: { value: null },\n          tBloom: { value: null },\n          tStreak: { value: null },\n          tDepth: { value: null },\n          uLowResTexel: { value: new THREE.Vector2(1, 1) },\n          uMasterIntensity: { value: 1.0 },\n          uToneMappingMode: { value: 0 },\n          uBloomIntensity: { value: 0.8 },\n          uAnamorphicFlares: { value: 0.0 },\n          uFlareTintColor: { value: new THREE.Vector3(1.0, 1.0, 1.0) },\n          uChromaticAberration: { value: 0.003 },\n          uMotionBlurStrength: { value: 0.0 },\n          uEnableGTAO: { value: 0 },\n          uMultiBounce: { value: 1 },\n          uEnableSSR: { value: 0 },\n          uEnableBloom: { value: 0 },\n          uEnableMotionBlur: { value: 0 },\n          uCurrentViewProjectionInverse: { value: new THREE.Matrix4() },\n          uPreviousViewProjection: { value: new THREE.Matrix4() }\n        }, depthUniforms()),\n        depthTest: false,\n        depthWrite: false\n      });\n\n      this._quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.compositeMaterial);\n      this._quad.frustumCulled = false;\n      this._scene.add(this._quad);\n    }\n\n    // Records the frame size and quality, disposing everything if either changed. The\n    // individual buffers are created on demand by _rt() below, so a scene that only uses\n    // bloom never allocates the depth-of-field or reflection targets at all.\n    _ensureTargets(w, h) {\n      w = Math.max(1, Math.floor(w));\n      h = Math.max(1, Math.floor(h));\n      var div = qualityDivisor(this.settings.effectQuality);\n      if (this._w === w && this._h === h && this._quality === div) return;\n\n      this._disposeTargets();\n      this._w = w;\n      this._h = h;\n      this._quality = div;\n    }\n\n    // Resolution of the ambient occlusion, reflection and mask buffers.\n    _lowResSize() {\n      var div = this._quality || 2;\n      return [\n        Math.max(1, Math.floor(this._w / div)),\n        Math.max(1, Math.floor(this._h / div))\n      ];\n    }\n\n    _rtOptions(hdr, depth) {\n      return {\n        minFilter: THREE.LinearFilter,\n        magFilter: THREE.LinearFilter,\n        format: THREE.RGBAFormat,\n        depthBuffer: !!depth,\n        type: hdr && THREE.HalfFloatType !== undefined ? THREE.HalfFloatType : undefined\n      };\n    }\n\n    // Returns the named target, creating or resizing it as needed.\n    _rt(name, w, h, hdr, depth) {\n      var existing = this[name];\n      if (existing && existing.width === w && existing.height === h) return existing;\n      if (existing) { try { existing.dispose(); } catch (e) {} }\n      this[name] = new THREE.WebGLRenderTarget(w, h, this._rtOptions(hdr, depth));\n      return this[name];\n    }\n\n    // The bloom pyramid starts at half resolution: jumping straight from full to quarter\n    // res in one 13-tap fetch undersamples badly.\n    _ensureBloomTargets() {\n      if (this.bloomDownTargets.length === BLOOM_MIPS &&\n          this.bloomDownTargets[0].width === Math.max(1, Math.floor(this._w / 2))) {\n        return;\n      }\n      this._disposeBloomTargets();\n      var curW = this._w;\n      var curH = this._h;\n      for (var i = 0; i < BLOOM_MIPS; i++) {\n        curW = Math.max(1, Math.floor(curW / 2));\n        curH = Math.max(1, Math.floor(curH / 2));\n        this.bloomDownTargets.push(new THREE.WebGLRenderTarget(curW, curH, this._rtOptions(true, false)));\n        this.bloomUpTargets.push(new THREE.WebGLRenderTarget(curW, curH, this._rtOptions(true, false)));\n      }\n    }\n\n    _disposeBloomTargets() {\n      for (var i = 0; i < this.bloomDownTargets.length; i++) {\n        try { this.bloomDownTargets[i].dispose(); } catch (e) {}\n      }\n      for (var j = 0; j < this.bloomUpTargets.length; j++) {\n        try { this.bloomUpTargets[j].dispose(); } catch (e) {}\n      }\n      this.bloomDownTargets = [];\n      this.bloomUpTargets = [];\n    }\n\n    _disposeTargets() {\n      var single = ['gtaoTarget', 'gtaoBlurTarget', 'ssrTarget', 'ssrBlurTarget', 'ssrMaskTarget',\n        'mergeTarget', 'streakTarget', 'dofTarget'];\n      for (var s = 0; s < single.length; s++) {\n        var t = this[single[s]];\n        if (t) { try { t.dispose(); } catch (e) {} this[single[s]] = null; }\n      }\n      this._disposeBloomTargets();\n    }\n\n    _renderPass(material, target) {\n      this._quad.material = material;\n      this.renderer.setRenderTarget(target);\n      this.renderer.render(this._scene, this._camera);\n    }\n\n    /**\n     * GDevelop's EffectComposer is built with `new EffectComposer(renderer)`, whose default\n     * render targets carry a depth *renderbuffer* — not a texture — so nothing downstream can\n     * sample depth. Assigning `depthTexture` after the framebuffer has been set up is a no-op\n     * in three (setRenderTarget only calls setupRenderTarget when __webglFramebuffer is\n     * undefined), so the target has to be disposed first to force a rebuild.\n     *\n     * Both ping-pong targets need it: RenderPass has needsSwap=false and there are three\n     * swapping passes per frame, so rt1 and rt2 alternate as the scene buffer frame to frame.\n     */\n    ensureComposerDepth(composer) {\n      if (!composer || !THREE_OK) return false;\n      var targets = [composer.renderTarget1, composer.renderTarget2];\n      var changed = false;\n\n      for (var i = 0; i < targets.length; i++) {\n        var rt = targets[i];\n        if (!rt) continue;\n\n        var needsNew = !rt.depthTexture;\n        var needsResize = !needsNew && rt.depthTexture.image &&\n          (rt.depthTexture.image.width !== rt.width || rt.depthTexture.image.height !== rt.height);\n\n        if (!needsNew && !needsResize) continue;\n\n        try {\n          if (rt.depthTexture) {\n            try { rt.depthTexture.dispose(); } catch (e) {}\n            rt.depthTexture = null;\n          }\n          // Dispose first: this clears three's cached __webglFramebuffer so the next bind\n          // rebuilds the FBO with the depth attachment we are about to add.\n          rt.dispose();\n\n          var dt = new THREE.DepthTexture(rt.width, rt.height);\n          if (THREE.DepthFormat !== undefined) dt.format = THREE.DepthFormat;\n          // 24-bit integer depth: DEPTH_COMPONENT24. FloatType would give 32F for no\n          // practical gain at GDevelop's near/far ratio and costs twice the bandwidth.\n          if (THREE.UnsignedIntType !== undefined) dt.type = THREE.UnsignedIntType;\n          if (THREE.NearestFilter !== undefined) {\n            dt.minFilter = THREE.NearestFilter;\n            dt.magFilter = THREE.NearestFilter;\n          }\n          dt.generateMipmaps = false;\n\n          rt.depthBuffer = true;\n          rt.depthTexture = dt;\n          changed = true;\n        } catch (e) {\n          warnOnce('depthAttach', 'Could not attach a depth texture to the layer composer: ' +\n            e.message + '. GTAO, SSR, DOF and motion blur will be disabled.');\n          return false;\n        }\n      }\n\n      if (changed) this.depthAttached = true;\n      return this.depthAttached;\n    }\n\n    /**\n     * How reflective is this material? GDevelop's default 3D material is a fully rough\n     * dielectric (roughness 1, metalness 0), which correctly scores zero — so out of the\n     * box nothing reflects, and a surface becomes reflective only when someone deliberately\n     * makes it smooth or metallic.\n     */\n    static reflectivityOf(material) {\n      if (!material) return 0.0;\n      if (material.visible === false) return 0.0;\n      if (material.transparent && typeof material.opacity === 'number' && material.opacity < 0.99) return 0.0;\n\n      var explicit = material.userData && material.userData.ssrReflectivity;\n      if (typeof explicit === 'number') return saturate(explicit);\n\n      var rough;\n      if (typeof material.roughness === 'number') {\n        rough = saturate(material.roughness);\n      } else if (typeof material.shininess === 'number') {\n        // Phong and friends have no roughness; shininess is the closest proxy.\n        rough = 1.0 - saturate(material.shininess / 100.0);\n      } else {\n        return 0.0; // Basic/unlit materials do not reflect.\n      }\n\n      var metal = typeof material.metalness === 'number' ? saturate(material.metalness) : 0.0;\n      var smooth = 1.0 - rough;\n      // Squared so the falloff away from a polished surface is quick. A polished dielectric\n      // still reflects a little; a rough metal reflects nothing sharp enough to raymarch.\n      return saturate(smooth * smooth * (0.25 + 0.75 * metal));\n    }\n\n    /**\n     * The roughness the reflectivity estimate was derived from, so the SSR blur can widen\n     * its cone on scattering surfaces. Unlit materials report fully rough.\n     */\n    static roughnessOf(material) {\n      if (!material) return 1.0;\n      var explicit = material.userData && material.userData.ssrRoughness;\n      if (typeof explicit === 'number') return saturate(explicit);\n      if (typeof material.roughness === 'number') return saturate(material.roughness);\n      if (typeof material.shininess === 'number') return 1.0 - saturate(material.shininess / 100.0);\n      return 1.0;\n    }\n\n    /**\n     * Renders the layer's 3D group with every material swapped for a flat value encoding\n     * its reflectivity in red and its roughness in green. One extra scene render, but it pays for itself: the SSR\n     * shader rejects masked-out pixels before marching a single ray.\n     *\n     * The group is rendered rather than the scene so the 2D rendering plane at z=0 (which\n     * has renderOrder MAX_SAFE_INTEGER and covers the view) stays out of it.\n     */\n    renderReflectivityMask(renderer, threeGroup, camera) {\n      if (!threeGroup || !camera || !this.ssrMaskTarget || !THREE_OK) return false;\n      if (!THREE.MeshBasicMaterial || !THREE.Color) return false;\n\n      if (!this._maskMaterials) {\n        this._maskMaterials = (typeof WeakMap === 'function') ? new WeakMap() : new Map();\n      }\n      var cache = this._maskMaterials;\n      var list = this._maskMaterialList;\n      var swaps = this._maskSwap;\n      swaps.length = 0;\n\n      threeGroup.traverse(function (obj) {\n        if (!obj.isMesh || !obj.material || obj.visible === false) return;\n        if (Array.isArray(obj.material)) return; // multi-material meshes: skip rather than guess\n\n        var source = obj.material;\n        var mask = cache.get(source);\n        if (!mask) {\n          mask = new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 0, 0) });\n          mask.side = source.side;\n          cache.set(source, mask);\n          list.push(mask);\n        }\n        // Recomputed every frame so runtime roughness/metalness changes are picked up.\n        // Red drives the SSR gate, green the width of its blur cone.\n        mask.color.setRGB(\n          PostProcessorPipeline.reflectivityOf(source),\n          PostProcessorPipeline.roughnessOf(source),\n          0.0\n        );\n\n        swaps.push(obj);\n        obj.userData.__cinematicSourceMaterial = source;\n        obj.material = mask;\n      });\n\n      var prevClearAlpha = renderer.getClearAlpha ? renderer.getClearAlpha() : 1;\n      try {\n        renderer.setRenderTarget(this.ssrMaskTarget);\n        if (renderer.setClearColor) renderer.setClearColor(0x000000, 1);\n        if (renderer.clear) renderer.clear(true, true, false);\n        renderer.render(threeGroup, camera);\n      } finally {\n        // Unconditional: anything thrown above must not leave the scene wearing mask\n        // materials for the rest of the game.\n        if (renderer.setClearColor) renderer.setClearColor(0x000000, prevClearAlpha);\n        for (var i = 0; i < swaps.length; i++) {\n          var mesh = swaps[i];\n          if (mesh.userData.__cinematicSourceMaterial) {\n            mesh.material = mesh.userData.__cinematicSourceMaterial;\n            delete mesh.userData.__cinematicSourceMaterial;\n          }\n        }\n        swaps.length = 0;\n      }\n      return true;\n    }\n\n    _disposeMaskMaterials() {\n      for (var i = 0; i < this._maskMaterialList.length; i++) {\n        try { this._maskMaterialList[i].dispose(); } catch (e) {}\n      }\n      this._maskMaterialList.length = 0;\n      this._maskMaterials = null;\n    }\n\n    _applySceneBackground(layerRenderer) {\n      // Only fills in a background when the scene has none. Overwriting it every frame\n      // would clobber any skybox or environment map set by the user or another extension.\n      try {\n        if (!this._runtimeScene || !layerRenderer || typeof layerRenderer.getThreeScene !== 'function') return;\n        var sc = layerRenderer.getThreeScene();\n        if (!sc || sc.background) return;\n        if (typeof this._runtimeScene.getBackgroundColor !== 'function') return;\n        if (!this._bgColor) this._bgColor = new THREE.Color();\n        this._bgColor.set(this._runtimeScene.getBackgroundColor());\n        sc.background = this._bgColor;\n      } catch (e) {}\n    }\n\n    /**\n     * Center-screen autofocus. Raycasts the layer's 3D group (not the whole scene — the\n     * 2D rendering plane sits at z=0 and would swallow every hit) and eases the focus\n     * plane toward the hit distance so pulls look like a real lens.\n     */\n    updateAutofocus(camera, threeGroup) {\n      var s = this.settings;\n      if (!s.enableDOF || !s.autofocus || !camera || !threeGroup || !THREE_OK || !THREE.Raycaster) {\n        this.autofocusTracking = false;\n        this.activeFocusDistance = s.manualFocusDistance;\n        return;\n      }\n\n      // Raycasting the whole group every frame is wasteful; a 3-frame cadence with easing\n      // is indistinguishable at 60fps.\n      this._autofocusFrame = (this._autofocusFrame + 1) % 3;\n      if (this._autofocusFrame === 0 || this.autofocusHitDistance === 0.0) {\n        try {\n          if (!this._raycaster) this._raycaster = new THREE.Raycaster();\n          // Bound the ray to the camera frustum: without this it tests geometry behind the\n          // near plane and past the far plane, which can never be in focus anyway.\n          if (typeof camera.near === 'number') this._raycaster.near = camera.near;\n          if (typeof camera.far === 'number') this._raycaster.far = camera.far;\n          this._raycaster.setFromCamera(this._rayOrigin, camera);\n\n          var hits = this._raycaster.intersectObjects(threeGroup.children, true);\n          var found = null;\n          for (var i = 0; i < hits.length; i++) {\n            var h = hits[i];\n            if (h.distance <= 0.0001 || !h.object || h.object.visible === false) continue;\n            // A first-person weapon or similar camera-locked prop sits in front of everything\n            // and would permanently own the focus plane, so let it opt out.\n            if (h.object.userData && h.object.userData.cinematicIgnoreAutofocus) continue;\n            found = h;\n            break;\n          }\n          if (found) {\n            this.autofocusHitDistance = found.distance;\n            this.autofocusTracking = true;\n          } else {\n            this.autofocusTracking = false;\n          }\n        } catch (e) {\n          this.autofocusTracking = false;\n        }\n      }\n\n      var target = this.autofocusTracking ? this.autofocusHitDistance : s.manualFocusDistance;\n      if (this.activeFocusDistance <= 0.0) this.activeFocusDistance = target;\n      this.activeFocusDistance = lerp(this.activeFocusDistance, target, 0.15);\n    }\n\n    executeCompositing(renderer, inputTarget, outputTarget, renderToScreen, camera, threeGroup) {\n      if (!inputTarget || !this._quad) return;\n\n      renderer.getDrawingBufferSize(this._sizeVec);\n      var w = this._sizeVec.x || inputTarget.width || 1;\n      var h = this._sizeVec.y || inputTarget.height || 1;\n      this._ensureTargets(w, h);\n\n      var cam = camera || this._camera;\n      var isOrtho = !!(cam && cam.isOrthographicCamera);\n      var near = (cam && typeof cam.near === 'number') ? cam.near : 0.1;\n      var far = (cam && typeof cam.far === 'number') ? cam.far : 2000.0;\n      var projScale = (cam && cam.projectionMatrix && cam.projectionMatrix.elements)\n        ? Math.abs(cam.projectionMatrix.elements[5]) : 2.414;\n\n      if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld();\n      if (cam && cam.projectionMatrix && cam.matrixWorldInverse) {\n        this.currViewProjMatrix.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);\n        this.invViewProjMatrix.copy(this.currViewProjMatrix).invert();\n        if (!this._hasPrevMatrix) {\n          this.prevViewProjMatrix.copy(this.currViewProjMatrix);\n          this._hasPrevMatrix = true;\n        }\n      }\n\n      var invProj = this._invProj;\n      if (cam && cam.projectionMatrix) invProj.copy(cam.projectionMatrix).invert();\n\n      this.updateAutofocus(cam, threeGroup);\n\n      var s = this.settings;\n      var curSceneColor = inputTarget.texture;\n      var depthTex = inputTarget.depthTexture || null;\n      var hasDepth = !!depthTex;\n\n      if (!hasDepth) {\n        warnOnce('noDepth', 'No depth texture on the composer buffer — GTAO, SSR, DOF and ' +\n          'motion blur are skipped this frame. Bloom, chromatic aberration and tone mapping ' +\n          'still run.');\n      }\n\n      var applyDepthUniforms = function (u) {\n        u.uNear.value = near;\n        u.uFar.value = far;\n        u.uIsOrtho.value = isOrtho ? 1 : 0;\n      };\n\n      // ------------------------------------------------- 1. GTAO + separable bilateral blur\n      var aoTexture = null;\n      if (hasDepth && s.enableGTAO && s.gtaoIntensity > 0.0) {\n        var lo = this._lowResSize();\n        this._rt('gtaoTarget', lo[0], lo[1], false, false);\n        this._rt('gtaoBlurTarget', lo[0], lo[1], false, false);\n\n        var gu = this.gtaoMaterial.uniforms;\n        gu.tDepth.value = depthTex;\n        gu.uResolution.value.set(this.gtaoTarget.width, this.gtaoTarget.height);\n        gu.uInverseProjectionMatrix.value.copy(invProj);\n        gu.uRadius.value = Math.max(0.0001, s.gtaoRadius);\n        gu.uIntensity.value = s.gtaoIntensity;\n        gu.uProjScale.value = projScale;\n        applyDepthUniforms(gu);\n        this._renderPass(this.gtaoMaterial, this.gtaoTarget);\n\n        var bu = this.bilateralBlurMaterial.uniforms;\n        bu.tDepth.value = depthTex;\n        bu.uResolution.value.set(this.gtaoTarget.width, this.gtaoTarget.height);\n        applyDepthUniforms(bu);\n\n        bu.tAO.value = this.gtaoTarget.texture;\n        bu.uDirection.value.set(1.0, 0.0);\n        this._renderPass(this.bilateralBlurMaterial, this.gtaoBlurTarget);\n\n        bu.tAO.value = this.gtaoBlurTarget.texture;\n        bu.uDirection.value.set(0.0, 1.0);\n        this._renderPass(this.bilateralBlurMaterial, this.gtaoTarget);\n\n        aoTexture = this.gtaoTarget.texture;\n      }\n\n      // ------------------------------------------------- 2. Screen-Space Reflections\n      var ssrTexture = null;\n      if (hasDepth && s.enableSSR && s.ssrIntensity > 0.0) {\n        var loS = this._lowResSize();\n        this._rt('ssrTarget', loS[0], loS[1], true, false);\n        this._rt('ssrBlurTarget', loS[0], loS[1], true, false);\n\n        var useMask = s.ssrSurfaces !== 'Everything';\n        if (useMask) {\n          // Unlike every other intermediate this one renders real geometry, so it needs\n          // its own depth buffer to sort.\n          this._rt('ssrMaskTarget', loS[0], loS[1], false, true);\n          useMask = this.renderReflectivityMask(renderer, threeGroup, cam);\n        }\n\n        var su = this.ssrMaterial.uniforms;\n        su.tColor.value = curSceneColor;\n        su.tDepth.value = depthTex;\n        su.tReflectivity.value = useMask ? this.ssrMaskTarget.texture : null;\n        su.uUseReflectivityMask.value = useMask ? 1 : 0;\n        su.uResolution.value.set(this.ssrTarget.width, this.ssrTarget.height);\n        if (cam && cam.projectionMatrix) su.uProjectionMatrix.value.copy(cam.projectionMatrix);\n        su.uInverseProjectionMatrix.value.copy(invProj);\n        su.uIntensity.value = s.ssrIntensity;\n        su.uMaxDistance.value = Math.max(1.0, s.ssrMaxDistance);\n        su.uFresnel.value = saturate(s.ssrFresnel);\n        su.uMaxSteps.value = clamp(parseInt(s.ssrRaySteps, 10) || 32, 8, 64);\n        applyDepthUniforms(su);\n        this._renderPass(this.ssrMaterial, this.ssrTarget);\n        ssrTexture = this.ssrTarget.texture;\n\n        if (this.ssrBlurTarget) {\n          var sb = this.ssrBlurMaterial.uniforms;\n          sb.tSSR.value = ssrTexture;\n          sb.tReflectivity.value = useMask ? this.ssrMaskTarget.texture : null;\n          sb.uTexelSize.value.set(1.0 / this.ssrBlurTarget.width, 1.0 / this.ssrBlurTarget.height);\n          sb.uUseReflectivityMask.value = useMask ? 1 : 0;\n          this._renderPass(this.ssrBlurMaterial, this.ssrBlurTarget);\n          ssrTexture = this.ssrBlurTarget.texture;\n        }\n      }\n\n      // The AO and reflection buffers are lower resolution than the frame, so both the merge\n      // and the composite need their texel size to upsample them without haloing.\n      var lowRes = this._lowResSize();\n      var lowResTexel = [1.0 / lowRes[0], 1.0 / lowRes[1]];\n\n      // ------------------------------------------------- 2b. Merge AO and SSR before DOF\n      // Applying them in the composite would leave contact shadows and reflections razor\n      // sharp on a surface the defocus has already blurred.\n      var aoSsrMerged = false;\n      if (s.enableDOF && hasDepth && (aoTexture || ssrTexture)) {\n        this._rt('mergeTarget', w, h, true, false);\n        var mu = this.mergeMaterial.uniforms;\n        mu.tColor.value = curSceneColor;\n        mu.tDepth.value = depthTex;\n        mu.tGTAO.value = aoTexture;\n        mu.tSSR.value = ssrTexture;\n        mu.uLowResTexel.value.set(lowResTexel[0], lowResTexel[1]);\n        mu.uEnableGTAO.value = aoTexture ? 1 : 0;\n        mu.uEnableSSR.value = ssrTexture ? 1 : 0;\n        mu.uMultiBounce.value = s.gtaoMultiBounce ? 1 : 0;\n        applyDepthUniforms(mu);\n        this._renderPass(this.mergeMaterial, this.mergeTarget);\n        curSceneColor = this.mergeTarget.texture;\n        aoSsrMerged = true;\n      }\n\n      // ------------------------------------------------- 3. Bokeh Depth of Field\n      if (hasDepth && s.enableDOF) {\n        this._rt('dofTarget', w, h, true, false);\n        var du = this.dofMaterial.uniforms;\n        du.tColor.value = curSceneColor;\n        du.tDepth.value = depthTex;\n        du.uResolution.value.set(w, h);\n        du.uFocusDistance.value = Math.max(0.001, this.activeFocusDistance);\n        du.uApertureFStop.value = Math.max(0.5, s.apertureFStop);\n        du.uMaxBokehRadius.value = Math.max(0.0, s.maxBokehRadius);\n        applyDepthUniforms(du);\n        this._renderPass(this.dofMaterial, this.dofTarget);\n        curSceneColor = this.dofTarget.texture;\n      }\n\n      // ------------------------------------------------- 4. Karis bloom pyramid\n      var bloomTexture = null;\n      var streakTexture = null;\n      if (s.enableBloom && s.bloomIntensity > 0.0) {\n        this._ensureBloomTargets();\n        var n = this.bloomDownTargets.length;\n        var ku = this.karisDownsampleMaterial.uniforms;\n        ku.uThreshold.value = s.bloomThreshold;\n\n        var srcTex = curSceneColor;\n        for (var d = 0; d < n; d++) {\n          var targetD = this.bloomDownTargets[d];\n          ku.tDiffuse.value = srcTex;\n          ku.uTexelSize.value.set(1.0 / targetD.width, 1.0 / targetD.height);\n          ku.uIsFirstMip.value = d === 0 ? 1 : 0;\n          this._renderPass(this.karisDownsampleMaterial, targetD);\n          srcTex = targetD.texture;\n        }\n\n        // Progressive upsample: each level blurs the level below and ADDS its own mip.\n        var tu = this.tentUpsampleMaterial.uniforms;\n        tu.uBloomRadius.value = 1.0;\n        tu.uHasAdd.value = 1;\n        var upSource = this.bloomDownTargets[n - 1].texture;\n        for (var u = n - 2; u >= 0; u--) {\n          var targetU = this.bloomUpTargets[u];\n          tu.tDiffuse.value = upSource;\n          tu.tAdd.value = this.bloomDownTargets[u].texture;\n          tu.uTexelSize.value.set(1.0 / targetU.width, 1.0 / targetU.height);\n          this._renderPass(this.tentUpsampleMaterial, targetU);\n          upSource = targetU.texture;\n        }\n        bloomTexture = upSource;\n\n        // Anamorphic streak: a wide horizontal blur of the finished bloom buffer.\n        if (s.anamorphicFlares > 0.0) {\n          this._rt('streakTarget', this.bloomDownTargets[0].width,\n            this.bloomDownTargets[0].height, true, false);\n          var au = this.anamorphicStreakMaterial.uniforms;\n          au.tDiffuse.value = bloomTexture;\n          au.uTexelSize.value.set(1.0 / this.streakTarget.width, 1.0 / this.streakTarget.height);\n          au.uStride.value = 12.0;\n          this._renderPass(this.anamorphicStreakMaterial, this.streakTarget);\n          streakTexture = this.streakTarget.texture;\n        }\n      }\n\n      // ------------------------------------------------- 5. Master composite\n      var cu = this.compositeMaterial.uniforms;\n      cu.tColor.value = curSceneColor;\n      cu.tGTAO.value = aoTexture;\n      cu.tSSR.value = ssrTexture;\n      cu.tBloom.value = bloomTexture;\n      cu.tStreak.value = streakTexture;\n      cu.tDepth.value = depthTex;\n      cu.uLowResTexel.value.set(lowResTexel[0], lowResTexel[1]);\n      cu.uMasterIntensity.value = s.masterIntensity;\n      applyDepthUniforms(cu);\n\n      var tmModes = { ACESFilmic: 0, Reinhard: 1, Cineon: 2, Linear: 3 };\n      cu.uToneMappingMode.value = tmModes[s.toneMapping] !== undefined ? tmModes[s.toneMapping] : 0;\n\n      cu.uBloomIntensity.value = s.bloomIntensity;\n      cu.uAnamorphicFlares.value = streakTexture ? s.anamorphicFlares : 0.0;\n\n      var flareRGB = parseColor(s.flareTintColor, [255, 255, 255]);\n      cu.uFlareTintColor.value.set(flareRGB[0] / 255.0, flareRGB[1] / 255.0, flareRGB[2] / 255.0);\n\n      cu.uChromaticAberration.value = s.chromaticAberration;\n      cu.uMotionBlurStrength.value = s.motionBlurStrength;\n      cu.uEnableGTAO.value = (aoTexture && !aoSsrMerged) ? 1 : 0;\n      cu.uMultiBounce.value = s.gtaoMultiBounce ? 1 : 0;\n      cu.uEnableSSR.value = (ssrTexture && !aoSsrMerged) ? 1 : 0;\n      cu.uEnableBloom.value = bloomTexture ? 1 : 0;\n      cu.uEnableMotionBlur.value = (hasDepth && s.enableMotionBlur && s.motionBlurStrength > 0.001) ? 1 : 0;\n\n      cu.uCurrentViewProjectionInverse.value.copy(this.invViewProjMatrix);\n      cu.uPreviousViewProjection.value.copy(this.prevViewProjMatrix);\n\n      this._quad.material = this.compositeMaterial;\n      renderer.setRenderTarget(renderToScreen ? null : outputTarget);\n      renderer.render(this._scene, this._camera);\n\n      this.prevViewProjMatrix.copy(this.currViewProjMatrix);\n    }\n\n    logDiagnostics(composer, camera) {\n      if (this._loggedDiagnostics) return;\n      this._loggedDiagnostics = true;\n      var near = camera && camera.near !== undefined ? camera.near : '?';\n      var far = camera && camera.far !== undefined ? camera.far : '?';\n      var camZ = camera && camera.position ? camera.position.z.toFixed(1) : '?';\n      console.info(\n        '[CinematicPostFX3D] diagnostics\\n' +\n        '  composer: ' + (composer ? 'found (' + composer.passes.length + ' passes)' : 'MISSING') + '\\n' +\n        '  depth texture attached: ' + (this.depthAttached ? 'yes' : 'NO') + '\\n' +\n        '  camera near/far: ' + near + ' / ' + far + '\\n' +\n        '  camera z: ' + camZ + '  (world-space params should be on this scale)\\n' +\n        '  buffer: ' + this._w + 'x' + this._h + '\\n' +\n        '  GTAO radius: ' + this.settings.gtaoRadius +\n        ' | SSR distance: ' + this.settings.ssrMaxDistance +\n        ' | focus: ' + this.settings.manualFocusDistance\n      );\n    }\n\n    dispose() {\n      if (this.renderer) {\n        try { delete this.renderer.__cinematicPostProcessor; } catch (e) {}\n      }\n      this._disposeTargets();\n      this._disposeMaskMaterials();\n\n      var mats = ['gtaoMaterial', 'bilateralBlurMaterial', 'ssrMaterial', 'ssrBlurMaterial',\n        'karisDownsampleMaterial',\n        'tentUpsampleMaterial', 'dofMaterial', 'mergeMaterial', 'anamorphicStreakMaterial',\n        'compositeMaterial'];\n      for (var i = 0; i < mats.length; i++) {\n        try { if (this[mats[i]]) this[mats[i]].dispose(); } catch (e) {}\n      }\n      try { if (this._quad && this._quad.geometry) this._quad.geometry.dispose(); } catch (e) {}\n\n      this.activeBehavior = null;\n      this.customPass = null;\n      this.targetLayerRenderer = null;\n    }\n  }\n\n  /* ------------------------------------------------------------- EffectComposer Pass Adapter */\n\n  var BasePassClass = (typeof THREE_ADDONS !== 'undefined' && THREE_ADDONS.Pass)\n    ? THREE_ADDONS.Pass\n    : class {\n        constructor() {\n          this.enabled = true;\n          this.needsSwap = true;\n          this.clear = false;\n          this.renderToScreen = false;\n        }\n        setSize(width, height) {}\n        render(renderer, writeBuffer, readBuffer, deltaTime, maskActive) {}\n        dispose() {}\n      };\n\n  class CinematicPostFXPass extends BasePassClass {\n    constructor(pipeline) {\n      super();\n      this.pipeline = pipeline;\n      this.enabled = true;\n      this.needsSwap = true;\n      this.clear = false;\n      this.renderToScreen = false;\n      this._layerRenderer = null;\n    }\n\n    // Deliberately not cached: GDevelop can rebuild a layer's composer, and a stale\n    // reference would have us attaching depth to render targets nothing draws into.\n    _composerOf() {\n      if (this._layerRenderer && typeof this._layerRenderer.getThreeEffectComposer === 'function') {\n        return this._layerRenderer.getThreeEffectComposer();\n      }\n      return null;\n    }\n\n    // EffectComposer.setSize() resizes renderTarget1/2 and *then* calls pass.setSize(), and\n    // insertPass() calls it once on attach — so this is the correct place to (re)build the\n    // depth attachments. WebGLRenderTarget.setSize does not resize a depthTexture, so\n    // without this a resize leaves an incomplete framebuffer.\n    setSize(width, height) {\n      var composer = this._composerOf();\n      if (composer && this.pipeline) {\n        this.pipeline.ensureComposerDepth(composer);\n      }\n      // The intermediate targets are sized from the drawing buffer in executeCompositing,\n      // which already accounts for pixel ratio. Sizing them here too would just allocate\n      // them twice at two different sizes on every resize.\n    }\n\n    render(renderer, writeBuffer, readBuffer, deltaTime, maskActive) {\n      if (!this.pipeline || !this.pipeline.activeBehavior) return;\n\n      if (!readBuffer.depthTexture) {\n        // Covers the case where something else rebuilt the composer or its targets.\n        var composer = this._composerOf();\n        if (composer) this.pipeline.ensureComposerDepth(composer);\n      }\n\n      if (this._layerRenderer) {\n        this.pipeline._applySceneBackground(this._layerRenderer);\n      }\n\n      var camera = this._layerRenderer && this._layerRenderer.getThreeCamera\n        ? this._layerRenderer.getThreeCamera() : null;\n      var group = this._layerRenderer && this._layerRenderer.getThreeGroup\n        ? this._layerRenderer.getThreeGroup() : null;\n\n      if (this.pipeline.settings.diagnostics) {\n        this.pipeline.logDiagnostics(this._composerOf(), camera);\n      }\n\n      this.pipeline.executeCompositing(\n        renderer,\n        readBuffer,\n        writeBuffer,\n        this.renderToScreen,\n        camera,\n        group\n      );\n    }\n\n    dispose() {\n      try { if (super.dispose) super.dispose(); } catch (e) {}\n    }\n  }\n\n  /* ------------------------------------------------------------- Scene & Layer Pass Manager */\n\n  function getLayerRenderer(runtimeScene, layerName) {\n    try {\n      var name = layerName || '';\n      if (runtimeScene.hasLayer && !runtimeScene.hasLayer(name)) {\n        warnOnce('missingLayer:' + name, 'Layer \"' + name + '\" does not exist. ' +\n          'Set the behavior\\'s \"Target Layer\" property to the 3D layer you want to post-process.');\n        return null;\n      }\n      var layer = runtimeScene.getLayer(name);\n      var lr = layer && layer.getRenderer && layer.getRenderer();\n      if (!lr || typeof lr.addPostProcessingPass !== 'function') return null;\n\n      // addPostProcessingPass() silently does nothing when the layer has no EffectComposer,\n      // which is the case for any layer that is not rendering in 3D. Check explicitly so\n      // this fails loudly instead of looking broken.\n      if (typeof lr.getThreeEffectComposer === 'function' && !lr.getThreeEffectComposer()) {\n        warnOnce('noComposer:' + name, 'Layer \"' + (name || '(base layer)') + '\" has no 3D ' +\n          'EffectComposer, so post-processing cannot be attached. Set the layer\\'s rendering ' +\n          'type to 3D, or point the behavior\\'s \"Target Layer\" property at a 3D layer.');\n        return null;\n      }\n      return lr;\n    } catch (e) {\n      return null;\n    }\n  }\n\n  function threeRendererOf(runtimeScene) {\n    if (!runtimeScene) return null;\n    var game = runtimeScene.getGame ? runtimeScene.getGame() : null;\n    var gameRenderer = game && game.getRenderer ? game.getRenderer() : null;\n    return gameRenderer && gameRenderer.getThreeRenderer\n      ? gameRenderer.getThreeRenderer()\n      : null;\n  }\n\n  function getPipeline(runtimeScene) {\n    var r = threeRendererOf(runtimeScene);\n    return r ? (r.__cinematicPostProcessor || null) : null;\n  }\n\n  function attachPassToLayer(pipeline, runtimeScene, layerName) {\n    var lr = getLayerRenderer(runtimeScene, layerName);\n    if (!lr) return false;\n\n    if (pipeline.customPass && pipeline.targetLayerRenderer === lr) return true;\n\n    if (pipeline.customPass && pipeline.targetLayerRenderer) {\n      try {\n        pipeline.targetLayerRenderer.removePostProcessingPass(pipeline.customPass);\n      } catch (e) {}\n      pipeline.targetLayerRenderer = null;\n      pipeline.customPass = null;\n    }\n\n    var pass = new CinematicPostFXPass(pipeline);\n    pass._layerRenderer = lr;\n    pipeline.targetLayerRenderer = lr;\n    pipeline.customPass = pass;\n    lr.addPostProcessingPass(pass);\n    return true;\n  }\n\n  function detachPass(pipeline) {\n    if (pipeline && pipeline.customPass && pipeline.targetLayerRenderer) {\n      try {\n        pipeline.targetLayerRenderer.removePostProcessingPass(pipeline.customPass);\n      } catch (e) {}\n    }\n  }\n\n  function ensurePipeline(runtimeScene, targetLayerName) {\n    if (typeof THREE === 'undefined') {\n      warnOnce('noThree', 'THREE is not available — the game is not running a 3D renderer.');\n      return null;\n    }\n    var r = threeRendererOf(runtimeScene);\n    if (!r) return null;\n    var pipeline = r.__cinematicPostProcessor;\n    if (!pipeline) {\n      pipeline = new PostProcessorPipeline(r);\n    }\n    pipeline._runtimeScene = runtimeScene;\n    attachPassToLayer(pipeline, runtimeScene, targetLayerName || '');\n    return pipeline;\n  }\n\n  /* ------------------------------------------------------------- Behavior property sync */\n\n  var PROPERTY_MAP = [\n    ['masterIntensity', '_getMasterIntensity', '_setMasterIntensity', 'number'],\n    ['toneMapping', '_getToneMapping', '_setToneMapping', 'string'],\n    ['enableGTAO', '_getEnableGTAO', '_setEnableGTAO', 'bool'],\n    ['gtaoRadius', '_getGTAORadius', '_setGTAORadius', 'number'],\n    ['gtaoIntensity', '_getGTAOIntensity', '_setGTAOIntensity', 'number'],\n    ['gtaoMultiBounce', '_getGTAOMultiBounce', '_setGTAOMultiBounce', 'bool'],\n    ['enableSSR', '_getEnableSSR', '_setEnableSSR', 'bool'],\n    ['ssrIntensity', '_getSSRIntensity', '_setSSRIntensity', 'number'],\n    ['ssrMaxDistance', '_getSSRMaxDistance', '_setSSRMaxDistance', 'number'],\n    ['ssrFresnel', '_getSSRFresnel', '_setSSRFresnel', 'number'],\n    ['ssrSurfaces', '_getSSRSurfaces', '_setSSRSurfaces', 'string'],\n    ['ssrRaySteps', '_getSSRRaySteps', '_setSSRRaySteps', 'int'],\n    ['effectQuality', '_getEffectQuality', '_setEffectQuality', 'string'],\n    ['enableBloom', '_getEnableBloom', '_setEnableBloom', 'bool'],\n    ['bloomIntensity', '_getBloomIntensity', '_setBloomIntensity', 'number'],\n    ['bloomThreshold', '_getBloomThreshold', '_setBloomThreshold', 'number'],\n    ['anamorphicFlares', '_getAnamorphicFlares', '_setAnamorphicFlares', 'number'],\n    ['flareTintColor', '_getFlareTintColor', '_setFlareTintColor', 'string'],\n    ['enableDOF', '_getEnableDOF', '_setEnableDOF', 'bool'],\n    ['autofocus', '_getAutofocus', '_setAutofocus', 'bool'],\n    ['manualFocusDistance', '_getManualFocusDistance', '_setManualFocusDistance', 'number'],\n    ['apertureFStop', '_getApertureFStop', '_setApertureFStop', 'number'],\n    ['maxBokehRadius', '_getMaxBokehRadius', '_setMaxBokehRadius', 'number'],\n    ['enableMotionBlur', '_getEnableMotionBlur', '_setEnableMotionBlur', 'bool'],\n    ['motionBlurStrength', '_getMotionBlurStrength', '_setMotionBlurStrength', 'number'],\n    ['chromaticAberration', '_getChromaticAberration', '_setChromaticAberration', 'number'],\n    ['targetLayer', '_getTargetLayer', '_setTargetLayer', 'string'],\n    ['diagnostics', '_getDiagnostics', '_setDiagnostics', 'bool'],\n  ];\n\n  function readBehaviorProperties(behavior, into) {\n    var out = into || {};\n    for (var i = 0; i < PROPERTY_MAP.length; i++) {\n      var key = PROPERTY_MAP[i][0];\n      var getter = PROPERTY_MAP[i][1];\n      var kind = PROPERTY_MAP[i][3];\n      if (typeof behavior[getter] !== 'function') continue;\n      var raw = behavior[getter]();\n      if (kind === 'bool') out[key] = !!raw;\n      else if (kind === 'int') out[key] = parseInt(raw, 10) || DEFAULT_SETTINGS[key];\n      else if (kind === 'number') {\n        var v = Number(raw);\n        out[key] = isNaN(v) ? DEFAULT_SETTINGS[key] : v;\n      }\n      else out[key] = raw;\n    }\n    return out;\n  }\n\n  function writeBehaviorProperties(behavior, settings) {\n    for (var i = 0; i < PROPERTY_MAP.length; i++) {\n      var key = PROPERTY_MAP[i][0];\n      var setter = PROPERTY_MAP[i][2];\n      if (typeof behavior[setter] !== 'function') continue;\n      if (settings[key] === undefined) continue;\n      behavior[setter](settings[key]);\n    }\n  }\n\n  /* ------------------------------------------------------------- Public API Singleton */\n\n  gdjs.__cinematicPostFX3D = {\n    PRESETS: PRESETS,\n    DEFAULT_SETTINGS: DEFAULT_SETTINGS,\n    PostProcessorPipeline: PostProcessorPipeline,\n    CinematicPostFXPass: CinematicPostFXPass,\n\n    applyACESFilmic: applyACESFilmic,\n    applyReinhard: applyReinhard,\n    applyCineon: applyCineon,\n    linearizeDepth: linearizeDepth,\n    computeCircleOfConfusion: computeCircleOfConfusion,\n    computeGTAOVisibility: computeGTAOVisibility,\n    computeGTAOMultiBounce: computeGTAOMultiBounce,\n    karisLumaWeight: karisLumaWeight,\n    parseColor: parseColor,\n\n    registerBehavior: function (runtimeScene, object, behavior) {\n      // Warnings are one-shot so they cannot spam the console every frame, but a fresh\n      // preview should report a problem again even if the last one already mentioned it.\n      warnOnce._seen = {};\n      var props = readBehaviorProperties(behavior, {});\n      var pipeline = ensurePipeline(runtimeScene, props.targetLayer || '');\n      if (!pipeline) return;\n\n      // The pipeline is renderer-global: one behavior drives it. A second instance would\n      // fight the first over every setting, so it stands down instead.\n      if (pipeline.activeBehavior && pipeline.activeBehavior !== behavior) {\n        warnOnce('multiInstance', 'The CinematicPostFX3D behavior is on more than one object. ' +\n          'Post-processing is a per-layer pipeline, so only the first instance drives it; ' +\n          'the others are ignored.');\n        behavior.__cinematicIgnored = true;\n        return;\n      }\n\n      pipeline.activeBehavior = behavior;\n      behavior.__cinematicPipeline = pipeline;\n\n      Object.assign(pipeline.settings, props);\n\n      // The Preset property is applied once, at creation, and written back into the\n      // behavior's own properties so the per-frame sync stays consistent with it.\n      // \"Custom\" means \"use my property values as-is\".\n      var presetName = typeof behavior._getPreset === 'function' ? behavior._getPreset() : 'Custom';\n      if (presetName && presetName !== 'Custom' && PRESETS[presetName]) {\n        Object.assign(pipeline.settings, PRESETS[presetName]);\n        pipeline.settings.preset = presetName;\n        writeBehaviorProperties(behavior, pipeline.settings);\n      }\n\n      pipeline.activeFocusDistance = pipeline.settings.manualFocusDistance;\n    },\n\n    stepBehavior: function (runtimeScene, object, behavior) {\n      if (behavior.__cinematicIgnored) return;\n      var pipeline = behavior.__cinematicPipeline || getPipeline(runtimeScene);\n      if (!pipeline) return;\n      pipeline.activeBehavior = behavior;\n      pipeline._runtimeScene = runtimeScene;\n      attachPassToLayer(pipeline, runtimeScene, pipeline.settings.targetLayer || '');\n    },\n\n    syncBehaviorProperties: function (runtimeScene, object, behavior) {\n      if (!behavior || behavior.__cinematicIgnored) return;\n      var pipeline = behavior.__cinematicPipeline || getPipeline(runtimeScene);\n      if (!pipeline) return;\n      readBehaviorProperties(behavior, pipeline.settings);\n    },\n\n    destroyBehavior: function (runtimeScene, behavior) {\n      if (behavior && behavior.__cinematicIgnored) return;\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      if (pipeline && pipeline.activeBehavior === behavior) {\n        detachPass(pipeline);\n        pipeline.dispose();\n      }\n    },\n\n    applyPreset: function (runtimeScene, behavior, presetName) {\n      var preset = PRESETS[presetName];\n      if (!preset) return;\n      var pipeline = (behavior && behavior.__cinematicPipeline) || ensurePipeline(runtimeScene, '');\n      if (!pipeline) return;\n\n      Object.assign(pipeline.settings, preset);\n      pipeline.settings.preset = presetName;\n      pipeline.activeFocusDistance = pipeline.settings.manualFocusDistance;\n\n      if (behavior) {\n        if (behavior._setPreset) behavior._setPreset(presetName);\n        writeBehaviorProperties(behavior, pipeline.settings);\n      }\n    },\n\n    updateSettings: function (runtimeScene, behavior, newSettings) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || ensurePipeline(runtimeScene, '');\n      if (!pipeline) return;\n      Object.assign(pipeline.settings, newSettings);\n    },\n\n    getSettings: function (runtimeScene, behavior) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      return pipeline ? pipeline.settings : DEFAULT_SETTINGS;\n    },\n\n    getCurrentFocusDistance: function (runtimeScene, behavior) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      if (!pipeline) return DEFAULT_SETTINGS.manualFocusDistance;\n      return pipeline.settings.enableDOF && pipeline.settings.autofocus\n        ? pipeline.activeFocusDistance\n        : pipeline.settings.manualFocusDistance;\n    },\n\n    isAutofocusTracking: function (runtimeScene, behavior) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      return !!(pipeline && pipeline.autofocusTracking);\n    },\n\n    isDepthAvailable: function (runtimeScene, behavior) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      return !!(pipeline && pipeline.depthAttached);\n    },\n\n    getSetting: function (runtimeScene, behavior, key, fallback) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      if (!pipeline || pipeline.settings[key] === undefined) return fallback;\n      return pipeline.settings[key];\n    },\n\n    isPassActive: function (runtimeScene, behavior) {\n      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);\n      return !!(pipeline && pipeline.activeBehavior && pipeline.customPass);\n    }\n  };\n\n  if (typeof gdjs.registerRuntimeSceneUnloadedCallback === 'function') {\n    gdjs.registerRuntimeSceneUnloadedCallback(function (runtimeScene) {\n      var pipeline = getPipeline(runtimeScene);\n      if (pipeline) {\n        detachPass(pipeline);\n        pipeline.dispose();\n      }\n    });\n  }\n})();\n\nconst __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nFX.registerBehavior(runtimeScene, object, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPreEvents",
+          "fullName": "doStepPreEvents",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\n\ntry {\n  FX.syncBehaviorProperties(runtimeScene, object, behavior);\n  FX.stepBehavior(runtimeScene, object, behavior);\n} catch (e) {}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "onDestroy",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nFX.destroyBehavior(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ApplyPreset",
+          "fullName": "Apply cinematic preset",
+          "sentence": "Apply cinematic preset _PARAM2_ on _PARAM0_",
+          "description": "Apply 1-click genre post-processing preset (CyberpunkNeon, CinematicMovie, HorrorGrim, CleanRealistic, PerformanceLite).",
+          "functionType": "Action",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Preset",
+              "type": "stringWithSelector",
+              "description": "Genre preset",
+              "supplementaryInformation": "[\"CyberpunkNeon\",\"CinematicMovie\",\"HorrorGrim\",\"CleanRealistic\",\"PerformanceLite\"]"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Preset\");\nFX.applyPreset(runtimeScene, behavior, val);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetMasterIntensity",
+          "fullName": "Set master post-processing intensity",
+          "sentence": "Set master post-processing intensity on _PARAM0_ to _PARAM2_",
+          "description": "Crossfade between the untouched scene and the fully graded result. 0.0 is a true bypass.",
+          "functionType": "Action",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Intensity",
+              "type": "expression",
+              "description": "Master intensity scale",
+              "defaultValue": "1.0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Intensity\");\nif (behavior._setMasterIntensity) behavior._setMasterIntensity(val);\nFX.updateSettings(runtimeScene, behavior, { masterIntensity: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetEffectQuality",
+          "fullName": "Set effect buffer quality",
+          "sentence": "Set effect buffer quality on _PARAM0_ to _PARAM2_",
+          "description": "Resolution of the ambient occlusion, reflection and reflectivity-mask buffers: Full, Half or Quarter. Changing this reallocates those buffers.",
+          "functionType": "Action",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Quality",
+              "type": "stringWithSelector",
+              "description": "Buffer resolution",
+              "supplementaryInformation": "[\"Full\",\"Half\",\"Quarter\"]"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Quality\");\nif (behavior._setEffectQuality) behavior._setEffectQuality(val);\nFX.updateSettings(runtimeScene, behavior, { effectQuality: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetToneMapping",
+          "fullName": "Set tone mapping mode",
+          "sentence": "Set tone mapping mode on _PARAM0_ to _PARAM2_",
+          "description": "Set filmic color grading tone mapping curve: ACESFilmic, Reinhard, Cineon, or Linear.",
+          "functionType": "Action",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Mode",
+              "type": "stringWithSelector",
+              "description": "Tone mapping curve",
+              "supplementaryInformation": "[\"ACESFilmic\",\"Reinhard\",\"Cineon\",\"Linear\"]"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Mode\");\nif (behavior._setToneMapping) behavior._setToneMapping(val);\nFX.updateSettings(runtimeScene, behavior, { toneMapping: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetGTAOEnabled",
+          "fullName": "Enable Ground Truth Ambient Occlusion (GTAO)",
+          "sentence": "Enable Ground Truth Ambient Occlusion (GTAO) on _PARAM0_: _PARAM2_",
+          "description": "Toggle high-precision horizon-based ambient occlusion in crevices and corners.",
+          "functionType": "Action",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable GTAO"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setEnableGTAO) behavior._setEnableGTAO(val);\nFX.updateSettings(runtimeScene, behavior, { enableGTAO: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetGTAORadius",
+          "fullName": "Set GTAO radius",
+          "sentence": "Set GTAO radius on _PARAM0_ to _PARAM2_ world units",
+          "description": "Occlusion search radius in GDevelop world units. Scene scale, not metres: a default 3D layer puts the camera around 724 units back, so useful values are in the tens.",
+          "functionType": "Action",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Radius",
+              "type": "expression",
+              "description": "Search radius in world units",
+              "defaultValue": "50"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Radius\");\nif (behavior._setGTAORadius) behavior._setGTAORadius(val);\nFX.updateSettings(runtimeScene, behavior, { gtaoRadius: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetGTAOIntensity",
+          "fullName": "Set GTAO intensity",
+          "sentence": "Set GTAO intensity on _PARAM0_ to _PARAM2_",
+          "description": "Adjust darkness and contrast of contact ambient occlusion (0.0 to 3.0).",
+          "functionType": "Action",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Intensity",
+              "type": "expression",
+              "description": "Occlusion darkness multiplier",
+              "defaultValue": "1.0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Intensity\");\nif (behavior._setGTAOIntensity) behavior._setGTAOIntensity(val);\nFX.updateSettings(runtimeScene, behavior, { gtaoIntensity: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetGTAOMultiBounce",
+          "fullName": "Enable GTAO multi-bounce approximation",
+          "sentence": "Enable GTAO multi-bounce approximation on _PARAM0_: _PARAM2_",
+          "description": "Approximates colored multi-bounce to prevent dark crevices from losing albedo.",
+          "functionType": "Action",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable multi-bounce"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setGTAOMultiBounce) behavior._setGTAOMultiBounce(val);\nFX.updateSettings(runtimeScene, behavior, { gtaoMultiBounce: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetSSREnabled",
+          "fullName": "Enable Screen-Space Reflections (SSR)",
+          "sentence": "Enable Screen-Space Reflections (SSR) on _PARAM0_: _PARAM2_",
+          "description": "Toggle real-time raymarched reflections of dynamic objects on shiny/wet surfaces.",
+          "functionType": "Action",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable SSR"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setEnableSSR) behavior._setEnableSSR(val);\nFX.updateSettings(runtimeScene, behavior, { enableSSR: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetSSRIntensity",
+          "fullName": "Set SSR reflection intensity",
+          "sentence": "Set SSR reflection intensity on _PARAM0_ to _PARAM2_",
+          "description": "Adjust reflection brightness and blend opacity (0.0 to 1.0).",
+          "functionType": "Action",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Intensity",
+              "type": "expression",
+              "description": "Reflection opacity",
+              "defaultValue": "0.75"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Intensity\");\nif (behavior._setSSRIntensity) behavior._setSSRIntensity(val);\nFX.updateSettings(runtimeScene, behavior, { ssrIntensity: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetSSRMaxDistance",
+          "fullName": "Set SSR maximum ray distance",
+          "sentence": "Set SSR maximum ray distance on _PARAM0_ to _PARAM2_ world units",
+          "description": "How far a reflection ray may travel, in GDevelop world units. Longer rays catch more distant reflections at proportionally more cost.",
+          "functionType": "Action",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Distance",
+              "type": "expression",
+              "description": "Maximum ray distance in world units",
+              "defaultValue": "400"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Distance\");\nif (behavior._setSSRMaxDistance) behavior._setSSRMaxDistance(val);\nFX.updateSettings(runtimeScene, behavior, { ssrMaxDistance: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetSSRFresnel",
+          "fullName": "Set SSR Fresnel falloff",
+          "sentence": "Set SSR Fresnel falloff on _PARAM0_ to _PARAM2_",
+          "description": "How strongly reflections favour grazing angles. 0 = uniform mirror everywhere, 1 = pure Schlick Fresnel so only glancing surfaces reflect.",
+          "functionType": "Action",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Fresnel",
+              "type": "expression",
+              "description": "Fresnel falloff amount (0 to 1)",
+              "defaultValue": "0.6"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Fresnel\");\nif (behavior._setSSRFresnel) behavior._setSSRFresnel(val);\nFX.updateSettings(runtimeScene, behavior, { ssrFresnel: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetSSRSurfaces",
+          "fullName": "Set which surfaces reflect (SSR)",
+          "sentence": "Set which surfaces reflect on _PARAM0_ to _PARAM2_",
+          "description": "MaterialBased: only smooth or metallic materials reflect, driven by a per-pixel reflectivity mask. Everything: mirror the scene onto every surface.",
+          "functionType": "Action",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Mode",
+              "type": "stringWithSelector",
+              "description": "Reflective surface mode",
+              "supplementaryInformation": "[\"MaterialBased\",\"Everything\"]"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Mode\");\nif (behavior._setSSRSurfaces) behavior._setSSRSurfaces(val);\nFX.updateSettings(runtimeScene, behavior, { ssrSurfaces: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetSSRRaySteps",
+          "fullName": "Set SSR ray step count",
+          "sentence": "Set SSR ray step count on _PARAM0_ to _PARAM2_",
+          "description": "Raymarching step quality count: 16 (Fast), 32 (Balanced), 64 (High).",
+          "functionType": "Action",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Steps",
+              "type": "stringWithSelector",
+              "description": "Step count",
+              "supplementaryInformation": "[\"16\",\"32\",\"64\"]"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Steps\");\nconst steps = parseInt(val, 10) || 32;\nif (behavior._setSSRRaySteps) behavior._setSSRRaySteps(steps);\nFX.updateSettings(runtimeScene, behavior, { ssrRaySteps: steps });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetBloomEnabled",
+          "fullName": "Enable Bloom",
+          "sentence": "Enable Bloom on _PARAM0_: _PARAM2_",
+          "description": "Toggle 13-tap progressive downsample/upsample Karis HDR bloom.",
+          "functionType": "Action",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable Bloom"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setEnableBloom) behavior._setEnableBloom(val);\nFX.updateSettings(runtimeScene, behavior, { enableBloom: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetBloomIntensity",
+          "fullName": "Set Bloom intensity",
+          "sentence": "Set Bloom intensity on _PARAM0_ to _PARAM2_",
+          "description": "Adjust glow brightness multiplier (0.0 to 3.0).",
+          "functionType": "Action",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Intensity",
+              "type": "expression",
+              "description": "Glow power multiplier",
+              "defaultValue": "0.8"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Intensity\");\nif (behavior._setBloomIntensity) behavior._setBloomIntensity(val);\nFX.updateSettings(runtimeScene, behavior, { bloomIntensity: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetBloomThreshold",
+          "fullName": "Set Bloom luminance threshold",
+          "sentence": "Set Bloom luminance threshold on _PARAM0_ to _PARAM2_",
+          "description": "Minimum luminance required for surfaces to emit bloom (0.5 to 2.0).",
+          "functionType": "Action",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Threshold",
+              "type": "expression",
+              "description": "Luminance cutoff threshold",
+              "defaultValue": "0.9"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Threshold\");\nif (behavior._setBloomThreshold) behavior._setBloomThreshold(val);\nFX.updateSettings(runtimeScene, behavior, { bloomThreshold: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetAnamorphicFlares",
+          "fullName": "Set Anamorphic flare streak strength",
+          "sentence": "Set Anamorphic flare streak strength on _PARAM0_ to _PARAM2_",
+          "description": "Horizontal cinema streak flare strength (0.0 to 1.0).",
+          "functionType": "Action",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Strength",
+              "type": "expression",
+              "description": "Horizontal flare strength",
+              "defaultValue": "0.3"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Strength\");\nif (behavior._setAnamorphicFlares) behavior._setAnamorphicFlares(val);\nFX.updateSettings(runtimeScene, behavior, { anamorphicFlares: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetFlareTintColor",
+          "fullName": "Set Flare tint color",
+          "sentence": "Set Flare tint color on _PARAM0_ to _PARAM2_",
+          "description": "Set color tint for anamorphic lens streaks (e.g. sci-fi blue).",
+          "functionType": "Action",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Color",
+              "type": "color",
+              "description": "Flare RGB tint",
+              "defaultValue": "100;180;255"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Color\");\nif (behavior._setFlareTintColor) behavior._setFlareTintColor(val);\nFX.updateSettings(runtimeScene, behavior, { flareTintColor: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetDOFEnabled",
+          "fullName": "Enable Depth of Field (DOF)",
+          "sentence": "Enable Depth of Field on _PARAM0_: _PARAM2_",
+          "description": "Toggle optical bokeh Circle of Confusion lens blur.",
+          "functionType": "Action",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable DOF"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setEnableDOF) behavior._setEnableDOF(val);\nFX.updateSettings(runtimeScene, behavior, { enableDOF: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetAutofocus",
+          "fullName": "Set DOF autofocus mode",
+          "sentence": "Set DOF autofocus mode on _PARAM0_: _PARAM2_",
+          "description": "Automatically raycast the centre of the screen and ease the focus plane onto whatever it hits. Falls back to the manual focus distance when nothing is in front of the camera.",
+          "functionType": "Action",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable Autofocus"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setAutofocus) behavior._setAutofocus(val);\nFX.updateSettings(runtimeScene, behavior, { autofocus: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetManualFocusDistance",
+          "fullName": "Set DOF manual focus distance",
+          "sentence": "Set DOF manual focus distance on _PARAM0_ to _PARAM2_ world units",
+          "description": "Position the focus plane, in GDevelop world units, when autofocus is off. A default 3D layer puts the camera about 724 units from the z=0 plane.",
+          "functionType": "Action",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Distance",
+              "type": "expression",
+              "description": "Focus distance in world units",
+              "defaultValue": "700"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Distance\");\nif (behavior._setManualFocusDistance) behavior._setManualFocusDistance(val);\nFX.updateSettings(runtimeScene, behavior, { manualFocusDistance: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetApertureFStop",
+          "fullName": "Set DOF camera aperture f-stop",
+          "sentence": "Set DOF camera aperture f-stop on _PARAM0_ to _PARAM2_",
+          "description": "Adjust lens aperture (f/1.4 for heavy bokeh, f/16.0 for deep focus).",
+          "functionType": "Action",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "FStop",
+              "type": "expression",
+              "description": "Lens aperture f-stop",
+              "defaultValue": "2.8"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"FStop\");\nif (behavior._setApertureFStop) behavior._setApertureFStop(val);\nFX.updateSettings(runtimeScene, behavior, { apertureFStop: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetMaxBokehRadius",
+          "fullName": "Set DOF maximum bokeh blur radius",
+          "sentence": "Set DOF maximum bokeh blur radius on _PARAM0_ to _PARAM2_",
+          "description": "Maximum pixel blur radius for out-of-focus highlights.",
+          "functionType": "Action",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Radius",
+              "type": "expression",
+              "description": "Maximum bokeh blur radius in pixels",
+              "defaultValue": "12.0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Radius\");\nif (behavior._setMaxBokehRadius) behavior._setMaxBokehRadius(val);\nFX.updateSettings(runtimeScene, behavior, { maxBokehRadius: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetMotionBlurEnabled",
+          "fullName": "Enable Motion Blur",
+          "sentence": "Enable Motion Blur on _PARAM0_: _PARAM2_",
+          "description": "Toggle velocity vector motion blur for camera and dynamic objects.",
+          "functionType": "Action",
+          "group": "Motion Blur & Optical FX",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enable",
+              "type": "yesorno",
+              "description": "Enable Motion Blur"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = !!eventsFunctionContext.getArgument(\"Enable\");\nif (behavior._setEnableMotionBlur) behavior._setEnableMotionBlur(val);\nFX.updateSettings(runtimeScene, behavior, { enableMotionBlur: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetMotionBlurStrength",
+          "fullName": "Set Motion Blur strength",
+          "sentence": "Set Motion Blur strength on _PARAM0_ to _PARAM2_",
+          "description": "Adjust velocity blur streak length (0.0 to 1.0).",
+          "functionType": "Action",
+          "group": "Motion Blur & Optical FX",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Strength",
+              "type": "expression",
+              "description": "Motion blur scale",
+              "defaultValue": "0.5"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Strength\");\nif (behavior._setMotionBlurStrength) behavior._setMotionBlurStrength(val);\nFX.updateSettings(runtimeScene, behavior, { motionBlurStrength: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetChromaticAberration",
+          "fullName": "Set Chromatic Aberration strength",
+          "sentence": "Set Chromatic Aberration strength on _PARAM0_ to _PARAM2_",
+          "description": "Adjust optical lens color fringing at screen edges (0.0 to 0.02).",
+          "functionType": "Action",
+          "group": "Motion Blur & Optical FX",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Strength",
+              "type": "expression",
+              "description": "Color fringing offset",
+              "defaultValue": "0.003"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst val = eventsFunctionContext.getArgument(\"Strength\");\nif (behavior._setChromaticAberration) behavior._setChromaticAberration(val);\nFX.updateSettings(runtimeScene, behavior, { chromaticAberration: val });\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsActive",
+          "fullName": "Post-processing pass is active",
+          "sentence": "Post-processing pass is active on _PARAM0_",
+          "description": "Check if the master post-processing pipeline is currently active.",
+          "functionType": "Condition",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.isPassActive(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsSSREnabled",
+          "fullName": "Screen-Space Reflections (SSR) is enabled",
+          "sentence": "Screen-Space Reflections (SSR) is enabled on _PARAM0_",
+          "description": "Check if Screen-Space Reflections pass is currently enabled.",
+          "functionType": "Condition",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst s = FX.getSettings(runtimeScene, behavior);\neventsFunctionContext.returnValue = !!(s && s.enableSSR && s.ssrIntensity > 0.0);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsDepthAvailable",
+          "fullName": "Depth buffer is available",
+          "sentence": "Depth buffer is available on _PARAM0_",
+          "description": "True when a depth texture was successfully attached to the layer composer. GTAO, SSR, Depth of Field and Motion Blur all need this; without it they are skipped.",
+          "functionType": "Condition",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.isDepthAvailable(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsGTAOEnabled",
+          "fullName": "Ground Truth Ambient Occlusion (GTAO) is enabled",
+          "sentence": "Ground Truth Ambient Occlusion (GTAO) is enabled on _PARAM0_",
+          "description": "Check if Ground Truth Ambient Occlusion pass is currently enabled.",
+          "functionType": "Condition",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst s = FX.getSettings(runtimeScene, behavior);\neventsFunctionContext.returnValue = !!(s && s.enableGTAO && s.gtaoIntensity > 0.0);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsBloomEnabled",
+          "fullName": "Bloom is enabled",
+          "sentence": "Bloom is enabled on _PARAM0_",
+          "description": "Check if 13-tap Karis HDR Bloom pass is active.",
+          "functionType": "Condition",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst s = FX.getSettings(runtimeScene, behavior);\neventsFunctionContext.returnValue = !!(s && s.enableBloom && s.bloomIntensity > 0.0);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsDOFEnabled",
+          "fullName": "Depth of Field (DOF) is active",
+          "sentence": "Depth of Field (DOF) is active on _PARAM0_",
+          "description": "Check if optical bokeh Depth of Field blur is active.",
+          "functionType": "Condition",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst s = FX.getSettings(runtimeScene, behavior);\neventsFunctionContext.returnValue = !!(s && s.enableDOF);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsAutofocusTracking",
+          "fullName": "Autofocus is currently tracking a target",
+          "sentence": "Autofocus is currently tracking a target on _PARAM0_",
+          "description": "Check if center crosshair raycaster has locked onto a 3D surface.",
+          "functionType": "Condition",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.isAutofocusTracking(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsMotionBlurEnabled",
+          "fullName": "Motion Blur is enabled",
+          "sentence": "Motion Blur is enabled on _PARAM0_",
+          "description": "Check if per-pixel velocity motion blur is active.",
+          "functionType": "Condition",
+          "group": "Motion Blur & Optical FX",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\nconst s = FX.getSettings(runtimeScene, behavior);\neventsFunctionContext.returnValue = !!(s && s.enableMotionBlur && s.motionBlurStrength > 0.001);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentFocusDistance",
+          "fullName": "Current autofocus distance",
+          "sentence": "",
+          "description": "Live focus plane distance in world units. Follows the autofocus raycast when autofocus is on, otherwise reports the manual focus distance.",
+          "functionType": "Expression",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getCurrentFocusDistance(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "ApertureFStop",
+          "fullName": "Lens aperture f-stop",
+          "sentence": "",
+          "description": "Current camera lens aperture f-stop value.",
+          "functionType": "Expression",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"apertureFStop\", 2.8);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "ManualFocusDistance",
+          "fullName": "Manual focus distance",
+          "sentence": "",
+          "description": "Current manual focus plane distance in world units.",
+          "functionType": "Expression",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"manualFocusDistance\", 700);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "MaxBokehRadius",
+          "fullName": "Max bokeh blur radius",
+          "sentence": "",
+          "description": "Current maximum bokeh blur radius in pixels.",
+          "functionType": "Expression",
+          "group": "Depth of Field (DOF)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"maxBokehRadius\", 12.0);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "MasterIntensity",
+          "fullName": "Master effect intensity",
+          "sentence": "",
+          "description": "Global post-processing effect multiplier.",
+          "functionType": "Expression",
+          "group": "Master & Presets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"masterIntensity\", 1.0);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "BloomIntensity",
+          "fullName": "Bloom glow intensity",
+          "sentence": "",
+          "description": "Current Karis HDR bloom brightness multiplier.",
+          "functionType": "Expression",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"bloomIntensity\", 0.8);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "BloomThreshold",
+          "fullName": "Bloom luminance threshold",
+          "sentence": "",
+          "description": "Current bloom luminance cutoff threshold.",
+          "functionType": "Expression",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"bloomThreshold\", 0.9);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "GTAOIntensity",
+          "fullName": "GTAO ambient occlusion intensity",
+          "sentence": "",
+          "description": "Current ambient occlusion shadow darkness.",
+          "functionType": "Expression",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"gtaoIntensity\", 1.0);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "GTAORadius",
+          "fullName": "GTAO search radius",
+          "sentence": "",
+          "description": "Current ambient occlusion search radius in world units.",
+          "functionType": "Expression",
+          "group": "Ambient Occlusion (GTAO)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"gtaoRadius\", 50);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "SSRIntensity",
+          "fullName": "SSR reflection intensity",
+          "sentence": "",
+          "description": "Current raymarched reflection brightness.",
+          "functionType": "Expression",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"ssrIntensity\", 0.6);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "SSRMaxDistance",
+          "fullName": "SSR maximum ray distance",
+          "sentence": "",
+          "description": "Current SSR maximum ray distance in world units.",
+          "functionType": "Expression",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"ssrMaxDistance\", 400);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "SSRFresnel",
+          "fullName": "SSR Fresnel falloff",
+          "sentence": "",
+          "description": "Current SSR grazing-angle Fresnel falloff amount.",
+          "functionType": "Expression",
+          "group": "Screen-Space Reflections (SSR)",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"ssrFresnel\", 0.6);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "MotionBlurStrength",
+          "fullName": "Motion Blur strength",
+          "sentence": "",
+          "description": "Current velocity motion blur strength scale.",
+          "functionType": "Expression",
+          "group": "Motion Blur & Optical FX",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"motionBlurStrength\", 0.5);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "ChromaticAberration",
+          "fullName": "Chromatic aberration strength",
+          "sentence": "",
+          "description": "Current lens optical color fringing offset.",
+          "functionType": "Expression",
+          "group": "Motion Blur & Optical FX",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"chromaticAberration\", 0.003);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        },
+        {
+          "name": "AnamorphicFlares",
+          "fullName": "Anamorphic flare strength",
+          "sentence": "",
+          "description": "Current horizontal cinema flare streak strength.",
+          "functionType": "Expression",
+          "group": "Bloom & Anamorphic Flares",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __fxObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __fxObjects.length ? __fxObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__cinematicPostFX3D) return;\nconst FX = gdjs.__cinematicPostFX3D;\neventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, \"anamorphicFlares\", 0.3);\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "number"
+        }
+      ]
+    }
+  ]
+}

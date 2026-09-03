@@ -13,8 +13,7 @@ mindmap
       Sector & Anti-Portal Occluder
     Lighting & Atmosphere
       Cascaded Shadow Maps CSM
-      LightProbeGrid3D (SH & 3D Texture GI)
-      Clustered Forward Light Manager
+      Advanced Lighting (Clustered Forward + Probe Grid GI)
       Volumetric Atmosphere & Height Fog
       Screen-Space Contact Shadows
     LOD & Performance Batching
@@ -36,6 +35,8 @@ mindmap
       MeshDeformation3D (Blacksmithing, Sculpting & Plasticity)
     Post-Processing & Optics
       CinematicPostFX3D (SSR, GTAO, Karis Bloom, Bokeh DOF)
+    Fluids & Water Simulation
+      FluidAndWater3D (Gerstner Oceans, Buoyancy & SPH Pouring)
 ```
 
 ---
@@ -44,16 +45,18 @@ mindmap
 
 | Extension Folder | Primary Focus | Status | Documentation Links |
 | :--- | :--- | :---: | :--- |
-| 📁 **[`LightProbeGrid3D/`](./LightProbeGrid3D)** | WebGL2 3D Texture Irradiance Volumes & Spherical Harmonics Indirect GI | Complete Blueprint | [README](./LightProbeGrid3D/README.md) · [Plan](./LightProbeGrid3D/IMPLEMENTATION_PLAN.md) · [API](./LightProbeGrid3D/API_REFERENCE.md) |
 | 📁 **[`AutoMeshLOD3D/`](./AutoMeshLOD3D)** | Single-Model QEM Decimation in Web Workers & Shared Vertex Index Swapping | Complete Blueprint | [README](./AutoMeshLOD3D/README.md) · [Plan](./AutoMeshLOD3D/IMPLEMENTATION_PLAN.md) · [API](./AutoMeshLOD3D/API_REFERENCE.md) |
 | 📁 **[`CameraTweens3d/`](./CameraTweens3d)** | 8-Module Procedural Motion, Shakes, Spring-Dampers & 4 Genre Presets | Implemented | [README](./CameraTweens3d/README.md) · [Plan](./CameraTweens3d/IMPLEMENTATION_PLAN.md) · [API](./CameraTweens3d/API_REFERENCE.md) |
 | 📁 **[`CascadedShadowMaps3D/`](./CascadedShadowMaps3D)** | 3–4 Depth Cascades, Texel Snapping, 16-Tap Poisson PCF & Contact Shadows | Complete Blueprint | [README](./CascadedShadowMaps3D/README.md) · [Plan](./CascadedShadowMaps3D/IMPLEMENTATION_PLAN.md) · [API](./CascadedShadowMaps3D/API_REFERENCE.md) |
-| 📁 **[`CinematicPostFX3D/`](./CinematicPostFX3D)** | All-in-One SSR Reflections, GTAO Ambient Occlusion, 13-Tap Karis Bloom, Bokeh DOF | Complete Blueprint | [README](./CinematicPostFX3D/README.md) · [Plan](./CinematicPostFX3D/IMPLEMENTATION_PLAN.md) · [API](./CinematicPostFX3D/API_REFERENCE.md) |
-| 📁 **[`ClusteredLightManager3D/`](./ClusteredLightManager3D)** | 16x9x24 Frustum Clustered Multi-Lights (500+ Lights, Karis Area Specular, Volumetric Fog, SSCS) | Complete Blueprint | [README](./ClusteredLightManager3D/README.md) · [Plan](./ClusteredLightManager3D/IMPLEMENTATION_PLAN.md) · [API](./ClusteredLightManager3D/API_REFERENCE.md) |
+| 📁 **[`CinematicPostFX3D/`](./CinematicPostFX3D)** | All-in-One SSR Reflections, GTAO Ambient Occlusion, 13-Tap Karis Bloom, Bokeh DOF | Implemented | [README](./CinematicPostFX3D/README.md) · [Plan](./CinematicPostFX3D/IMPLEMENTATION_PLAN.md) · [API](./CinematicPostFX3D/API_REFERENCE.md) |
+| 📁 **[`AdvancedLighting3D/`](./AdvancedLighting3D)** | 16x9x24 Frustum Clustered Multi-Lights (500+ Lights, Karis Area Specular, Volumetric Fog, SSCS) | Complete Blueprint | [README](./AdvancedLighting3D/README.md) · [Plan](./AdvancedLighting3D/IMPLEMENTATION_PLAN.md) · [API](./AdvancedLighting3D/API_REFERENCE.md) |
 | 📁 **[`ExternalSkeletalAnimator3D/`](./ExternalSkeletalAnimator3D)** | Multi-Clip External GLB Animation Player, Bone Sockets & Jolt Ragdoll Physics | Implemented / Active | [README](./ExternalSkeletalAnimator3D/README.md) · [Plan](./ExternalSkeletalAnimator3D/PLAN.md) |
+| 📁 **[`FluidAndWater3D/`](./FluidAndWater3D)** | Sizable Gerstner Oceans, Jolt Buoyancy, Snell's Window & Pourable SPH Liquids | Implemented | [README](./FluidAndWater3D/README.md) · [Plan](./FluidAndWater3D/IMPLEMENTATION_PLAN.md) · [API](./FluidAndWater3D/API_REFERENCE.md) |
 | 📁 **[`Material3D/`](./Material3D)** | Universal PBR & BRDF Material Engine + v3.5 FX (POM 3D Relief, SSS Skin, Triplanar, Wetness) | Implemented / Active Plan | [README](./Material3D/README.md) · [v3.5 Plan](./Material3D/ADVANCED_MATERIAL_ENHANCEMENT_PLAN.md) |
 | 📁 **[`MeshDeformation3D/`](./MeshDeformation3D)** | Real-Time Vertex Sculpting, Thermal Blacksmithing, Volume Metal Flow & Chiseling | Complete Blueprint | [README](./MeshDeformation3D/README.md) · [Plan](./MeshDeformation3D/IMPLEMENTATION_PLAN.md) · [API](./MeshDeformation3D/API_REFERENCE.md) |
 | 📁 **[`MidiSynthPlayer/`](./MidiSynthPlayer)** | WebAudio Algorithmic FM/Chiptune MIDI OST Engine (0 KB Samples, 99% Size Reduction) | Complete Blueprint | [README](./MidiSynthPlayer/README.md) · [Plan](./MidiSynthPlayer/IMPLEMENTATION_PLAN.md) · [API](./MidiSynthPlayer/API_REFERENCE.md) |
+| 📁 **[`StableShadowAnchor3D/`](./StableShadowAnchor3D)** | Editor & Runtime Shadow Stabilization (World-Fixed, Focus-Object & Frozen Anchors) | Complete Blueprint | [README](./StableShadowAnchor3D/README.md) · [Plan](./StableShadowAnchor3D/IMPLEMENTATION_PLAN.md) · [API](./StableShadowAnchor3D/API_REFERENCE.md) |
+| 📁 **[`WorldPartition3D Suite/`](./Multi%20extension%20work%20space%20folder)** | Multi-Extension Workspace: WorldPartition3D, FloatingOrigin3D & AutoMeshLOD3D | Complete Blueprint | [Workspace Overview](./Multi%20extension%20work%20space%20folder/README.md) · [WorldPartition3D](./Multi%20extension%20work%20space%20folder/WorldPartition3D/README.md) · [FloatingOrigin3D](./Multi%20extension%20work%20space%20folder/FloatingOrigin3D/README.md) |
 
 ---
 
@@ -111,7 +114,12 @@ mindmap
 
 ---
 
-### 2.2 `LightProbeGrid3D` (Spherical Harmonics Indirect GI) — *[Folder: LightProbeGrid3D/](./LightProbeGrid3D)*
+### 2.2 Probe-Grid Indirect GI — *merged into [AdvancedLighting3D/](./AdvancedLighting3D) as of 2.0.0*
+
+> The standalone `LightProbeGrid3D/` folder no longer exists. This half now ships inside
+> AdvancedLighting3D as the `LightProbeVolume3D` and `ReceiveLightProbes` behaviors, sharing one
+> shader injection with the clustered light loop. See
+> [PROBE_IMPLEMENTATION_PLAN.md](./AdvancedLighting3D/PROBE_IMPLEMENTATION_PLAN.md).
 * **Type:** Global Manager / Behavior
 * **Purpose:** Delivers realistic indirect bounce lighting (colored ambient light from ground, walls, and sky) with near-zero GPU cost via WebGL2 3D textures.
 * **Key Features:**
@@ -123,7 +131,7 @@ mindmap
 
 ---
 
-### 2.3 `ClusteredLightManager3D` (100+ Active Dynamic Lights) — *[Folder: ClusteredLightManager3D/](./ClusteredLightManager3D)*
+### 2.3 `AdvancedLighting3D` (100+ Active Dynamic Lights) — *[Folder: AdvancedLighting3D/](./AdvancedLighting3D)*
 * **Type:** Global Scene Manager & Behavior
 * **Purpose:** Allows placing hundreds of dynamic point lights, spotlights, and area lights (torches, streetlamps, neon tubes, campfires) with zero frame drops or shader hitching.
 * **Key Features:**
@@ -321,27 +329,57 @@ mindmap
 
 ---
 
-## 9. Summary Matrix: Extension Possibilities by Priority
+## 9. Fluid & Water Simulation
+
+### 9.1 `FluidAndWater3D` (Gerstner Oceans, Buoyancy & SPH Pouring) — *[Folder: FluidAndWater3D/](./FluidAndWater3D)*
+* **Type:** Custom 3D Object / Behavior Suite
+* **Purpose:** Dual-mode water and fluid engine uniting large-scale ocean volumes (Gerstner waves, Beer-Lambert depth absorption, underwater camera transition, Jolt multi-probe buoyancy) and micro-scale pourable liquids (SPH particle fluid simulation, container fill tracking, viscosity, SSFR smooth metaball rendering).
+* **Key Features:**
+  - **Sizable 3D Water Volumes:** Resizable boxes/planes for oceans, swimming pools, and lakes.
+  - **Multi-Octave Gerstner Waves:** Sharp-crested GPU wave displacement with synchronized CPU height queries.
+  - **Beer-Lambert Optical Depth:** Real physical depth extinction with screen-space refraction.
+  - **Multi-Point Archimedes Buoyancy:** 4-probe boat hull physics for natural rocking and wave surfing.
+  - **SPH Pourable Liquid Physics:** Pours potions, fills flasks and cauldrons with realistic viscosity, surface tension, and liquid volume accumulation.
+  - **Screen-Space Fluid Meshing (SSFR):** Bilateral depth filtering transforms particle droplets into smooth refractive liquid streams.
+* **Technical Mechanism:** GPU Gerstner vertex displacement + SPH Navier-Stokes particle solver with bilateral depth reconstruction.
+* **Impact / Priority:** ⭐⭐⭐⭐⭐ *(Complete water bodies + interactive potion pouring in 1 extension)*
+
+---
+
+## 10. Large-Scale Open World & Sector Streaming
+
+### 10.1 `WorldPartition3D` (Grid Streaming, HLOD Proxies & Clipmaps) — *[Folder: WorldPartition3D/](./WorldPartition3D)*
+* **Type:** Global Scene Manager / Behavior Suite
+* **Purpose:** Unified open-world streaming and rendering suite consolidating Unreal Engine 5 World Partition grid streaming, Delta-State persistence, HLOD distant sector proxy merging, Concentric Geometry Clipmap terrain, and 64-bit Floating Origin coordinate shifts into one cohesive engine.
+* **Key Features:**
+  - **Grid-Based Sector Streaming:** Asynchronous $(X, Y)$ cell streaming with LRU VRAM memory caching.
+  - **Delta-State Persistence:** Remembers dynamic changes (looted chests, dead enemies, broken doors) across chunk unloads and reloads.
+  - **Concentric Geometry Clipmap Terrain:** 4–6 nested concentric geometry rings with GPU height displacement at a constant $O(1)$ 50k triangle budget.
+  - **HLOD Sector Proxy Swapping:** Merges thousands of distant props into 1 draw call per outer sector ($5,000\text{ draw calls} \rightarrow 1\text{ draw call}$).
+  - **FloatingOrigin3D (64-Bit Coordinates):** Re-centers Three.js and Jolt Physics scene origins atomically every $1,000\text{m}$, eliminating 32-bit float vertex jitter forever.
+* **Technical Mechanism:** Multi-tier streaming pipeline integrating `AutoMeshLOD3D` QEM cluster baking with camera-relative 64-bit coordinate shifting.
+* **Impact / Priority:** ⭐⭐⭐⭐⭐ *(Enables massive $20\text{km} \times 20\text{km}+$ open worlds at flat 60–120 FPS in WebGL2)*
+
+---
+
+## 11. Summary Matrix: Extension Possibilities by Priority
 
 | Extension Concept | Primary Category | Complexity | Performance / Value Impact | Status |
 | :--- | :--- | :---: | :---: | :---: |
 | **`AutoMeshLOD3D`** | Optimization / LOD | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`AutoMeshLOD3D/`) |
 | **`CameraTweens3d`** | Camera & Motion Polish | Low | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Implemented (`CameraTweens3d/`) |
-| **`LightProbeGrid3D` (SH GI)** | Lighting & Atmosphere | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`LightProbeGrid3D/`) |
-| **`ClusteredLightManager3D`** | Dynamic Multi-Lights | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`ClusteredLightManager3D/`) |
+| **`AdvancedLighting3D`** (Advanced Lighting) | Dynamic Multi-Lights **+ Probe-Grid Indirect GI** | High | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Built (`AdvancedLighting3D/`) |
 | **`MidiSynthPlayer`** | Audio & Dynamic OST | Low | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`MidiSynthPlayer/`) |
 | **`CascadedShadowMaps3D`** | Lighting & Shadows | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`CascadedShadowMaps3D/`) |
 | **`MeshDeformation3D`** | Physics & Deformation | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`MeshDeformation3D/`) |
-| **`CinematicPostFX3D`** | Post-Processing & Optics| High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`CinematicPostFX3D/`) |
-| **`SpatialChunkStreamer3D`** | Open World / Streaming | High | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
+| **`CinematicPostFX3D`** | Post-Processing & Optics| High | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Implemented (`CinematicPostFX3D/`) |
+| **`FluidAndWater3D`** | Fluids & Water | High | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Implemented (`FluidAndWater3D/`) |
+| **`WorldPartition3D`** | Open World / Streaming | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`WorldPartition3D/`) |
 | **`AutoInstancer3D`** | Draw Call Batching | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
 | **`ProceduralFoliageScatterer3D`** | Environment & Foliage | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
 | **`SocketBoneAttachment3D`** | Workflow / QoL | Low | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
-| **`ClipmapTerrain3D`** | Infinite Landscape | High | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint |
 | **`DecalProjector3D`** | Visual Effects | Medium | ⭐⭐⭐⭐ (High) | 💡 Explored Blueprint |
-| **`FloatingOrigin3D`** | Large-Scale Coordinates | Medium | ⭐⭐⭐⭐ (High) | 💡 Explored Blueprint |
 | **`AtmosphericScattering3D`** | Atmosphere & Fog | Medium | ⭐⭐⭐⭐ (High) | 💡 Explored Blueprint |
 | **`PerformanceHeatmapOverlay3D`**| Debugging & Diagnostics| Low | ⭐⭐⭐⭐ (High) | 💡 Explored Blueprint |
 | **`AntiPortalOccluder3D`** | Indoor Occlusion Culling | Medium | ⭐⭐⭐⭐ (High) | 💡 Explored Blueprint |
-| **`HierarchicalLOD3D` (HLOD)** | Distant Proxy Clusters | High | ⭐⭐⭐⭐ (High) | 💡 Explored Blueprint |
 | **`ScreenSpaceContactShadows3D`**| Micro-Shadows | Medium | ⭐⭐⭐ (Moderate) | 💡 Explored Blueprint |

@@ -11,6 +11,7 @@ Instead of requiring 3D artists and game developers to manually create, decimate
 - **1 Single Model In $\rightarrow$ Multi-Tier LOD Out:** No manual decimation in external 3D software required.
 - **Shared Vertex Memory:** All LOD levels share the original vertex positions, UV texture coordinates, normals, and skeletal bone weights—saving up to 70% VRAM compared to traditional multi-mesh LOD.
 - **Asynchronous Web Worker Processing:** Mesh simplification algorithms (Quadric Error Metric / QEM Edge Collapse) run in background worker threads with **zero 60 FPS frame drops** during scene loading.
+- **HLOD Multi-Mesh Cluster Proxy Generator:** Merges multiple distinct static props in a world sector (e.g. 50 village houses + wall props) into a single low-poly proxy mesh with a baked texture atlas for `WorldPartition3D`!
 - **Skeletal Animation Preservation:** Decimates animated characters without breaking skin weights or bone bindings.
 - **Unified Throttling:** Automatically couples geometry decimation with shadow cutoff and distant skeletal animation tick throttling.
 - **Sniper & FOV-Proof:** Supports projected screen-pixel coverage evaluation so zoomed-in models never look low-poly.

@@ -1,187 +1,252 @@
-# CinematicPostFX3D — Implementation Plan
+# CinematicPostFX3D — Implementation Notes
 
-This document outlines the technical architecture, mathematical optical formulas, raymarching algorithms, WebGL2 multi-pass compositing buffers, and implementation roadmap for **CinematicPostFX3D**.
+How the pipeline is wired into GDevelop, the constraints that shaped it, and the maths behind each pass.
 
 ---
 
-## 1. System Architecture & Lifecycle
+## 1. Where the pass lives
 
-`CinematicPostFX3D` intercepts GDevelop's 3D rendering pipeline using a consolidated, buffer-sharing multi-pass compositing engine:
+A GDevelop 3D layer builds its own composer in `layer-pixi-renderer.js`:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant GD as GDevelop Layer Renderer
-    participant GBuf as GBuffer (Color, Depth, Normals)
-    participant GTAO as GTAO Pass
-    participant SSR as SSR Raymarch Pass
-    participant DOF as Bokeh DOF Pass
-    participant Bloom as 13-Tap Bloom Pyramid
-    participant Comp as Master Composite & Tone Map
-    
-    GD->>GBuf: Render 3D Scene into Multi-Target Framebuffer
-    GBuf->>GTAO: Pass Linear Depth & View-Space Normals
-    GTAO->>GTAO: Horizon Search (4 directions, 8 steps) + Multi-bounce
-    GBuf->>SSR: Pass Color, Depth, Normals & Roughness
-    SSR->>SSR: DDA Screen Raymarch + Binary Refinement + Roughness Cone Blur
-    GTAO->>DOF: Pass Ambient Occlusion Buffer
-    SSR->>DOF: Pass Reflection Buffer
-    GBuf->>DOF: Pass Depth & Autofocus Distance
-    DOF->>DOF: Compute Circle of Confusion (CoC) + 16-Tap Bokeh Disc
-    DOF->>Bloom: Pass HDR Color
-    Bloom->>Bloom: 13-Tap Karis Downsample Pyramid -> Upsample Tent Filter
-    Bloom->>Comp: Pass Bloom & Anamorphic Streaks
-    DOF->>Comp: Pass Focused Scene Color
-    Comp->>Comp: Velocity Motion Blur + Chromatic Aberration + ACES Tone Mapping
-    Comp-->>GD: Output to Screen (Flat 60 FPS)
+```js
+this._threeEffectComposer = new THREE_ADDONS.EffectComposer(threeRenderer);
+this._threeEffectComposer.addPass(new THREE_ADDONS.RenderPass(scene, camera));
+if (antialiasing !== 'none') composer.addPass(new SMAAPass(w, h));
+composer.addPass(new OutputPass());
 ```
 
----
-
-## 2. Mathematical Formulations & Algorithms
-
-### A. Ground Truth Ambient Occlusion (GTAO)
-Based on Jimenez et al. (2016). Integrates the hemisphere horizon visibility over $N_{\text{dir}} = 4$ screen directions:
-
-$$\text{AO} = \frac{1}{\pi} \int_{\Omega} V(\vec{\omega}) (\vec{n} \cdot \vec{\omega}) \, d\omega$$
-
-For each directional angle $\phi \in [0, \pi)$:
-1. Search along the 2D projected line for maximum elevation horizon angles $(\theta_1, \theta_2)$ from center depth.
-2. Project surface normal $\vec{n}$ onto the slice plane to find normal angle $\gamma$.
-3. Compute inner visibility integral:
-   $$\text{Vis}(\phi) = \frac{1}{4} \left( (\sin(2\theta_1 - \gamma) + \sin\gamma) + (\sin(2\theta_2 - \gamma) + \sin\gamma) \right)$$
-4. **Multi-Bounce Ambient Color Approximation:**
-   $$\text{AO}_{\text{multi}} = \text{AO} \cdot \frac{1.0 - \text{Albedo}}{1.0 - \text{Albedo} \cdot \text{AO}}$$
-   Prevents dark crevices from losing rich colored bounce light.
-
----
-
-### B. Screen-Space Reflections (SSR)
-For a pixel with view position $\vec{P}$ and surface normal $\vec{N}$:
-
-1. Calculate reflection ray in view space:
-   $$\vec{R} = \text{reflect}(\text{normalize}(\vec{P}), \vec{N})$$
-2. **DDA Raymarch in Screen Space:**
-   $$\vec{P}_{\text{step}} = \frac{\text{Project}(\vec{P} + \vec{R}) - \text{Project}(\vec{P})}{\text{MaxSteps}}, \quad \text{Steps} = 32$$
-3. When the ray penetrates the depth buffer ($\Delta Z = Z_{\text{ray}} - Z_{\text{buffer}} > 0$):
-   - Perform a 4-step **Binary Search** along the intersection segment to locate the exact surface boundary with sub-pixel precision.
-4. **Roughness Cone Footprint Blur:**
-   Rough surfaces widen the specular sampling cone radius:
-   $$\text{BlurRadius} = \text{Roughness}^2 \cdot \text{RayDistance} \cdot \text{MaxBlur}$$
-5. Smoothly fade out reflections at screen edges:
-   $$\text{Fade} = \text{clamp}(1.0 - 2.0 \cdot \|\text{UV} - 0.5\|, 0.0, 1.0)$$
-
----
-
-### C. Optical Bokeh Depth of Field (Circle of Confusion)
-Calculates the physical Circle of Confusion ($CoC$) diameter on the camera sensor:
-
-$$\text{CoC}(z) = \text{clamp}\left( \frac{|z - z_{\text{focus}}|}{z} \cdot \frac{f^2}{N_{\text{aperture}}(z_{\text{focus}} - f)}, -R_{\text{max}}, R_{\text{max}} \right)$$
-
-Where:
-* $f = \text{FocalLength}$ (e.g. $50\text{mm}$).
-* $N_{\text{aperture}} = f\text{-stop}$ (e.g. $f/1.8$).
-* $z_{\text{focus}}$ is dynamically driven by an **Autofocus Raycaster** hitting the center crosshair in the 3D scene.
-* **Bokeh Disc Accumulation:** 16 Poisson/Golden-angle spiral taps weighted by $CoC(z)$.
-
----
-
-### D. 13-Tap Progressive Karis HDR Bloom
-To eliminate fireflies and flickering on high-intensity specular highlights, downsampling uses Brian Karis's 13-tap weighted box filter:
+`addPostProcessingPass(pass)` inserts before SMAA/OutputPass, so the chain is:
 
 ```
-  d   e   f
-    a   b
-  g   c   h
-    i   j
-  k   l   m
+RenderPass -> [CinematicPostFXPass] -> SMAA -> OutputPass -> screen
 ```
 
-$$\text{DownsampleColor} = \frac{1}{4} \text{Box}_{abij} + \frac{1}{8} \text{Box}_{dega} + \frac{1}{8} \text{Box}_{efbh} + \frac{1}{8} \text{Box}_{gikl} + \frac{1}{8} \text{Box}_{hjlm}$$
+Two consequences worth knowing:
 
-Each sub-box is weighted by partial luminance to suppress single-pixel fireflies:
-$$w_{\text{box}} = \frac{1.0}{1.0 + \text{Luma}(\text{Color})}$$
-
-**Anamorphic Lens Streaks:** Stretches the highest mip levels horizontally ($4\times$ aspect) with a blue chromatic tint for cinema flare streaks.
+- **`renderer.toneMapping` is never set**, so `OutputPass` only does the sRGB conversion. Our ACES curve is the only tone map in the chain — no double grading.
+- **`renderer.autoClear = false`.** Every intermediate pass draws a full-screen quad with `depthTest: false`, which covers the target completely, so no explicit clears are needed.
 
 ---
 
-### E. Per-Pixel Velocity Motion Blur
-Reads the previous frame's transformation matrix to reconstruct pixel velocity:
+## 2. The depth attachment
 
-$$\vec{V}_{\text{pixel}} = \text{Project}\left(\mathbf{M}_{\text{curr}} \cdot \vec{P}\right) - \text{Project}\left(\mathbf{M}_{\text{prev}} \cdot \vec{P}\right)$$
+`new EffectComposer(renderer)` with no target argument creates:
 
-Accumulates 8 samples along velocity direction $\vec{V}_{\text{pixel}}$ with depth-aware foreground dilation.
-
----
-
-### F. ACES Filmic Tone Mapping
-Maps high-dynamic-range (HDR) radiance values cleanly into $[0.0, 1.0]$ display space:
-
-$$\text{ACES}(x) = \frac{x(2.51x + 0.03)}{x(2.43x + 0.59) + 0.14}$$
-
----
-
-## 3. WebGL2 Multi-Pass Framebuffer Architecture
-
-```
-1. GBuffer Multi-Render-Target (MRT)
-   Target 0: RGBA16F (HDR Scene Color)
-   Target 1: RGBA16F (View Normals .xyz + Roughness .w)
-   Target 2: DepthTexture (Float32 Linear Depth)
-
-2. GTAO Buffer (R8, Half Resolution: 960 x 540)
-   Single-channel ambient occlusion factor.
-
-3. SSR Buffer (RGBA16F, Half/Full Resolution)
-   Raymarched reflection color with alpha hit mask.
-
-4. Bloom Downsample Pyramid (RGBA16F, 5 Mip Levels: 1/2 -> 1/4 -> 1/8 -> 1/16 -> 1/32)
-   Upsampled with 9-tap tent filter.
-
-5. Final Master Composite Pass (RGBA8, Canvas Output)
-   Blends Color * GTAO + SSR + Bloom + DOF + Motion Blur + ACES Tone Mapping.
+```js
+new WebGLRenderTarget(width * pixelRatio, height * pixelRatio, { type: HalfFloatType })
 ```
 
----
+`depthBuffer` defaults to `true`, but that is a **renderbuffer** — write-only, not sampleable. `readBuffer.depthTexture` is `null`, and any pass that samples a depth uniform gets an empty texture reading `0.0` everywhere.
 
-## 4. Implementation Phases
+Assigning `depthTexture` at render time does not help. `WebGLRenderer.setRenderTarget` only rebuilds a target when its framebuffer has not been created yet:
 
-```mermaid
-gantt
-    title CinematicPostFX3D Implementation Roadmap
-    dateFormat  YYYY-MM-DD
-    section Phase 1: GBuffer & Pipeline Core
-    Three.js Layer Render Target Hook   :p1_1, 2026-09-01, 3d
-    Depth & Normal Buffer Extractor     :p1_2, after p1_1, 2d
-    section Phase 2: GTAO & Contact Shadows
-    GTAO Horizon Search Algorithm       :p2_1, after p1_2, 3d
-    Spatial Bilateral Blur Pass         :p2_2, after p2_1, 2d
-    section Phase 3: Screen-Space Reflections (SSR)
-    DDA Raymarch & Binary Refinement    :p3_1, after p2_2, 4d
-    Roughness Cone Footprint Blur       :p3_2, after p3_1, 2d
-    section Phase 4: Optical Lens Effects
-    13-Tap Karis Bloom Pyramid          :p4_1, after p3_2, 3d
-    Circle of Confusion & Bokeh DOF     :p4_2, after p4_1, 3d
-    Autofocus Crosshair Raycaster       :p4_3, after p4_2, 1d
-    section Phase 5: Master Compositing
-    Velocity Motion Blur & Chromatic    :p5_1, after p4_3, 3d
-    ACES Filmic Tone Mapping Pass       :p5_2, after p5_1, 2d
-    section Phase 6: GDevelop ACEs & Presets
-    Behavior Properties & 5 Presets     :p6_1, after p5_2, 3d
-    QA & Mobile Performance Tuning      :p6_2, after p6_1, 3d
+```js
+if (properties.__webglFramebuffer === undefined) textures.setupRenderTarget(renderTarget);
+else if (properties.__hasExternalTextures) textures.rebindTextures(...);
 ```
 
+By the time our pass runs, `RenderPass` has already caused setup. So the fix is to **dispose the target first**, which clears the cached framebuffer, then attach:
+
+```js
+rt.dispose();                                 // forces a rebuild on next bind
+const dt = new THREE.DepthTexture(rt.width, rt.height);
+dt.format = THREE.DepthFormat;
+dt.type   = THREE.UnsignedIntType;            // DEPTH_COMPONENT24
+rt.depthTexture = dt;
+```
+
+**Both** ping-pong targets need one. `RenderPass.needsSwap === false`, and three passes per frame do swap, so `renderTarget1` and `renderTarget2` alternate as the scene buffer from one frame to the next.
+
+**Timing.** `EffectComposer.insertPass()` calls `pass.setSize()` on attach, and `EffectComposer.setSize()` resizes both targets *before* calling each pass's `setSize()`. That makes `Pass.setSize` the correct hook for both the initial attach and every resize.
+
+**Resize.** `WebGLRenderTarget.setSize()` resizes `this.texture.image` and calls `dispose()` — but it does **not** touch `depthTexture.image`. Left alone, a resize produces a colour attachment at the new size and a depth attachment at the old one: an incomplete framebuffer. `setSize` re-syncs the dimensions and disposes again.
+
+Composer targets are created with `samples = 0`, so there is no MSAA resolve to work around.
+
 ---
 
-## 5. Performance Budgets & Target Metrics
+## 3. Scene scale
 
-| Pass / Subsystem | Resolution | GPU Time Budget | Memory Footprint |
-| :--- | :---: | :---: | :---: |
-| **GBuffer Capture** | Full ($1080\text{p}$) | $0.2\text{ ms}$ | Shared Scene Target |
-| **GTAO Horizon Pass** | Half ($540\text{p}$) | $< 0.45\text{ ms}$ | $1.0\text{ MB}$ |
-| **SSR Reflection Raymarch** | Half ($540\text{p}$) | $< 0.65\text{ ms}$ | $4.0\text{ MB}$ |
-| **13-Tap Karis Bloom Pyramid** | Downsample Mips | $< 0.35\text{ ms}$ | $2.5\text{ MB}$ |
-| **Bokeh DOF Pass** | Full ($1080\text{p}$) | $< 0.40\text{ ms}$ | $4.0\text{ MB}$ |
-| **Master Composite & ACES** | Full ($1080\text{p}$) | $< 0.15\text{ ms}$ | Canvas Output |
-| **Total Pipeline Overhead** | | **$< 2.0\text{ ms}$** | **$< 12\text{ MB}$ VRAM (Rock-Solid 60 FPS)** |
+`Layer.getCameraZ(fov)` is:
+
+```js
+0.5 * this.getHeight() / this.getCameraZoom() / Math.tan(0.5 * toRad(fov))
+```
+
+For the defaults — 600px tall, zoom 1, 45° — that is **724 world units**. Near and far default to `0.1` and `2000`.
+
+Two things fall out of this.
+
+**World-space parameters must be in the tens or hundreds.** A 1.2-unit AO radius on geometry 724 units from the camera projects to under a pixel.
+
+**A raw depth cutoff is useless.** Window depth for a perspective projection is:
+
+$$d = \frac{f + n}{2(f - n)} \cdot 2 - \frac{f \cdot n}{(f-n) \cdot z} \cdot 2 \cdot \tfrac{1}{2} \quad\Rightarrow\quad d \approx 1.00005 - \frac{0.100005}{z}$$
+
+| z (units) | 10 | 100 | 724 | 2000 |
+| :--- | ---: | ---: | ---: | ---: |
+| raw depth | 0.99005 | 0.99905 | 0.99991 | 1.0 |
+
+A `rawDepth >= 0.999` sky test rejects everything past **~95 units** — the entire scene. Every pass therefore linearises first and compares against the far plane:
+
+```glsl
+float rawToLinear(float d) {
+  if (uIsOrtho == 1) return uNear + d * (uFar - uNear);
+  float zNdc = d * 2.0 - 1.0;
+  return (2.0 * uNear * uFar) / (uFar + uNear - zNdc * (uFar - uNear));
+}
+bool isSky(float linearZ) { return linearZ >= uFar * 0.995; }
+```
+
+`uNear`, `uFar` and `uIsOrtho` are uploaded to every depth-reading pass from the live layer camera.
+
+---
+
+## 4. Per-pass notes
+
+### A. Ground Truth Ambient Occlusion
+
+Four screen-space slices, six horizon steps per side, at half resolution.
+
+For each slice, a plane is built through the view vector `V = normalize(-P)` and the slice direction, the surface normal is projected into it, and the signed angle of that projection is `γ`. Horizon angles `h₁` (toward `+tangent`) and `h₂` (toward `−tangent`) start at `±π/2` and close in as occluders are found, faded by distance so a sample at the radius edge contributes nothing.
+
+After clamping the arc to the normal-oriented hemisphere:
+
+$$\theta_1 = \gamma + \min(h_1 - \gamma, \tfrac{\pi}{2}), \qquad \theta_2 = \gamma + \max(h_2 - \gamma, -\tfrac{\pi}{2})$$
+
+the inner integral is the Jimenez et al. (2016) arc form:
+
+$$a_h = \tfrac{1}{4}\Big(-\cos(2\theta_1 - \gamma) + \cos\gamma + 2\theta_1\sin\gamma\Big) + \tfrac{1}{4}\Big(-\cos(2\theta_2 - \gamma) + \cos\gamma + 2\theta_2\sin\gamma\Big)$$
+
+weighted by the projected normal length and averaged over slices. An unoccluded hemisphere integrates to exactly `1.0` — asserted in the test suite.
+
+The world radius is converted to a pixel radius per fragment using `projectionMatrix[1][1]`:
+
+```glsl
+radiusPixels = uRadius * uProjScale * 0.5 * uResolution.y / linearZ
+```
+
+Interleaved gradient noise rotates the slice set per pixel to break up four-direction banding — `fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))))`, which distributes far better than a `fract(sin(...))` hash and does not band at mediump precision. A **separable bilateral blur then runs on both axes** with a depth tolerance of `5%` of the centre depth, so edge stopping works at any scene scale.
+
+**Upsampling.** The AO and reflection buffers are smaller than the frame (`EffectQuality`), and reading them back with plain bilinear filtering bleeds them across depth discontinuities — a visible halo around every object. Both are gathered with four taps whose weights come from how close each neighbour's linear depth is to the centre, with the four depth fetches shared between the two buffers. If every neighbour is rejected (an isolated sliver of geometry) it falls back to bilinear rather than punching a hole.
+
+**Ordering.** AO and reflections are folded into the colour buffer by a merge pass *before* Depth of Field, not by the composite afterwards. Applied at the end they stay razor sharp on a surface the defocus has already blurred, which is very visible with an open aperture. The merge pass only runs when DOF is active alongside AO or SSR; otherwise the composite applies them directly and the pass is skipped. The AO/SSR application itself lives in one shared GLSL snippet used by both shaders.
+
+**Multi-bounce** is applied in the composite pass, where the scene colour is available as an albedo estimate. It uses the polynomial fit, which is clamped to never darken:
+
+$$\text{mb}(x, a) = \mathrm{clamp}\big(x(a_1x^2 + b_1x + c_1),\ x,\ 1\big)$$
+
+with `a₁ = 2.0404a − 0.3324`, `b₁ = −4.7951a + 0.6417`, `c₁ = 2.7552a + 0.6903`.
+
+### B. Screen-Space Reflections
+
+Half resolution. Reflect the view vector about the depth-derived normal, reject rays heading back toward the camera, then march in screen space with the step count from `SSRRaySteps` (8–64). Ray length and surface thickness both scale with view depth:
+
+```glsl
+rayLen    = min(uMaxDistance, max(1.0, linearZ * 2.0));
+thickness = max(0.5, linearZ * 0.02);
+```
+
+A hit is `deltaZ < 0 && deltaZ > -thickness`, refined by four bisection steps. The final alpha is `intensity × edgeFade × distanceFade × fresnel`, where fresnel is `mix(1.0, (1 - N·V)⁵, uFresnel)`.
+
+**The reflectivity mask.** A screen-space raymarch has no idea which surfaces are supposed to be reflective, so an ungated SSR pass mirrors the world onto floors, terrain and walls. At the default Fresnel of 0.6 a ground plane picks up roughly a 25% mirror — clearly wrong, and it flickers as the raymarch hits and misses between frames.
+
+Before marching, the pipeline renders `layerRenderer.getThreeGroup()` once with every mesh's material temporarily swapped for a cached `MeshBasicMaterial` whose colour encodes:
+
+$\text{reflectivity} = (1 - \text{roughness})^2 \cdot (0.25 + 0.75\,\text{metalness})$
+
+Squared so the falloff away from a polished surface is quick; the `0.25` floor is there because a polished dielectric still reflects. Materials with no `roughness` fall back to `shininess / 100` (Phong) or score zero (Basic/unlit). Transparent materials are skipped, and `mesh.userData.ssrReflectivity` overrides everything.
+
+GDevelop's default 3D material is `roughness 1, metalness 0`, which scores exactly zero — so out of the box nothing reflects, and reflectivity is opt-in.
+
+Details that matter:
+
+- The **group** is rendered, not the scene, so the 2D rendering plane at `z = 0` stays out of the mask.
+- Mask materials are cached per source material, but their colour is recomputed every frame, so runtime roughness/metalness edits take effect immediately.
+- Original materials are restored immediately after the render. A leaked swap would leave meshes flat grey in the visible frame.
+- Multi-material meshes are skipped rather than guessed at.
+- The mask target is the only intermediate created with `depthBuffer: true`, because it is the only one that renders real geometry and has to depth-sort.
+- The swap/restore is wrapped in `try/finally`. A throw in between would otherwise leave every mesh in the scene wearing a flat grey material for the rest of the session.
+- The cache is a `WeakMap` keyed by source material. A plain `Map` pins every material the scene has ever rendered and stops it being collected; the mask materials we create are tracked in a separate array so they can still be disposed.
+
+The pass largely pays for itself: the SSR shader rejects any pixel below `0.01` reflectivity before marching a single ray, and in a typical scene that is most of the screen.
+
+`SSRSurfaces: Everything` skips the mask pass and restores uniform reflection.
+
+**The resolve pass.** The mask writes reflectivity to red and roughness to green, and a blur pass after the raymarch widens its radius with that roughness — the roughness cone blur the original docs promised, now possible because the mask exists. Two properties keep it safe: the radius floor is one pixel, so a mirror is only cleaned up rather than softened, and a pixel whose own alpha is zero is passed through untouched, so a reflection can never grow outward onto a surface that produced none.
+
+### C. Bokeh Depth of Field
+
+A literal thin-lens CoC in world units scales with the focus distance, which is exactly why a 50 mm lens focused at "4" saturated every pixel of a scene sitting 700 units out. The defocus term used here is dimensionless:
+
+$$\mathrm{CoC}(z) = \mathrm{clamp}\!\left(\frac{|z - z_f|}{z} \cdot \frac{k}{N},\ 0,\ 1\right) \cdot R_{\max}, \qquad k = 2.8$$
+
+`k` calibrates the f-stop so that at `f/2.8` a subject at twice the focus distance lands on half the maximum radius. The result is identical at any world scale — asserted in the test suite.
+
+Sampling is 16 golden-angle spiral taps. Foreground samples are weighted by `sCoC / centerCoC`, which is what stops a sharp foreground smearing across a blurred background.
+
+**Autofocus** raycasts screen centre against `layerRenderer.getThreeGroup()` — *not* the layer scene, which contains the 2D rendering plane at `z = 0` with `renderOrder = MAX_SAFE_INTEGER` and would swallow every hit. The ray is bounded by the camera's own near and far planes, so it does not test geometry that could never be in focus, and meshes carrying `userData.cinematicIgnoreAutofocus` are skipped — which is what stops a camera-locked first-person prop owning the focus plane forever. It runs every third frame and eases the focus plane at `0.15` per frame, giving a natural focus pull. With no hit it falls back to the manual distance.
+
+### D. 13-Tap Karis Bloom
+
+Five mips starting at half resolution. The downsample is the standard 13-tap arrangement — one centre box at weight `0.5` and four corner boxes at `0.125`, **each containing the centre tap**. The first mip weights each sub-box by `1 / (1 + luma)` to suppress fireflies and applies the luminance threshold; later mips use a plain box average.
+
+The upsample is progressive and **additive**:
+
+```
+up[n-2] = tent(down[n-1]) + down[n-2]
+up[i]   = tent(up[i+1])   + down[i]
+```
+
+Without the additive term the pyramid collapses to the smallest mip blurred repeatedly and every mid-frequency component of the glow is lost.
+
+Anamorphic streaks get their own pass: a 13-tap horizontal-only blur of the finished bloom buffer at a wide stride. The look comes from a lens whose aperture is far wider than it is tall, so highlights smear sideways and nowhere else — the previous two-tap version inside the composite was a lateral smear, not a streak. The pass is skipped entirely at zero flare strength.
+
+### E. Motion Blur
+
+World position is reconstructed from depth and the inverse view-projection matrix, reprojected through the previous frame's view-projection, and the NDC delta becomes a velocity vector. Six samples along it. Velocities below `0.0005` or above `0.1` NDC are rejected, which suppresses both jitter and the smear on the first frame after a teleport. This is camera velocity only — per-object motion vectors would need a G-buffer.
+
+### F. Tone Mapping
+
+ACES Filmic `x(2.51x + 0.03) / (x(2.43x + 0.59) + 0.14)`, Reinhard, Cineon, or Linear. `MasterIntensity` crossfades between the untouched scene colour and the graded result, so `0.0` is a real bypass.
+
+---
+
+## 5. Buffers
+
+| Target | Resolution | Format |
+| :--- | :--- | :--- |
+| Composer rt1 / rt2 (GDevelop's, we attach depth) | Full | RGBA16F + DEPTH_COMPONENT24 |
+| GTAO / GTAO blur (ping-pong) | `EffectQuality` | RGBA8 |
+| SSR reflectivity mask | `EffectQuality` | RGBA8 + depth |
+| SSR raymarch | `EffectQuality` | RGBA16F |
+| SSR resolve | `EffectQuality` | RGBA16F |
+| AO/SSR merge (only with DOF) | Full | RGBA16F |
+| Anamorphic streak (only with flares) | 1/2 | RGBA16F |
+| DOF | Full | RGBA16F |
+| Bloom pyramid, 5 down + 5 up | 1/2 → 1/32 | RGBA16F |
+
+All intermediates are created with `depthBuffer: false` except the reflectivity mask, which is the only one that renders real geometry and has to depth-sort.
+
+**Allocation is lazy.** Creating every buffer up front costs about 62 MB at 1080p regardless of what is switched on, and every effect defaults to off. Each pass now calls `_rt(name, w, h, hdr, depth)` the first time it runs, which creates or resizes that one target. `_ensureTargets` only tracks the frame size and quality divisor, disposing the whole set when either changes.
+
+---
+
+## 6. Behavior model
+
+The compositor is **per-renderer**, not per-object. The behavior is just a handle on it, which has consequences the code makes explicit:
+
+- The first registered instance drives the pipeline. Later instances log a warning and set `__cinematicIgnored`, so they cannot fight over settings each frame.
+- `doStepPreEvents` re-reads every property into the live settings, so inspector edits and `Set…` actions both work. Every `Set…` action therefore also writes back to the behavior property, or the sync would revert it on the next frame.
+- The `Preset` property is applied **once at creation** and written back into the behavior's properties, which is what keeps it consistent with the per-frame sync. `Custom` skips this.
+- The runtime is embedded in `onCreated` only. `onCreated` always precedes `doStepPreEvents` for the same behavior, and every action guards on `gdjs.__cinematicPostFX3D` existing.
+
+---
+
+## 7. Known gaps
+
+- No real normal buffer or per-object motion vectors. Normals are reconstructed from depth with a best-of-four-neighbours pick, which is stable in interiors and noisier on thin silhouettes. The reflectivity mask pass could be extended to output view normals too, which would fix this for both SSR and GTAO, but a custom shader would lose the automatic skinning/morph support that `MeshBasicMaterial` gives for free.
+- Reflections are mirror-sharp; there is no roughness-driven cone blur.
+- One layer per pipeline.
+- No temporal accumulation, so GTAO and SSR carry the noise a single frame gives them. The bilateral blur and depth-aware upsample handle most of the AO case; SSR still shimmers on moving geometry.
+- No measured frame-time budget. The pass counts are known (GTAO 3, SSR 1 plus a mask scene render, merge 1, DOF 1, bloom 9, streak 1, composite 1) but the cost depends entirely on resolution and scene content.

@@ -1,6 +1,4 @@
-if (typeof THREE === 'undefined') return;
-
-if (!gdjs.__material3D) {
+if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
     gdjs.__material3D = (function() {
         const DEG_TO_RAD = Math.PI / 180;
 

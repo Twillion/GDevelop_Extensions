@@ -1,127 +1,220 @@
-# CinematicPostFX3D — API Reference & Specification
+# CinematicPostFX3D — API Reference
 
-Complete specification of Behavior properties, Actions, Conditions, Expressions (ACEs), and Preset profiles for **CinematicPostFX3D**.
+Every property, action, condition and expression on the `CinematicPostFX3D` behavior, as shipped in version 2.2.0.
+
+All world-space values are in **GDevelop world units**, not metres. See the [README](./README.md#units-gdevelop-world-units-not-metres) for why that matters.
 
 ---
 
-## 1. `CinematicPostFX3D` Behavior Properties
+## 1. Behavior Properties
 
-### Group 1: Master & Presets
-| Property | Type | Default | Description |
-| :--- | :--- | :---: | :--- |
-| **`Preset`** | Choice | `"CleanRealistic"` | 1-Click Profile: `"CyberpunkNeon"`, `"CinematicMovie"`, `"HorrorGrim"`, `"CleanRealistic"`, `"PerformanceLite"`. |
-| **`MasterIntensity`**| Number | `1.0` | Global multiplier for all active post-processing effects ($0.0 = \text{Disabled}$). |
-| **`ToneMapping`** | Choice | `"ACESFilmic"` | Color grading curve: `"ACESFilmic"`, `"Reinhard"`, `"Cineon"`, `"Linear"`. |
+### Master & Presets
 
-### Group 2: Ground Truth Ambient Occlusion (GTAO)
 | Property | Type | Default | Description |
-| :--- | :--- | :---: | :--- |
-| **`EnableGTAO`** | Boolean | `true` | Enables high-precision horizon-based ambient occlusion in crevices and corners. |
-| **`GTAORadius`** | Number | `1.2` | Occlusion sampling radius in meters ($0.2 - 5.0$). |
-| **`GTAOIntensity`** | Number | `1.0` | Occlusion darkness multiplier ($0.0 - 3.0$). |
-| **`GTAOMultiBounce`**| Boolean | `true` | Approximates colored multi-bounce to prevent dark areas from losing albedo. |
+| :--- | :--- | :--- | :--- |
+| **`Preset`** | Choice | `Custom` | Applied **once**, when the behavior is created, overwriting every property below it. `Custom` uses your own values as-is. Options: `Custom`, `CyberpunkNeon`, `CinematicMovie`, `HorrorGrim`, `CleanRealistic`, `PerformanceLite`. |
+| **`MasterIntensity`** | Number | `1.0` | Crossfades between the untouched scene and the fully graded result. `0.0` is a true bypass. |
+| **`ToneMapping`** | Choice | `ACESFilmic` | `ACESFilmic`, `Reinhard`, `Cineon`, `Linear`. |
+| **`EffectQuality`** | Choice | `Half` | Resolution of the ambient occlusion, reflection and reflectivity-mask buffers. `Full` sharpens them at roughly four times the cost; `Quarter` is for low-end hardware. Bloom, depth of field and the composite are always full resolution. |
+| **`TargetLayer`** | String | `""` | Name of the 3D layer to post-process; empty means the base layer. The layer must be rendering in 3D or there is no effect composer to attach to. |
+| **`Diagnostics`** | Boolean | `false` | Logs one console line at startup: composer found, depth texture attached, camera near/far and distance, buffer size. Start here when an effect appears to do nothing. |
 
-### Group 3: Screen-Space Reflections (SSR)
-| Property | Type | Default | Description |
-| :--- | :--- | :---: | :--- |
-| **`EnableSSR`** | Boolean | `true` | Enables real-time raymarched reflections of dynamic objects on wet/shiny surfaces. |
-| **`SSRIntensity`** | Number | `0.75` | Reflection brightness and blend opacity ($0.0 - 1.0$). |
-| **`SSRMaxRoughness`**| Number | `0.65` | Maximum surface roughness that receives reflections ($0.0 - 1.0$). |
-| **`SSRRaySteps`** | Choice | `32` | Quality step count: `16` (Fast), `32` (Balanced), `64` (High). |
+### Ground Truth Ambient Occlusion — needs depth
 
-### Group 4: Physically Based Bloom & Flares
 | Property | Type | Default | Description |
-| :--- | :--- | :---: | :--- |
-| **`EnableBloom`** | Boolean | `true` | Enables 13-tap progressive downsample/upsample Karis HDR bloom. |
-| **`BloomIntensity`** | Number | `0.8` | Glow brightness multiplier ($0.0 - 3.0$). |
-| **`BloomThreshold`** | Number | `0.9` | Minimum luminance required to emit bloom ($0.5 - 2.0$). |
-| **`AnamorphicFlares`**| Number | `0.3` | Horizontal cinema streak flare strength ($0.0 - 1.0$). |
-| **`FlareTintColor`** | Color | `"100; 180; 255"`| Color tint for anamorphic lens streaks (e.g. sci-fi blue). |
+| :--- | :--- | :--- | :--- |
+| **`EnableGTAO`** | Boolean | `false` | Horizon-based ambient occlusion in crevices and contact points. |
+| **`GTAORadius`** | Number | `50` | Occlusion search radius in world units. Useful range roughly 20–150. |
+| **`GTAOIntensity`** | Number | `1.0` | Applied as an exponent on visibility, so `1.0` is neutral and higher is darker. |
+| **`GTAOMultiBounce`** | Boolean | `true` | Polynomial multi-bounce fit so coloured crevices keep bounce light instead of going black. |
 
-### Group 5: Optical Bokeh Depth of Field (DOF)
-| Property | Type | Default | Description |
-| :--- | :--- | :---: | :--- |
-| **`EnableDOF`** | Boolean | `false` | Enables Circle of Confusion optical lens defocusing. |
-| **`Autofocus`** | Boolean | `true` | Automatically raycasts center screen crosshair to track focus plane distance. |
-| **`ManualFocusDistance`**| Number | `4.0` | Focus plane in meters when `Autofocus` is disabled. |
-| **`ApertureFStop`** | Number | `2.8` | Lens aperture diameter ($f/1.4$ for heavy blur, $f/16.0$ for deep focus). |
-| **`MaxBokehRadius`** | Number | `12.0` | Maximum pixel blur radius for out-of-focus highlights. |
+### Screen-Space Reflections — needs depth
 
-### Group 6: Motion Blur & Optical Distortion
 | Property | Type | Default | Description |
-| :--- | :--- | :---: | :--- |
-| **`EnableMotionBlur`**| Boolean | `false` | Enables velocity vector motion blur for camera and dynamic objects. |
-| **`MotionBlurStrength`**| Number | `0.5` | Shutter angle scale for motion streak length ($0.0 - 1.0$). |
-| **`ChromaticAberration`**| Number | `0.003`| Optical lens color fringing at screen edges ($0.0 - 0.02$). |
+| :--- | :--- | :--- | :--- |
+| **`EnableSSR`** | Boolean | `false` | Raymarched reflections of on-screen geometry. |
+| **`SSRIntensity`** | Number | `0.6` | Reflection brightness and blend opacity, 0.0–1.0. |
+| **`SSRMaxDistance`** | Number | `400` | How far a reflection ray may travel, in world units. |
+| **`SSRFresnel`** | Number | `0.6` | How strongly reflections favour grazing angles. `0` = equal at all angles, `1` = pure Schlick Fresnel. |
+| *(no property)* | — | — | Reflection sharpness follows the surface's own roughness: a resolve pass blurs the reflection buffer wider on rough surfaces and barely at all on mirrors. Override per mesh with `userData.ssrRoughness`. |
+| **`SSRSurfaces`** | Choice | `MaterialBased` | Which surfaces reflect. `MaterialBased` renders a reflectivity mask from each material's `roughness` and `metalness`, so only smooth or metallic surfaces reflect — GDevelop's default material is fully rough, so **nothing reflects until you make it shiny**. `Everything` mirrors the scene onto every surface. |
+| **`SSRRaySteps`** | Choice | `32` | `16` (fast), `32` (balanced), `64` (high). All three are honoured; the shader marches up to 64 steps. |
+
+### Bloom & Anamorphic Flares — works without depth
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| **`EnableBloom`** | Boolean | `false` | 13-tap Karis HDR bloom, 5-mip pyramid with additive recombination. |
+| **`BloomIntensity`** | Number | `0.8` | Glow brightness multiplier, 0.0–3.0. |
+| **`BloomThreshold`** | Number | `0.9` | Minimum luminance required to emit bloom, 0.5–2.0. Applied at the first mip only. |
+| **`AnamorphicFlares`** | Number | `0.3` | Horizontal cinema streak strength, 0.0–1.0. Above zero this adds a dedicated wide horizontal blur pass; at exactly zero the pass is skipped entirely. |
+| **`FlareTintColor`** | Color | `100;180;255` | Colour tint for the anamorphic streaks. |
+
+### Depth of Field — needs depth
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| **`EnableDOF`** | Boolean | `false` | Circle of Confusion bokeh defocus, 16-tap golden-angle spiral. |
+| **`Autofocus`** | Boolean | `true` | Raycasts the centre of the screen against the layer's 3D group, bounded by the camera's near and far planes, and eases the focus plane onto the hit. Falls back to `ManualFocusDistance` when nothing is in front of the camera. Runs every third frame. Set `mesh.userData.cinematicIgnoreAutofocus = true` to exclude a mesh — useful for a first-person weapon that would otherwise own the focus plane permanently. |
+| **`ManualFocusDistance`** | Number | `700` | Focus plane in world units, used when autofocus is off or has no target. A default 3D layer puts the camera about 724 units out. |
+| **`ApertureFStop`** | Number | `2.8` | `f/1.4` for heavy bokeh, `f/16` for deep focus. Defocus is measured relative to the focus distance, so the same value looks the same at any scene scale. |
+| **`MaxBokehRadius`** | Number | `12.0` | Maximum blur radius in pixels. |
+
+### Motion Blur & Optical FX
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| **`EnableMotionBlur`** | Boolean | `false` | Camera-velocity blur reconstructed from depth and the previous view-projection matrix. **Needs depth.** |
+| **`MotionBlurStrength`** | Number | `0.5` | Streak length scale, 0.0–1.0. |
+| **`ChromaticAberration`** | Number | `0.003` | Radial colour fringing, 0.0–0.02. Works without depth. |
 
 ---
 
 ## 2. Actions
 
 ### Master & Presets
-* **`Apply cinematic preset _PARAM1_ on _PARAM0_`**: Apply profile (`"CyberpunkNeon"`, `"CinematicMovie"`, `"HorrorGrim"`, `"CleanRealistic"`, `"PerformanceLite"`).
-* **`Set master post-processing intensity on _PARAM0_ to _PARAM1_`**: Global effect scale ($0.0 - 2.0$).
-* **`Set tone mapping mode on _PARAM0_ to _PARAM1_`**: Switch color grading curve (`"ACESFilmic"`, `"Reinhard"`, `"Cineon"`, `"Linear"`).
+| Action | Parameter |
+| :--- | :--- |
+| Apply cinematic preset _on object_ | Preset name (choice) |
+| Set master post-processing intensity | Number |
+| Set effect buffer quality | Full / Half / Quarter (choice) |
+| Set tone mapping mode | Mode (choice) |
 
 ### Ambient Occlusion (GTAO)
-* **`Enable Ground Truth Ambient Occlusion (GTAO) on _PARAM0_ to _PARAM1_`**: Toggle GTAO pass.
-* **`Set GTAO radius on _PARAM0_ to _PARAM1_ meters`**: Adjust search distance in world units.
-* **`Set GTAO intensity on _PARAM0_ to _PARAM1_`**: Adjust shadow contrast.
+| Action | Parameter |
+| :--- | :--- |
+| Enable Ground Truth Ambient Occlusion (GTAO) | Yes/No |
+| Set GTAO radius … world units | Number |
+| Set GTAO intensity | Number |
+| Enable GTAO multi-bounce approximation | Yes/No |
 
 ### Screen-Space Reflections (SSR)
-* **`Enable Screen-Space Reflections (SSR) on _PARAM0_ to _PARAM1_`**: Toggle SSR pass.
-* **`Set SSR reflection intensity on _PARAM0_ to _PARAM1_`**: Adjust reflection brightness ($0.0 - 1.0$).
-* **`Set SSR max roughness threshold on _PARAM0_ to _PARAM1_`**: Set roughness cutoff.
+| Action | Parameter |
+| :--- | :--- |
+| Enable Screen-Space Reflections (SSR) | Yes/No |
+| Set SSR reflection intensity | Number |
+| Set SSR maximum ray distance … world units | Number |
+| Set SSR Fresnel falloff | Number |
+| Set which surfaces reflect | MaterialBased / Everything (choice) |
+| Set SSR ray step count | 16 / 32 / 64 (choice) |
 
 ### Bloom & Anamorphic Flares
-* **`Enable Bloom on _PARAM0_ to _PARAM1_`**: Toggle Karis bloom pass.
-* **`Set Bloom intensity on _PARAM0_ to _PARAM1_`**: Adjust glow power.
-* **`Set Bloom luminance threshold on _PARAM0_ to _PARAM1_`**: Adjust cutoff for glowing surfaces.
-* **`Set Anamorphic flare streak strength on _PARAM0_ to _PARAM1_`**: Adjust cinema lens horizontal streaks.
+| Action | Parameter |
+| :--- | :--- |
+| Enable Bloom | Yes/No |
+| Set Bloom intensity | Number |
+| Set Bloom luminance threshold | Number |
+| Set Anamorphic flare streak strength | Number |
+| Set Flare tint color | Color |
 
 ### Depth of Field (DOF)
-* **`Enable Depth of Field on _PARAM0_ to _PARAM1_`**: Toggle optical bokeh pass.
-* **`Set DOF autofocus mode on _PARAM0_ to _PARAM1_`**: Enable/disable automatic crosshair raycast focus.
-* **`Set DOF manual focus distance on _PARAM0_ to _PARAM1_ meters`**: Directly position focus plane.
-* **`Set DOF camera aperture f-stop on _PARAM0_ to _PARAM1_`**: Adjust lens aperture ($f/1.4 - f/16.0$).
+| Action | Parameter |
+| :--- | :--- |
+| Enable Depth of Field | Yes/No |
+| Set DOF autofocus mode | Yes/No |
+| Set DOF manual focus distance … world units | Number |
+| Set DOF camera aperture f-stop | Number |
+| Set DOF maximum bokeh blur radius | Number |
 
 ### Motion Blur & Optical FX
-* **`Set Motion Blur strength on _PARAM0_ to _PARAM1_`**: Adjust velocity blur length.
-* **`Set Chromatic Aberration strength on _PARAM0_ to _PARAM1_`**: Adjust lens color fringing.
+| Action | Parameter |
+| :--- | :--- |
+| Enable Motion Blur | Yes/No |
+| Set Motion Blur strength | Number |
+| Set Chromatic Aberration strength | Number |
+
+Every `Set…` action writes through to the behavior's own property as well as the live pipeline, so the change survives the per-frame property sync.
 
 ---
 
 ## 3. Conditions
 
-* **`Is post-processing pass active on _PARAM0_`**: True if master pipeline is enabled.
-* **`Is Screen-Space Reflections (SSR) enabled on _PARAM0_`**: True if SSR pass is active.
-* **`Is Ground Truth Ambient Occlusion (GTAO) enabled on _PARAM0_`**: True if GTAO pass is active.
-* **`Is Depth of Field (DOF) active on _PARAM0_`**: True if optical bokeh blur is enabled.
-* **`Is Autofocus currently tracking a target on _PARAM0_`**: True if raycaster has locked onto a 3D surface.
+| Condition | True when |
+| :--- | :--- |
+| **Post-processing pass is active** | The pipeline exists and its pass is attached to a layer composer. |
+| **Depth buffer is available** | A depth texture was successfully attached to the layer composer. GTAO, SSR, DOF and Motion Blur all need this; without it they are skipped. |
+| **Screen-Space Reflections (SSR) is enabled** | SSR is on and its intensity is above zero. |
+| **Ground Truth Ambient Occlusion (GTAO) is enabled** | GTAO is on and its intensity is above zero. |
+| **Bloom is enabled** | Bloom is on and its intensity is above zero. |
+| **Depth of Field (DOF) is active** | DOF is on. |
+| **Autofocus is currently tracking a target** | The centre-screen raycast is currently hitting something. Reports a real lock. |
+| **Motion Blur is enabled** | Motion blur is on and its strength is above zero. |
 
 ---
 
 ## 4. Expressions
 
-### Focus & Distances
-* **`Object.CinematicPostFX3D::CurrentFocusDistance()`**: Live autofocus distance in meters.
-* **`Object.CinematicPostFX3D::ApertureFStop()`**: Current lens aperture value.
+All return numbers.
 
-### Intensities & Scales
-* **`Object.CinematicPostFX3D::MasterIntensity()`**: Current master effect scale.
-* **`Object.CinematicPostFX3D::BloomIntensity()`**: Current bloom intensity.
-* **`Object.CinematicPostFX3D::GTAOIntensity()`**: Current ambient occlusion darkness.
-* **`Object.CinematicPostFX3D::SSRIntensity()`**: Current reflection brightness.
-* **`Object.CinematicPostFX3D::MotionBlurStrength()`**: Current motion blur scale.
+### Depth of Field
+| Expression | Returns |
+| :--- | :--- |
+| `CurrentFocusDistance()` | Live focus plane distance in world units — the eased autofocus value when autofocus is on, otherwise the manual distance. |
+| `ManualFocusDistance()` | The configured manual focus distance. |
+| `ApertureFStop()` | Current lens aperture. |
+| `MaxBokehRadius()` | Current maximum blur radius in pixels. |
+
+### Master
+| Expression | Returns |
+| :--- | :--- |
+| `MasterIntensity()` | Current master grade crossfade. |
+
+### Ambient Occlusion
+| Expression | Returns |
+| :--- | :--- |
+| `GTAOIntensity()` | Current occlusion exponent. |
+| `GTAORadius()` | Current search radius in world units. |
+
+### Reflections
+| Expression | Returns |
+| :--- | :--- |
+| `SSRIntensity()` | Current reflection opacity. |
+| `SSRMaxDistance()` | Current maximum ray distance in world units. |
+| `SSRFresnel()` | Current grazing-angle falloff amount. |
+
+### Bloom
+| Expression | Returns |
+| :--- | :--- |
+| `BloomIntensity()` | Current glow multiplier. |
+| `BloomThreshold()` | Current luminance cutoff. |
+| `AnamorphicFlares()` | Current streak strength. |
+
+### Optical
+| Expression | Returns |
+| :--- | :--- |
+| `MotionBlurStrength()` | Current streak scale. |
+| `ChromaticAberration()` | Current fringing offset. |
 
 ---
 
-## 5. Preset Configurations Reference Table
+## 5. Preset values
 
-| Preset Name | SSR | GTAO | Bloom | Anamorphic Flares | Bokeh DOF | Motion Blur | Best Used For |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **`CyberpunkNeon`** | `0.9` (Wet) | `1.0` | `1.5` (Heavy) | `0.6` (Blue) | Subtle | `0.3` | Sci-fi cities, neon alleys, night rainstorms, racing. |
-| **`CinematicMovie`**| `0.4` | `1.2` | `0.8` (Clean) | `0.2` | Active Autofocus | `0.5` | Narrative cutscenes, dialogue, third-person action. |
-| **`HorrorGrim`** | `0.0` | `1.8` (Deep) | `0.3` | `0.0` | Close Macro | `0.2` | Survival horror, dark dungeons, claustrophobic corridors. |
-| **`CleanRealistic`**| `0.6` | `1.0` | `0.6` | `0.0` | Off / Manual | `0.2` | General 3D games, outdoor nature, standard realism. |
-| **`PerformanceLite`**| `0.0` | `0.6` (Half-res)| `0.5` (Fast) | `0.0` | Off | `0.0` | Mobile devices, low-end laptops, 120 FPS arcade shooters. |
+| Setting | CyberpunkNeon | CinematicMovie | HorrorGrim | CleanRealistic | PerformanceLite |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| Tone mapping | ACES | ACES | ACES | ACES | Reinhard |
+| Effect quality | Half | Half | Half | Half | **Quarter** |
+| GTAO | on | on | on | on | **off** |
+| GTAO radius | 60 | 70 | 90 | 55 | 40 |
+| GTAO intensity | 1.0 | 1.2 | 1.8 | 1.0 | 0.6 |
+| GTAO multi-bounce | on | on | off | on | off |
+| SSR | on | on | **off** | on | **off** |
+| SSR intensity | 0.9 | 0.4 | 0.0 | 0.6 | 0.0 |
+| SSR max distance | 500 | 400 | 300 | 400 | 250 |
+| SSR Fresnel | 0.5 | 0.7 | 0.8 | 0.6 | 0.6 |
+| SSR surfaces | MaterialBased | MaterialBased | MaterialBased | MaterialBased | MaterialBased |
+| SSR ray steps | 32 | 32 | 16 | 32 | 16 |
+| Bloom | on | on | on | on | on |
+| Bloom intensity | 1.5 | 0.8 | 0.3 | 0.6 | 0.5 |
+| Bloom threshold | 0.8 | 0.9 | 1.2 | 0.9 | 1.0 |
+| Anamorphic flares | 0.6 | 0.2 | 0.0 | 0.0 | 0.0 |
+| Flare tint | `80;160;255` | `100;180;255` | white | white | white |
+| DOF | on | on | on | **off** | **off** |
+| Autofocus | on | on | **off** | off | off |
+| Focus distance | 700 | 700 | 320 | 700 | 700 |
+| Aperture | f/5.6 | f/2.4 | f/1.8 | f/2.8 | f/4.0 |
+| Max bokeh radius | 8 | 12 | 14 | 10 | 8 |
+| Motion blur | on | on | on | on | **off** |
+| Motion blur strength | 0.3 | 0.5 | 0.2 | 0.2 | 0.0 |
+| Chromatic aberration | 0.004 | 0.002 | 0.006 | 0.001 | 0.0 |
+
+Best used for: **CyberpunkNeon** — neon cities, night rain, racing. **CinematicMovie** — cutscenes and third-person action. **HorrorGrim** — dark corridors and claustrophobic interiors. **CleanRealistic** — general 3D, outdoors. **PerformanceLite** — mobile and low-end hardware.

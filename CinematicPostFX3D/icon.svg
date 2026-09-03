@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e17"/>
+      <stop offset="50%" stop-color="#121826"/>
+      <stop offset="100%" stop-color="#07090e"/>
+    </linearGradient>
+    <linearGradient id="streakGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#00ffff" stop-opacity="0"/>
+      <stop offset="25%" stop-color="#00b4d8" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="75%" stop-color="#7209b7" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#f72585" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5d4"/>
+      <stop offset="50%" stop-color="#7b2cbf"/>
+      <stop offset="100%" stop-color="#f72585"/>
+    </linearGradient>
+    <filter id="bloomGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded App Tile -->
+  <rect width="256" height="256" rx="48" fill="url(#bgGrad)"/>
+  <rect width="252" height="252" x="2" y="2" rx="46" fill="none" stroke="#2a3b5c" stroke-width="2"/>
+
+  <!-- Anamorphic Cinema Horizontal Flare Streak -->
+  <path d="M 0 128 L 256 128" stroke="url(#streakGrad)" stroke-width="6" filter="url(#bloomGlow)"/>
+  <ellipse cx="128" cy="128" rx="70" ry="6" fill="#00ffff" opacity="0.8" filter="url(#bloomGlow)"/>
+  <ellipse cx="128" cy="128" rx="20" ry="3" fill="#ffffff" filter="url(#bloomGlow)"/>
+
+  <!-- Outer Camera Aperture Ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="url(#ringGrad)" stroke-width="7" stroke-dasharray="16 8"/>
+  <circle cx="128" cy="128" r="64" fill="#090d16" fill-opacity="0.75" stroke="#4cc9f0" stroke-width="2.5"/>
+
+  <!-- Aperture Blades (Bokeh Iris) -->
+  <path d="M 128 68 L 168 96 L 152 144 Z" fill="#1b2a47" stroke="#00f5d4" stroke-width="1.5"/>
+  <path d="M 168 96 L 176 148 L 128 168 Z" fill="#1e1b4b" stroke="#7209b7" stroke-width="1.5"/>
+  <path d="M 176 148 L 138 184 L 98 160 Z" fill="#2e1065" stroke="#f72585" stroke-width="1.5"/>
+  <path d="M 138 184 L 88 160 L 104 112 Z" fill="#1e1b4b" stroke="#7209b7" stroke-width="1.5"/>
+  <path d="M 88 160 L 80 108 L 128 88 Z" fill="#1b2a47" stroke="#00f5d4" stroke-width="1.5"/>
+  <path d="M 80 108 L 118 72 L 158 96 Z" fill="#152438" stroke="#4cc9f0" stroke-width="1.5"/>
+
+  <!-- Inner Optical Focus Iris -->
+  <polygon points="128,104 149,116 149,140 128,152 107,140 107,116" fill="#000000" stroke="#00f5d4" stroke-width="2.5" filter="url(#bloomGlow)"/>
+  <circle cx="128" cy="128" r="14" fill="#ffffff" filter="url(#bloomGlow)"/>
+  <circle cx="128" cy="128" r="8" fill="#00f5d4"/>
+
+  <!-- Corner Lens Flare Stars -->
+  <circle cx="60" cy="70" r="3" fill="#00f5d4" opacity="0.6" filter="url(#bloomGlow)"/>
+  <circle cx="196" cy="186" r="4" fill="#f72585" opacity="0.7" filter="url(#bloomGlow)"/>
+  <circle cx="190" cy="65" r="2.5" fill="#ffffff" opacity="0.8"/>
+</svg>
