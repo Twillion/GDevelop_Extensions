@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 
 const SCENARIOS = [
-  'ocean',
+  'waveworks_presets',
   'gerstner',
   'buoyancy',
   'sph',

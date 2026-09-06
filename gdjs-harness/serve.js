@@ -15,6 +15,12 @@ http.createServer((req, res) => {
     // Extension sources live one level up. A relative "../" in the page would be collapsed away by
     // the browser at the site root, so route them explicitly.
     file = path.join(repo, rel.slice('/ext/'.length));
+    // Some extensions still sit under "Rarely used extensions/" while the restructure is in
+    // progress. Fall back there rather than 404ing, so the harness works either side of the move.
+    if (!fs.existsSync(file)) {
+      const alt = path.join(repo, 'Rarely used extensions', rel.slice('/ext/'.length));
+      if (fs.existsSync(alt)) file = alt;
+    }
   } else {
     file = path.join(harness, rel === '/' ? 'index.html' : rel);
   }

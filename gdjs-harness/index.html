@@ -32,7 +32,7 @@
 <div id="toolbar">
   <label for="scenarioSelect">Scenario:</label>
   <select id="scenarioSelect">
-    <option value="ocean">🌊 OceanFFT3D (Tessendorf GPU FFT)</option>
+    <option value="waveworks_presets">🌊 OceanWaveWorks3D (preset sweep + shader link)</option>
     <option value="gerstner">🌊 WaterBody3D (Gerstner Octaves)</option>
     <option value="buoyancy">🚤 Buoyancy3D (4-Probe Floating Boat)</option>
     <option value="sph">🧪 PourableLiquid3D (SPH Droplets & Cauldron)</option>
@@ -112,9 +112,9 @@ window.addEventListener('error', function (e) {
 <script src="/ext/FluidAndWater3D/FluidAndWater3D.runtime.js"></script>
 <script src="/ext/AdvancedLighting3D/AdvancedLighting3D.runtime.js"></script>
 <script src="/ext/CinematicPostFX3D/CinematicPostFX3D.runtime.js"></script>
-<script src="/ext/Material3D/ShaderChain.runtime.js"></script>
-<script src="/ext/Material3D/BRDFMaterial.runtime.js"></script>
-<script src="/ext/Material3D/Material3D.runtime.js"></script>
+<script src="/ext/MaterialMaster/ShaderChain.runtime.js"></script>
+<script src="/ext/MaterialMaster/BRDFMaterial.runtime.js"></script>
+<script src="/ext/MaterialMaster/MaterialMaster.runtime.js"></script>
 <script src="/ext/DeformableIngot3D/DeformableIngot3D.runtime.js"></script>
 
 <script>
