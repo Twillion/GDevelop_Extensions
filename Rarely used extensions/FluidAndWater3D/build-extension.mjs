@@ -9,6 +9,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Every rung of the maritime scale. The six the runtime authors by hand are anchors; the rest are
+// interpolated between them, so the dropdown is a continuous scale rather than seven separate looks.
+const BEAUFORT_RUNG_NAMES = [
+  'Calm', 'Light Air', 'Light Breeze', 'Gentle Breeze', 'Moderate Breeze', 'Fresh Breeze',
+  'Strong Breeze', 'Near Gale', 'Gale', 'Strong Gale', 'Storm', 'Violent Storm', 'Hurricane',
+];
+const BEAUFORT_CHOICES = ['Custom'].concat(
+  BEAUFORT_RUNG_NAMES.map((n, i) => 'Beaufort ' + i + ' - ' + n));
+const ANISOTROPY_CHOICES = ['1 (Off)', '2x', '4x', '8x', '16x'];
+
+
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const runtime = fs.readFileSync(path.join(here, 'FluidAndWater3D.runtime.js'), 'utf8');
 
@@ -100,7 +112,7 @@ const freeFn = (name, fullName, sentence, description, functionType, parameters,
 /* ========================================================= 1. WaterBody3D Behavior */
 
 const WATER_OPTIONS = `{
-  waterType: behavior._getWaterType ? behavior._getWaterType() : 'Ocean',
+  waterType: behavior._getArtWaterType ? behavior._getArtWaterType() : 'Ocean',
   waveHeight: behavior._getWaveHeight ? behavior._getWaveHeight() : 18.0,
   waveChoppiness: behavior._getWaveChoppiness ? behavior._getWaveChoppiness() : 0.75,
   waveSpeed: behavior._getWaveSpeed ? behavior._getWaveSpeed() : 1.0,
@@ -387,13 +399,13 @@ eventsFunctionContext.returnValue = body ? body.extinctionDepth : 8.0;
 
 const waterBodyBehavior = {
   name: 'WaterBody3D',
-  fullName: 'Water Body 3D (Ocean, Lake, Pool)',
+  fullName: 'Gerstner Water 1 (WaterBody3D)',
   description: 'Attach to a 3D Box or Plane to create sizable ocean volumes, lakes, rivers, or swimming pools with Gerstner waves, Beer-Lambert depth absorption, foam, and underwater camera transitions.',
   objectType: '',
   private: false,
   propertyDescriptors: [
-    prop('WaterType', 'Choice', 'Water Type', 'Environment preset profile.', 'Ocean', {
-      extraInformation: ['Ocean', 'Lake', 'River', 'SwimmingPool', 'Custom']
+    prop('ArtWaterType', 'Choice', 'Water Type', 'Palette and optics profile: colour, optical depth, caustics, crest and shore foam, and refraction. Choosing a named type OVERRIDES the colour, foam and optics properties below - set this to Custom to author them yourself. It does not touch the wave settings.', 'Ocean', {
+      extraInformation: ['Ocean', 'Lake', 'River', 'Swimming Pool', 'Custom']
     }),
     prop('WaveHeight', 'Number', 'Wave Height', 'Master wave amplitude in pixels.', '18.0'),
     prop('WaveChoppiness', 'Number', 'Wave Choppiness', 'Gerstner crest sharpness (0.0 = sine, 1.0 = sharp crests).', '0.75'),
@@ -448,7 +460,6 @@ const waterBodyBehavior = {
     ...waterExpressions,
   ],
 };
-
 /* ========================================================= 2. Buoyancy3D Behavior */
 
 const BUOY_OPTIONS = `{
@@ -459,7 +470,7 @@ const BUOY_OPTIONS = `{
   waveInfluence: behavior._getWaveInfluence ? behavior._getWaveInfluence() : 0.8,
   stabilityStrength: behavior._getStabilityStrength ? behavior._getStabilityStrength() : 0.65,
   stabilityDamping: behavior._getStabilityDamping ? behavior._getStabilityDamping() : 1.5,
-  maxSubmersionDepth: behavior._getMaxSubmersionDepth ? behavior._getMaxSubmersionDepth() : 2.0,
+  maxSubmersionDepth: behavior._getMaxSubmersionDepth ? behavior._getMaxSubmersionDepth() : 0.0,
   targetWaterBody: behavior._getTargetWaterBody ? behavior._getTargetWaterBody() : '',
   enabled: behavior._getEnabled ? behavior._getEnabled() : true
 }`;
@@ -608,7 +619,7 @@ const buoyancyBehavior = {
     prop('WaveInfluence', 'Number', 'Wave Influence', 'Strength of wave normal alignment rocking.', '0.8'),
     prop('StabilityStrength', 'Number', 'Ship Stability', 'Restoring roll and pitch strength. 0 disables stabilization; 0.65 is a stable ship default.', '0.65'),
     prop('StabilityDamping', 'Number', 'Stability Damping', 'Damps roll and pitch angular velocity while the hull touches water.', '1.5'),
-    prop('MaxSubmersionDepth', 'Number', 'Max Submersion Depth', 'Depth in scene units where buoyancy force reaches maximum.', '2.0'),
+    prop('MaxSubmersionDepth', 'Number', 'Max Submersion Depth', 'Depth in scene units at which buoyant force reaches its maximum. Leave at 0 to scale it to the hull depth of this object - full lift once the hull is half under - which is right at almost any project scale. A value here is in PIXELS, not metres.', '0'),
     prop('TargetWaterBody', 'String', 'Target Water Body', 'Specific water body name (leave blank for nearest active water).', ''),
     prop('Enabled', 'Boolean', 'Enabled', 'Whether buoyancy simulation is active.', 'true'),
   ],
@@ -623,7 +634,7 @@ const buoyancyBehavior = {
 /* ========================================================= 3. PourableLiquid3D Behavior */
 
 const POUR_OPTIONS = `{
-  fluidPreset: behavior._getFluidPreset ? behavior._getFluidPreset() : 'MagicPotion',
+  fluidPreset: behavior._getArtFluidPreset ? behavior._getArtFluidPreset() : 'Magic Potion',
   maxDroplets: behavior._getMaxDroplets ? behavior._getMaxDroplets() : 1500,
   flowRate: behavior._getFlowRate ? behavior._getFlowRate() : 60.0,
   pourTiltThreshold: behavior._getPourTiltThreshold ? behavior._getPourTiltThreshold() : 45.0,
@@ -678,8 +689,8 @@ FW.startPouring(runtimeScene, behavior, rate);
 
   fn('SetFluidPreset', 'Set fluid preset profile',
     'Set fluid preset profile on _PARAM0_ to _PARAM2_',
-    'Apply fluid profile (Water, MagicPotion, HoneySyrup, GreenSlime, AcidPoison, LavaMagma).', 'Action',
-    [choice('Preset', 'Fluid preset profile', ['Water', 'MagicPotion', 'HoneySyrup', 'GreenSlime', 'AcidPoison', 'LavaMagma'])],
+    'Apply a fluid profile, setting viscosity, surface tension, density, droplet size and colour together.', 'Action',
+    [choice('Preset', 'Fluid preset profile', ['Water', 'Magic Potion', 'Honey Syrup', 'Green Slime', 'Acid Poison', 'Lava Magma'])],
     `const preset = eventsFunctionContext.getArgument("Preset");
 if (behavior._setFluidPreset) behavior._setFluidPreset(preset);
 FW.setFluidPreset(runtimeScene, behavior, preset);
@@ -815,8 +826,8 @@ const pourableLiquidBehavior = {
   objectType: '',
   private: false,
   propertyDescriptors: [
-    prop('FluidPreset', 'Choice', 'Fluid Preset Profile', 'Preset physical behavior and appearance.', 'MagicPotion', {
-      extraInformation: ['Water', 'MagicPotion', 'HoneySyrup', 'GreenSlime', 'AcidPoison', 'LavaMagma', 'Custom']
+    prop('ArtFluidPreset', 'Choice', 'Fluid Preset Profile', 'Preset physical behavior and appearance.', 'Magic Potion', {
+      extraInformation: ['Water', 'Magic Potion', 'Honey Syrup', 'Green Slime', 'Acid Poison', 'Lava Magma', 'Custom']
     }),
     prop('MaxDroplets', 'Number', 'Max Active Droplets', 'Maximum live droplets from this emitter. The scene-wide solver holds 3000.', '1500'),
     prop('FlowRate', 'Number', 'Flow Rate', 'Droplets spawned per second when pouring.', '60.0'),
@@ -840,15 +851,22 @@ const pourableLiquidBehavior = {
 };
 
 
-/* ========================================================= 4. OceanFFT3D Behavior */
+/* ========================================================= 4b. OceanWaveWorks3D Behavior */
 
-const OCEAN_OPTIONS = `{
-  windSpeed: behavior._getWindSpeed ? behavior._getWindSpeed() : 12.0,
+const WAVEWORKS_OPTIONS = `{
+  beaufortScale: behavior._getBeaufortScale ? behavior._getBeaufortScale() : 'Beaufort 4 - Moderate Breeze',
+  persistentFoam: behavior._getPersistentFoam ? behavior._getPersistentFoam() : false,
+  sunHeading: behavior._getSunHeading ? behavior._getSunHeading() : 75.0,
+  sunElevation: behavior._getSunElevation ? behavior._getSunElevation() : 18.0,
+  windSpeed: behavior._getWindSpeed ? behavior._getWindSpeed() : 7.0,
   windDirection: behavior._getWindDirection ? behavior._getWindDirection() : 45.0,
   waveHeightScale: behavior._getWaveHeightScale ? behavior._getWaveHeightScale() : 1.0,
-  choppiness: behavior._getChoppiness ? behavior._getChoppiness() : 1.0,
+  choppiness: behavior._getChoppiness ? behavior._getChoppiness() : 0.9,
+  cascadeScale: behavior._getCascadeScale ? behavior._getCascadeScale() : 0.25,
+  cascadeWeight: behavior._getCascadeWeight ? behavior._getCascadeWeight() : 0.60,
+  opacity: behavior._getOpacity ? behavior._getOpacity() : 0.85,
+  microDetail: behavior._getMicroDetail ? behavior._getMicroDetail() : 0.55,
   resolution: behavior._getResolution ? behavior._getResolution() : 64,
-  gpuResolution: behavior._getGpuResolution ? behavior._getGpuResolution() : 256,
   gridSubdivisions: behavior._getGridSubdivisions ? behavior._getGridSubdivisions() : 64,
   tileSize: behavior._getTileSize ? behavior._getTileSize() : 0,
   seed: behavior._getSeed ? behavior._getSeed() : 1337,
@@ -858,9 +876,9 @@ const OCEAN_OPTIONS = `{
   shallowColor: behavior._getShallowColor ? behavior._getShallowColor() : '64;224;208',
   deepColor: behavior._getDeepColor ? behavior._getDeepColor() : '10;45;90',
   extinctionDepth: behavior._getExtinctionDepth ? behavior._getExtinctionDepth() : 150.0,
-  foamIntensity: behavior._getFoamIntensity ? behavior._getFoamIntensity() : 0.8,
+  foamIntensity: behavior._getFoamIntensity ? behavior._getFoamIntensity() : 0.55,
   maskUnderEdges: behavior._getMaskUnderEdges ? behavior._getMaskUnderEdges() : true,
-  foamCoverage: behavior._getFoamCoverage ? behavior._getFoamCoverage() : 0.35,
+  foamCoverage: behavior._getFoamCoverage ? behavior._getFoamCoverage() : 0.25,
   enableCaustics: behavior._getEnableCaustics ? behavior._getEnableCaustics() : true,
   enableUnderwaterFX: behavior._getEnableUnderwaterFX ? behavior._getEnableUnderwaterFX() : false,
   underwaterFogColor: behavior._getUnderwaterFogColor ? behavior._getUnderwaterFogColor() : '15;65;110',
@@ -868,179 +886,289 @@ const OCEAN_OPTIONS = `{
   enableBodyInteractions: behavior._getEnableBodyInteractions ? behavior._getEnableBodyInteractions() : true,
   interactionStrength: behavior._getInteractionStrength ? behavior._getInteractionStrength() : 14.0,
   interactionRadius: behavior._getInteractionRadius ? behavior._getInteractionRadius() : 180.0,
-  interactionSpeedThreshold: behavior._getInteractionSpeedThreshold ? behavior._getInteractionSpeedThreshold() : 35.0
+  interactionSpeedThreshold: behavior._getInteractionSpeedThreshold ? behavior._getInteractionSpeedThreshold() : 35.0,
+  textureAnisotropy: behavior._getTextureAnisotropy ? behavior._getTextureAnisotropy() : '4x'
 }`;
 
-const G_OCEAN_SEA = 'Sea State & Wind';
-const G_OCEAN_LOOK = 'Color, Foam & Optics';
+const G_WW_SEA = 'Sea State & Wind';
+const G_WW_LOOK = 'Color, Foam & Optics';
 
-const oceanBehavior = {
-  name: 'OceanFFT3D',
-  fullName: 'Ocean FFT 3D (Tessendorf)',
+const oceanWaveWorksBehavior = {
+  name: 'OceanWaveWorks3D',
+  fullName: 'Ocean WaveWorks 3D (Multi-Cascade FFT)',
   description:
-    'Spectral ocean surface using the FFT method of Tessendorf 2001 — the model behind Sea of Thieves. '
-    + 'Wave amplitude comes from a Phillips spectrum driven by WIND SPEED rather than an authored height, '
-    + 'and the field carries thousands of wave components, so the surface does not repeat the way a sum of '
-    + 'a few Gerstner octaves does. Buoyancy3D samples the exact same field the surface is displaced from. '
-    + 'Attach to a 3D Box sized to your body of water. For lakes, pools and rivers, WaterBody3D is cheaper.',
+    'Multi-cascade cinematic ocean simulation inspired by NVIDIA WaveWorks. Evaluates dual-cascade spectral FFTs '
+    + 'simultaneously (macro deep ocean gravity swells + fine high-frequency choppy wind ripples) to eliminate visible '
+    + 'tile repetition and achieve horizon-to-shore realism. Includes international Beaufort wind scale presets '
+    + '(Beaufort 0 to 12), multi-frequency Jacobian whitecap folding, backlit crest subsurface scattering (SSS), '
+    + 'and seamless Buoyancy3D and WaterEdge3D compatibility.',
   objectType: '',
   private: false,
   propertyDescriptors: [
+    prop('BeaufortScale', 'Choice', 'Beaufort Scale Preset',
+      'Maritime Beaufort sea scale preset, from Beaufort 0 (mirror calm) to Beaufort 12 (hurricane). Wave height follows the wind speed of the chosen scale rather than being authored directly. Choosing a named preset OVERRIDES the individual colour, foam and sea-state properties below - set this to Custom to author those yourself. For colour, sun and foam styling attach WaterDetailing3D.',
+      'Beaufort 4 - Moderate Breeze', { extraInformation: BEAUFORT_CHOICES }),
+    prop('PersistentFoam', 'Boolean', 'Persistent Foam (experimental)',
+      'Keeps foam in a render target that is blurred with feedback each frame, so whitecaps streak behind the crest and disperse instead of vanishing with it - the way Sea of Thieves does it. How long foam survives comes from the WaterDetailing3D Sub-style: about 3.85s in salt water against 2.54s in fresh. OFF by default: it is the one part of the water that needs a real GPU to verify, and it falls back to the ordinary crest foam if the render target is unusable.',
+      'false'),
     prop('WindSpeed', 'Number', 'Wind Speed (m/s)',
-      'Drives the whole sea state. Significant wave height follows Hs = 0.21 x V^2 / g, so 6 m/s is a '
-      + 'moderate breeze (~0.8 m), 14 m/s a near gale (~4 m), 24 m/s a severe gale (~12 m).', '12'),
-    prop('WindDirection', 'Number', 'Wind Direction', 'Direction the sea runs, in degrees (0 - 360).', '45'),
+      'Wind speed driving the primary spectrum (Hs = 0.21 x V^2 / g).', '7'),
+    prop('WindDirection', 'Number', 'Wind Direction', 'Direction waves travel in degrees (0 - 360).', '45'),
+    prop('CascadeScale', 'Number', 'Cascade Frequency Scale',
+      'Spatial tile ratio of the high-frequency cascade relative to macro swells (default 0.25 = 4x tighter frequency domain).', '0.25'),
+    prop('CascadeWeight', 'Number', 'Cascade Blend Weight',
+      'Blending strength of the high-frequency cascade displacement and normals (0.0 to 1.5).', '0.60'),
     prop('PeakWavelength', 'Number', 'Wave Length (crest to crest)',
-      'Distance from one wave crest to the next, in SCENE UNITS. This is the setting that decides '
-      + 'how big the water feels next to the player: at 100 units per metre, 1400 is a 14 m swell a '
-      + 'person could not see over, while 300 is choppy 3 m water. Leave at 0 to fit automatically '
-      + 'to the water volume (about 2-3 waves across it).', '0'),
-    prop('WavelengthScale', 'Number', 'Wavelength Scale (advanced)',
-      'How LONG the waves are, independent of how tall. Leave at 0 to fit automatically to the '
-      + 'water volume, which is almost always what you want: a real sea at 12 m/s has waves 92 m '
-      + 'long, so on anything smaller the physically correct result is one swell spanning the whole '
-      + 'surface, which looks flat. Auto-fit puts about 3-4 waves across the body at any size. Set a '
-      + 'value below 1 for shorter, choppier waves; above 1 for longer swell.', '0'),
+      'Distance from crest to crest in scene units (0 = auto-fit to volume).', '0'),
+    prop('WavelengthScale', 'Number', 'Wavelength Scale',
+      'Wavelength scale multiplier (0 = auto-fit).', '0'),
     prop('WaveHeightScale', 'Number', 'Wave Height Scale',
-      'Art-direction multiplier on top of the physically derived wave height. 1.0 is physical.', '1'),
+      'Art-direction multiplier on top of physical wave height.', '1'),
     prop('Choppiness', 'Number', 'Choppiness',
-      'Horizontal displacement strength. 0 gives rounded swell, 1 sharpens crests and broadens troughs, '
-      + 'above ~1.5 the surface starts to fold through itself.', '1'),
+      'Horizontal displacement sharpness (0 = rounded, 1 = sharp crests, >1.5 = folding).', '0.9'),
     prop('Resolution', 'Number', 'Spectrum Resolution',
-      'FFT grid size, a power of two from 16 to 128. Higher resolves finer waves but costs CPU each '
-      + 'frame: 32 is about 0.2 ms, 64 about 1.1 ms, 128 about 4 ms. 64 is a good default.', '64'),
-    prop('GpuResolution', 'Number', 'GPU Spectrum Resolution',
-      'Runs a second, higher-resolution spectrum entirely on the GPU (a ping-pong butterfly FFT), '
-      + 'giving roughly 4x the wave detail for almost no CPU cost. A power of two up to 512, or 0 to '
-      + 'disable. Must exceed Spectrum Resolution to take effect. Buoyancy keeps sampling the CPU '
-      + 'field, which is the same spectrum low-passed, so hulls stay in phase with the swell. Falls '
-      + 'back automatically if the device cannot render to float textures.', '256'),
-    prop('GridSubdivisions', 'Number', 'Mesh Subdivisions',
-      'Surface mesh resolution (8 - 256). Match it to Spectrum Resolution or higher; below it the mesh '
-      + 'cannot show the waves the spectrum contains.', '64'),
+      'FFT grid size per cascade, power of two from 16 to 128 (default 64).', '64'),
+    prop('GridSubdivisions', 'Number', 'Mesh Grid Subdivisions',
+      'Mesh surface vertex subdivisions (16 to 256).', '64'),
     prop('TileSize', 'Number', 'Tile Size',
-      'Period at which the wave field repeats, in scene units. 0 uses the volume size, which puts exactly '
-      + 'one tile across the water so it never visibly repeats.', '0'),
-    prop('Seed', 'Number', 'Random Seed', 'Changes which ocean you get. The same seed always rebuilds the same sea.', '1337'),
-    prop('UnitsPerMetre', 'Number', 'Units Per Metre',
-      'How many scene units make one real metre. This is what ties wind speed to a wave size you can see, '
-      + 'so set it to match your world, not to 100 by habit: divide your character\'s height in scene units by '
-      + 'their height in metres. A 1000-unit character who reads as a normal adult means about 550. '
-      + '100 is the Physics3D default and only correct if your scene is actually built at that scale.', '100'),
-    prop('ShallowColor', 'Color', 'Shallow Water Color', 'Color where the water is shallow (near a WaterEdge3D).', '64;224;208'),
-    prop('DeepColor', 'Color', 'Deep Ocean Color', 'Color in deep water.', '10;45;90'),
-    prop('ExtinctionDepth', 'Number', 'Extinction Depth', 'Beer-Lambert scale length, in scene units.', '150'),
-    prop('FoamIntensity', 'Number', 'Foam Intensity', 'Opacity of whitecap and shoreline foam.', '0.8'),
-    prop('FoamCoverage', 'Number', 'Foam Coverage',
-      'How much of the surface breaks. Foam appears where the surface folds (the displacement Jacobian), '
-      + 'so raising Choppiness produces more of it naturally.', '0.35'),
-    prop('MaskUnderEdges', 'Boolean', 'Cut Water Under Edges', 'Cut the water away wherever a WaterEdge3D volume covers it. That volume is an axis-aligned BOX, so a large or irregular piece of land removes a rectangle of water, not its real outline - if the water looks sliced off in a straight line where it meets your coast, turn this OFF. The edge still produces foam and shallows; your actual 3D land hides the water by itself.', 'true'),
-    prop('EnableCaustics', 'Boolean', 'Enable Caustics', 'Animated caustic light patterns in shallow water.', 'true'),
-    prop('EnableUnderwaterFX', 'Boolean', 'Enable Underwater FX', 'Fog and tint when the camera submerges.', 'false'),
-    prop('UnderwaterFogColor', 'Color', 'Underwater Fog Color', 'Tint when submerged.', '15;65;110'),
-    prop('UnderwaterFogDensity', 'Number', 'Underwater Fog Density', 'Visibility falloff underwater.', '0.0005'),
-    prop('EnableBodyInteractions', 'Boolean', 'Physics Body Ripples',
-      'Automatically detect moving Physics3D/Jolt bodies intersecting this ocean volume and create wakes and splash rings. The moving object does not need Buoyancy3D.', 'true'),
-    prop('InteractionStrength', 'Number', 'Splash Strength',
-      'Maximum vertical displacement, in scene units, produced by a fast moving body.', '14'),
-    prop('InteractionRadius', 'Number', 'Splash Radius',
-      'Maximum radius, in scene units, reached by each movement ripple.', '180'),
-    prop('InteractionSpeedThreshold', 'Number', 'Splash Speed Threshold',
-      'Minimum Physics3D or measured movement speed, in scene units per second, before a wake is emitted.', '35'),
+      'Spatial repetition period in scene units (0 = water volume size).', '0'),
+    prop('Seed', 'Number', 'Random Seed', 'Deterministic phase seed.', '1337'),
+    prop('UnitsPerMetre', 'Number', 'Units Per Metre', 'Scene units per real-world metre.', '100'),
+    prop('Opacity', 'Number', 'Opacity', 'Water transparency (0.0 = clear glass, 1.0 = fully opaque).', '0.85'),
+    prop('MicroDetail', 'Number', 'Micro Ripples Detail',
+      'Procedural wind-aligned capillary normal ripple strength (0.0 = mirror smooth).', '0.55'),
+    prop('ShallowColor', 'Color', 'Shallow Water Color', 'Tropical shallow / shoreline tint.', '64;224;208'),
+    prop('DeepColor', 'Color', 'Deep Ocean Color', 'Deep oceanic water tint.', '10;45;90'),
+    prop('ExtinctionDepth', 'Number', 'Extinction Depth', 'Beer-Lambert depth absorption scale in scene units.', '150'),
+    prop('TextureAnisotropy', 'Choice', 'Anisotropic Filtering',
+      'Requested anisotropic filtering level for ocean detail at grazing angles. Uses mipmaps on supported devices and falls back to 1x when unavailable. Does not change wave geometry.',
+      '4x', { extraInformation: ANISOTROPY_CHOICES }),
+    prop('FoamIntensity', 'Number', 'Foam Intensity', 'Whitecap froth and shoreline foam brightness.', '0.55'),
+    prop('FoamCoverage', 'Number', 'Foam Coverage', 'Wave crest folding threshold where whitecaps break.', '0.25'),
+    prop('MaskUnderEdges', 'Boolean', 'Mask Under Edges', 'Cut water surface beneath WaterEdge3D land.', 'true'),
+    prop('EnableCaustics', 'Boolean', 'Enable Caustics', 'Render animated Voronoi seabed light caustics.', 'true'),
+    prop('SunHeading', 'Number', 'Sun Heading (Azimuth)',
+      'Sun horizontal direction in degrees (0 = East, 90 = North, 180 = West, 270 = South). Automatically follows scene Directional Light if present unless manually configured.', '75.0'),
+    prop('SunElevation', 'Number', 'Sun Elevation (Altitude)',
+      'Sun altitude angle above horizon in degrees (0 = horizon, 90 = zenith noon). Low angles (15-25°) produce the golden-hour specular trail.', '18.0'),
+    prop('EnableUnderwaterFX', 'Boolean', 'Enable Underwater Fog', 'Automatic underwater fog when camera dives.', 'false'),
+    prop('UnderwaterFogColor', 'Color', 'Underwater Fog Color', 'Tint for submerged camera view.', '15;65;110'),
+    prop('UnderwaterFogDensity', 'Number', 'Underwater Fog Density', 'Underwater visibility decay.', '0.0005'),
+    prop('EnableBodyInteractions', 'Boolean', 'Body Interactions', 'Moving Physics3D bodies cause splashes and wakes.', 'true'),
+    prop('InteractionStrength', 'Number', 'Splash Strength', 'Height of wake ripples generated by moving bodies.', '14'),
+    prop('InteractionRadius', 'Number', 'Splash Radius', 'Travel distance of wake ripples.', '180'),
+    prop('InteractionSpeedThreshold', 'Number', 'Splash Speed Threshold', 'Minimum velocity required to make a splash.', '35')
   ],
   eventsFunctions: [
     {
       name: 'onCreated', fullName: 'onCreated', description: '', functionType: 'Action',
       private: true, parameters: [...OB],
-      events: ev(BEHAVIOR_PREAMBLE + `FW.registerOcean(runtimeScene, object, behavior, ${OCEAN_OPTIONS});\n`, { withRuntime: true }),
+      events: ev(BEHAVIOR_PREAMBLE + `FW.registerWaveWorksOcean(runtimeScene, object, behavior, ${WAVEWORKS_OPTIONS});\n`, { withRuntime: true }),
     },
     {
       name: 'doStepPreEvents', fullName: 'doStepPreEvents', description: '', functionType: 'Action',
       private: true, parameters: [...OB],
-      events: ev(BEHAVIOR_PREAMBLE + `FW.stepOcean(runtimeScene, object, behavior);\n`),
+      events: ev(BEHAVIOR_PREAMBLE + `FW.stepWaveWorksOcean(runtimeScene, object, behavior);\n`),
     },
     {
       name: 'onDestroy', fullName: 'onDestroy', description: '', functionType: 'Action',
       private: true, parameters: [...OB],
-      events: ev(BEHAVIOR_PREAMBLE + `FW.disposeOcean(runtimeScene, behavior);\n`),
+      events: ev(BEHAVIOR_PREAMBLE + `FW.disposeWaveWorksOcean(runtimeScene, behavior);\n`),
     },
+
+    fn('LogDiagnostics', 'Log ocean diagnostics to the console',
+      'Log ocean diagnostics for _PARAM0_',
+      'Prints the live sea state to the browser console: tile size, significant wave height, wavelength, mesh scale, and a warning with exact fix numbers if the waves are too big for this water body. The same block is printed once at scene start, but that is BEFORE any "Set Beaufort scale" action runs - call this afterwards to see the sea you are actually showing.',
+      'Action', [],
+      `FW.logWaveWorksDiagnostics(runtimeScene, behavior);`),
+
+    fn('WaveSteepness', 'Wave steepness', '',
+      'Significant wave height divided by the tile the spectrum repeats across - the one number that decides whether a sea reads as water. Real wind waves sit near 0.04. Water physically cannot stand up past about 0.10; beyond that the surface folds everywhere, foams everywhere, and displaces outside its own volume, which looks like snow-capped mountains rather than sea.',
+      'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaveWorksSteepness(runtimeScene, behavior);`),
+
+    fn('SetBeaufortScale', 'Set Beaufort scale preset',
+      'Set Beaufort scale preset on _PARAM0_ to _PARAM2_ over _PARAM3_ seconds',
+      'Sets the sea state from the maritime Beaufort scale. Wave height follows the wind speed of the chosen scale. Adjacent rungs differ by 38-92% in wave height - the scale is roughly cubic - so an instant change is a visible pop: give it a transition time in seconds and the sea grows or calms smoothly through every rung in between. 0 is instant, which is the old behaviour.',
+      'Action',
+      [choice('Scale', 'Beaufort Scale', BEAUFORT_CHOICES),
+        num('Seconds', 'Transition time in seconds (0 = instant)', '0')],
+      `const s = eventsFunctionContext.getArgument("Scale");
+const seconds = Number(eventsFunctionContext.getArgument("Seconds")) || 0;
+if (behavior._setBeaufortScale) behavior._setBeaufortScale(s);
+FW.setWaveWorksBeaufort(runtimeScene, behavior, s, seconds);
+`, { group: G_WW_SEA }),
+
+    fn('BeaufortScale', 'Beaufort scale preset name', '', 'Current Beaufort scale preset name.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaveWorksBeaufort(runtimeScene, behavior);
+`, { group: G_WW_SEA, expressionType: 'string' }),
+
+    fn('SetCascadeWeight', 'Set cascade blend weight',
+      'Set cascade blend weight on _PARAM0_ to _PARAM2_',
+      'Controls blending strength of the high-frequency cascade (0.0 = only macro swells, 1.0 = full chop and wavelets).',
+      'Action',
+      [num('Weight', 'Weight (0.0 to 1.5)', '0.60')],
+      `const val = eventsFunctionContext.getArgument("Weight");
+if (behavior._setCascadeWeight) behavior._setCascadeWeight(val);
+FW.setWaveWorksCascadeWeight(runtimeScene, behavior, val);
+`, { group: G_WW_SEA }),
+
+    fn('CascadeWeight', 'Cascade blend weight', '', 'Current high-frequency cascade blend weight.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaveWorksCascadeWeight(runtimeScene, behavior);
+`, { group: G_WW_SEA, expressionType: 'number' }),
+
+    fn('SetOpacity', 'Set water opacity',
+      'Set water opacity on _PARAM0_ to _PARAM2_',
+      'Controls overall water transparency (0.0 = completely transparent, 1.0 = normal opacity).',
+      'Action',
+      [num('Opacity', 'Opacity (0.0 to 1.0)', '0.85')],
+      `const val = eventsFunctionContext.getArgument("Opacity");
+if (behavior._setOpacity) behavior._setOpacity(val);
+FW.setWaveWorksOpacity(runtimeScene, behavior, val);
+`, { group: G_WW_LOOK }),
+
+    fn('Opacity', 'Water opacity', '', 'Current water opacity (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaveWorksOpacity(runtimeScene, behavior);
+`, { group: G_WW_LOOK, expressionType: 'number' }),
+
+    fn('SetMicroDetail', 'Set micro-wave ripples detail',
+      'Set micro-wave ripples detail on _PARAM0_ to _PARAM2_',
+      'Controls the procedural wind-aligned capillary ripple normal strength (0.0 = mirror smooth).',
+      'Action',
+      [num('MicroDetail', 'Detail strength (0.0 to 2.0)', '0.55')],
+      `const val = eventsFunctionContext.getArgument("MicroDetail");
+if (behavior._setMicroDetail) behavior._setMicroDetail(val);
+FW.setWaveWorksMicroDetail(runtimeScene, behavior, val);
+`, { group: G_WW_LOOK }),
+
+    fn('SetTextureAnisotropy', 'Set ocean texture anisotropic filtering',
+      'Set ocean texture anisotropic filtering on _PARAM0_ to _PARAM2_x',
+      'Sets the hardware anisotropic filtering level (1 to 16x) for ocean displacement and slope textures.',
+      'Action',
+      [choice('Anisotropy', 'Anisotropic Filtering', ANISOTROPY_CHOICES)],
+      `const a = eventsFunctionContext.getArgument("Anisotropy");
+if (behavior._setTextureAnisotropy) behavior._setTextureAnisotropy(a);
+FW.setOceanAnisotropy(runtimeScene, behavior, a);
+`, { group: G_WW_LOOK }),
+
+    fn('TextureAnisotropy', 'Ocean texture anisotropic filtering level', '',
+      'Effective anisotropic filtering level of the ocean slope textures after device and texture-format limits (1 when unavailable).',
+      'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getOceanAnisotropy(runtimeScene, behavior);
+`, { group: G_WW_LOOK, expressionType: 'number' }),
+
+    fn('SetSunDirection', 'Set sun direction',
+      'Set sun direction on _PARAM0_ to heading _PARAM2_ deg, elevation _PARAM3_ deg',
+      'Updates the sun angle driving specular highlights, crest translucency (SSS), and sky reflections.',
+      'Action',
+      [num('SunHeading', 'Heading in degrees (0 - 360)', '75'), num('SunElevation', 'Elevation above horizon in degrees (0 - 90)', '18')],
+      `const sh = eventsFunctionContext.getArgument("SunHeading");
+const se = eventsFunctionContext.getArgument("SunElevation");
+if (behavior._setSunHeading) behavior._setSunHeading(sh);
+if (behavior._setSunElevation) behavior._setSunElevation(se);
+FW.setOceanSunDirection(runtimeScene, behavior, sh, se);
+`, { group: G_WW_LOOK }),
+
+    fn('SetSunColor', 'Set sun light color',
+      'Set sun light color on _PARAM0_ to _PARAM2_',
+      'Sets the sun tint driving specular glints and crest light.',
+      'Action',
+      [col('SunColor', 'Sun light color', '255;245;225')],
+      `const col = eventsFunctionContext.getArgument("SunColor");
+if (behavior._setSunColor) behavior._setSunColor(col);
+FW.setOceanSunColor(runtimeScene, behavior, col);
+`, { group: G_WW_LOOK }),
+
+    fn('SunHeading', 'Sun heading', '', 'Current sun azimuth heading in degrees.', 'Expression', [],
+      `const o = FW.oceanOf(runtimeScene, behavior);
+eventsFunctionContext.returnValue = o && o.sunHeading !== undefined ? o.sunHeading : 75.0;
+`, { group: G_WW_LOOK, expressionType: 'number' }),
+
+    fn('SunElevation', 'Sun elevation', '', 'Current sun altitude elevation above horizon in degrees.', 'Expression', [],
+      `const o = FW.oceanOf(runtimeScene, behavior);
+eventsFunctionContext.returnValue = o && o.sunElevation !== undefined ? o.sunElevation : 18.0;
+`, { group: G_WW_LOOK, expressionType: 'number' }),
+
+
+    fn('MicroDetail', 'Micro-wave ripples detail', '', 'Current micro-wave ripple intensity.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaveWorksMicroDetail(runtimeScene, behavior);
+`, { group: G_WW_LOOK, expressionType: 'number' }),
 
     fn('SetWind', 'Set wind speed and direction',
       'Set wind on _PARAM0_ to _PARAM2_ m/s heading _PARAM3_ degrees',
       'Changes the sea state. Rebuilds the wave spectrum, so call it on change rather than every frame.',
       'Action',
-      [num('WindSpeed', 'Wind speed in m/s', '12'), num('WindDirection', 'Heading in degrees', '45')],
+      [num('WindSpeed', 'Wind speed in m/s', '7'), num('WindDirection', 'Heading in degrees', '45')],
       `const ws = eventsFunctionContext.getArgument("WindSpeed");
 const wd = eventsFunctionContext.getArgument("WindDirection");
 if (behavior._setWindSpeed) behavior._setWindSpeed(ws);
 if (behavior._setWindDirection) behavior._setWindDirection(wd);
 FW.setOceanWind(runtimeScene, behavior, ws, wd);
-`, { group: G_OCEAN_SEA }),
+`, { group: G_WW_SEA }),
 
-    fn('SetPeakWavelength', 'Set wave length',
-    'Set wave length (crest to crest) on _PARAM0_ to _PARAM2_ units',
-    'Distance between wave crests in scene units - the most direct way to control how big the '
-    + 'water feels. 0 fits automatically to the volume.', 'Action',
-    [num('PeakWavelength', 'Crest-to-crest distance in scene units (0 = auto)', '0')],
-    `const val = eventsFunctionContext.getArgument("PeakWavelength");
-if (behavior._setPeakWavelength) behavior._setPeakWavelength(val);
-const o = FW.oceanOf(runtimeScene, behavior);
-if (o) { o.peakWavelengthOption = val; FW.setOceanWind(runtimeScene, behavior, o.windSpeed, o.windDirection); }
-`, { group: G_OCEAN_SEA }),
-
-  fn('SetWavelengthScale', 'Set wavelength scale',
-    'Set wave length scale on _PARAM0_ to _PARAM2_',
-    'How long the waves are, independent of height. 0 refits automatically to the water volume.',
-    'Action',
-    [num('WavelengthScale', 'Scale (0 = auto)', '0')],
-    `const val = eventsFunctionContext.getArgument("WavelengthScale");
-if (behavior._setWavelengthScale) behavior._setWavelengthScale(val);
-const o = FW.oceanOf(runtimeScene, behavior);
-if (o) { o.wavelengthScaleOption = val; FW.setOceanWind(runtimeScene, behavior, o.windSpeed, o.windDirection); }
-`, { group: G_OCEAN_SEA }),
-
-  fn('SetChoppiness', 'Set choppiness',
+    fn('SetChoppiness', 'Set choppiness',
       'Set ocean choppiness on _PARAM0_ to _PARAM2_',
       'Horizontal displacement strength. Higher values sharpen crests and produce more breaking foam.',
       'Action',
-      [num('Choppiness', 'Choppiness (0 - 1.5)', '1')],
+      [num('Choppiness', 'Choppiness (0 - 1.5)', '0.9')],
       `const val = eventsFunctionContext.getArgument("Choppiness");
 if (behavior._setChoppiness) behavior._setChoppiness(val);
 FW.setOceanChoppiness(runtimeScene, behavior, val);
-`, { group: G_OCEAN_SEA }),
+`, { group: G_WW_SEA }),
+
+    fn('SetPeakWavelength', 'Set wave length',
+      'Set wave length (crest to crest) on _PARAM0_ to _PARAM2_ units',
+      'Distance between wave crests in scene units. 0 fits automatically to the volume.', 'Action',
+      [num('PeakWavelength', 'Crest-to-crest distance in scene units (0 = auto)', '0')],
+      `const val = eventsFunctionContext.getArgument("PeakWavelength");
+if (behavior._setPeakWavelength) behavior._setPeakWavelength(val);
+const o = FW.oceanOf(runtimeScene, behavior);
+if (o) { o.peakWavelengthOption = val; FW.setOceanWind(runtimeScene, behavior, o.windSpeed, o.windDirection); }
+`, { group: G_WW_SEA }),
+
+    fn('SetWavelengthScale', 'Set wavelength scale',
+      'Set wave length scale on _PARAM0_ to _PARAM2_',
+      'How long the waves are, independent of height. 0 refits automatically to the water volume.',
+      'Action',
+      [num('WavelengthScale', 'Scale (0 = auto)', '0')],
+      `const val = eventsFunctionContext.getArgument("WavelengthScale");
+if (behavior._setWavelengthScale) behavior._setWavelengthScale(val);
+const o = FW.oceanOf(runtimeScene, behavior);
+if (o) { o.wavelengthScaleOption = val; FW.setOceanWind(runtimeScene, behavior, o.windSpeed, o.windDirection); }
+`, { group: G_WW_SEA }),
 
     fn('IsCameraUnderwater', 'Is camera underwater',
       'Camera is submerged in _PARAM0_',
       'True when the active camera is below the ocean surface.', 'Condition', [],
       `const o = FW.oceanOf(runtimeScene, behavior);
 eventsFunctionContext.returnValue = o ? !!o.isCameraUnderwater : false;
-`, { group: G_OCEAN_LOOK }),
+`, { group: G_WW_LOOK }),
 
     fn('WaveHeightAt', 'Wave height at position', '',
-      'Wave displacement Z at world (X, Y), from the same field the surface is rendered from.',
+      'Wave displacement Z at world (X, Y), from the dual-cascade field.',
       'Expression',
       [num('X', 'World X', '0'), num('Y', 'World Y', '0')],
       `eventsFunctionContext.returnValue = FW.getOceanWaveHeightAt(runtimeScene, behavior,
   eventsFunctionContext.getArgument("X"), eventsFunctionContext.getArgument("Y"));
-`, { group: G_OCEAN_SEA, expressionType: 'number' }),
+`, { group: G_WW_SEA, expressionType: 'number' }),
 
     fn('SurfaceZ', 'Water surface altitude at position', '',
-      'Absolute surface altitude Z at world (X, Y), including the wave.', 'Expression',
+      'Absolute surface altitude Z at world (X, Y), including dual-cascade waves.', 'Expression',
       [num('X', 'World X', '0'), num('Y', 'World Y', '0')],
       `eventsFunctionContext.returnValue = FW.getOceanSurfaceZ(runtimeScene, behavior,
   eventsFunctionContext.getArgument("X"), eventsFunctionContext.getArgument("Y"));
-`, { group: G_OCEAN_SEA, expressionType: 'number' }),
+`, { group: G_WW_SEA, expressionType: 'number' }),
 
     fn('SignificantWaveHeight', 'Significant wave height', '',
       'Significant wave height in scene units, derived from wind speed (Hs = 0.21 V^2 / g).',
       'Expression', [],
       `eventsFunctionContext.returnValue = FW.getSignificantWaveHeight(runtimeScene, behavior);
-`, { group: G_OCEAN_SEA, expressionType: 'number' }),
+`, { group: G_WW_SEA, expressionType: 'number' }),
 
     fn('WindSpeed', 'Wind speed', '', 'Current wind speed in m/s.', 'Expression', [],
       `const o = FW.oceanOf(runtimeScene, behavior);
 eventsFunctionContext.returnValue = o ? o.windSpeed : 0;
-`, { group: G_OCEAN_SEA, expressionType: 'number' }),
+`, { group: G_WW_SEA, expressionType: 'number' }),
   ],
 };
 
@@ -1103,6 +1231,732 @@ const edgeBehavior = {
 if (behavior._setEnabled) behavior._setEnabled(val);
 FW.setWaterEdgeEnabled(runtimeScene, behavior, val);
 `, { group: 'Water Edge' }),
+  ],
+};
+
+/* ========================================================= 5b. WaterDetailing3D Behavior */
+
+const WATER_DETAILING_OPTIONS = `{
+  style: behavior._getArtStyle ? behavior._getArtStyle() : 'Sea of Thieves',
+  waterLook: behavior._getArtWaterLook ? behavior._getArtWaterLook() : 'Clear',
+  subStyle: behavior._getArtSubStyle ? behavior._getArtSubStyle() : 'Salt Water',
+  foamStyle: behavior._getArtFoamStyle ? behavior._getArtFoamStyle() : 'Natural',
+  lighting: behavior._getArtLighting ? behavior._getArtLighting() : 'Golden Hour',
+  sunHeading: behavior._getSunHeading ? behavior._getSunHeading() : 75.0,
+  sunElevation: behavior._getSunElevation ? behavior._getSunElevation() : 18.0,
+  sunColor: behavior._getSunColor ? behavior._getSunColor() : '255;245;225',
+  sunSpecularIntensity: behavior._getSunSpecularIntensity ? behavior._getSunSpecularIntensity() : 2.8,
+  sunSpecularRoughness: behavior._getSunSpecularRoughness ? behavior._getSunSpecularRoughness() : 160.0,
+  waveContrast: behavior._getWaveContrast ? behavior._getWaveContrast() : 0.55,
+  shallowColor: behavior._getShallowColor ? behavior._getShallowColor() : '35;220;200',
+  deepColor: behavior._getDeepColor ? behavior._getDeepColor() : '4;22;48',
+  extinctionDepth: behavior._getExtinctionDepth ? behavior._getExtinctionDepth() : 260.0,
+  translucencyColor: behavior._getTranslucencyColor ? behavior._getTranslucencyColor() : '40;255;220',
+  translucencyIntensity: behavior._getTranslucencyIntensity ? behavior._getTranslucencyIntensity() : 1.60,
+  translucencyPower: behavior._getTranslucencyPower ? behavior._getTranslucencyPower() : 2.8,
+  foamColor: behavior._getFoamColor ? behavior._getFoamColor() : '248;252;255',
+  foamIntensity: behavior._getFoamIntensity ? behavior._getFoamIntensity() : 0.75,
+  foamCoverage: behavior._getFoamCoverage ? behavior._getFoamCoverage() : 0.35,
+  microDetail: behavior._getMicroDetail ? behavior._getMicroDetail() : 0.35,
+  microFrequency: behavior._getMicroFrequency ? behavior._getMicroFrequency() : 1.0,
+  opacity: behavior._getOpacity ? behavior._getOpacity() : 0.78,
+  sprayEnabled: behavior._getSprayEnabled ? behavior._getSprayEnabled() : false,
+  sprayAmount: behavior._getSprayAmount ? behavior._getSprayAmount() : 0.5,
+  sprayHeight: behavior._getSprayHeight ? behavior._getSprayHeight() : 1.0,
+  sprayThreshold: behavior._getSprayThreshold ? behavior._getSprayThreshold() : 0.5,
+  textureAnisotropy: behavior._getTextureAnisotropy ? behavior._getTextureAnisotropy() : '4x'
+}`;
+
+const G_DET_PRESET = 'Water Detailing — Preset & Lighting';
+const G_DET_SUN = 'Water Detailing — Sun Direction & Specular';
+const G_DET_PALETTE = 'Water Detailing — Water Palette & Depth Contrast';
+const G_DET_SSS = 'Water Detailing — Subsurface Scattering (SSS)';
+const G_DET_FOAM = 'Water Detailing — Foam & Crest Shading';
+const G_DET_RIPPLES = 'Water Detailing — Micro-Ripples & Surface';
+
+const waterDetailingBehavior = {
+  name: 'WaterDetailing3D',
+  fullName: 'Water Detailing 3D (Shaders, Foam & Lighting)',
+  description:
+    'Visual polish companion behavior for OceanWaveWorks3D and WaterBody3D. '
+    + 'Provides Sea of Thieves tier visual fidelity: directional sun azimuth/elevation controls, dual-lobe specular highlights, '
+    + 'anti-aliased micro-ripples that eliminate moiré diamond patterns, optical wave depth contrast that prevents washed-out cyan, '
+    + 'backlight-aligned subsurface scattering (SSS), and whitecap foam coloring. All parameters are fully editable via actions for in-game settings menus.',
+  objectType: '',
+  private: false,
+  propertyDescriptors: [
+    prop('ArtStyle', 'Choice', 'Style (how it is drawn)',
+      'The rendering method, and the effect modules that come with it. There is no single "stylized" switch, because each stylized look is its own method: Sea of Thieves draws caustics across the whole surface with a strong backlit crest glow, Realistic fades them out with optical depth so open water goes dark, Swimming Pool removes whitecaps entirely and lets caustics dominate, Toon posterises the surface into flat bands with hard foam edges, and Painterly smears everything soft. A style carries no colours of its own - it shapes whatever Sub-style and Water Type you pick.',
+      'Sea of Thieves', {
+        extraInformation: ['Sea of Thieves', 'Realistic', 'Swimming Pool', 'Toon', 'Painterly', 'Custom']
+      }),
+    prop('ArtFoamStyle', 'Choice', 'Foam (what the whitecaps look like)',
+      'What the foam itself looks like, which none of the other selectors decide. Style is the '
+      + 'rendering method, Sub-style is the liquid, Water Type is the condition - a North Sea gale '
+      + 'and a reef break can share all three and still have completely different whitecaps. These '
+      + 'are not coverage sliders under new names: each one moves cell size, how far the wind draws '
+      + 'the foam out, the contrast of the break-up, and how much is left hanging behind the crest. '
+      + 'Sea of Thieves is big soft sheets that trail; Whitecaps is sparse and high-contrast with '
+      + 'clean water between; Storm Streaks drags everything into long parallel bands; Surf is fine '
+      + 'aerated bubbles that linger; Painted is hard-edged flat shapes; Minimal keeps it quiet. '
+      + 'Natural is the open-ocean default and matches every earlier version.',
+      'Natural', {
+        extraInformation: ['Natural', 'Sea of Thieves', 'Whitecaps', 'Storm Streaks', 'Surf',
+          'Painted', 'Minimal', 'Custom']
+      }),
+    prop('ArtSubStyle', 'Choice', 'Sub-style (what liquid it is)',
+      'The medium. This is not a colour choice: electrolytes in seawater stop bubbles merging, so '
+      + 'salt water whitecaps readily and its foam lingers (~3.85 s) while fresh water rarely '
+      + 'whitecaps at all and its foam collapses in ~2.54 s. Pool water is chlorinated and barely '
+      + 'foams. The medium also sets base clarity and colour cast.',
+      'Salt Water', {
+        extraInformation: ['Salt Water', 'Fresh Water', 'Pool Water', 'Custom']
+      }),
+    prop('ArtWaterLook', 'Choice', 'Water Type (what it is)',
+      'The condition the water is in, which owns the colour palette and optics. It layers on the Sub-style: "murky" means something different in a lake than in the open sea. Combined with Style: "Sea of Thieves + Salt Water + Murky" is stylized murky seawater, "Realistic + Fresh Water + Murky" is a silty lake drawn physically. Set any selector to Custom to author the properties below yourself.',
+      'Clear', {
+        extraInformation: ['Clear', 'Tropical', 'Calm', 'Choppy', 'Murky', 'Stormy', 'Custom']
+      }),
+    prop('ArtLighting', 'Choice', 'Lighting (what hour it is)',
+      'The sun: heading, elevation, colour and the specular lobe it casts. It owns nothing else, so the same water in the same style can be shot at any hour. Set to Custom to drive the sun from the Sun Heading / Elevation / Color properties below, or from a scene DirectionalLight.',
+      'Golden Hour', {
+        extraInformation: ['Golden Hour', 'Midday', 'Custom']
+      }),
+    prop('SunHeading', 'Number', 'Sun Heading (Azimuth)',
+      'Sun horizontal direction in degrees (0 = East, 90 = North, 180 = West, 270 = South). Low sun angles directly opposite the camera create dramatic specular trails.', '75.0'),
+    prop('SunElevation', 'Number', 'Sun Elevation (Altitude)',
+      'Sun altitude angle above horizon in degrees (0 = horizon sunrise/sunset, 90 = zenith noon). Low elevations (15-25°) produce the Sea of Thieves golden-hour trail.', '18.0'),
+    prop('SunColor', 'Color', 'Sun Light Color',
+      'Sun and specular glint tint color (warm amber/gold for sunset, bright pale yellow/white for midday).', '255;245;225'),
+    prop('SunSpecularIntensity', 'Number', 'Sun Specular Intensity',
+      'Brightness of the solar disk reflection and wide ocean glint trail.', '2.8'),
+    prop('SunSpecularRoughness', 'Number', 'Sun Specular Sharpness',
+      'Shininess / specular exponent (32 = broad soft sheen, 160 = crisp sun glint trail, 512 = intense mirror reflection).', '160.0'),
+    prop('WaveContrast', 'Number', 'Wave Depth Contrast',
+      'Modulates optical water depth between wave crests and wave troughs. Eliminates washed-out flat cyan by deepening troughs into oceanic navy while keeping crests luminous.', '0.55'),
+    prop('ShallowColor', 'Color', 'Shallow Water Color',
+      'Color of shallow water, wave crests, and sunlit peaks.', '35;220;200'),
+    prop('DeepColor', 'Color', 'Deep Ocean Color',
+      'Color of deep ocean water and shaded wave troughs.', '4;22;48'),
+    prop('ExtinctionDepth', 'Number', 'Extinction Depth',
+      'Beer-Lambert optical depth in pixels where water shifts from translucent turquoise to deep oceanic navy.', '260.0'),
+    prop('TranslucencyColor', 'Color', 'Translucency / SSS Color',
+      'Subsurface scattering inner glow color when looking toward the sun through wave crests.', '40;255;220'),
+    prop('TranslucencyIntensity', 'Number', 'Translucency Intensity',
+      'Brightness multiplier for wave crest translucency and backlight scattering.', '1.60'),
+    prop('TranslucencyPower', 'Number', 'Translucency Falloff Power',
+      'Sharpness of the directional backlight alignment cone for SSS (higher = narrower forward scatter).', '2.8'),
+    prop('FoamColor', 'Color', 'Foam Color',
+      'Tint color of wave whitecaps and crest foam (bright seafoam white).', '248;252;255'),
+    prop('FoamIntensity', 'Number', 'Foam Brightness / Opacity',
+      'Brightness multiplier for wave crest whitecaps and edge foam.', '0.75'),
+    prop('FoamCoverage', 'Number', 'Foam Coverage Threshold',
+      'Surface threshold for whitecap foam coverage (0.0 = rare foam on highest peaks, 1.0 = heavy foam across all crests).', '0.35'),
+    prop('SprayEnabled', 'Boolean', 'Enable Wave-Collision Spray',
+      'Spawn upward droplet spray when ocean wave crests collide (converging eigenvalues in the displacement gradient tensor).', 'false'),
+    prop('SprayAmount', 'Number', 'Spray Spawn Rate',
+      'Emission rate multiplier for wave-collision spray droplets (0.0 = none, 1.0 = heavy plumes).', '0.5'),
+    prop('SprayHeight', 'Number', 'Spray Launch Height',
+      'Velocity and height multiplier for upward wave spray droplets.', '1.0'),
+    prop('SprayThreshold', 'Number', 'Spray Trigger Threshold',
+      'Sensitivity threshold for wave collisions (lower = easier to trigger spray, higher = only violent head-on collisions spurt).', '0.5'),
+    prop('MicroDetail', 'Number', 'Micro-Wave Ripples Detail',
+      'Strength of anti-aliased capillary micro-ripples and surface perturbation.', '0.35'),
+    prop('MicroFrequency', 'Number', 'Micro-Wave Ripples Frequency',
+      'Spatial frequency scale for capillary micro-ripples (0.5 = broad gentle swells, 1.0 = crisp clear ripples, 2.0+ = fine surface disturbance).', '1.0'),
+    prop('Opacity', 'Number', 'Water Surface Opacity',
+      'Overall water transparency (0.0 = clear glass, 1.0 = opaque oceanic surface).', '0.78'),
+    prop('TextureAnisotropy', 'Choice', 'Anisotropic Filtering (Water Detail)',
+      'Requested anisotropic filtering level for ocean detail and persistent foam at grazing angles. Uses mipmaps, clamps to device and texture-format support, and preserves foam history when changed.',
+      '4x', { extraInformation: ANISOTROPY_CHOICES }),
+  ],
+  eventsFunctions: [
+    {
+      name: 'onCreated', fullName: 'onCreated', description: '', functionType: 'Action',
+      private: true, parameters: [...OB],
+      events: ev(BEHAVIOR_PREAMBLE + `FW.registerWaterDetailing(runtimeScene, object, behavior, ${WATER_DETAILING_OPTIONS});\n`, { withRuntime: true }),
+    },
+    {
+      name: 'doStepPreEvents', fullName: 'doStepPreEvents', description: '', functionType: 'Action',
+      private: true, parameters: [...OB],
+      events: ev(BEHAVIOR_PREAMBLE + `FW.stepWaterDetailing(runtimeScene, object, behavior);\n`),
+    },
+    {
+      name: 'onDestroy', fullName: 'onDestroy', description: '', functionType: 'Action',
+      private: true, parameters: [...OB],
+      events: ev(BEHAVIOR_PREAMBLE + `FW.disposeWaterDetailing(runtimeScene, behavior);\n`),
+    },
+
+    // 1. Presets
+    fn('SetPreset', 'Set detailing preset',
+      'Set water detailing preset on _PARAM0_ to _PARAM2_',
+      'Changes the visual profile: sun path, lighting, colour palette, subsurface scattering and foam.',
+      'Action',
+      [choice('Preset', 'Detailing preset', ['Sea of Thieves - Golden Hour', 'Sea of Thieves - Midday', 'Stormy - Dark', 'Crystal Clear Tropical'])],
+      `const val = eventsFunctionContext.getArgument("Preset");
+if (behavior._setPreset) behavior._setPreset(val);
+FW.setWaterDetailingPreset(runtimeScene, behavior, val);
+`, { group: G_DET_PRESET }),
+
+    fn('Preset', 'Detailing preset name', '', 'Current water detailing preset name.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingPreset(runtimeScene, behavior);
+`, { group: G_DET_PRESET, expressionType: 'string' }),
+
+    // 2. Sun Lighting
+    fn('SetSunHeading', 'Set sun heading (azimuth)',
+      'Set sun heading on _PARAM0_ to _PARAM2_ degrees',
+      'Change the horizontal sun angle (0 to 360 degrees).', 'Action',
+      [num('Heading', 'Sun heading angle in degrees (0 - 360)', '75')],
+      `const val = eventsFunctionContext.getArgument("Heading");
+if (behavior._setSunHeading) behavior._setSunHeading(val);
+FW.setWaterDetailingSunHeading(runtimeScene, behavior, val);
+`, { group: G_DET_SUN }),
+
+    fn('SunHeading', 'Sun heading angle', '', 'Sun heading angle in degrees (0 - 360).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSunHeading(runtimeScene, behavior);
+`, { group: G_DET_SUN }),
+
+    fn('SetSunElevation', 'Set sun elevation (altitude)',
+      'Set sun elevation on _PARAM0_ to _PARAM2_ degrees',
+      'Change the sun altitude angle above horizon (0 to 90 degrees).', 'Action',
+      [num('Elevation', 'Sun elevation angle in degrees (0 - 90)', '18')],
+      `const val = eventsFunctionContext.getArgument("Elevation");
+if (behavior._setSunElevation) behavior._setSunElevation(val);
+FW.setWaterDetailingSunElevation(runtimeScene, behavior, val);
+`, { group: G_DET_SUN }),
+
+    fn('SunElevation', 'Sun elevation angle', '', 'Sun elevation angle above horizon in degrees (0 - 90).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSunElevation(runtimeScene, behavior);
+`, { group: G_DET_SUN }),
+
+    fn('SetSunColor', 'Set sun light color',
+      'Set sun color on _PARAM0_ to _PARAM2_',
+      'Change the sun light and specular glint tint color.', 'Action',
+      [col('Color', 'Sun light color')],
+      `const val = eventsFunctionContext.getArgument("Color");
+if (behavior._setSunColor) behavior._setSunColor(val);
+FW.setWaterDetailingSunColor(runtimeScene, behavior, val);
+`, { group: G_DET_SUN }),
+
+    fn('SunColor', 'Sun color', '', 'Sun light and specular glint tint color (R;G;B).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSunColor(runtimeScene, behavior);
+`, { group: G_DET_SUN, expressionType: 'string' }),
+
+    fn('SetSunSpecularIntensity', 'Set sun specular intensity',
+      'Set sun specular intensity on _PARAM0_ to _PARAM2_',
+      'Change the brightness multiplier of the sun reflection glint trail.', 'Action',
+      [num('Intensity', 'Specular intensity multiplier', '2.8')],
+      `const val = eventsFunctionContext.getArgument("Intensity");
+if (behavior._setSunSpecularIntensity) behavior._setSunSpecularIntensity(val);
+FW.setWaterDetailingSunSpecularIntensity(runtimeScene, behavior, val);
+`, { group: G_DET_SUN }),
+
+    fn('SunSpecularIntensity', 'Sun specular intensity', '', 'Sun specular intensity multiplier.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSunSpecularIntensity(runtimeScene, behavior);
+`, { group: G_DET_SUN }),
+
+    fn('SetSunSpecularRoughness', 'Set sun specular sharpness',
+      'Set sun specular sharpness on _PARAM0_ to _PARAM2_',
+      'Change specular exponent / sharpness (32 to 512).', 'Action',
+      [num('Roughness', 'Specular sharpness / exponent', '160')],
+      `const val = eventsFunctionContext.getArgument("Roughness");
+if (behavior._setSunSpecularRoughness) behavior._setSunSpecularRoughness(val);
+FW.setWaterDetailingSunSpecularRoughness(runtimeScene, behavior, val);
+`, { group: G_DET_SUN }),
+
+    fn('SunSpecularRoughness', 'Sun specular sharpness', '', 'Sun specular sharpness / exponent.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSunSpecularRoughness(runtimeScene, behavior);
+`, { group: G_DET_SUN }),
+
+    fn('SetSunLighting', 'Set complete sun lighting',
+      'Set sun lighting on _PARAM0_: heading _PARAM2_°, elevation _PARAM3_°, color _PARAM4_, specular _PARAM5_, sharpness _PARAM6_',
+      'Set all sun lighting parameters in a single action.', 'Action',
+      [
+        num('Heading', 'Heading angle in degrees (0 - 360)', '75'),
+        num('Elevation', 'Elevation angle in degrees (0 - 90)', '18'),
+        col('Color', 'Sun light color'),
+        num('SpecularIntensity', 'Specular intensity multiplier', '2.8'),
+        num('SpecularRoughness', 'Specular sharpness / exponent', '160')
+      ],
+      `const h = eventsFunctionContext.getArgument("Heading");
+const el = eventsFunctionContext.getArgument("Elevation");
+const c = eventsFunctionContext.getArgument("Color");
+const si = eventsFunctionContext.getArgument("SpecularIntensity");
+const sr = eventsFunctionContext.getArgument("SpecularRoughness");
+if (behavior._setSunHeading) behavior._setSunHeading(h);
+if (behavior._setSunElevation) behavior._setSunElevation(el);
+if (behavior._setSunColor) behavior._setSunColor(c);
+if (behavior._setSunSpecularIntensity) behavior._setSunSpecularIntensity(si);
+if (behavior._setSunSpecularRoughness) behavior._setSunSpecularRoughness(sr);
+FW.setWaterDetailingSunLighting(runtimeScene, behavior, h, el, c, si, sr);
+`, { group: G_DET_SUN }),
+
+    // 3. Palette & Depth Contrast
+    fn('SetShallowColor', 'Set shallow water color',
+      'Set shallow water color on _PARAM0_ to _PARAM2_',
+      'Change color at shallow depths and wave crests.', 'Action',
+      [col('Color', 'Shallow water color tint')],
+      `const val = eventsFunctionContext.getArgument("Color");
+if (behavior._setShallowColor) behavior._setShallowColor(val);
+FW.setWaterDetailingShallowColor(runtimeScene, behavior, val);
+`, { group: G_DET_PALETTE }),
+
+    fn('ShallowColor', 'Shallow water color', '', 'Shallow water color tint (R;G;B).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingShallowColor(runtimeScene, behavior);
+`, { group: G_DET_PALETTE, expressionType: 'string' }),
+
+    fn('SetDeepColor', 'Set deep ocean color',
+      'Set deep ocean color on _PARAM0_ to _PARAM2_',
+      'Change color in deeper ocean water and wave troughs.', 'Action',
+      [col('Color', 'Deep ocean water color tint')],
+      `const val = eventsFunctionContext.getArgument("Color");
+if (behavior._setDeepColor) behavior._setDeepColor(val);
+FW.setWaterDetailingDeepColor(runtimeScene, behavior, val);
+`, { group: G_DET_PALETTE }),
+
+    fn('DeepColor', 'Deep ocean color', '', 'Deep ocean water color tint (R;G;B).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingDeepColor(runtimeScene, behavior);
+`, { group: G_DET_PALETTE, expressionType: 'string' }),
+
+    fn('SetWaveContrast', 'Set wave depth contrast',
+      'Set wave depth contrast on _PARAM0_ to _PARAM2_',
+      'Modulate optical water depth between crests and troughs (0.0 to 1.0).', 'Action',
+      [num('Contrast', 'Wave depth contrast factor (0.0 to 1.0)', '0.55')],
+      `const val = eventsFunctionContext.getArgument("Contrast");
+if (behavior._setWaveContrast) behavior._setWaveContrast(val);
+FW.setWaterDetailingWaveContrast(runtimeScene, behavior, val);
+`, { group: G_DET_PALETTE }),
+
+    fn('WaveContrast', 'Wave depth contrast', '', 'Wave depth contrast factor (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingWaveContrast(runtimeScene, behavior);
+`, { group: G_DET_PALETTE }),
+
+    fn('SetExtinctionDepth', 'Set extinction depth',
+      'Set extinction depth on _PARAM0_ to _PARAM2_ pixels',
+      'Change Beer-Lambert optical transition depth in pixels.', 'Action',
+      [num('Depth', 'Extinction depth in pixels', '260')],
+      `const val = eventsFunctionContext.getArgument("Depth");
+if (behavior._setExtinctionDepth) behavior._setExtinctionDepth(val);
+FW.setWaterDetailingExtinctionDepth(runtimeScene, behavior, val);
+`, { group: G_DET_PALETTE }),
+
+    fn('ExtinctionDepth', 'Extinction depth', '', 'Extinction depth in pixels.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingExtinctionDepth(runtimeScene, behavior);
+`, { group: G_DET_PALETTE }),
+
+    fn('SetWaterPalette', 'Set water palette & contrast',
+      'Set water palette on _PARAM0_: shallow _PARAM2_, deep _PARAM3_, contrast _PARAM4_, extinction _PARAM5_ px',
+      'Set all water color palette and contrast settings in a single action.', 'Action',
+      [
+        col('ShallowColor', 'Shallow water color'),
+        col('DeepColor', 'Deep ocean color'),
+        num('WaveContrast', 'Wave depth contrast (0.0 to 1.0)', '0.55'),
+        num('ExtinctionDepth', 'Extinction depth in pixels', '260')
+      ],
+      `const sc = eventsFunctionContext.getArgument("ShallowColor");
+const dc = eventsFunctionContext.getArgument("DeepColor");
+const wc = eventsFunctionContext.getArgument("WaveContrast");
+const ed = eventsFunctionContext.getArgument("ExtinctionDepth");
+if (behavior._setShallowColor) behavior._setShallowColor(sc);
+if (behavior._setDeepColor) behavior._setDeepColor(dc);
+if (behavior._setWaveContrast) behavior._setWaveContrast(wc);
+if (behavior._setExtinctionDepth) behavior._setExtinctionDepth(ed);
+FW.setWaterDetailingPalette(runtimeScene, behavior, sc, dc, wc, ed);
+`, { group: G_DET_PALETTE }),
+
+    // 4. Subsurface Scattering (SSS)
+    fn('SetTranslucencyColor', 'Set translucency / SSS color',
+      'Set translucency color on _PARAM0_ to _PARAM2_',
+      'Change subsurface scattering inner glow color tint.', 'Action',
+      [col('Color', 'Subsurface scattering inner glow color')],
+      `const val = eventsFunctionContext.getArgument("Color");
+if (behavior._setTranslucencyColor) behavior._setTranslucencyColor(val);
+FW.setWaterDetailingTranslucencyColor(runtimeScene, behavior, val);
+`, { group: G_DET_SSS }),
+
+    fn('TranslucencyColor', 'Translucency color', '', 'Translucency inner glow color (R;G;B).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingTranslucencyColor(runtimeScene, behavior);
+`, { group: G_DET_SSS, expressionType: 'string' }),
+
+    fn('SetTranslucencyIntensity', 'Set translucency intensity',
+      'Set translucency intensity on _PARAM0_ to _PARAM2_',
+      'Change brightness multiplier for wave crest translucency glow.', 'Action',
+      [num('Intensity', 'Translucency brightness multiplier', '1.6')],
+      `const val = eventsFunctionContext.getArgument("Intensity");
+if (behavior._setTranslucencyIntensity) behavior._setTranslucencyIntensity(val);
+FW.setWaterDetailingTranslucencyIntensity(runtimeScene, behavior, val);
+`, { group: G_DET_SSS }),
+
+    fn('TranslucencyIntensity', 'Translucency intensity', '', 'Translucency brightness multiplier.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingTranslucencyIntensity(runtimeScene, behavior);
+`, { group: G_DET_SSS }),
+
+    fn('SetTranslucencyPower', 'Set translucency falloff power',
+      'Set translucency falloff power on _PARAM0_ to _PARAM2_',
+      'Change sharpness of the directional backlight alignment cone for SSS.', 'Action',
+      [num('Power', 'Translucency falloff power (0.5 to 16.0)', '2.8')],
+      `const val = eventsFunctionContext.getArgument("Power");
+if (behavior._setTranslucencyPower) behavior._setTranslucencyPower(val);
+FW.setWaterDetailingTranslucencyPower(runtimeScene, behavior, val);
+`, { group: G_DET_SSS }),
+
+    fn('TranslucencyPower', 'Translucency falloff power', '', 'Translucency falloff power.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingTranslucencyPower(runtimeScene, behavior);
+`, { group: G_DET_SSS }),
+
+    fn('SetTranslucency', 'Set complete translucency / SSS',
+      'Set translucency on _PARAM0_: color _PARAM2_, intensity _PARAM3_, falloff power _PARAM4_',
+      'Set all subsurface scattering parameters in a single action.', 'Action',
+      [
+        col('Color', 'Inner glow color'),
+        num('Intensity', 'Glow intensity multiplier', '1.6'),
+        num('Power', 'Falloff power', '2.8')
+      ],
+      `const c = eventsFunctionContext.getArgument("Color");
+const i = eventsFunctionContext.getArgument("Intensity");
+const p = eventsFunctionContext.getArgument("Power");
+if (behavior._setTranslucencyColor) behavior._setTranslucencyColor(c);
+if (behavior._setTranslucencyIntensity) behavior._setTranslucencyIntensity(i);
+if (behavior._setTranslucencyPower) behavior._setTranslucencyPower(p);
+FW.setWaterDetailingTranslucency(runtimeScene, behavior, c, i, p);
+`, { group: G_DET_SSS }),
+
+    // 5. Foam & Crest Shading
+    fn('SetFoamColor', 'Set foam color',
+      'Set foam color on _PARAM0_ to _PARAM2_',
+      'Change tint color of wave whitecaps and crest foam.', 'Action',
+      [col('Color', 'Foam color tint')],
+      `const val = eventsFunctionContext.getArgument("Color");
+if (behavior._setFoamColor) behavior._setFoamColor(val);
+FW.setWaterDetailingFoamColor(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('FoamColor', 'Foam color', '', 'Foam color tint (R;G;B).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingFoamColor(runtimeScene, behavior);
+`, { group: G_DET_FOAM, expressionType: 'string' }),
+
+    fn('SetFoamIntensity', 'Set foam brightness',
+      'Set foam brightness on _PARAM0_ to _PARAM2_',
+      'Change foam brightness multiplier for crest whitecaps.', 'Action',
+      [num('Intensity', 'Foam brightness multiplier', '0.75')],
+      `const val = eventsFunctionContext.getArgument("Intensity");
+if (behavior._setFoamIntensity) behavior._setFoamIntensity(val);
+FW.setWaterDetailingFoamIntensity(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('FoamIntensity', 'Foam brightness', '', 'Foam brightness multiplier.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingFoamIntensity(runtimeScene, behavior);
+`, { group: G_DET_FOAM }),
+
+    fn('SetFoamCoverage', 'Set foam coverage threshold',
+      'Set foam coverage threshold on _PARAM0_ to _PARAM2_',
+      'Change surface threshold for whitecap foam coverage (0.0 to 1.0).', 'Action',
+      [num('Coverage', 'Foam coverage threshold (0.0 to 1.0)', '0.35')],
+      `const val = eventsFunctionContext.getArgument("Coverage");
+if (behavior._setFoamCoverage) behavior._setFoamCoverage(val);
+FW.setWaterDetailingFoamCoverage(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('FoamCoverage', 'Foam coverage threshold', '', 'Foam coverage threshold (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingFoamCoverage(runtimeScene, behavior);
+`, { group: G_DET_FOAM }),
+
+    fn('SetFoam', 'Set complete foam parameters',
+      'Set foam on _PARAM0_: color _PARAM2_, brightness _PARAM3_, coverage _PARAM4_',
+      'Set all foam parameters in a single action.', 'Action',
+      [
+        col('Color', 'Foam color tint'),
+        num('Intensity', 'Foam brightness multiplier', '0.75'),
+        num('Coverage', 'Foam coverage threshold', '0.35')
+      ],
+      `const c = eventsFunctionContext.getArgument("Color");
+const i = eventsFunctionContext.getArgument("Intensity");
+const cv = eventsFunctionContext.getArgument("Coverage");
+if (behavior._setFoamColor) behavior._setFoamColor(c);
+if (behavior._setFoamIntensity) behavior._setFoamIntensity(i);
+if (behavior._setFoamCoverage) behavior._setFoamCoverage(cv);
+FW.setWaterDetailingFoam(runtimeScene, behavior, c, i, cv);
+`, { group: G_DET_FOAM }),
+
+    fn('SetFoamStyle', 'Set foam look',
+      'Set foam look on _PARAM0_ to _PARAM2_',
+      'Switches what the whitecaps look like without touching the palette, the medium or the sea state. Changes cell size, wind streaking, break-up contrast and how much foam trails behind the crest.',
+      'Action',
+      [choice('Foam', 'Foam look', ['Natural', 'Sea of Thieves', 'Whitecaps', 'Storm Streaks',
+        'Surf', 'Painted', 'Minimal'])],
+      `const f = eventsFunctionContext.getArgument("Foam");
+if (behavior._setArtFoamStyle) behavior._setArtFoamStyle(f);
+FW.setWaterDetailingFoamStyle(runtimeScene, behavior, f);
+`, { group: G_DET_FOAM }),
+
+    fn('FoamStyle', 'Foam look name', '', 'Current foam look name.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingFoamStyle(runtimeScene, behavior);
+`, { expressionType: 'string', group: G_DET_FOAM }),
+
+    fn('SetSprayEnabled', 'Enable wave-collision spray',
+      'Set wave-collision spray on _PARAM0_ to _PARAM2_',
+      'Enable or disable droplet spray spawning at wave collision sites.', 'Action',
+      [bool('Enabled', 'Enable spray')],
+      `const val = eventsFunctionContext.getArgument("Enabled");
+if (behavior._setSprayEnabled) behavior._setSprayEnabled(val);
+FW.setWaterDetailingSprayEnabled(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('IsSprayEnabled', 'Is spray enabled',
+      'Spray is enabled on _PARAM0_',
+      'Check if wave-collision spray droplets are currently enabled.', 'Condition', [],
+      `eventsFunctionContext.returnValue = FW.isWaterDetailingSprayEnabled(runtimeScene, behavior);
+`, { group: G_DET_FOAM }),
+
+    fn('SetSprayAmount', 'Set spray spawn rate',
+      'Set wave spray amount on _PARAM0_ to _PARAM2_',
+      'Change spray droplet emission rate multiplier (0.0 to 1.0).', 'Action',
+      [num('Amount', 'Spray rate (0.0 to 1.0)', '0.5')],
+      `const val = eventsFunctionContext.getArgument("Amount");
+if (behavior._setSprayAmount) behavior._setSprayAmount(val);
+FW.setWaterDetailingSprayAmount(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('SprayAmount', 'Spray spawn rate', '', 'Spray droplet emission rate multiplier (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSprayAmount(runtimeScene, behavior);
+`, { group: G_DET_FOAM }),
+
+    fn('SetSprayHeight', 'Set spray launch height',
+      'Set wave spray launch height on _PARAM0_ to _PARAM2_',
+      'Change upward launch velocity and height multiplier for spray droplets.', 'Action',
+      [num('Height', 'Launch height multiplier', '1.0')],
+      `const val = eventsFunctionContext.getArgument("Height");
+if (behavior._setSprayHeight) behavior._setSprayHeight(val);
+FW.setWaterDetailingSprayHeight(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('SprayHeight', 'Spray launch height', '', 'Spray droplet upward launch height multiplier.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSprayHeight(runtimeScene, behavior);
+`, { group: G_DET_FOAM }),
+
+    fn('SetSprayThreshold', 'Set spray trigger threshold',
+      'Set wave spray collision threshold on _PARAM0_ to _PARAM2_',
+      'Change sensitivity threshold for wave collisions (0.0 to 1.0).', 'Action',
+      [num('Threshold', 'Collision threshold (0.0 to 1.0)', '0.5')],
+      `const val = eventsFunctionContext.getArgument("Threshold");
+if (behavior._setSprayThreshold) behavior._setSprayThreshold(val);
+FW.setWaterDetailingSprayThreshold(runtimeScene, behavior, val);
+`, { group: G_DET_FOAM }),
+
+    fn('SprayThreshold', 'Spray trigger threshold', '', 'Spray collision sensitivity threshold (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingSprayThreshold(runtimeScene, behavior);
+`, { group: G_DET_FOAM }),
+
+    // 6. Micro-Ripples & Surface
+    fn('SetMicroDetail', 'Set micro-ripples detail',
+      'Set micro-ripples detail on _PARAM0_ to _PARAM2_',
+      'Change strength of anti-aliased capillary micro-ripples.', 'Action',
+      [num('Detail', 'Micro-ripples amplitude (0.0 to 2.0)', '0.35')],
+      `const val = eventsFunctionContext.getArgument("Detail");
+if (behavior._setMicroDetail) behavior._setMicroDetail(val);
+FW.setWaterDetailingMicroDetail(runtimeScene, behavior, val);
+`, { group: G_DET_RIPPLES }),
+
+    fn('MicroDetail', 'Micro-ripples detail', '', 'Micro-ripples amplitude.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingMicroDetail(runtimeScene, behavior);
+`, { group: G_DET_RIPPLES }),
+
+    fn('SetMicroFrequency', 'Set micro-ripples frequency',
+      'Set micro-ripples frequency on _PARAM0_ to _PARAM2_',
+      'Change spatial frequency scale for capillary micro-ripples.', 'Action',
+      [num('Frequency', 'Micro-ripples frequency multiplier (0.1 to 5.0)', '1.0')],
+      `const val = eventsFunctionContext.getArgument("Frequency");
+if (behavior._setMicroFrequency) behavior._setMicroFrequency(val);
+FW.setWaterDetailingMicroFrequency(runtimeScene, behavior, val);
+`, { group: G_DET_RIPPLES }),
+
+    fn('MicroFrequency', 'Micro-ripples frequency', '', 'Micro-ripples frequency multiplier.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingMicroFrequency(runtimeScene, behavior);
+`, { group: G_DET_RIPPLES }),
+
+    fn('SetMicroRipples', 'Set micro-ripples detail & frequency',
+      'Set micro-ripples on _PARAM0_: detail _PARAM2_, frequency _PARAM3_',
+      'Set micro-ripples strength and frequency in a single action.', 'Action',
+      [
+        num('Detail', 'Micro-ripples amplitude', '0.35'),
+        num('Frequency', 'Frequency multiplier', '1.0')
+      ],
+      `const d = eventsFunctionContext.getArgument("Detail");
+const f = eventsFunctionContext.getArgument("Frequency");
+if (behavior._setMicroDetail) behavior._setMicroDetail(d);
+if (behavior._setMicroFrequency) behavior._setMicroFrequency(f);
+FW.setWaterDetailingMicroRipples(runtimeScene, behavior, d, f);
+`, { group: G_DET_RIPPLES }),
+
+    fn('SetOpacity', 'Set water surface opacity',
+      'Set water surface opacity on _PARAM0_ to _PARAM2_',
+      'Change water surface opacity (0.0 = clear glass, 1.0 = solid sea).', 'Action',
+      [num('Opacity', 'Water surface opacity (0.0 to 1.0)', '0.78')],
+      `const val = eventsFunctionContext.getArgument("Opacity");
+if (behavior._setOpacity) behavior._setOpacity(val);
+FW.setWaterDetailingOpacity(runtimeScene, behavior, val);
+`, { group: G_DET_RIPPLES }),
+
+    fn('Opacity', 'Water surface opacity', '', 'Water surface opacity (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingOpacity(runtimeScene, behavior);
+`, { group: G_DET_RIPPLES }),
+
+    fn('SetTextureAnisotropy', 'Set texture anisotropic filtering',
+      'Set texture anisotropic filtering on _PARAM0_ to _PARAM2_x',
+      'Sets the hardware anisotropic filtering level (1 to 16x) for water detail, slope, and foam textures.',
+      'Action',
+      [choice('Anisotropy', 'Anisotropic Filtering', ANISOTROPY_CHOICES)],
+      `const a = eventsFunctionContext.getArgument("Anisotropy");
+if (behavior._setTextureAnisotropy) behavior._setTextureAnisotropy(a);
+FW.setWaterDetailingAnisotropy(runtimeScene, behavior, a);
+`, { group: G_DET_RIPPLES }),
+
+    fn('IsTextureAnisotropyEnabled', 'Is texture anisotropic filtering enabled',
+      'Texture anisotropic filtering is enabled on _PARAM0_',
+      'Check if anisotropic filtering is active on the companion ocean slope textures (> 1x after device and texture-format limits).',
+      'Condition', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingAnisotropy(runtimeScene, behavior) > 1;
+`, { group: G_DET_RIPPLES }),
+
+    fn('TextureAnisotropy', 'Texture anisotropic filtering level', '',
+      'Effective anisotropic filtering level of the companion ocean slope textures (1 when no compatible ocean is bound).',
+      'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingAnisotropy(runtimeScene, behavior);
+`, { group: G_DET_RIPPLES, expressionType: 'number' }),
+
+    fn('MaxDeviceAnisotropy', 'Maximum device anisotropic filtering', '',
+      'Maximum hardware anisotropic filtering level supported by the current device GPU (1 to 16).',
+      'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterDetailingMaxDeviceAnisotropy(runtimeScene);
+`, { group: G_DET_RIPPLES, expressionType: 'number' }),
+  ],
+};
+
+/* ========================================================= 5c. WaterStrengthSlider3D Behavior */
+
+const WATER_STRENGTH_SLIDER_OPTIONS = `{
+  scaleMode: behavior._getScaleMode ? behavior._getScaleMode() : 'Beaufort (0 - 12)',
+  strength: behavior._getStrength ? behavior._getStrength() : 4.0,
+  smoothDamping: behavior._getSmoothDamping ? behavior._getSmoothDamping() : 0.0,
+  targetWaterBody: behavior._getTargetWaterBody ? behavior._getTargetWaterBody() : ''
+}`;
+
+const G_SLIDER_CONTROL = 'Water Strength — Control & Damping';
+
+const waterStrengthSliderBehavior = {
+  name: 'WaterStrengthSlider3D',
+  fullName: 'Water Strength Slider 3D',
+  description:
+    'Dedicated runtime sea-state controller for OceanWaveWorks3D and WaterBody3D. '
+    + 'Provides a single continuous strength value (0 - 12 Beaufort or 0 - 1 normalized) with optional smooth damping '
+    + 'to drive storm transitions, weather changes, or gameplay intensity smoothly.',
+  objectType: '',
+  private: false,
+  propertyDescriptors: [
+    prop('ScaleMode', 'Choice', 'Scale Mode',
+      'Scale mode used by default for strength actions and expressions: 0 - 12 (Beaufort maritime scale) or 0 - 1 (normalized).',
+      'Beaufort (0 - 12)', { extraInformation: ['Beaufort (0 - 12)', 'Normalized (0 - 1)'] }),
+    prop('SmoothDamping', 'Number', 'Smooth Transition Damping (seconds)',
+      'Time in seconds to smoothly transition to a new strength target (0.0 = instant change, >0 = smooth exponential damping).', '0.0'),
+    prop('Strength', 'Number', 'Initial Water Strength',
+      'Starting water strength (0 to 12 if Beaufort mode, 0.0 to 1.0 if Normalized mode).', '4.0'),
+    prop('TargetWaterBody', 'String', 'Target Water Body Object Name',
+      'Optional name of a specific water body object to control. If left empty, automatically controls the water body on the same object, or the first active ocean in the scene.', ''),
+  ],
+  eventsFunctions: [
+    {
+      name: 'onCreated', fullName: 'onCreated', description: '', functionType: 'Action',
+      private: true, parameters: [...OB],
+      events: ev(BEHAVIOR_PREAMBLE + `FW.registerWaterStrengthSlider(runtimeScene, object, behavior, ${WATER_STRENGTH_SLIDER_OPTIONS});\n`, { withRuntime: true }),
+    },
+    {
+      name: 'doStepPreEvents', fullName: 'doStepPreEvents', description: '', functionType: 'Action',
+      private: true, parameters: [...OB],
+      events: ev(BEHAVIOR_PREAMBLE + `FW.stepWaterStrengthSlider(runtimeScene, object, behavior);\n`),
+    },
+    {
+      name: 'onDestroy', fullName: 'onDestroy', description: '', functionType: 'Action',
+      private: true, parameters: [...OB],
+      events: ev(BEHAVIOR_PREAMBLE + `FW.disposeWaterStrengthSlider(runtimeScene, behavior);\n`),
+    },
+
+    // Actions
+    fn('SetStrength', 'Set water strength',
+      'Set water strength on _PARAM0_ to _PARAM2_',
+      'Set water strength value (0 to 12 in Beaufort mode, or 0.0 to 1.0 in Normalized mode).', 'Action',
+      [num('Strength', 'Target strength value', '4.0')],
+      `const val = eventsFunctionContext.getArgument("Strength");
+if (behavior._setStrength) behavior._setStrength(val);
+FW.setWaterStrength(runtimeScene, behavior, val);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('SetNormalizedStrength', 'Set normalized water strength (0 - 1)',
+      'Set normalized water strength on _PARAM0_ to _PARAM2_',
+      'Set normalized water strength (0.0 = calm/mirror, 1.0 = hurricane). Automatically converts to Beaufort if in Beaufort mode.', 'Action',
+      [num('NormalizedStrength', 'Target normalized strength (0.0 to 1.0)', '0.333')],
+      `const val = eventsFunctionContext.getArgument("NormalizedStrength");
+FW.setWaterStrengthNormalized(runtimeScene, behavior, val);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('SetSmoothDamping', 'Set transition damping',
+      'Set strength transition damping on _PARAM0_ to _PARAM2_ seconds',
+      'Set smooth transition damping time in seconds (0.0 = instant change).', 'Action',
+      [num('Damping', 'Transition damping in seconds', '0.0')],
+      `const val = eventsFunctionContext.getArgument("Damping");
+if (behavior._setSmoothDamping) behavior._setSmoothDamping(val);
+FW.setWaterStrengthDamping(runtimeScene, behavior, val);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('SetTargetWaterBody', 'Set target water body',
+      'Set target water body on _PARAM0_ to _PARAM2_',
+      'Set the object name of the water body to control.', 'Action',
+      [str('TargetWaterBody', 'Target water body object name', '')],
+      `const val = eventsFunctionContext.getArgument("TargetWaterBody");
+if (behavior._setTargetWaterBody) behavior._setTargetWaterBody(val);
+FW.setWaterStrengthTargetBody(runtimeScene, behavior, val);
+`, { group: 'Behavior' }),
+
+    // Conditions
+    fn('IsCalm', 'Is water calm',
+      'Water on _PARAM0_ is calm',
+      'Check if water strength is currently calm (Beaufort < 1).', 'Condition', [],
+      `eventsFunctionContext.returnValue = FW.isWaterStrengthCalm(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('IsStormy', 'Is water stormy',
+      'Water on _PARAM0_ is stormy',
+      'Check if water strength is currently stormy (Beaufort >= 8, Gale to Hurricane).', 'Condition', [],
+      `eventsFunctionContext.returnValue = FW.isWaterStrengthStormy(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL }),
+
+    // Expressions
+    fn('Strength', 'Current water strength', '', 'Current water strength according to scale mode.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrength(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('NormalizedStrength', 'Current normalized water strength', '', 'Current normalized water strength (0.0 to 1.0).', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrengthNormalized(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('SmoothDamping', 'Smooth transition damping', '', 'Smooth transition damping in seconds.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrengthDamping(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL }),
+
+    fn('TargetWaterBody', 'Target water body object name', '', 'Object name of target water body.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrengthTargetBody(runtimeScene, behavior);
+`, { group: 'Behavior', expressionType: 'string' }),
+
+    fn('BeaufortLabel', 'Beaufort formatted label', '', 'Formatted Beaufort scale label (e.g. "Beaufort 4.2 - Moderate Breeze").', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrengthBeaufortLabel(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL, expressionType: 'string' }),
+
+    fn('BeaufortRungName', 'Beaufort rung name', '', 'Name of closest Beaufort integer rung (e.g. "Moderate Breeze").', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrengthBeaufortRungName(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL, expressionType: 'string' }),
+
+    fn('WindSpeed', 'Equivalent wind speed', '', 'Equivalent wind speed in m/s according to the continuous Beaufort scale.', 'Expression', [],
+      `eventsFunctionContext.returnValue = FW.getWaterStrengthWindSpeed(runtimeScene, behavior);
+`, { group: G_SLIDER_CONTROL }),
   ],
 };
 
@@ -1190,6 +2044,119 @@ eventsFunctionContext.returnValue = FW.getGlobalWaterSurfaceZ(runtimeScene, x, y
 `, { group: G_GLOBAL_FLUID, expressionType: 'number' }),
 ];
 
+
+/* ------------------------------------------------------- Property Groups (panel layout) */
+
+/**
+ * GDevelop buckets a behavior's properties panel by group, in the order the groups are first
+ * encountered. Every property is assigned one so nothing falls into the unnamed bucket, and the
+ * preset selectors are declared first so their section lands at the top of the panel.
+ *
+ * A property missing from this map is a build error rather than a silent stray at the bottom.
+ */
+const G_PRESET = 'Presets — start here';
+const G_WAVES = 'Waves & Wind';
+const G_MESH = 'Mesh & Spectrum';
+const G_OPTICS = 'Colour & Optics';
+const G_FOAM = 'Foam & Caustics';
+const G_SUN = 'Sun & Lighting';
+const G_SHORE = 'Shoreline';
+const G_UNDER = 'Underwater';
+const G_INTERACT = 'Body Interactions';
+
+const PROPERTY_GROUPS = {
+  WaterBody3D: {
+    ArtWaterType: G_PRESET,
+    WaveHeight: G_WAVES, WaveChoppiness: G_WAVES, WaveSpeed: G_WAVES, WindDirection: G_WAVES,
+    WaveTiling: G_WAVES, DirectionalSpread: G_WAVES, PhaseSeed: G_WAVES, WaveIrregularity: G_WAVES,
+    WaveScaleMode: G_WAVES, GridSubdivisions: G_WAVES,
+    MaterialSource: G_OPTICS, ShallowColor: G_OPTICS, DeepColor: G_OPTICS,
+    ExtinctionDepth: G_OPTICS, RefractionScale: G_OPTICS,
+    ShoreFoamIntensity: G_FOAM, CrestFoamIntensity: G_FOAM, EnableCaustics: G_FOAM,
+    MaskUnderEdges: G_SHORE,
+    EnableUnderwaterFX: G_UNDER, UnderwaterFogColor: G_UNDER, UnderwaterFogDensity: G_UNDER,
+    EnableBodyInteractions: G_INTERACT, InteractionStrength: G_INTERACT,
+    InteractionRadius: G_INTERACT, InteractionSpeedThreshold: G_INTERACT,
+  },
+  OceanWaveWorks3D: {
+    BeaufortScale: G_PRESET,
+    WindSpeed: G_WAVES, WindDirection: G_WAVES, CascadeScale: G_WAVES, CascadeWeight: G_WAVES,
+    PeakWavelength: G_WAVES, WavelengthScale: G_WAVES, WaveHeightScale: G_WAVES, Choppiness: G_WAVES,
+    Resolution: G_MESH, GridSubdivisions: G_MESH, TileSize: G_MESH, Seed: G_MESH, UnitsPerMetre: G_MESH,
+    Opacity: G_OPTICS, MicroDetail: G_OPTICS, ShallowColor: G_OPTICS, DeepColor: G_OPTICS,
+    ExtinctionDepth: G_OPTICS, TextureAnisotropy: G_OPTICS,
+    FoamIntensity: G_FOAM, FoamCoverage: G_FOAM, EnableCaustics: G_FOAM,
+    PersistentFoam: G_FOAM,
+    SunHeading: G_SUN, SunElevation: G_SUN,
+    MaskUnderEdges: G_SHORE,
+    EnableUnderwaterFX: G_UNDER, UnderwaterFogColor: G_UNDER, UnderwaterFogDensity: G_UNDER,
+    EnableBodyInteractions: G_INTERACT, InteractionStrength: G_INTERACT,
+    InteractionRadius: G_INTERACT, InteractionSpeedThreshold: G_INTERACT,
+  },
+  WaterDetailing3D: {
+    ArtStyle: G_PRESET, ArtSubStyle: G_PRESET, ArtWaterLook: G_PRESET, ArtLighting: G_PRESET,
+    ArtFoamStyle: G_PRESET,
+    SunHeading: G_SUN, SunElevation: G_SUN, SunColor: G_SUN,
+    SunSpecularIntensity: G_SUN, SunSpecularRoughness: G_SUN,
+    WaveContrast: G_OPTICS, ShallowColor: G_OPTICS, DeepColor: G_OPTICS, ExtinctionDepth: G_OPTICS,
+    TranslucencyColor: G_OPTICS, TranslucencyIntensity: G_OPTICS, TranslucencyPower: G_OPTICS,
+    MicroDetail: G_OPTICS, MicroFrequency: G_OPTICS, Opacity: G_OPTICS, TextureAnisotropy: G_OPTICS,
+    FoamColor: G_FOAM, FoamIntensity: G_FOAM, FoamCoverage: G_FOAM,
+    SprayAmount: G_FOAM, SprayEnabled: G_FOAM, SprayHeight: G_FOAM, SprayThreshold: G_FOAM,
+  },
+  WaterStrengthSlider3D: {
+    ScaleMode: G_PRESET,
+    SmoothDamping: G_WAVES,
+    Strength: G_WAVES,
+    TargetWaterBody: 'Behavior',
+  },
+  WaterEdge3D: {
+    FoamWidth: G_SHORE, ShallowWidth: G_SHORE,
+    Enabled: 'Behavior', HideSourceObject: 'Behavior',
+  },
+  Buoyancy3D: {
+    Physics3D: 'Physics body',
+    BuoyancyFactor: 'Buoyancy', HullProbeCount: 'Buoyancy', FluidDrag: 'Buoyancy',
+    MaxSubmersionDepth: 'Buoyancy',
+    WaveInfluence: 'Stability', StabilityStrength: 'Stability', StabilityDamping: 'Stability',
+    TargetWaterBody: 'Behavior', Enabled: 'Behavior',
+  },
+  PourableLiquid3D: {
+    ArtFluidPreset: G_PRESET,
+    MaxDroplets: 'Emitter', FlowRate: 'Emitter', PourTiltThreshold: 'Emitter',
+    AutoPourOnTilt: 'Emitter', DropletRadius: 'Emitter',
+    Viscosity: 'Fluid physics', SurfaceTension: 'Fluid physics', RestDensity: 'Fluid physics',
+    LiquidColor: 'Appearance', LiquidOpacity: 'Appearance', LiquidRoughness: 'Appearance',
+    ContainerCapacity: 'Container',
+  },
+};
+
+function applyPropertyGroups(behaviors) {
+  for (const behavior of behaviors) {
+    const map = PROPERTY_GROUPS[behavior.name];
+    if (!map) throw new Error('No property group map for behavior ' + behavior.name);
+
+    const properties = behavior.propertyDescriptors || [];
+    for (const property of properties) {
+      const group = map[property.name];
+      if (!group) {
+        throw new Error('Property ' + behavior.name + '.' + property.name +
+          ' has no group. Add it to PROPERTY_GROUPS, or it lands in an unnamed bucket below every ' +
+          'named section in the editor panel.');
+      }
+      property.group = group;
+    }
+
+    // The editor ignores this order entirely (see the assertions below), but keeping each group
+    // contiguous in the built JSON makes the file readable and diffable.
+    const groupOrder = [];
+    for (const property of properties) {
+      if (!groupOrder.includes(property.group)) groupOrder.push(property.group);
+    }
+    properties.sort((a, b) => groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group));
+  }
+}
+
 /* ============================================================== Extension Object */
 
 const extension = {
@@ -1200,7 +2167,7 @@ const extension = {
   category: '3D',
   author: 'Twillion',
   license: 'MIT',
-  version: '2.11.1',
+  version: '4.0.0',
   iconUrl,
   previewIconUrl: iconUrl,
   helpPath: '',
@@ -1230,14 +2197,55 @@ const extension = {
   ],
   eventsBasedBehaviors: [
     waterBodyBehavior,
-    oceanBehavior,
+    oceanWaveWorksBehavior,
     edgeBehavior,
+    waterDetailingBehavior,
+    waterStrengthSliderBehavior,
     buoyancyBehavior,
     pourableLiquidBehavior,
   ],
 };
 
+applyPropertyGroups(extension.eventsBasedBehaviors);
+
 /* ============================================================== Pre-build Safety Checks */
+
+/**
+ * The properties panel is bucketed by group, in the order each group is first met. Two things have
+ * to stay true or the selectors stop being the first thing you see:
+ *   1. every behavior that HAS a preset selector opens with the Presets group,
+ *   2. no property name is declared twice (a duplicate renders as two identical rows that fight
+ *      over the same stored value - OceanWaveWorks3D shipped a duplicated SunHeading/SunElevation
+ *      pair exactly this way).
+ */
+for (const behavior of extension.eventsBasedBehaviors) {
+  const properties = behavior.propertyDescriptors || [];
+
+  const names = new Set();
+  for (const property of properties) {
+    if (names.has(property.name)) {
+      throw new Error('Duplicate property ' + behavior.name + '.' + property.name +
+        ' - it would show as two identical rows bound to one value.');
+    }
+    names.add(property.name);
+  }
+
+  // GDevelop walks the properties alphabetically by NAME (they come from a sorted
+  // gd::MapStringPropertyDescriptor) and opens each group the first time it meets one. Replicate
+  // that to know which section really lands at the top - declaration order has no effect.
+  const asPanelOrders = [...properties].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  const groupsInOrder = [];
+  for (const property of asPanelOrders) {
+    if (!groupsInOrder.includes(property.group)) groupsInOrder.push(property.group);
+  }
+  if (groupsInOrder.includes(G_PRESET) && groupsInOrder[0] !== G_PRESET) {
+    const firstOfPreset = asPanelOrders.find((p) => p.group === G_PRESET).name;
+    throw new Error(behavior.name + ' has preset selectors but its panel opens with "' +
+      groupsInOrder[0] + '" instead. The panel is ordered alphabetically by property NAME, so "' +
+      firstOfPreset + '" must sort before "' + asPanelOrders[0].name + '" for the preset section ' +
+      'to be at the top.');
+  }
+}
 
 console.log('Running pre-build safety assertions...');
 
@@ -1356,6 +2364,52 @@ for (const behavior of extension.eventsBasedBehaviors) {
   checkObjectParams(behavior.eventsFunctions, behavior.name, true);
 }
 checkObjectParams(extension.eventsFunctions, 'freeFunctions', false);
+
+
+// A JS block can reference a parameter it never fetched. That parses perfectly - it is only a bare
+// identifier - and the extension builds "clean", but the action throws ReferenceError the first
+// time it runs in a real game. This is exactly how "Set Beaufort scale" shipped with an undeclared
+// `seconds`: the parameter existed, the argument was simply never read out of the context.
+const checkParamsAreFetched = (fns, ownerName) => {
+  for (const f of fns || []) {
+    const code = (f.events || []).map((e) => e.inlineCode || '').join('\n');
+    // Strip strings and comments so a parameter NAME appearing in prose is not a reference.
+    const bare = code
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/\/\/[^\n]*/g, ' ')
+      .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+      .replace(/'(?:[^'\\]|\\.)*'/g, "''");
+
+    const declared = new Set();
+    for (const m of bare.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g)) declared.add(m[1]);
+
+    for (const p of f.parameters || []) {
+      const name = p.name;
+      if (!name || p.type === 'object' || p.type === 'behavior') continue;
+      // The obvious identifiers a author reaches for: the name, and its lower-camel form.
+      const candidates = new Set([name, name.charAt(0).toLowerCase() + name.slice(1)]);
+      for (const id of candidates) {
+        // Not preceded by a dot (that is a property) and not followed by a colon (that is an
+        // object key): `FW.update(..., { waveHeight: val })` names a parameter without using it.
+        // Parameter names are plain identifiers, so no regex escaping is needed here.
+        const used = new RegExp('(?:^|[^A-Za-z0-9_$.])' + id + '(?![A-Za-z0-9_$])(?![ 	]*:)').test(bare);
+        if (used && !declared.has(id)) {
+          console.error(
+            '\n' + ownerName + '.' + f.name + ' uses "' + id + '" but never declares it.\n' +
+            'A parameter is not a variable: read it with\n' +
+            '  const ' + id + ' = eventsFunctionContext.getArgument("' + name + '");\n' +
+            'Otherwise this throws ReferenceError the first time the action runs.\n'
+          );
+          process.exit(1);
+        }
+      }
+    }
+  }
+};
+for (const behavior of extension.eventsBasedBehaviors) {
+  checkParamsAreFetched(behavior.eventsFunctions, behavior.name);
+}
+checkParamsAreFetched(extension.eventsFunctions, 'freeFunctions');
 
 // Write output JSON, or verify that the checked-in artifact is current.
 const outPath = path.join(here, 'FluidAndWater3D.json');

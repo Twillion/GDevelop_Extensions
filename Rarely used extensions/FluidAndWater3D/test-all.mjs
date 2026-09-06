@@ -4,12 +4,13 @@ import { fileURLToPath } from 'node:url';
 
 const here = new URL('.', import.meta.url);
 const scripts = [
+  'check-shaders.mjs',
   'test-runtime.mjs',
   'test-ocean.mjs',
-  'test-gpufft.mjs',
   'test-sph.mjs',
   'build-extension.mjs',
 ];
+if (process.argv.includes('--webgl')) scripts.push('test-webgl.mjs');
 
 for (const script of scripts) {
   const args = [fileURLToPath(new URL(script, here))];
