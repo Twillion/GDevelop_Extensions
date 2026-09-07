@@ -2743,6 +2743,61 @@
   var PLUME_ONSET = 0.95;
   var PLUME_RANGE = 0.45;
 
+  /**
+   * Fold and collision for the COMBINED surface of both cascades.
+   *
+   * Cascade 1 repeats exactly four times across cascade 0 - its tile is a quarter the size at the
+   * same resolution - so cascade 0's cell (x, y) lands on cascade 1's ((4x) mod n, (4y) mod n) with
+   * no interpolation at all. That exact mapping is what makes summing them on the CPU cheap.
+   */
+  function computeCombinedFoam(ocean, f0, f1, threshold) {
+    var n = f0.n;
+    var n1 = f1.n;
+    var cell = f0.tileSize / n;
+    var chop = ocean.choppiness > 0 ? ocean.choppiness : 1.0;
+    var cw = (ocean.cascadeWeight !== undefined) ? ocean.cascadeWeight : 0.65;
+    var inv2h = 1.0 / (2.0 * cell);
+    var thr = threshold > 0.001 ? threshold : 1.0;
+    var out = ocean.foamBuffer;
+    var plume = f0.plume;
+    var ratio = Math.max(1, Math.round(f0.tileSize / f1.tileSize));
+
+    var dxA = f0.dispX, dyA = f0.dispY, dxB = f1.dispX, dyB = f1.dispY;
+    function dxAt(x, y) {
+      return (dxA[y * n + x] + dxB[((y * ratio) % n1) * n1 + ((x * ratio) % n1)] * cw) * chop;
+    }
+    function dyAt(x, y) {
+      return (dyA[y * n + x] + dyB[((y * ratio) % n1) * n1 + ((x * ratio) % n1)] * cw) * chop;
+    }
+
+    for (var y = 0; y < n; y++) {
+      var ym = ((y - 1) + n) % n, yp = (y + 1) % n;
+      for (var x = 0; x < n; x++) {
+        var xm = ((x - 1) + n) % n, xp = (x + 1) % n;
+        var i = y * n + x;
+
+        var a = 1.0 + (dxAt(xp, y) - dxAt(xm, y)) * inv2h;
+        var b = (dxAt(x, yp) - dxAt(x, ym)) * inv2h;
+        var c = (dyAt(xp, y) - dyAt(xm, y)) * inv2h;
+        var d = 1.0 + (dyAt(x, yp) - dyAt(x, ym)) * inv2h;
+
+        var jac = a * d - b * c;
+        out[i] = clamp((thr - jac) / thr, 0.0, 1.0);
+
+        // Two crests meeting compress in BOTH principal directions; one crest breaking compresses
+        // in one. The determinant is their product and cannot separate those - the larger
+        // eigenvalue can, and on a crossing sea it is what marks the actual collisions.
+        var tr = a + d;
+        var disc = Math.sqrt(Math.max(tr * tr - 4.0 * jac, 0.0));
+        var lamMax = (tr + disc) * 0.5;
+        plume[i] = clamp((PLUME_ONSET - lamMax) / PLUME_RANGE, 0.0, 1.0);
+      }
+    }
+    // Cascade 1 contributes nothing separately now - it is already inside the combined fold, and
+    // adding it again through the shader's detail term would double-count it.
+    if (ocean.cascadeFoamBuffer) ocean.cascadeFoamBuffer.fill(0);
+  }
+
   OceanField.prototype.computeFoam = function (out, choppiness, foamThreshold) {
     var n = this.n;
     var cell = this.tileSize / n;
@@ -2798,8 +2853,12 @@
    * determinant threshold up, not to widen a ramp after the fact, so coverage maps here.
    */
   function foamThresholdFor(ocean) {
+    // Retuned for the COMBINED fold. Measuring both cascades together rather than separately
+    // raised cascade 1's influence from a 0.15 detail weight to its full cascade weight, which is
+    // correct - that is the surface being drawn - but it also multiplied the foam, so the bias has
+    // to come back down to match.
     var cov = (ocean && typeof ocean.foamCoverage === 'number') ? ocean.foamCoverage : 0.35;
-    return clamp(0.40 + cov * 0.95, 0.05, 1.15);
+    return clamp(0.36 + cov * 0.68, 0.05, 1.15);
   }
 
   var WAVEWORKS_VERTEX_SHADER = [
@@ -4967,7 +5026,9 @@
         ocean.cascadeTileSize = cascadeTile;
         ocean.field1 = new OceanField(ocean.resolution, cascadeTile, {
           windSpeed: ocean.windSpeed,
-          windDirection: ocean.windDirection,
+          // The cross swell: cascade 1 runs at an angle to the wind so the two trains actually
+          // meet. Without this every crest travels the same way and nothing ever converges.
+          windDirection: ocean.windDirection + (ocean.swellAngle || 0),
           amplitude: 1.0,
           smallWaveCutoff: Math.max(cascadeTile / ocean.resolution * 0.25, 0.5),
           unitsPerMetre: ocean.unitsPerMetre,
@@ -5184,11 +5245,15 @@
         var field0 = ocean.field;
         var field1 = ocean.field1;
         field0.evolve(time, 1.0);
-        field0.computeFoam(ocean.foamBuffer, ocean.choppiness, foamThresholdFor(ocean));
-
         if (field1) {
           field1.evolve(time, 1.0);
-          field1.computeFoam(ocean.cascadeFoamBuffer, ocean.choppiness, foamThresholdFor(ocean));
+          // The fold has to be measured on the surface actually DRAWN, which is both cascades
+          // summed. Measuring each field alone can never see the one thing a crossing sea is for:
+          // two trains running into each other. Each field's Jacobian only knows its own waves, so
+          // a convergence BETWEEN them is invisible to both.
+          computeCombinedFoam(ocean, field0, field1, foamThresholdFor(ocean));
+        } else {
+          field0.computeFoam(ocean.foamBuffer, ocean.choppiness, foamThresholdFor(ocean));
         }
 
         var n0 = field0.n;
@@ -5414,7 +5479,9 @@
         var cascadeTile = ocean.cascadeTileSize || Math.max(ocean.tileSize * (ocean.cascadeScale || 0.25), 10.0);
         ocean.field1.buildSpectrum({
           windSpeed: ocean.windSpeed,
-          windDirection: ocean.windDirection,
+          // The cross swell: cascade 1 runs at an angle to the wind so the two trains actually
+          // meet. Without this every crest travels the same way and nothing ever converges.
+          windDirection: ocean.windDirection + (ocean.swellAngle || 0),
           amplitude: 1.0,
           smallWaveCutoff: Math.max(cascadeTile / ocean.resolution * 0.25, 0.5),
           unitsPerMetre: ocean.unitsPerMetre,
@@ -5515,6 +5582,12 @@
         cascadeScale: cascadeScale,
         cascadeTileSize: cascadeTile,
         cascadeWeight: cascadeWeight,
+        // Degrees between the two wave trains. The Phillips spreading is cos-squared about the
+        // wind and cuts upwind energy to 7%, so a single train marches downwind in parallel and
+        // crests can never meet - which is why the sea never looked like it was smacking into
+        // itself. A real sea crosses because swell from elsewhere runs at an angle to the local
+        // wind. 0 restores the old single-direction behaviour.
+        swellAngle: num(options.swellAngle, 48.0),
         resolution: res,
         beaufortScale: options.beaufortScale || 'Beaufort 4 - Moderate Breeze',
         windSpeed: (options.windSpeed !== undefined && options.windSpeed !== null && options.windSpeed >= 0) ? Number(options.windSpeed) : 7.0,
@@ -5601,7 +5674,10 @@
 
       ocean.field1 = new OceanField(res, cascadeTile, {
         windSpeed: ocean.windSpeed,
-        windDirection: ocean.windDirection,
+        // The cross swell: cascade 1 runs at an angle to the wind so the two trains actually meet.
+        // Phillips spreading is cos-squared about the wind and cuts upwind energy to 7%, so with a
+        // single direction every crest travels the same way and nothing can ever converge.
+        windDirection: ocean.windDirection + (ocean.swellAngle || 0),
         amplitude: 1.0,
         smallWaveCutoff: Math.max(cascadeTile / res * 0.25, 0.5),
         unitsPerMetre: ocean.unitsPerMetre,
@@ -6405,7 +6481,9 @@
       // all. Pool water has a foamCoverageScale of 0.05 and should barely spit.
       var mediumScale = (det.foamCoverageScale !== undefined) ? det.foamCoverageScale : 1.0;
       var amount = clamp(det.sprayAmount !== undefined ? det.sprayAmount : 0.5, 0.0, 1.0);
-      var perFrame = Math.round(amount * mediumScale * 24);
+      // floor, not round: a medium that barely foams earns a budget below one droplet, and
+      // rounding that up gives pool water the occasional spurt it should never have.
+      var perFrame = Math.floor(amount * mediumScale * 24);
 
       emitWaveCollisionSpray(state.spray, ocean, {
         budget: perFrame,

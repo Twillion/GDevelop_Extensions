@@ -860,6 +860,7 @@ const WAVEWORKS_OPTIONS = `{
   sunElevation: behavior._getSunElevation ? behavior._getSunElevation() : 18.0,
   windSpeed: behavior._getWindSpeed ? behavior._getWindSpeed() : 7.0,
   windDirection: behavior._getWindDirection ? behavior._getWindDirection() : 45.0,
+  swellAngle: behavior._getSwellAngle ? behavior._getSwellAngle() : 48.0,
   waveHeightScale: behavior._getWaveHeightScale ? behavior._getWaveHeightScale() : 1.0,
   choppiness: behavior._getChoppiness ? behavior._getChoppiness() : 0.9,
   cascadeScale: behavior._getCascadeScale ? behavior._getCascadeScale() : 0.25,
@@ -905,6 +906,14 @@ const oceanWaveWorksBehavior = {
   objectType: '',
   private: false,
   propertyDescriptors: [
+    prop('SwellAngle', 'Number', 'Cross-Swell Angle',
+      'Degrees between the two wave trains. The wave spectrum concentrates energy along the wind '
+      + 'and cuts waves running against it to 7%, so with a single direction every crest travels '
+      + 'the same way and they can never meet - the sea marches instead of colliding. A real sea '
+      + 'crosses because swell from a distant storm runs at an angle to the local wind. Around 48 '
+      + 'degrees produces the most collisions (5x as many hard ones as parallel trains) and is what '
+      + 'drives crest-collision spray. Set to 0 for a single-direction sea.',
+      '48'),
     prop('BeaufortScale', 'Choice', 'Beaufort Scale Preset',
       'Maritime Beaufort sea scale preset, from Beaufort 0 (mirror calm) to Beaufort 12 (hurricane). Wave height follows the wind speed of the chosen scale rather than being authored directly. Choosing a named preset OVERRIDES the individual colour, foam and sea-state properties below - set this to Custom to author those yourself. For colour, sun and foam styling attach WaterDetailing3D.',
       'Beaufort 4 - Moderate Breeze', { extraInformation: BEAUFORT_CHOICES }),
@@ -2080,6 +2089,7 @@ const PROPERTY_GROUPS = {
   },
   OceanWaveWorks3D: {
     BeaufortScale: G_PRESET,
+    SwellAngle: G_WW_SEA,
     WindSpeed: G_WAVES, WindDirection: G_WAVES, CascadeScale: G_WAVES, CascadeWeight: G_WAVES,
     PeakWavelength: G_WAVES, WavelengthScale: G_WAVES, WaveHeightScale: G_WAVES, Choppiness: G_WAVES,
     Resolution: G_MESH, GridSubdivisions: G_MESH, TileSize: G_MESH, Seed: G_MESH, UnitsPerMetre: G_MESH,
@@ -2167,7 +2177,7 @@ const extension = {
   category: '3D',
   author: 'Twillion',
   license: 'MIT',
-  version: '4.4.0',
+  version: '4.5.0',
   iconUrl,
   previewIconUrl: iconUrl,
   helpPath: '',
