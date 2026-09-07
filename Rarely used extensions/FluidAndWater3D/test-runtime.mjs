@@ -3874,6 +3874,42 @@ console.log('--- Test 48: wave-collision spray fires where crests meet, and only
       'water line; spray must come off the SURFACE (objZ + depth), not the base of the volume');
   }
 
+  // A droplet must live long enough to COME BACK DOWN, or spray reads as things drifting upward
+  // out of the sea. Lifetime is derived from each droplet's own ballistic airtime rather than
+  // being a flat constant, so this holds at any sea state instead of only the one it was tuned at.
+  //
+  // Worth knowing: an earlier probe "measured" 143 of 143 droplets still rising and that was
+  // wrong - it never called onScenePostEvents, which is where the pool is actually integrated, so
+  // every velocity it read was still the launch value. The arc was fine. Hence this test drives
+  // the real per-frame path.
+  {
+    const sc = makeScene({ elapsedMs: 16 });
+    const oB = {}; const dB = {};
+    const obj = mkSea('ArcOcean');
+    const o = FW.registerWaveWorksOcean(sc, obj, oB, {
+      beaufortScale: 'Beaufort 9 - Strong Gale', resolution: 64, gridSubdivisions: 64 });
+    FW.registerWaterDetailing(sc, obj, dB, Object.assign({}, ON));
+    for (let f = 0; f < 120; f++) {
+      FW.stepWaveWorksOcean(sc, obj, oB);
+      FW.stepWaterDetailing(sc, obj, dB);
+      FW.onScenePostEvents(sc);
+    }
+    const pool = FW.spraySystemOf(sc);
+    let rising = 0; let falling = 0;
+    for (let i = 0; i < pool.max; i++) {
+      if (!pool.alive[i]) continue;
+      if (pool.vz[i] > 0) rising++; else falling++;
+    }
+    assert.ok(rising + falling > 0, 'a gale should have spray in the air');
+    // A handful of the weakest droplets turn over whatever the lifetime is, so "any falling" is
+    // not a real guard. In a steady state with life matched to airtime the split is near even.
+    const fallShare = falling / Math.max(rising + falling, 1);
+    assert.ok(fallShare > 0.2, 'only ' + (100 * fallShare).toFixed(0) + '% of live droplets are ' +
+      'falling (' + falling + ' of ' + (rising + falling) + '); their lifetime is short of their ' +
+      'ballistic airtime, so they die on the way up and the spray reads as shapes drifting ' +
+      'upward out of the sea rather than water thrown off it');
+  }
+
   // Spray has to go UP, and land back down.
   const gale = run('Beaufort 9 - Strong Gale', ON, 30);
   let above = 0;

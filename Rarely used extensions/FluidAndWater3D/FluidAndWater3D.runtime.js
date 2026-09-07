@@ -648,6 +648,34 @@
    * Positions are GDevelop units and Z is up, matching the instanced droplet renderer, which sits
    * under the same y-mirrored root as every built-in 3D object.
    */
+  /**
+   * A soft round sprite for spray, built at runtime so the extension ships no image asset.
+   * Water in the air is a diffuse blob of light, not a solid object: an opaque low-poly sphere
+   * stretched along its velocity reads as a white capsule, and against a bright sky a field of
+   * those looks like slivers hanging in the air rather than mist.
+   */
+  function makeSpraySprite() {
+    if (!THREE_OK || typeof THREE.DataTexture !== 'function') return null;
+    var N = 32;
+    var data = new Uint8Array(N * N * 4);
+    for (var y = 0; y < N; y++) {
+      for (var x = 0; x < N; x++) {
+        var dx = (x + 0.5) / N - 0.5;
+        var dy = (y + 0.5) / N - 0.5;
+        var d = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0);
+        // Quadratic falloff: solid core, long soft shoulder, nothing at the rim.
+        var a = (1.0 - d) * (1.0 - d);
+        var i = (y * N + x) * 4;
+        data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
+        data[i + 3] = Math.round(a * 255);
+      }
+    }
+    var tex = new THREE.DataTexture(data, N, N, THREE.RGBAFormat);
+    if (THREE.LinearFilter) { tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter; }
+    tex.needsUpdate = true;
+    return tex;
+  }
+
   function SpraySystem(max) {
     var n = Math.max(16, Math.min(8192, Math.round(max) || 1024));
     this.max = n;
@@ -778,14 +806,21 @@
       var strength = Math.sqrt(v);
       var up = cfg.speed * strength * Math.max(ocean.significantWaveHeight, upm * 0.05);
       var lateral = up * 0.22;
+      // Lifetime from each droplet's own ballistic airtime rather than a flat constant, so the
+      // arc completes at every sea state instead of only the one the constant was tuned at. The
+      // flat value did complete its arc at a gale - a probe that appeared to show otherwise was
+      // simply not integrating the pool - but it drifts out of step as wave height changes.
+      var gAcc = cfg.gravity !== undefined ? cfg.gravity : sprayGravityFor(ocean, null);
+      var vz0 = up * (0.75 + Math.random() * 0.5);
+      var airtime = 2.0 * vz0 / Math.max(gAcc, 1.0);
       spray.emit(
         wx, wy, wz,
         (Math.random() - 0.5) * lateral,
         (Math.random() - 0.5) * lateral,
-        up * (0.75 + Math.random() * 0.5),
-        cfg.life * (0.7 + Math.random() * 0.6),
+        vz0,
+        airtime * (0.85 + Math.random() * 0.3),
         cfg.size * (0.6 + Math.random() * 0.8),
-        cfg.gravity !== undefined ? cfg.gravity : sprayGravityFor(ocean, null)
+        gAcc
       );
       spawned++;
     }
@@ -6256,10 +6291,16 @@
       if (!state.sprayMesh) {
         var root = getLayerThreeRoot(runtimeScene, (det && det.layerName) ? det.layerName : '');
         if (!root) return;
-        var geom = new THREE.SphereGeometry(1.0, 6, 4);
-        var mat = new THREE.MeshBasicMaterial({
-          color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false
-        });
+        // A camera-facing quad with a soft sprite, not a sphere. Two triangles instead of
+        // twenty-four, no facets to catch the light, and a soft edge so it reads as mist.
+        var spriteTex = makeSpraySprite();
+        var geom = (spriteTex && typeof THREE.PlaneGeometry === 'function')
+          ? new THREE.PlaneGeometry(1.0, 1.0)
+          : new THREE.SphereGeometry(1.0, 6, 4);
+        var matOpts = { color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false };
+        if (spriteTex) matOpts.map = spriteTex;
+        var mat = new THREE.MeshBasicMaterial(matOpts);
+        state.sprayIsSprite = !!spriteTex && typeof THREE.PlaneGeometry === 'function';
         state.sprayMesh = new THREE.InstancedMesh(geom, mat, spray.max);
         state.sprayMesh.name = 'FluidAndWater3D_Spray';
         state.sprayMesh.frustumCulled = false;
@@ -6273,7 +6314,7 @@
 
       var mesh = state.sprayMesh;
       var dummy = state.sprayDummy;
-      var sprayAxis = state.sprayAxis;
+      var sprayCam = getLayerThreeCamera(runtimeScene, (det && det.layerName) ? det.layerName : '');
       if (!state.sprayUp && typeof THREE.Vector3 === 'function') {
         state.sprayUp = new THREE.Vector3(0, 0, 1);
       }
@@ -6286,24 +6327,15 @@
         var t = spray.life0[i] > 0 ? (spray.life[i] / spray.life0[i]) : 0.0;
         var scale = spray.size[i] * Math.min(1.0, t * 3.0);
         dummy.position.set(spray.x[i], spray.y[i], spray.z[i]);
-        // Water in flight is a streak, not a ball - a uniform sphere is the other half of why this
-        // read as bubbles. Orient each droplet along its own velocity and stretch it, so fast ones
-        // are long and thin and slow ones go round again as they hang at the top of the arc.
-        var vx = spray.vx[i], vy = spray.vy[i], vz = spray.vz[i];
-        var sp = Math.sqrt(vx * vx + vy * vy + vz * vz);
-        var canOrient = sp > 1e-3 && sprayAxis && SPRAY_UP && dummy.quaternion &&
-          typeof dummy.quaternion.setFromUnitVectors === 'function';
-        if (canOrient) {
-          sprayAxis.set(vx / sp, vy / sp, vz / sp);
-          dummy.quaternion.setFromUnitVectors(SPRAY_UP, sprayAxis);
-          var stretch = 1.0 + Math.min(sp / Math.max(spray.refSpeed || 1, 1), 1.0) * 2.2;
-          dummy.scale.set(scale * 0.55, scale * 0.55, scale * stretch);
-        } else {
-          if (dummy.quaternion && typeof dummy.quaternion.set === 'function') {
-            dummy.quaternion.set(0, 0, 0, 1);
-          }
-          dummy.scale.set(scale, scale, scale);
+        // Face the camera. The previous version oriented each droplet along its own velocity and
+        // stretched it up to 3.2x, which against a bright sky produced a field of white slivers
+        // hanging in the air. A billboard with a soft falloff has no long axis to read as one.
+        if (sprayCam && dummy.quaternion && typeof dummy.quaternion.copy === 'function') {
+          dummy.quaternion.copy(sprayCam.quaternion);
+        } else if (dummy.quaternion && typeof dummy.quaternion.set === 'function') {
+          dummy.quaternion.set(0, 0, 0, 1);
         }
+        dummy.scale.set(scale, scale, scale);
         dummy.updateMatrix();
         mesh.setMatrixAt(shown, dummy.matrix);
         shown++;
@@ -6381,7 +6413,7 @@
         // down to 0.05 puts the midpoint where a gale sprays freely, a strong breeze throws
         // the occasional spout, and Beaufort 4 and below stay dry.
         threshold: clamp(0.55 - 0.5 * (det.sprayThreshold !== undefined ? det.sprayThreshold : 0.5), 0.02, 1.0),
-        speed: 0.9 * (det.sprayHeight !== undefined ? det.sprayHeight : 1.0),
+        speed: 0.55 * (det.sprayHeight !== undefined ? det.sprayHeight : 1.0),
         life: 1.1,
         size: Math.max(ocean.significantWaveHeight * 0.012, 1.0),
         gravity: sprayGravityFor(ocean, det)

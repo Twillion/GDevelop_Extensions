@@ -1164,3 +1164,47 @@ in one pass. The first `?nospec` attempt was useless because the shader reads
 `(u_SunSpecularIntensity > 0.0) ? it : 2.2` — setting it to zero restores the default rather than
 disabling it. That "0 means default" idiom is everywhere in this shader and it makes zero a bad
 probe value.
+
+---
+
+## 4.4.0 — spray stops looking like souls
+
+Reported as the spray looking like "souls rising from the ground", in a screenshot of the **sky**
+with white slivers hanging in it.
+
+### The real fix: it was drawn wrong, not simulated wrong
+
+Each droplet was a 24-face sphere oriented along its velocity and stretched up to 3.2x. Against a
+bright sky that is a field of white capsules. Now:
+
+- a **camera-facing quad** (two triangles) instead of an oriented sphere, so there is no long axis
+  left to read as a sliver;
+- a **soft radial sprite**, generated in code at 32x32 so the extension still ships no image asset -
+  water in the air is a diffuse blob of light, and an opaque white shape will never be one;
+- the velocity stretch is **gone**, which is what produced the capsule silhouette.
+
+Launch speed and lifetime were also brought down (0.9 to 0.55, and lifetime now derived from each
+droplet's own ballistic airtime rather than a flat 1.1 s). Peak height above the surface falls from
+960 to 774 units at Beaufort 9, and lifetime tracks the arc at any sea state instead of only the one
+a constant was tuned at.
+
+### A measurement I got wrong, and the correction
+
+While investigating I reported that "143 of 143 droplets are still rising" and treated it as proof
+that every droplet died on the way up. **That was wrong.** The probe never called
+`onScenePostEvents`, which is where the pool is actually integrated, so every velocity it read was
+still the launch value - of course they all looked like they were rising.
+
+Re-measured with the real per-frame path, the original configuration gives 98 rising against 61
+falling. The arc was completing all along. The lifetime change is a robustness improvement, not a
+bug fix, and this file previously said otherwise.
+
+Test 48 now drives the real per-frame path and requires more than 20% of live droplets to be
+falling. "Any falling at all" is not a guard: the weakest droplets turn over whatever the lifetime
+is, so that assertion passed even against a deliberately broken lifetime.
+
+### Also settled
+
+The washed-out screenshot that prompted this was **the sky**, not the water. Time was spent chasing
+a water defect that was not there. The transparency regression found on the way - 4.3.1, where alpha
+collapsed from 0.95 to 0.40 - was real and is fixed, but it was not what that screenshot showed.
