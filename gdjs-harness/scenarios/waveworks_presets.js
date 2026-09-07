@@ -240,6 +240,22 @@
       H.h2('Held at Beaufort ' + hb + ' / ' + axes.style + ' / ' + axes.waterLook);
       H.log('shader: ' + rep.detail, rep.ok ? 'ok' : 'bad');
       var fu = ocean.material.uniforms;
+      // Isolation switches, so "is that white foam or reflection?" is answerable instead of
+      // arguable. ?nofoam=1 removes foam entirely; ?nospec=1 removes the sun specular and the
+      // sun-reflection lobe; ?noskysun=1 removes only the reflected sun.
+      var qq = new URLSearchParams(location.search);
+      if (qq.get('nofoam') === '1') { fu.u_FoamIntensity.value = 0.0; fu.u_FoamCoverage.value = 0.0; }
+      // NOT zero: the shader reads `(u_SunSpecularIntensity > 0.0) ? it : 2.2`, so zero restores
+      // the default instead of disabling it. A hair above zero is the only way off.
+      if (qq.get('nospec') === '1') { fu.u_SunSpecularIntensity.value = 0.0001; }
+      if (qq.get('nomicro') === '1') { fu.u_MicroDetail.value = 0.0001; }
+      if (qq.get('nocaustics') === '1') { fu.u_CausticsIntensity.value = 0.0; }
+      if (qq.get('opaque') === '1') { fu.u_Opacity.value = 1.0; }
+      H.log('subPixel probe: cascadeTile ' + fu.u_CascadeTileSize.value.toFixed(0) +
+        '  cascadeTexel ' + fu.u_CascadeTexel.value.toFixed(4) +
+        '  -> texelWorld ' + (fu.u_CascadeTileSize.value * fu.u_CascadeTexel.value).toFixed(1) +
+        ' units', 'dim');
+      if (qq.get('nofresnel') === '1') { fu.u_FresnelMax.value = 0.0; }
       H.log('foam look "' + (FW.getWaterDetailingFoamStyle(scene, detailBehavior)) + '"  scale ' + fu.u_FoamScale.value.toFixed(2) +
         '  streak ' + fu.u_FoamStreak.value.toFixed(1) +
         '  bite ' + fu.u_FoamBite.value.toFixed(2) +

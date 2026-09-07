@@ -1118,3 +1118,49 @@ before every pixel was the same pale cyan.
 A deep water volume is a reasonable thing to author - it is a collision shape as much as a visual
 one - so tying optical depth to it was a trap rather than a setting. `ExtinctionDepth` is the control
 that was always meant to own this, and now does.
+
+---
+
+## 4.3.1 — the white was the background, and 4.3.0 caused it
+
+Reported as "that white is reflection, not foam", at Near Gale. Both halves of that were right, and
+the cause was a regression from 4.3.0.
+
+### Isolating it
+
+Rendering the same frame with foam removed, then specular, then the sky reflection, the white band
+survived all three. So it was none of them. Turning the material fully opaque removed it.
+
+`alpha = mix(0.40, 0.95, 1.0 - transmit.g)`. That was calibrated when `transmit` underflowed to zero
+on any deep body, which pinned alpha at 0.95. Clamping the optical path in 4.3.0 made `transmit`
+large and healthy — and alpha collapsed to **0.40**. Deep ocean silently became 60% transparent, and
+what showed through was whatever was behind it: white in the harness, sky in a real project, which
+is exactly why it read as reflection.
+
+Opacity now follows how much water is actually below the surface — `column` against the extinction
+depth — rather than the clamped path used for colour. Those were the same number until 4.3.0
+separated them, and nothing noticed. Shallow water near a shore still goes transparent, because
+`column` is genuinely reduced there.
+
+### And the point that was raised
+
+*"The light reflection doesn't take into consideration the scale of the water, so a big wave
+increases the reflection's size, when real ocean water isn't uniform enough to have reflections that
+big."*
+
+That is missing sub-pixel roughness, and it is a real second defect. Past the distance where wave
+detail stops resolving we shade a whole patch with one smooth normal, so a large face behaves like a
+mirror and the highlight grows with the wave. Real water keeps its ripples; they are simply smaller
+than a pixel, and their spread of normals both widens the lobe and lowers the average reflectance.
+
+The shader now measures how much water one pixel covers (`fwidth(vGdXY)`) against the finest detail
+the field carries (`u_CascadeTileSize * u_CascadeTexel`, 125 units here) and uses that ratio to widen
+and dim the specular lobe and to pull Fresnel down from its single-normal peak.
+
+### Lesson worth keeping
+
+Three isolation switches (`?nofoam`, `?nospec`, `?nofresnel`) turned an argument into a measurement
+in one pass. The first `?nospec` attempt was useless because the shader reads
+`(u_SunSpecularIntensity > 0.0) ? it : 2.2` — setting it to zero restores the default rather than
+disabling it. That "0 means default" idiom is everywhere in this shader and it makes zero a bad
+probe value.
