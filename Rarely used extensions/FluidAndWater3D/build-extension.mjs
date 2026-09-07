@@ -1240,7 +1240,7 @@ const WATER_DETAILING_OPTIONS = `{
   style: behavior._getArtStyle ? behavior._getArtStyle() : 'Sea of Thieves',
   waterLook: behavior._getArtWaterLook ? behavior._getArtWaterLook() : 'Clear',
   subStyle: behavior._getArtSubStyle ? behavior._getArtSubStyle() : 'Salt Water',
-  foamStyle: behavior._getArtFoamStyle ? behavior._getArtFoamStyle() : 'Natural',
+  foamStyle: behavior._getArtFoamStyle ? behavior._getArtFoamStyle() : 'Sea of Thieves',
   lighting: behavior._getArtLighting ? behavior._getArtLighting() : 'Golden Hour',
   sunHeading: behavior._getSunHeading ? behavior._getSunHeading() : 75.0,
   sunElevation: behavior._getSunElevation ? behavior._getSunElevation() : 18.0,
@@ -1299,9 +1299,9 @@ const waterDetailingBehavior = {
       + 'Sea of Thieves is big soft sheets that trail; Whitecaps is sparse and high-contrast with '
       + 'clean water between; Storm Streaks drags everything into long parallel bands; Surf is fine '
       + 'aerated bubbles that linger; Painted is hard-edged flat shapes; Minimal keeps it quiet. '
-      + 'Natural is the open-ocean default and matches every earlier version.',
-      'Natural', {
-        extraInformation: ['Natural', 'Sea of Thieves', 'Whitecaps', 'Storm Streaks', 'Surf',
+      + 'Natural is the physically sparse open-ocean foam, and matches versions before 4.1.0.',
+      'Sea of Thieves', {
+        extraInformation: ['Sea of Thieves', 'Natural', 'Whitecaps', 'Storm Streaks', 'Surf',
           'Painted', 'Minimal', 'Custom']
       }),
     prop('ArtSubStyle', 'Choice', 'Sub-style (what liquid it is)',
@@ -2167,7 +2167,7 @@ const extension = {
   category: '3D',
   author: 'Twillion',
   license: 'MIT',
-  version: '4.1.0',
+  version: '4.2.0',
   iconUrl,
   previewIconUrl: iconUrl,
   helpPath: '',

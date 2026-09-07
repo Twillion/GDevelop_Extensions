@@ -1060,3 +1060,24 @@ the flanks mask, and Test 43 keeps the saturation guard that catches the defect 
 
 Spray still uses its own eigenvalue detector rather than spawning from the foam signal as Rare do.
 That is a simplification rather than a fix, and the detector works, so it stays for now.
+
+---
+
+## 4.2.0 — Sea of Thieves is the default foam
+
+Judged side by side, the Sea of Thieves look beats the physically sparse one at every sea state, so
+it is the default now. `Natural` is still there and is still the honest open-ocean foam — it is what
+shipped before 4.1.0 — but generous trailing sheets are what this extension is for.
+
+The change is one line of default in two places, but it interacts with 4.1.0: the Sea of Thieves
+look carries a 1.25x coverage bias, which feeds the Jacobian threshold, which is what brings back
+the foam that the physically-honest threshold had taken out of moderate seas. Beaufort 6 on a large
+body went from close to bare to carrying visible crest foam.
+
+Test 43's bounds were widened for the new default, deliberately and only on the "carries any foam"
+band. The tight bound stays on **solid white**, because that is the number that caught the original
+whiteout (41% of a Beaufort 4 sea) and it is the one that must never come back.
+
+The harness scenario had been hardcoding `foamStyle: 'Natural'`, which masked the shipped default
+from every screenshot taken through it. It now passes nothing unless `?foam=` is given, so what gets
+photographed is what users get.

@@ -6081,7 +6081,10 @@
       var type = (typeName !== 'Custom') ? resolveWaterDetailingType(typeName) : null;
       var lighting = (lightingName !== 'Custom') ? resolveWaterDetailingLighting(lightingName) : null;
       var subStyle = (subStyleName !== 'Custom') ? resolveWaterDetailingSubStyle(subStyleName) : null;
-      var foamName = options.foamStyle || 'Natural';
+      // Sea of Thieves is the default look. Natural is the physically sparse open-ocean foam
+      // and it is still there, but the generous trailing sheets are what this extension is
+      // actually for, and they read better at every sea state.
+      var foamName = options.foamStyle || 'Sea of Thieves';
       var foam = (foamName !== 'Custom') ? resolveWaterDetailingFoam(foamName) : null;
 
       var p = type ? composeWaterDetailingLook(style, type, lighting, subStyle, foam) : null;

@@ -47,7 +47,9 @@
   });
   var axes = {
     style: 'Sea of Thieves', subStyle: 'Salt Water', waterLook: 'Choppy', lighting: 'Golden Hour',
-    foamStyle: new URLSearchParams(location.search).get('foam') || 'Natural',
+    // No ?foam= means: use whatever the extension ships as its default, which is the point of
+    // a default. Hardcoding one here masked it.
+    foamStyle: new URLSearchParams(location.search).get('foam') || undefined,
     sprayEnabled: new URLSearchParams(location.search).get('spray') !== '0',
     sprayAmount: 1.0, sprayHeight: 1.0, sprayThreshold: 0.5,
   };
@@ -238,7 +240,7 @@
       H.h2('Held at Beaufort ' + hb + ' / ' + axes.style + ' / ' + axes.waterLook);
       H.log('shader: ' + rep.detail, rep.ok ? 'ok' : 'bad');
       var fu = ocean.material.uniforms;
-      H.log('foam look "' + axes.foamStyle + '"  scale ' + fu.u_FoamScale.value.toFixed(2) +
+      H.log('foam look "' + (FW.getWaterDetailingFoamStyle(scene, detailBehavior)) + '"  scale ' + fu.u_FoamScale.value.toFixed(2) +
         '  streak ' + fu.u_FoamStreak.value.toFixed(1) +
         '  bite ' + fu.u_FoamBite.value.toFixed(2) +
         '  trail ' + fu.u_FoamTrail.value.toFixed(2), 'ok');

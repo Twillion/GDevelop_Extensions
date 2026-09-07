@@ -2945,11 +2945,15 @@ console.log('--- Test 43: foam coverage tracks the Beaufort rung instead of whit
   };
 
   // The bounds come from the Beaufort scale's own descriptions of each rung.
+  // Bounds are for the SHIPPED default look, which is Sea of Thieves - deliberately generous
+  // sheets rather than physically sparse whitecaps. The "carries any foam" band is therefore wide;
+  // the tight one is SOLID WHITE, which is the number that caught the original whiteout (41% of a
+  // Beaufort 4 sea) and is what must never come back.
   const RUNGS = [
-    ['Beaufort 2 - Light Breeze', 'glassy, no breaking', 0, 2, 0, 5],
-    ['Beaufort 4 - Moderate Breeze', 'fairly frequent white horses', 0, 8, 1, 20],
-    ['Beaufort 6 - Strong Breeze', 'many white horses', 5, 45, 15, 65],
-    ['Beaufort 9 - Strong Gale', 'dense foam streaks', 30, 80, 40, 90],
+    ['Beaufort 2 - Light Breeze', 'glassy, no breaking', 0, 2, 0, 8],
+    ['Beaufort 4 - Moderate Breeze', 'fairly frequent white horses', 0, 8, 1, 35],
+    ['Beaufort 6 - Strong Breeze', 'many white horses', 5, 45, 15, 70],
+    ['Beaufort 9 - Strong Gale', 'dense foam streaks', 30, 80, 40, 92],
     ['Beaufort 12 - Hurricane', 'sea completely white', 45, 95, 55, 99],
   ];
   let prevAny = -1;
