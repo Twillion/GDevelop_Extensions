@@ -1,6 +1,6 @@
 # CameraTweens3D — API Reference & Specification
 
-Complete specification of Behavior properties, dropdown Choice profiles, Actions, Conditions, and Expressions (ACEs) for **CameraTweens3D 1.2.0**.
+Complete specification of Behavior properties, dropdown Choice profiles, Actions, Conditions, and Expressions (ACEs) for **CameraTweens3D 1.3.0**.
 
 > **Units.** The procedural model is solved in metres and metres per second; the scene is not.
 > Everything you type in and everything you read back is in **world units** (GDevelop 3D uses the
@@ -11,7 +11,7 @@ Complete specification of Behavior properties, dropdown Choice profiles, Actions
 
 ## 1. `CameraTweens3D` Behavior Properties
 
-16 properties, grouped in the editor.
+17 properties, grouped in the editor.
 
 ### Genre Preset
 | Property | Type | Default | Options / Description |
@@ -30,6 +30,7 @@ Each dropdown is a complete patch for its module: `Off` switches the whole modul
 | **`RecoilProfile`** | Choice | `Default for Preset` | `Off (Disabled)`, `Subtle Kick`, `Standard FPS`, `Heavy Kick`, `Crisp Boomer Shooter`. Gates pitch, yaw and kickback together. |
 | **`ShakeProfile`** | Choice | `Default for Preset` | `Off (Disabled)`, `Soft (0.5x)`, `Standard (1.0x)`, `Cinematic Heavy (1.5x)`. Independent of `MasterShakeScale`. |
 | **`SpeedRushFOVProfile`** | Choice | `Default for Preset` | `Off (0° Locked)`, `Subtle (+5°)`, `Standard (+10°)`, `Extreme (+18°)`. |
+| **`TerrainMicroJitterIntensity`** | Number | `0` | Noisy vertical motion in metres while grounded and moving. `0` disables it; `0.015` reproduces the original effect. |
 
 ### Field of View
 | Property | Type | Default | Description |
@@ -53,7 +54,7 @@ Each dropdown is a complete patch for its module: `Off` switches the whole modul
 
 ---
 
-## 2. Actions (35)
+## 2. Actions (36)
 
 ### Master & Presets
 * **`Apply camera preset _PARAM2_ on _PARAM0_`** — apply a built-in profile from a dropdown selector.
@@ -63,7 +64,7 @@ Each dropdown is a complete patch for its module: `Off` switches the whole modul
 
 ### Combat, Trauma & Impacts
 * **`Add trauma to _PARAM0_ by _PARAM2_`** — shake trauma from an explosion or hit (0.0 – 1.0).
-* **`Apply weapon recoil to _PARAM0_ (Pitch: _PARAM2_, Yaw: _PARAM3_, KickbackZ: _PARAM4_)`** — pitch and yaw in degrees, kickback in **metres** (0.04 ≈ 4 world units at the default scale).
+* **`Apply weapon recoil to _PARAM0_ (Pitch: _PARAM2_, Yaw: _PARAM3_, KickbackZ: _PARAM4_)`** — pitch and yaw in degrees, kickback in **world units** (4 at the default scale). Up to 1.2.1 this argument was read as metres while `RecoilKickbackZ()` reported world units; see *Upgrading* in the README.
 * **`Apply damage flinch to _PARAM0_ (Angle: _PARAM2_, Force: _PARAM3_)`** — directional flinch away from damage.
 * **`Trigger landing impact on _PARAM0_ with fall speed _PARAM2_`** — fall speed in **world units per second**; the dip depth scales with it.
 * **`Stop all camera shakes on _PARAM0_`** — resets trauma to 0.
@@ -87,8 +88,9 @@ Each dropdown is a complete patch for its module: `Off` switches the whole modul
 ### Granular Runtime Tuning
 * **`Set head bob intensity on _PARAM0_ to _PARAM2_`**
 * **`Set breathing intensity on _PARAM0_ to _PARAM2_`**
+* **`Set terrain micro-jitter intensity on _PARAM0_ to _PARAM2_ metres`** — 0 disables grounded movement noise.
 * **`Set run/walk lean max angle on _PARAM0_ to _PARAM2_ degrees`** — the lean at full sideways speed; negative values invert it.
-* **`Set turn lean angle on _PARAM0_ to _PARAM2_ degrees`** — the bank into turns; negative values invert it.
+* **`Set turn lean angle on _PARAM0_ to _PARAM2_ degrees`** — the bank into turns, expressed as **degrees of roll per 100°/s of yaw**: at the `Standard (2.0°)` value of 1.5 an ordinary 60°/s turn banks 0.9°, and a 180°/s whip banks 2.7° (the yaw rate is clamped there). Negative values invert it.
 * **`Set landing shock intensity on _PARAM0_ to _PARAM2_`**
 * **`Set recoil pitch multiplier on _PARAM0_ to _PARAM2_`** — pitch only; use the recoil profile for the whole module.
 * **`Set ADS motion damping on _PARAM0_ to _PARAM2_`** — 0.0 = perfectly still while aiming, 1.0 = no damping.
@@ -110,7 +112,7 @@ Each dropdown is a complete patch for its module: `Off` switches the whole modul
 
 ---
 
-## 4. Expressions (17)
+## 4. Expressions (18)
 
 ### Offsets (world units)
 * **`Object.CameraTweens3D::HeadBobY()`** — the vertical head bob applied this frame.
@@ -132,6 +134,7 @@ These report what was written to the camera, damping and comfort mode included �
 * **`Object.CameraTweens3D::MovementSpeedRatio()`** — normalised speed driving stride frequency (0 – 1.8).
 * **`Object.CameraTweens3D::MasterMotionScale()`**, **`MasterShakeScale()`**
 * **`Object.CameraTweens3D::BobIntensity()`**, **`BreathingIntensity()`**
+* **`Object.CameraTweens3D::TerrainMicroJitterIntensity()`** — configured grounded movement micro-jitter amplitude in metres.
 * **`Object.CameraTweens3D::WorldUnitsPerMeter()`** — the scale actually in use, after auto-detection.
 
 ---
@@ -142,8 +145,15 @@ At the first frame the behavior resolves where its kinematics come from, once, a
 
 | Source | Used for | Requires |
 | :--- | :--- | :--- |
-| **Physics Character 3D / Physics Car 3D** | ground state, fall speed, forward and sideways speed, reference max speed | `isOnFloor()` + `getCurrentFallSpeed()` + `getCurrentForwardSpeed()` on the same object |
-| **Any behavior with `isOnFloor()` / `isGrounded()`** | ground state only | e.g. the Platformer behavior |
-| **Position differencing** | everything, as a fallback | nothing |
+| **Physics Character 3D** | ground state, fall speed, forward and sideways speed, reference max speed | `isOnFloor()` + `getCurrentFallSpeed()` + `getCurrentForwardSpeed()` on the same object |
+| **Any behavior with `isOnFloor()` / `isGrounded()`** | ground state only | e.g. the Platformer behavior, **and Physics Car 3D** |
+| **Position differencing** | everything else, as a fallback | nothing |
+
+> **Physics Car 3D is a ground source only.** It exposes `isOnFloor()`, but its only speed getter is
+> `getEngineSpeed()`, which reports engine **RPM** rather than a linear velocity. So a car gets its
+> ground state from the behavior and every speed — forward, sideways and fall — from position
+> differencing, using the object's own angle as its heading. That is the correct result for a car,
+> whose angle really is its facing; it just means `WalkSpeedReference` is worth setting explicitly,
+> because there is no `getForwardSpeedMax()` to read a reference from.
 
 Fall speed is tracked as the **peak** reached while airborne, so the impact still scales correctly on the contact frame — where a character controller has already zeroed its vertical velocity.

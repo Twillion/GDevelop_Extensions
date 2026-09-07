@@ -32,10 +32,12 @@ const OB = [
 const num = (name, description, value = '') => ({
   name, type: 'expression', description, ...(value ? { defaultValue: value } : {}),
 });
+const bool = (name, description) => ({ name, type: 'yesorno', description });
 const str = (name, description, value = '') => ({
   name, type: 'string', description, ...(value ? { defaultValue: value } : {}),
 });
-const bool = (name, description) => ({ name, type: 'yesorno', description });
+const scenevar = (name, description) => ({ name, type: 'scenevar', description });
+const globalvar = (name, description) => ({ name, type: 'globalvar', description });
 const col = (name, description, value = '') => ({
   name, type: 'color', description, ...(value ? { defaultValue: value } : {}),
 });
@@ -54,11 +56,6 @@ const ev = (inlineCode, { withRuntime = false } = {}) => [{
   type: 'BuiltinCommonInstructions::JsCode',
   inlineCode: (withRuntime ? runtime + '\n' : '') + inlineCode,
   parameterObjects: 'Object',
-}];
-
-const evFree = (inlineCode, { withRuntime = false } = {}) => [{
-  type: 'BuiltinCommonInstructions::JsCode',
-  inlineCode: (withRuntime ? runtime + '\n' : '') + inlineCode,
 }];
 
 const BEHAVIOR_PREAMBLE = `const __fxObjects = eventsFunctionContext.getObjects("Object");
@@ -80,19 +77,6 @@ const fn = (name, fullName, sentence, description, functionType, parameters, cod
   private: false,
   parameters: [...OB, ...parameters],
   events: ev(BEHAVIOR_PREAMBLE + code, opts),
-  ...(opts.expressionType ? { expressionType: opts.expressionType } : {}),
-});
-
-const freeFn = (name, fullName, sentence, description, functionType, parameters, code, opts = {}) => ({
-  name,
-  fullName,
-  sentence,
-  description,
-  functionType,
-  ...(opts.group ? { group: opts.group } : {}),
-  private: false,
-  parameters,
-  events: evFree((opts.withRuntime ? runtime + '\n' : '') + `if (!${NS}) return;\nconst FX = ${NS};\n` + code, opts),
   ...(opts.expressionType ? { expressionType: opts.expressionType } : {}),
 });
 
@@ -132,10 +116,66 @@ const fxActions = [
   // Master & Presets
   fn('ApplyPreset', 'Apply cinematic preset',
     'Apply cinematic preset _PARAM2_ on _PARAM0_',
-    'Apply 1-click genre post-processing preset (CyberpunkNeon, CinematicMovie, HorrorGrim, CleanRealistic, PerformanceLite).', 'Action',
-    [choice('Preset', 'Genre preset', ['CyberpunkNeon', 'CinematicMovie', 'HorrorGrim', 'CleanRealistic', 'PerformanceLite'])],
+    'Apply 1-click genre or player custom post-processing preset (DefaultGameplay, CinematicCutscene, VibrantFantasy, NightNeon, HorrorTension, PerformanceLite, PlayerCustom).', 'Action',
+    [choice('Preset', 'Genre preset', ['DefaultGameplay', 'CinematicCutscene', 'VibrantFantasy', 'NightNeon', 'HorrorTension', 'PerformanceLite', 'PlayerCustom'])],
     `const val = eventsFunctionContext.getArgument("Preset");
 FX.applyPreset(runtimeScene, behavior, val);
+`, { group: G_MASTER }),
+
+  fn('SaveSettingsToGlobalVariable', 'Save post-processing settings to global variable',
+    'Save current cinematic post-processing settings to global variable _PARAM2_ on _PARAM0_',
+    'Copy all active post-processing settings into a GDevelop global structure variable so settings persist between scenes.', 'Action',
+    [globalvar('Variable', 'Global structure variable to store settings into')],
+    `const variable = eventsFunctionContext.getArgument("Variable");
+FX.saveSettingsToVariable(runtimeScene, behavior, variable);
+`, { group: G_MASTER }),
+
+  fn('ApplySettingsFromGlobalVariable', 'Apply post-processing settings from global variable',
+    'Apply cinematic post-processing settings from global variable _PARAM2_ on _PARAM0_',
+    'Load and apply post-processing settings from a GDevelop global structure variable.', 'Action',
+    [globalvar('Variable', 'Global structure variable holding saved settings')],
+    `const variable = eventsFunctionContext.getArgument("Variable");
+FX.applySettingsFromVariable(runtimeScene, behavior, variable);
+`, { group: G_MASTER }),
+
+  fn('SaveSettingsToSceneVariable', 'Save post-processing settings to scene variable',
+    'Save current cinematic post-processing settings to scene variable _PARAM2_ on _PARAM0_',
+    'Copy all active post-processing settings into a GDevelop scene structure variable.', 'Action',
+    [scenevar('Variable', 'Scene structure variable to store settings into')],
+    `const variable = eventsFunctionContext.getArgument("Variable");
+FX.saveSettingsToVariable(runtimeScene, behavior, variable);
+`, { group: G_MASTER }),
+
+  fn('ApplySettingsFromSceneVariable', 'Apply post-processing settings from scene variable',
+    'Apply cinematic post-processing settings from scene variable _PARAM2_ on _PARAM0_',
+    'Load and apply post-processing settings from a GDevelop scene structure variable.', 'Action',
+    [scenevar('Variable', 'Scene structure variable holding saved settings')],
+    `const variable = eventsFunctionContext.getArgument("Variable");
+FX.applySettingsFromVariable(runtimeScene, behavior, variable);
+`, { group: G_MASTER }),
+
+  fn('SaveCurrentToCustomPreset', 'Save current settings as custom preset slot',
+    'Save current settings as custom preset _PARAM2_ on _PARAM0_',
+    'Save the current post-processing settings into an in-memory custom preset slot (e.g. "PlayerCustom") for quick switching.', 'Action',
+    [str('SlotName', 'Custom preset slot name (e.g. PlayerCustom)', '"PlayerCustom"')],
+    `const name = eventsFunctionContext.getArgument("SlotName");
+FX.saveCustomPreset(runtimeScene, behavior, name);
+`, { group: G_MASTER }),
+
+  fn('ApplyCustomPreset', 'Apply custom preset slot',
+    'Apply custom preset _PARAM2_ on _PARAM0_',
+    'Load and apply a previously saved custom preset slot (e.g. "PlayerCustom").', 'Action',
+    [str('SlotName', 'Custom preset slot name (e.g. PlayerCustom)', '"PlayerCustom"')],
+    `const name = eventsFunctionContext.getArgument("SlotName");
+FX.applyCustomPreset(runtimeScene, behavior, name);
+`, { group: G_MASTER }),
+
+  fn('ApplySettingsFromJSON', 'Apply post-processing settings from JSON',
+    'Apply cinematic post-processing settings from JSON _PARAM2_ on _PARAM0_',
+    'Load and apply post-processing settings from a serialized JSON string (e.g. loaded from Storage or Filesystem).', 'Action',
+    [str('JSONString', 'JSON string containing settings')],
+    `const json = eventsFunctionContext.getArgument("JSONString");
+FX.applySettingsJSON(runtimeScene, behavior, json);
 `, { group: G_MASTER }),
 
   fn('SetMasterIntensity', 'Set master post-processing intensity',
@@ -284,11 +324,32 @@ FX.updateSettings(runtimeScene, behavior, { bloomIntensity: val });
 
   fn('SetBloomThreshold', 'Set Bloom luminance threshold',
     'Set Bloom luminance threshold on _PARAM0_ to _PARAM2_',
-    'Minimum luminance required for surfaces to emit bloom (0.5 to 2.0).', 'Action',
-    [num('Threshold', 'Luminance cutoff threshold', '0.9')],
+    'Minimum LINEAR luminance required to emit bloom, roughly 0.0 to 1.0. Linear light, not ' +
+    'the value you see on screen: a surface that looks bright grey is only about 0.6 here.', 'Action',
+    [num('Threshold', 'Linear luminance cutoff', '0.3')],
     `const val = eventsFunctionContext.getArgument("Threshold");
 if (behavior._setBloomThreshold) behavior._setBloomThreshold(val);
 FX.updateSettings(runtimeScene, behavior, { bloomThreshold: val });
+`, { group: G_BLOOM }),
+
+  fn('SetBloomRadius', 'Set Bloom radius',
+    'Set Bloom radius on _PARAM0_ to _PARAM2_',
+    'Width of the blur at each step of the bloom pyramid (0.5 to 3.0). Wider is softer and ' +
+    'more stable while the camera moves.', 'Action',
+    [num('Radius', 'Blur width per pyramid step', '1.0')],
+    `const val = eventsFunctionContext.getArgument("Radius");
+if (behavior._setBloomRadius) behavior._setBloomRadius(val);
+FX.updateSettings(runtimeScene, behavior, { bloomRadius: val });
+`, { group: G_BLOOM }),
+
+  fn('SetBloomMaxBrightness', 'Set Bloom firefly clamp',
+    'Set Bloom firefly clamp on _PARAM0_ to _PARAM2_',
+    'Caps how bright a single pixel may be before it enters the bloom pyramid. Lower this if ' +
+    'bloom flickers while the camera moves.', 'Action',
+    [num('MaxBrightness', 'Maximum linear brightness entering bloom', '12.0')],
+    `const val = eventsFunctionContext.getArgument("MaxBrightness");
+if (behavior._setBloomMaxBrightness) behavior._setBloomMaxBrightness(val);
+FX.updateSettings(runtimeScene, behavior, { bloomMaxBrightness: val });
 `, { group: G_BLOOM }),
 
   fn('SetAnamorphicFlares', 'Set Anamorphic flare streak strength',
@@ -387,6 +448,14 @@ FX.updateSettings(runtimeScene, behavior, { chromaticAberration: val });
 ];
 
 const fxConditions = [
+  fn('HasCustomPreset', 'Custom preset slot exists',
+    'Custom preset _PARAM2_ exists',
+    'Check if a custom preset slot has been saved in memory during this session.', 'Condition',
+    [str('SlotName', 'Custom preset slot name (e.g. PlayerCustom)', '"PlayerCustom"')],
+    `const name = eventsFunctionContext.getArgument("SlotName");
+eventsFunctionContext.returnValue = FX.hasCustomPreset(name);
+`, { group: G_MASTER }),
+
   fn('IsActive', 'Post-processing pass is active',
     'Post-processing pass is active on _PARAM0_',
     'Check if the master post-processing pipeline is currently active.', 'Condition',
@@ -451,6 +520,14 @@ eventsFunctionContext.returnValue = !!(s && s.enableMotionBlur && s.motionBlurSt
 ];
 
 const fxExpressions = [
+  // Master & Presets
+  fn('ExportSettingsToJSON', 'Export settings to JSON',
+    '_PARAM0_.CinematicPostFX3D::ExportSettingsToJSON()',
+    'Return all current post-processing settings serialized as a JSON string, suitable for saving to Storage.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = FX.exportSettingsJSON(runtimeScene, behavior);\n`,
+    { group: G_MASTER, expressionType: 'string' }),
+
   // Focus & Distances
   fn('CurrentFocusDistance', 'Current autofocus distance',
     '', 'Live focus plane distance in world units. Follows the autofocus raycast when ' +
@@ -488,6 +565,12 @@ const fxExpressions = [
     '', 'Current Karis HDR bloom brightness multiplier.', 'Expression',
     [],
     `eventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, "bloomIntensity", 0.8);\n`,
+    { group: G_BLOOM, expressionType: 'number' }),
+
+  fn('BloomRadius', 'Bloom blur radius',
+    '', 'Current bloom pyramid blur width.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = FX.getSetting(runtimeScene, behavior, "bloomRadius", 1.0);\n`,
     { group: G_BLOOM, expressionType: 'number' }),
 
   fn('BloomThreshold', 'Bloom luminance threshold',
@@ -561,7 +644,16 @@ const cinematicPostFXBehavior = {
       'Custom',
       {
         group: G_MASTER,
-        extraInformation: ['Custom', 'CyberpunkNeon', 'CinematicMovie', 'HorrorGrim', 'CleanRealistic', 'PerformanceLite']
+        extraInformation: [
+          'Custom',
+          'DefaultGameplay',
+          'CinematicCutscene',
+          'VibrantFantasy',
+          'NightNeon',
+          'HorrorTension',
+          'PerformanceLite',
+          'PlayerCustom'
+        ]
       }),
     prop('MasterIntensity', 'Number', 'Master Intensity',
       'Crossfade between the untouched scene and the fully graded result. 0.0 is a true bypass.',
@@ -661,8 +753,24 @@ const cinematicPostFXBehavior = {
       '0.8',
       { group: G_BLOOM }),
     prop('BloomThreshold', 'Number', 'Bloom Threshold',
-      'Minimum luminance required to emit bloom (0.5 to 2.0).',
-      '0.9',
+      'Minimum LINEAR luminance required to emit bloom, roughly 0.0 to 1.0. This is linear ' +
+      'light, not the value you see on screen: a surface that looks bright grey is only ' +
+      'about 0.6 here, so anything above 1.0 will bloom nothing but emissive materials. ' +
+      'Use 0 to bloom everything, like GDevelop\'s built-in bloom effect does.',
+      '0.3',
+      { group: G_BLOOM }),
+    prop('BloomRadius', 'Number', 'Bloom Radius',
+      'Width of the blur at each step of the bloom pyramid, roughly 0.5 to 3.0. Wider is ' +
+      'softer and noticeably more stable in motion; narrower keeps the glow tight to its ' +
+      'source but can shimmer on fine bright detail.',
+      '1.0',
+      { group: G_BLOOM }),
+    prop('BloomMaxBrightness', 'Number', 'Bloom Firefly Clamp',
+      'Caps how bright any single pixel may be before it enters the bloom pyramid. One very ' +
+      'bright specular glint moving across texels is what makes bloom pulse frame to frame; ' +
+      'lower this if bloom flickers while the camera moves, raise it to let genuine highlights ' +
+      'bloom at full strength.',
+      '12.0',
       { group: G_BLOOM }),
     prop('AnamorphicFlares', 'Number', 'Anamorphic Flares',
       'Horizontal cinema streak flare strength (0.0 to 1.0).',
@@ -725,9 +833,9 @@ const cinematicPostFXBehavior = {
 const extension = {
   name: 'CinematicPostFX3D',
   fullName: 'Cinematic Post-Processing 3D',
-  version: '2.2.0',
-  description: 'Consolidated post-processing suite for GDevelop 5 3D layers: Screen-Space Reflections, Ground Truth Ambient Occlusion, 13-Tap Karis HDR Bloom with anamorphic flares, Bokeh Depth of Field with centre-screen autofocus, camera-velocity Motion Blur, Chromatic Aberration, ACES/Reinhard/Cineon tone mapping and 5 genre presets. All world-space settings are in GDevelop world units.',
-  shortDescription: 'Post-processing suite for 3D layers: SSR, GTAO, Karis Bloom, Bokeh DOF & presets.',
+  version: '2.6.0',
+  description: 'Consolidated post-processing suite for GDevelop 5 3D layers: Screen-Space Reflections, Ground Truth Ambient Occlusion, 13-Tap Karis HDR Bloom with anamorphic flares, Bokeh Depth of Field with centre-screen autofocus, camera-velocity Motion Blur, Chromatic Aberration, ACES/Reinhard/Cineon tone mapping, 6 genre presets, and player custom graphics settings system. All world-space settings are in GDevelop world units.',
+  shortDescription: 'Post-processing suite for 3D layers: SSR, GTAO, Karis Bloom, Bokeh DOF, presets & custom graphics.',
   category: '3D',
   author: 'Twillion',
   previewIconUrl: iconUrl,
@@ -828,6 +936,7 @@ for (const [needle, why] of BAD_KEYS) {
 const VALID_PARAM_TYPES = new Set([
   'object', 'behavior', 'objectList', 'expression', 'string', 'yesorno',
   'model3DResource', 'imageResource', 'stringWithSelector', 'color', 'layer',
+  'scenevar', 'globalvar',
 ]);
 for (const f of cinematicPostFXBehavior.eventsFunctions) {
   for (const p of f.parameters) {
@@ -896,6 +1005,18 @@ for (const prop of cinematicPostFXBehavior.propertyDescriptors) {
 // Write output JSON
 const outPath = path.join(here, 'CinematicPostFX3D.json');
 fs.writeFileSync(outPath, json, 'utf8');
+
+// 8. Execute the generated actions, conditions and expressions against a mock GDevelop
+//    events context. The parse check above only proves they are syntactically valid.
+try {
+  execFileSync(process.execPath, [path.join(here, 'test-extension.mjs')], {
+    cwd: here,
+    stdio: 'inherit',
+  });
+} catch (err) {
+  console.error('\nGenerated extension tests failed.\n');
+  process.exit(1);
+}
 
 const counts = cinematicPostFXBehavior.eventsFunctions.reduce((acc, f) => {
   const k = f.private ? 'lifecycle' : f.functionType;

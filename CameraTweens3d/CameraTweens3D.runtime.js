@@ -153,6 +153,25 @@
     return a + (b - a) * clamp(t, 0.0, 1.0);
   }
 
+  /**
+   * Bound a physical magnitude without flattening it.
+   *
+   * A hard `clamp(x, 0, cap)` makes every input past `cap` produce the identical output, which is
+   * how 1.0.0 ended up giving a 60 u/s drop and a 900 u/s drop the same landing impulse. Scaling
+   * the cap into world units moved the ceiling but did not remove it: at the shipped constants the
+   * pitch dip still flattened above a ~5.5 m/s fall, which is a drop of less than two metres.
+   *
+   * `cap * tanh(x / cap)` is the same curve for small `x` (tanh x = x - x^3/3 + ..., so it is
+   * within 1% of linear while x stays under a fifth of the cap), stays strictly monotonic for
+   * every input, and approaches `cap` asymptotically instead of hitting it. A fall twice as far
+   * always lands harder than the shallower one, however far you fell.
+   */
+  function softSaturate(x, cap) {
+    if (!(cap > 0)) return 0;
+    var v = Math.max(0, x);
+    return cap * Math.tanh(v / cap);
+  }
+
   function degToRad(degrees) {
     return degrees * (Math.PI / 180);
   }
@@ -202,7 +221,8 @@
     landingPitchDip: 3.0,
     landingMinFallSpeed: 2.5,
     landingSpringStiffness: 14.0,
-    stairJitterIntensity: 0.015,
+    // Opt-in: fine contact noise can read as camera instability in smooth FPS controllers.
+    stairJitterIntensity: 0.0,
 
     // Breathing & idle
     breathingIntensity: 1.0,
@@ -742,6 +762,8 @@
         state.groundSource = beh;
         continue;
       }
+      // `isOnFloor` covers Physics Character 3D, Physics Car 3D and the Platformer behavior.
+      // Nothing in stock GDJS defines `isGrounded`; it is here for hand-written behaviors.
       if (!state.groundSource) {
         if (typeof beh.isOnFloor === 'function') state.groundSource = beh;
         else if (typeof beh.isGrounded === 'function') state.groundSource = beh;
@@ -893,8 +915,13 @@
     var shock = state.landingShockIntensity;
     if (shock <= 0) return; // "Off" means off — pitch dip included.
 
-    var compression = clamp(speed * 0.04 * shock * state.masterMotionScale, 0.0, 0.4);
-    var pitchDip = clamp(speed * 0.6 * state.landingPitchDip * shock * state.masterMotionScale, 0.0, 10.0);
+    // The caps sit far enough above the plausible gameplay range (a hard landing is 7-8 m/s, a
+    // long fall 15, a death fall 30) that ordinary landings stay within ~1% of the old linear
+    // response, while an enormous fall converges instead of clipping. 1.0.0's hard clamps were
+    // 0.4 and 10, reached at 10 m/s and 5.5 m/s respectively.
+    var master = shock * state.masterMotionScale;
+    var compression = softSaturate(speed * 0.04 * master, 1.6);
+    var pitchDip = softSaturate(speed * 0.6 * state.landingPitchDip * master, 60.0);
 
     state.landingYVel -= compression * 18.0;
     state.landingPitchVel += pitchDip * 15.0;
@@ -1198,6 +1225,11 @@
       applyProfile(state, SHAKE_PROFILES, options.shakeProfile);
       applyProfile(state, SPEED_FOV_PROFILES, options.speedRushFOVProfile);
 
+      // This explicit property is applied after the genre preset so the editor value always wins.
+      if (options.terrainMicroJitterIntensity !== undefined) {
+        state.stairJitterIntensity = Math.max(0, options.terrainMicroJitterIntensity);
+      }
+
       if (options.motionSicknessMode !== undefined) {
         NS.setComfortChoice(state, options.motionSicknessMode);
       }
@@ -1352,7 +1384,12 @@
       }
     },
 
-    /** pitch/yaw in degrees, kickbackZ in metres. */
+    /**
+     * pitch and yaw are degrees; kickbackZ is **world units**, like every other length the user
+     * types or reads back. Up to 1.2.1 this one argument was the sole exception — it was taken as
+     * metres while `RecoilKickbackZ()` reported world units, so feeding the expression back into
+     * the action overshot by a factor of `WorldUnitsPerMeter`.
+     */
     applyRecoil: function (behavior, pitch, yaw, kickbackZ) {
       var state = stateOf(behavior);
       if (!state) return;
@@ -1362,7 +1399,10 @@
       var p = (pitch !== undefined ? pitch : 2.0) * state.recoilPitchMultiplier * scale;
       var yRand = (Math.random() - 0.5) * 2.0 * state.recoilYawRandomness;
       var y = ((yaw !== undefined ? yaw : 0.0) + yRand) * scale;
-      var z = (kickbackZ !== undefined ? kickbackZ : state.recoilKickbackZ) * scale;
+      var kickMetres = kickbackZ !== undefined
+        ? kickbackZ / Math.max(0.0001, state.unitScale)
+        : state.recoilKickbackZ;
+      var z = kickMetres * scale;
 
       state.recoilPitchVel += p * 15.0;
       state.recoilYawVel += y * 15.0;
@@ -1476,6 +1516,11 @@
     setBreathingIntensity: function (behavior, intensity) {
       var state = stateOf(behavior);
       if (state) state.breathingIntensity = Math.max(0.0, intensity);
+    },
+
+    setTerrainMicroJitterIntensity: function (behavior, intensity) {
+      var state = stateOf(behavior);
+      if (state) state.stairJitterIntensity = Math.max(0.0, intensity);
     },
 
     /** Negative values invert the lean, for rigs whose sideways axis runs the other way. */
@@ -1626,6 +1671,11 @@
     getBreathingIntensity: function (behavior) {
       var state = stateOf(behavior);
       return state ? state.breathingIntensity : 1.0;
+    },
+
+    getTerrainMicroJitterIntensity: function (behavior) {
+      var state = stateOf(behavior);
+      return state ? state.stairJitterIntensity : 0.0;
     },
 
     getBaseFOV: function (behavior) {

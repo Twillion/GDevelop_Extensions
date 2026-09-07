@@ -289,7 +289,9 @@ function makeBehavior(overrides = {}) {
     SSRRaySteps: 32,
     EnableBloom: false,
     BloomIntensity: 0.8,
-    BloomThreshold: 0.9,
+    BloomThreshold: 0.3,
+    BloomRadius: 1.0,
+    BloomMaxBrightness: 12.0,
     AnamorphicFlares: 0.3,
     FlareTintColor: '100;180;255',
     EnableDOF: false,
@@ -412,7 +414,28 @@ console.log('\n--- 2. Circle of Confusion, tone curves, GTAO integral ---');
 
   assert.strictEqual(FX.applyReinhard(1, 1, 1)[0], 0.5, 'Reinhard(1) is 0.5');
   assert.ok(FX.applyACESFilmic(10, 10, 10)[0] > 0.95, 'ACES compresses HDR into range');
-  ok('tone mapping curves behave');
+  // Cineon lifts blacks and has a toe, so it must not map 0 to 0 the way the others do.
+  assert.ok(FX.applyCineon(0, 0, 0)[0] === 0, 'Cineon clamps its toe at black');
+  assert.ok(FX.applyCineon(0.5, 0.5, 0.5)[0] > FX.applyCineon(0.2, 0.2, 0.2)[0],
+    'Cineon is monotonic');
+  assert.ok(FX.applyCineon(20, 20, 20)[0] <= 1.0, 'Cineon compresses HDR into range');
+  ok('all three tone mapping curves are monotonic and stay in range');
+
+  // The anti-firefly weight: a blown-out specular sample must count for less than a dim one,
+  // or a single bright pixel dominates the whole bloom mip.
+  assert.ok(FX.karisLumaWeight(0.1, 0.1, 0.1) > FX.karisLumaWeight(5, 5, 5),
+    'bright samples receive a lower weight');
+  assert.ok(FX.karisLumaWeight(0, 0, 0) === 1, 'black is unweighted');
+  ok('the Karis anti-firefly weight falls off with luminance');
+
+  // FlareTintColor arrives as a GDevelop "r;g;b" string, but the API also accepts hex,
+  // packed integers and arrays.
+  assert.deepStrictEqual(FX.parseColor('80;160;255'), [80, 160, 255], 'semicolon triples');
+  assert.deepStrictEqual(FX.parseColor([255, 100, 50]), [255, 100, 50], 'arrays pass through');
+  assert.deepStrictEqual(FX.parseColor(0xff8040), [255, 128, 64], 'packed integers');
+  assert.deepStrictEqual(FX.parseColor(undefined, [1, 2, 3]), [1, 2, 3], 'falls back when unset');
+  assert.deepStrictEqual(FX.parseColor('nonsense', [4, 5, 6]), [4, 5, 6], 'falls back on garbage');
+  ok('parseColor handles every form a colour property can arrive in');
 
   // Fully open hemisphere (theta = +-pi/2, gamma = 0) integrates to full visibility.
   const open = FX.computeGTAOVisibility(Math.PI / 2, -Math.PI / 2, 0);
@@ -436,7 +459,7 @@ console.log('\n--- 2. Circle of Confusion, tone curves, GTAO integral ---');
 
 console.log('\n--- 3. Preset definitions ---');
 {
-  const names = ['CyberpunkNeon', 'CinematicMovie', 'HorrorGrim', 'CleanRealistic', 'PerformanceLite'];
+  const names = ['DefaultGameplay', 'CinematicCutscene', 'VibrantFantasy', 'NightNeon', 'HorrorTension', 'PerformanceLite', 'PlayerCustom'];
   for (const name of names) {
     const p = FX.PRESETS[name];
     assert.ok(p, `${name} exists`);
@@ -449,15 +472,27 @@ console.log('\n--- 3. Preset definitions ---');
     assert.ok(p.gtaoRadius >= 10, `${name}.gtaoRadius is scene scale (got ${p.gtaoRadius})`);
     assert.ok(p.manualFocusDistance >= 100, `${name}.manualFocusDistance is scene scale`);
     assert.ok(p.ssrMaxDistance >= 100, `${name}.ssrMaxDistance is scene scale`);
+    // The composer buffer is LINEAR HDR: a surface that displays as bright grey is only
+    // about 0.6 here, so a threshold at or above 1.0 blooms nothing but emissive materials.
+    // GDevelop's own bloom effect ships with a threshold of 0 for this reason.
+    assert.ok(typeof p.bloomRadius === 'number' && p.bloomRadius > 0,
+      `${name}.bloomRadius must be set`);
+    assert.ok(typeof p.bloomMaxBrightness === 'number' && p.bloomMaxBrightness > 1,
+      `${name}.bloomMaxBrightness must be set`);
+    assert.ok(p.bloomThreshold < 0.8,
+      `${name}.bloomThreshold must be a linear-light value that real geometry can reach ` +
+      `(got ${p.bloomThreshold})`);
   }
-  ok('all 5 presets are complete and use GDevelop world-unit scale');
+  assert.ok(FX.DEFAULT_SETTINGS.bloomThreshold < 0.8,
+    'the default bloom threshold must be reachable in linear light');
+  ok('all 6 presets and PlayerCustom are complete, use world-unit scale, and can actually bloom');
 
-  // The docs claim DOF and motion blur per preset; the old presets had them false everywhere.
-  assert.ok(FX.PRESETS.CinematicMovie.enableDOF && FX.PRESETS.CinematicMovie.autofocus,
-    'CinematicMovie advertises autofocus DOF');
-  assert.ok(FX.PRESETS.HorrorGrim.enableDOF && !FX.PRESETS.HorrorGrim.autofocus,
-    'HorrorGrim advertises a fixed close focus');
-  assert.ok(FX.PRESETS.CinematicMovie.enableMotionBlur, 'CinematicMovie advertises motion blur');
+  // The docs claim DOF and motion blur per preset.
+  assert.ok(FX.PRESETS.CinematicCutscene.enableDOF && FX.PRESETS.CinematicCutscene.autofocus,
+    'CinematicCutscene advertises autofocus DOF');
+  assert.ok(FX.PRESETS.HorrorTension.enableDOF && FX.PRESETS.HorrorTension.autofocus,
+    'HorrorTension advertises autofocus DOF');
+  assert.ok(FX.PRESETS.CinematicCutscene.enableMotionBlur, 'CinematicCutscene advertises motion blur');
   assert.ok(!FX.PRESETS.PerformanceLite.enableGTAO && !FX.PRESETS.PerformanceLite.enableSSR,
     'PerformanceLite drops the expensive passes');
   ok('presets match what the documentation claims about them');
@@ -556,6 +591,45 @@ console.log('\n--- 5. Which passes actually run ---');
   assert.strictEqual(downs[0].uniforms.uIsFirstMip, 1, 'first mip applies the threshold');
   assert.ok(downs.slice(1).every((d) => d.uniforms.uIsFirstMip === 0), 'later mips do not');
   ok('the bloom threshold is applied to the first mip only');
+
+  // Both filters sample the source texture, so their taps must be in SOURCE texels. Passing
+  // the destination's spread the downsample twice too wide and collapsed the tent upsample's
+  // offsets to sub-texel distances, leaving it doing nothing but bilinear.
+  const downSources = [[1920, 1080], ...pipeline.bloomDownTargets.slice(0, -1).map((t) => [t.width, t.height])];
+  downs.forEach((d, i) => {
+    assert.ok(Math.abs(d.uniforms.uTexelSize.x - 1 / downSources[i][0]) < 1e-12,
+      `downsample ${i} must use its source texel width (${downSources[i][0]}px)`);
+    assert.ok(Math.abs(d.uniforms.uTexelSize.y - 1 / downSources[i][1]) < 1e-12,
+      `downsample ${i} must use its source texel height`);
+  });
+  ok('every bloom downsample samples with its source texel size, not the destination\'s');
+
+  // Upsample u reads the mip one level below it.
+  ups.forEach((up, i) => {
+    const level = pipeline.bloomUpTargets.length - 2 - i;
+    const src = pipeline.bloomDownTargets[level + 1];
+    assert.ok(Math.abs(up.uniforms.uTexelSize.x - 1 / src.width) < 1e-12,
+      `upsample at level ${level} must use its source texel width (${src.width}px)`);
+  });
+  ok('every bloom upsample samples with its source texel size, so the tent actually blurs');
+
+  // Bloom's stability in motion comes entirely from the progressive blur. The clamp bounds
+  // how much one very bright pixel can swing a mip as it moves between texels, and the
+  // radius controls how wide each blur step is.
+  // Bloom must sample the scene from BEFORE the defocus. Reading the DOF output couples glow
+  // brightness to the focus plane, which moves constantly under autofocus: a highlight that
+  // spreads when defocused drops under the bloom threshold, so the glow switches off and back
+  // on as focus drifts. That is a bistable flicker driven by focus, not by the pyramid.
+  assert.ok(draws.some((d) => d.kind === 'dof'), 'DOF ran in this configuration');
+  assert.notStrictEqual(downs[0].uniforms.tDiffuse, pipeline.dofTarget.texture,
+    'the bloom pyramid must not read the depth-of-field output');
+  ok('bloom samples the scene from before the defocus, so focus drift cannot pulse it');
+
+  assert.ok(downs[0].uniforms.uMaxBrightness > 0,
+    'the first mip receives a firefly clamp');
+  assert.ok(ups.every((u) => u.uniforms.uBloomRadius > 0),
+    'every upsample receives a blur radius');
+  ok('the bloom pyramid is given a firefly clamp and a blur radius');
 
   // Without the additive term the pyramid collapses to the smallest mip blurred N times
   // and every bit of mid-frequency glow is lost.
@@ -959,11 +1033,11 @@ console.log('\n--- 7. Preset property wiring ---');
 
   // A named preset must apply AND write back, or the per-frame property sync reverts it.
   const h2 = makeHarness();
-  const preset = makeBehavior({ Preset: 'CyberpunkNeon', BloomIntensity: 0.1 });
+  const preset = makeBehavior({ Preset: 'NightNeon', BloomIntensity: 0.1 });
   const { pipeline } = run(h2, preset, { frames: 3 });
-  assert.strictEqual(preset._properties.BloomIntensity, FX.PRESETS.CyberpunkNeon.bloomIntensity,
+  assert.strictEqual(preset._properties.BloomIntensity, FX.PRESETS.NightNeon.bloomIntensity,
     'the preset was written back into the behavior properties');
-  assert.strictEqual(pipeline.settings.bloomIntensity, FX.PRESETS.CyberpunkNeon.bloomIntensity,
+  assert.strictEqual(pipeline.settings.bloomIntensity, FX.PRESETS.NightNeon.bloomIntensity,
     'and it survives three frames of property sync');
   assert.strictEqual(pipeline.settings.enableSSR, true, 'preset toggles survive too');
   ok('a named Preset property applies at creation and survives the per-frame sync');
@@ -972,12 +1046,64 @@ console.log('\n--- 7. Preset property wiring ---');
   const h3 = makeHarness();
   const acted = makeBehavior();
   const r3 = run(h3, acted);
-  FX.applyPreset(h3.runtimeScene, acted, 'HorrorGrim');
+  FX.applyPreset(h3.runtimeScene, acted, 'HorrorTension');
   FX.syncBehaviorProperties(h3.runtimeScene, {}, acted);
-  assert.strictEqual(r3.pipeline.settings.gtaoIntensity, FX.PRESETS.HorrorGrim.gtaoIntensity,
+  assert.strictEqual(r3.pipeline.settings.gtaoIntensity, FX.PRESETS.HorrorTension.gtaoIntensity,
     'ApplyPreset survives the next sync');
-  assert.strictEqual(acted._properties.Preset, 'HorrorGrim', 'the Preset property is updated too');
+  assert.strictEqual(acted._properties.Preset, 'HorrorTension', 'the Preset property is updated too');
   ok('the ApplyPreset action writes through to the behavior properties');
+}
+
+/* ============================================================ 7b. Player Custom Graphics & Variable Serialization */
+
+console.log('\n--- 7b. Player custom graphics & variable serialization ---');
+{
+  const h = makeHarness();
+  const behavior = makeBehavior();
+  const { pipeline } = run(h, behavior);
+
+  // 1. Custom preset slot save and load
+  pipeline.settings.bloomIntensity = 2.75;
+  pipeline.settings.gtaoRadius = 42.0;
+  FX.saveCustomPreset(h.runtimeScene, behavior, 'Slot_Alpha');
+  assert.ok(FX.hasCustomPreset('Slot_Alpha'), 'custom preset exists');
+
+  // Change settings to something else
+  pipeline.settings.bloomIntensity = 0.1;
+  pipeline.settings.gtaoRadius = 100.0;
+  FX.applyCustomPreset(h.runtimeScene, behavior, 'Slot_Alpha');
+  assert.strictEqual(pipeline.settings.bloomIntensity, 2.75, 'applyCustomPreset restored bloom');
+  assert.strictEqual(pipeline.settings.gtaoRadius, 42.0, 'applyCustomPreset restored gtao radius');
+  assert.strictEqual(behavior._properties.BloomIntensity, 2.75, 'behavior property written back');
+  ok('custom preset slots save, load, and write back to behavior');
+
+  // 2. JSON export and import
+  const jsonStr = FX.exportSettingsJSON(h.runtimeScene, behavior);
+  assert.ok(typeof jsonStr === 'string' && jsonStr.includes('"bloomIntensity":2.75'),
+    'exportSettingsJSON serialized active settings');
+
+  pipeline.settings.bloomIntensity = 0.05;
+  FX.applySettingsJSON(h.runtimeScene, behavior, jsonStr);
+  assert.strictEqual(pipeline.settings.bloomIntensity, 2.75, 'applySettingsJSON restored settings');
+  ok('exportSettingsJSON and applySettingsJSON round-trip cleanly');
+
+  // 3. GDevelop variable save and load
+  let varStorage = {};
+  const mockVar = {
+    toJSObject: () => varStorage,
+    fromJSObject: (obj) => { varStorage = JSON.parse(JSON.stringify(obj)); },
+  };
+
+  pipeline.settings.bloomIntensity = 3.14;
+  pipeline.settings.gtaoRadius = 67.0;
+  FX.saveSettingsToVariable(h.runtimeScene, behavior, mockVar);
+  assert.strictEqual(varStorage.bloomIntensity, 3.14, 'saved settings into GDevelop variable');
+
+  pipeline.settings.bloomIntensity = 0.2;
+  FX.applySettingsFromVariable(h.runtimeScene, behavior, mockVar);
+  assert.strictEqual(pipeline.settings.bloomIntensity, 3.14, 'applied settings from GDevelop variable');
+  assert.strictEqual(behavior._properties.BloomIntensity, 3.14, 'variable apply writes back to behavior');
+  ok('saveSettingsToVariable and applySettingsFromVariable round-trip through GDevelop structures');
 }
 
 /* ============================================================ 8. Autofocus */
@@ -988,7 +1114,10 @@ console.log('\n--- 8. Autofocus ---');
   const behavior = makeBehavior({ EnableDOF: true, Autofocus: true, ManualFocusDistance: 700 });
   raycastHitDistance = 520;
   raycastTargets = null;
-  const { pipeline, draws } = run(h, behavior, { frames: 30 });
+  const r = run(h, behavior, { frames: 12 });
+  const pipeline = r.pipeline;
+  const draws = r.draws;
+  const partway = pipeline.activeFocusDistance;
 
   assert.ok(raycastTargets, 'a raycast was performed');
   // The layer's three scene contains the 2D rendering plane at z=0 with renderOrder MAX,
@@ -1000,19 +1129,32 @@ console.log('\n--- 8. Autofocus ---');
   assert.strictEqual(FX.isAutofocusTracking(h.runtimeScene, behavior), true, 'tracking reported');
   ok('isAutofocusTracking reports a real lock, not a hardcoded false');
 
-  const focus = FX.getCurrentFocusDistance(h.runtimeScene, behavior);
-  assert.ok(Math.abs(focus - 520) < 5, `focus eased onto the hit distance (got ${focus.toFixed(1)})`);
-  ok('the focus plane eases onto the raycast hit distance');
+  // Deliberately gradual: a fast ease turns every crosshair edge-crossing into a visible
+  // lurch, and while DOF feeds nothing downstream any more, the pull itself should still read
+  // as a focus pull rather than a snap.
+  assert.ok(partway > 520 && partway < 700,
+    `focus is still travelling after 12 frames (got ${partway.toFixed(1)})`);
 
-  const dof = draws.filter((d) => d.kind === 'dof').pop();
-  assert.ok(Math.abs(dof.uniforms.uFocusDistance - 520) < 5, 'the DOF shader got the tracked distance');
+  for (let i = 0; i < 60; i++) {
+    FX.syncBehaviorProperties(h.runtimeScene, {}, behavior);
+    FX.stepBehavior(h.runtimeScene, {}, behavior);
+    r.pass.render(h.renderer, h.composer.renderTarget1, h.composer.renderTarget2, 0.016, false);
+  }
+  const focus = FX.getCurrentFocusDistance(h.runtimeScene, behavior);
+  assert.ok(Math.abs(focus - 520) < 5, `focus settled on the hit distance (got ${focus.toFixed(1)})`);
+  ok('the focus plane pulls gradually onto the raycast hit distance and settles there');
+
+  const settledDraws = labelDraws(pipeline, h.draws);
+  const dof = settledDraws.filter((d) => d.kind === 'dof').pop();
+  assert.ok(Math.abs(dof.uniforms.uFocusDistance - 520) < 5,
+    `the DOF shader got the tracked distance (got ${dof.uniforms.uFocusDistance.toFixed(1)})`);
   ok('the tracked distance reaches the DOF shader, not the manual value');
 
   // With nothing to hit, it must fall back rather than focus on nothing.
   const h2 = makeHarness();
   h2.threeGroup.children.length = 0;
   const b2 = makeBehavior({ EnableDOF: true, Autofocus: true, ManualFocusDistance: 900 });
-  const r2 = run(h2, b2, { frames: 30 });
+  const r2 = run(h2, b2, { frames: 90 });
   assert.strictEqual(FX.isAutofocusTracking(h2.runtimeScene, b2), false, 'no lock on an empty scene');
   assert.ok(Math.abs(r2.pipeline.activeFocusDistance - 900) < 5, 'fell back to the manual distance');
   ok('autofocus falls back to the manual distance when nothing is in front of the camera');

@@ -44,6 +44,11 @@
     unitsPerMetre: parseFloat(q0.get('upm') || '100'),
     waveHeightScale: parseFloat(q0.get('wh') || '1'),
     tileSize: parseFloat(q0.get('tile') || '0') || undefined,
+    // ?sw= and ?sa= drive the cross swell: how much of the sea is the second train, and at what
+    // angle to the wind. ?sw=0 is a single-direction sea, which is what "the waves cannot even
+    // smack against each other" looked like.
+    swellWeight: q0.has('sw') ? parseFloat(q0.get('sw')) : undefined,
+    swellAngle: q0.has('sa') ? parseFloat(q0.get('sa')) : undefined,
   });
   var axes = {
     style: 'Sea of Thieves', subStyle: 'Salt Water', waterLook: 'Choppy', lighting: 'Golden Hour',

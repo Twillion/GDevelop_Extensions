@@ -81,35 +81,37 @@
    */
 
   var PRESETS = {
-    CyberpunkNeon: {
+    DefaultGameplay: {
       masterIntensity: 1.0,
       effectQuality: 'Half',
       toneMapping: 'ACESFilmic',
       enableGTAO: true,
-      gtaoRadius: 60.0,
+      gtaoRadius: 55.0,
       gtaoIntensity: 1.0,
       gtaoMultiBounce: true,
       enableSSR: true,
-      ssrIntensity: 0.9,
-      ssrMaxDistance: 500.0,
+      ssrIntensity: 0.5,
+      ssrMaxDistance: 400.0,
       ssrSurfaces: 'MaterialBased',
-      ssrFresnel: 0.5,
+      ssrFresnel: 0.6,
       ssrRaySteps: 32,
       enableBloom: true,
-      bloomIntensity: 1.5,
-      bloomThreshold: 0.8,
-      anamorphicFlares: 0.6,
-      flareTintColor: '80;160;255',
-      enableDOF: true,
-      autofocus: true,
+      bloomIntensity: 0.5,
+      bloomThreshold: 0.4,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
+      anamorphicFlares: 0.0,
+      flareTintColor: '255;255;255',
+      enableDOF: false,
+      autofocus: false,
       manualFocusDistance: 700.0,
-      apertureFStop: 5.6,
-      maxBokehRadius: 8.0,
+      apertureFStop: 2.8,
+      maxBokehRadius: 10.0,
       enableMotionBlur: true,
-      motionBlurStrength: 0.3,
-      chromaticAberration: 0.004,
+      motionBlurStrength: 0.15,
+      chromaticAberration: 0.001,
     },
-    CinematicMovie: {
+    CinematicCutscene: {
       masterIntensity: 1.0,
       effectQuality: 'Half',
       toneMapping: 'ACESFilmic',
@@ -125,25 +127,87 @@
       ssrRaySteps: 32,
       enableBloom: true,
       bloomIntensity: 0.8,
-      bloomThreshold: 0.9,
-      anamorphicFlares: 0.2,
+      bloomThreshold: 0.38,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
+      anamorphicFlares: 0.25,
       flareTintColor: '100;180;255',
       enableDOF: true,
       autofocus: true,
       manualFocusDistance: 700.0,
-      apertureFStop: 2.4,
-      maxBokehRadius: 12.0,
+      apertureFStop: 2.8,
+      maxBokehRadius: 10.0,
       enableMotionBlur: true,
-      motionBlurStrength: 0.5,
+      motionBlurStrength: 0.4,
       chromaticAberration: 0.002,
     },
-    HorrorGrim: {
+    VibrantFantasy: {
       masterIntensity: 1.0,
       effectQuality: 'Half',
       toneMapping: 'ACESFilmic',
       enableGTAO: true,
-      gtaoRadius: 90.0,
-      gtaoIntensity: 1.8,
+      gtaoRadius: 55.0,
+      gtaoIntensity: 1.1,
+      gtaoMultiBounce: true,
+      enableSSR: true,
+      ssrIntensity: 0.6,
+      ssrMaxDistance: 400.0,
+      ssrSurfaces: 'MaterialBased',
+      ssrFresnel: 0.6,
+      ssrRaySteps: 32,
+      enableBloom: true,
+      bloomIntensity: 0.85,
+      bloomThreshold: 0.35,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
+      anamorphicFlares: 0.0,
+      flareTintColor: '255;235;200',
+      enableDOF: false,
+      autofocus: false,
+      manualFocusDistance: 700.0,
+      apertureFStop: 2.8,
+      maxBokehRadius: 10.0,
+      enableMotionBlur: true,
+      motionBlurStrength: 0.15,
+      chromaticAberration: 0.0,
+    },
+    NightNeon: {
+      masterIntensity: 1.0,
+      effectQuality: 'Half',
+      toneMapping: 'ACESFilmic',
+      enableGTAO: true,
+      gtaoRadius: 60.0,
+      gtaoIntensity: 1.0,
+      gtaoMultiBounce: true,
+      enableSSR: true,
+      ssrIntensity: 0.85,
+      ssrMaxDistance: 500.0,
+      ssrSurfaces: 'MaterialBased',
+      ssrFresnel: 0.5,
+      ssrRaySteps: 32,
+      enableBloom: true,
+      bloomIntensity: 1.2,
+      bloomThreshold: 0.28,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
+      anamorphicFlares: 0.35,
+      flareTintColor: '100;170;255',
+      enableDOF: true,
+      autofocus: true,
+      manualFocusDistance: 700.0,
+      apertureFStop: 5.6,
+      maxBokehRadius: 8.0,
+      enableMotionBlur: true,
+      motionBlurStrength: 0.3,
+      chromaticAberration: 0.003,
+    },
+    HorrorTension: {
+      masterIntensity: 1.0,
+      effectQuality: 'Half',
+      toneMapping: 'ACESFilmic',
+      enableGTAO: true,
+      gtaoRadius: 85.0,
+      gtaoIntensity: 1.6,
       gtaoMultiBounce: false,
       enableSSR: false,
       ssrIntensity: 0.0,
@@ -153,45 +217,19 @@
       ssrRaySteps: 16,
       enableBloom: true,
       bloomIntensity: 0.3,
-      bloomThreshold: 1.2,
+      bloomThreshold: 0.55,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
       anamorphicFlares: 0.0,
       flareTintColor: '255;255;255',
       enableDOF: true,
-      autofocus: false,
+      autofocus: true,
       manualFocusDistance: 320.0,
-      apertureFStop: 1.8,
-      maxBokehRadius: 14.0,
+      apertureFStop: 3.2,
+      maxBokehRadius: 8.0,
       enableMotionBlur: true,
       motionBlurStrength: 0.2,
-      chromaticAberration: 0.006,
-    },
-    CleanRealistic: {
-      masterIntensity: 1.0,
-      effectQuality: 'Half',
-      toneMapping: 'ACESFilmic',
-      enableGTAO: true,
-      gtaoRadius: 55.0,
-      gtaoIntensity: 1.0,
-      gtaoMultiBounce: true,
-      enableSSR: true,
-      ssrIntensity: 0.6,
-      ssrMaxDistance: 400.0,
-      ssrSurfaces: 'MaterialBased',
-      ssrFresnel: 0.6,
-      ssrRaySteps: 32,
-      enableBloom: true,
-      bloomIntensity: 0.6,
-      bloomThreshold: 0.9,
-      anamorphicFlares: 0.0,
-      flareTintColor: '255;255;255',
-      enableDOF: false,
-      autofocus: false,
-      manualFocusDistance: 700.0,
-      apertureFStop: 2.8,
-      maxBokehRadius: 10.0,
-      enableMotionBlur: true,
-      motionBlurStrength: 0.2,
-      chromaticAberration: 0.001,
+      chromaticAberration: 0.004,
     },
     PerformanceLite: {
       masterIntensity: 1.0,
@@ -209,7 +247,9 @@
       ssrRaySteps: 16,
       enableBloom: true,
       bloomIntensity: 0.5,
-      bloomThreshold: 1.0,
+      bloomThreshold: 0.5,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
       anamorphicFlares: 0.0,
       flareTintColor: '255;255;255',
       enableDOF: false,
@@ -220,6 +260,36 @@
       enableMotionBlur: false,
       motionBlurStrength: 0.0,
       chromaticAberration: 0.0,
+    },
+    PlayerCustom: {
+      masterIntensity: 1.0,
+      effectQuality: 'Half',
+      toneMapping: 'ACESFilmic',
+      enableGTAO: true,
+      gtaoRadius: 55.0,
+      gtaoIntensity: 1.0,
+      gtaoMultiBounce: true,
+      enableSSR: true,
+      ssrIntensity: 0.5,
+      ssrMaxDistance: 400.0,
+      ssrSurfaces: 'MaterialBased',
+      ssrFresnel: 0.6,
+      ssrRaySteps: 32,
+      enableBloom: true,
+      bloomIntensity: 0.5,
+      bloomThreshold: 0.4,
+      bloomRadius: 1.0,
+      bloomMaxBrightness: 12.0,
+      anamorphicFlares: 0.0,
+      flareTintColor: '255;255;255',
+      enableDOF: false,
+      autofocus: false,
+      manualFocusDistance: 700.0,
+      apertureFStop: 2.8,
+      maxBokehRadius: 10.0,
+      enableMotionBlur: true,
+      motionBlurStrength: 0.15,
+      chromaticAberration: 0.001,
     }
   };
 
@@ -240,7 +310,9 @@
     effectQuality: 'Half',
     enableBloom: false,
     bloomIntensity: 0.8,
-    bloomThreshold: 0.9,
+    bloomThreshold: 0.3,
+    bloomRadius: 1.0,
+    bloomMaxBrightness: 12.0,
     anamorphicFlares: 0.3,
     flareTintColor: '100;180;255',
     enableDOF: false,
@@ -623,7 +695,12 @@
     '  vec3 V = normalize(P);',
     '  vec3 R = normalize(reflect(V, N));',
     '',
-    '  if (R.z > 0.0) {',
+    '  // Rays pointing back toward the camera cannot be marched forward in screen space.',
+    '  // Fading rather than rejecting on a sign test matters because this boundary sits',
+    '  // where the depth-reconstructed normal is noisiest, and a hard test there makes',
+    '  // neighbouring pixels flip between reflecting and not on consecutive frames.',
+    '  float grazingFade = 1.0 - smoothstep(-0.15, 0.0, R.z);',
+    '  if (grazingFade < 0.01) {',
     '    gl_FragColor = vec4(0.0);',
     '    return;',
     '  }',
@@ -704,7 +781,7 @@
     '  float fresnel = mix(1.0, schlick, clamp(uFresnel, 0.0, 1.0));',
     '',
     '  vec4 reflectedColor = texture2D(tColor, hitUV);',
-    '  float alpha = clamp(uIntensity * edgeFade * distFade * fresnel * reflectivity, 0.0, 1.0);',
+    '  float alpha = clamp(uIntensity * edgeFade * distFade * fresnel * reflectivity * grazingFade, 0.0, 1.0);',
     '',
     '  gl_FragColor = vec4(reflectedColor.rgb, alpha);',
     '}'
@@ -719,6 +796,7 @@
     'uniform sampler2D tDiffuse;',
     'uniform vec2 uTexelSize;',
     'uniform float uThreshold;',
+    'uniform float uMaxBrightness;',
     'uniform int uIsFirstMip;',
     '',
     'float luma(vec3 c) {',
@@ -736,23 +814,31 @@
     '  return (c1 + c2 + c3 + c4) * 0.25;',
     '}',
     '',
+    'vec3 prefilter(vec3 c) {',
+    '  // Bound how much a single very bright sample can swing the mip it lands in. Without',
+    '  // this, one specular glint moving across texels makes the whole bloom pulse.',
+    '  if (uIsFirstMip == 0) return c;',
+    '  float m = max(c.r, max(c.g, c.b));',
+    '  return m > uMaxBrightness ? c * (uMaxBrightness / m) : c;',
+    '}',
+    '',
     'void main() {',
     '  vec2 x = vec2(uTexelSize.x, 0.0);',
     '  vec2 y = vec2(0.0, uTexelSize.y);',
     '',
-    '  vec3 a = texture2D(tDiffuse, vUv - x - y).rgb;',
-    '  vec3 b = texture2D(tDiffuse, vUv + x - y).rgb;',
-    '  vec3 c = texture2D(tDiffuse, vUv).rgb;',
-    '  vec3 d = texture2D(tDiffuse, vUv - 2.0 * x - 2.0 * y).rgb;',
-    '  vec3 e = texture2D(tDiffuse, vUv - 2.0 * y).rgb;',
-    '  vec3 f = texture2D(tDiffuse, vUv + 2.0 * x - 2.0 * y).rgb;',
-    '  vec3 g = texture2D(tDiffuse, vUv - 2.0 * x).rgb;',
-    '  vec3 h = texture2D(tDiffuse, vUv + 2.0 * x).rgb;',
-    '  vec3 i = texture2D(tDiffuse, vUv - x + y).rgb;',
-    '  vec3 j = texture2D(tDiffuse, vUv + x + y).rgb;',
-    '  vec3 k = texture2D(tDiffuse, vUv - 2.0 * x + 2.0 * y).rgb;',
-    '  vec3 l = texture2D(tDiffuse, vUv + 2.0 * y).rgb;',
-    '  vec3 m = texture2D(tDiffuse, vUv + 2.0 * x + 2.0 * y).rgb;',
+    '  vec3 a = prefilter(texture2D(tDiffuse, vUv - x - y).rgb);',
+    '  vec3 b = prefilter(texture2D(tDiffuse, vUv + x - y).rgb);',
+    '  vec3 c = prefilter(texture2D(tDiffuse, vUv).rgb);',
+    '  vec3 d = prefilter(texture2D(tDiffuse, vUv - 2.0 * x - 2.0 * y).rgb);',
+    '  vec3 e = prefilter(texture2D(tDiffuse, vUv - 2.0 * y).rgb);',
+    '  vec3 f = prefilter(texture2D(tDiffuse, vUv + 2.0 * x - 2.0 * y).rgb);',
+    '  vec3 g = prefilter(texture2D(tDiffuse, vUv - 2.0 * x).rgb);',
+    '  vec3 h = prefilter(texture2D(tDiffuse, vUv + 2.0 * x).rgb);',
+    '  vec3 i = prefilter(texture2D(tDiffuse, vUv - x + y).rgb);',
+    '  vec3 j = prefilter(texture2D(tDiffuse, vUv + x + y).rgb);',
+    '  vec3 k = prefilter(texture2D(tDiffuse, vUv - 2.0 * x + 2.0 * y).rgb);',
+    '  vec3 l = prefilter(texture2D(tDiffuse, vUv + 2.0 * y).rgb);',
+    '  vec3 m = prefilter(texture2D(tDiffuse, vUv + 2.0 * x + 2.0 * y).rgb);',
     '',
     '  vec3 box1 = karisBox(a, b, i, j);',
     '  vec3 box2 = karisBox(d, e, g, c);',
@@ -763,6 +849,9 @@
     '  vec3 downsample = box1 * 0.5 + (box2 + box3 + box4 + box5) * 0.125;',
     '',
     '  if (uIsFirstMip == 1) {',
+    '    // Threshold is in LINEAR light, not display sRGB: the composer buffer is linear HDR',
+    '    // and OutputPass converts at the very end. A surface that looks bright grey on',
+    '    // screen is only about 0.6 here, so useful thresholds are well below 1.0.',
     '    float brightness = max(downsample.r, max(downsample.g, downsample.b));',
     '    float soft = brightness - uThreshold;',
     '    if (soft < 0.0) downsample = vec3(0.0);',
@@ -1127,14 +1216,25 @@
     '',
     '      vec2 velocity = (currentClip.xy - prevClip.xy) * 0.5 * uMotionBlurStrength;',
     '      float velLen = length(velocity);',
-    '      if (velLen > 0.0005 && velLen < 0.1) {',
-    '        vec3 blurAccum = finalRGB;',
+    '',
+    '      // A binary gate on velocity is what made this flicker. Velocity is computed per',
+    '      // pixel from that pixel own depth, so neighbouring pixels cross any fixed',
+    '      // threshold on different frames: patches of the screen snap between blurred and',
+    '      // sharp while the camera moves. Ramp in and out instead.',
+    '      float strength = smoothstep(0.0004, 0.0025, velLen)',
+    '                     * (1.0 - smoothstep(0.06, 0.12, velLen));',
+    '',
+    '      if (strength > 0.001) {',
+    '        // Every tap comes from tColor, including the centre. Seeding the accumulator',
+    '        // with the composited colour and filling the rest from the raw scene made the',
+    '        // pixel jump from fully composited to five-sixths raw the instant blur engaged.',
+    '        vec3 blurAccum = vec3(0.0);',
     '        const int MOTION_STEPS = 6;',
-    '        for (int m = 1; m < MOTION_STEPS; m++) {',
+    '        for (int m = 0; m < MOTION_STEPS; m++) {',
     '          vec2 sampleCoord = clamp(vUv + velocity * (float(m) / float(MOTION_STEPS)), vec2(0.0), vec2(1.0));',
     '          blurAccum += texture2D(tColor, sampleCoord).rgb;',
     '        }',
-    '        finalRGB = blurAccum / float(MOTION_STEPS);',
+    '        finalRGB = mix(finalRGB, blurAccum / float(MOTION_STEPS), strength);',
     '      }',
     '    }',
     '  }',
@@ -1307,7 +1407,8 @@
         uniforms: {
           tDiffuse: { value: null },
           uTexelSize: { value: new THREE.Vector2(1, 1) },
-          uThreshold: { value: 0.9 },
+          uThreshold: { value: 0.3 },
+          uMaxBrightness: { value: 12.0 },
           uIsFirstMip: { value: 1 }
         },
         depthTest: false,
@@ -1750,7 +1851,9 @@
 
       var target = this.autofocusTracking ? this.autofocusHitDistance : s.manualFocusDistance;
       if (this.activeFocusDistance <= 0.0) this.activeFocusDistance = target;
-      this.activeFocusDistance = lerp(this.activeFocusDistance, target, 0.15);
+      // Deliberately unhurried: the raycast target jumps whenever the crosshair crosses an
+      // object edge, and a fast ease turns every one of those into a visible lurch.
+      this.activeFocusDistance = lerp(this.activeFocusDistance, target, 0.08);
     }
 
     executeCompositing(renderer, inputTarget, outputTarget, renderToScreen, camera, threeGroup) {
@@ -1901,6 +2004,10 @@
         aoSsrMerged = true;
       }
 
+      // Bloom samples the scene from before the defocus — see the note on decoupling in
+      // IMPLEMENTATION_PLAN. Captured here, before DOF replaces curSceneColor.
+      var bloomSource = curSceneColor;
+
       // ------------------------------------------------- 3. Bokeh Depth of Field
       if (hasDepth && s.enableDOF) {
         this._rt('dofTarget', w, h, true, false);
@@ -1924,29 +2031,42 @@
         var n = this.bloomDownTargets.length;
         var ku = this.karisDownsampleMaterial.uniforms;
         ku.uThreshold.value = s.bloomThreshold;
+        ku.uMaxBrightness.value = Math.max(1.0, s.bloomMaxBrightness);
 
-        var srcTex = curSceneColor;
+        // Both filters sample the SOURCE texture, so their tap offsets have to be in source
+        // texels. Using the destination's (which is half the size) spread the 13-tap
+        // downsample twice as wide as intended, and collapsed the tent upsample's offsets to
+        // sub-texel distances — leaving it doing nothing but bilinear.
+        var srcTex = bloomSource;
+        var srcW = w;
+        var srcH = h;
         for (var d = 0; d < n; d++) {
           var targetD = this.bloomDownTargets[d];
           ku.tDiffuse.value = srcTex;
-          ku.uTexelSize.value.set(1.0 / targetD.width, 1.0 / targetD.height);
+          ku.uTexelSize.value.set(1.0 / srcW, 1.0 / srcH);
           ku.uIsFirstMip.value = d === 0 ? 1 : 0;
           this._renderPass(this.karisDownsampleMaterial, targetD);
           srcTex = targetD.texture;
+          srcW = targetD.width;
+          srcH = targetD.height;
         }
 
         // Progressive upsample: each level blurs the level below and ADDS its own mip.
         var tu = this.tentUpsampleMaterial.uniforms;
-        tu.uBloomRadius.value = 1.0;
+        tu.uBloomRadius.value = Math.max(0.1, s.bloomRadius);
         tu.uHasAdd.value = 1;
         var upSource = this.bloomDownTargets[n - 1].texture;
+        var upSrcW = this.bloomDownTargets[n - 1].width;
+        var upSrcH = this.bloomDownTargets[n - 1].height;
         for (var u = n - 2; u >= 0; u--) {
           var targetU = this.bloomUpTargets[u];
           tu.tDiffuse.value = upSource;
           tu.tAdd.value = this.bloomDownTargets[u].texture;
-          tu.uTexelSize.value.set(1.0 / targetU.width, 1.0 / targetU.height);
+          tu.uTexelSize.value.set(1.0 / upSrcW, 1.0 / upSrcH);
           this._renderPass(this.tentUpsampleMaterial, targetU);
           upSource = targetU.texture;
+          upSrcW = targetU.width;
+          upSrcH = targetU.height;
         }
         bloomTexture = upSource;
 
@@ -2238,6 +2358,8 @@
     ['enableBloom', '_getEnableBloom', '_setEnableBloom', 'bool'],
     ['bloomIntensity', '_getBloomIntensity', '_setBloomIntensity', 'number'],
     ['bloomThreshold', '_getBloomThreshold', '_setBloomThreshold', 'number'],
+    ['bloomRadius', '_getBloomRadius', '_setBloomRadius', 'number'],
+    ['bloomMaxBrightness', '_getBloomMaxBrightness', '_setBloomMaxBrightness', 'number'],
     ['anamorphicFlares', '_getAnamorphicFlares', '_setAnamorphicFlares', 'number'],
     ['flareTintColor', '_getFlareTintColor', '_setFlareTintColor', 'string'],
     ['enableDOF', '_getEnableDOF', '_setEnableDOF', 'bool'],
@@ -2281,10 +2403,54 @@
     }
   }
 
+  var CUSTOM_PRESETS = {};
+
+  function extractSettings(settings) {
+    var out = {};
+    for (var i = 0; i < PROPERTY_MAP.length; i++) {
+      var key = PROPERTY_MAP[i][0];
+      if (key === 'targetLayer' || key === 'diagnostics') continue;
+      if (settings[key] !== undefined) {
+        out[key] = settings[key];
+      }
+    }
+    return out;
+  }
+
+  function applyCustomSettings(runtimeScene, behavior, customObj) {
+    if (!customObj || typeof customObj !== 'object') return;
+    var pipeline = (behavior && behavior.__cinematicPipeline) || ensurePipeline(runtimeScene, '');
+    if (!pipeline) return;
+
+    for (var i = 0; i < PROPERTY_MAP.length; i++) {
+      var key = PROPERTY_MAP[i][0];
+      var kind = PROPERTY_MAP[i][3];
+      if (customObj[key] !== undefined) {
+        var val = customObj[key];
+        if (kind === 'bool') pipeline.settings[key] = !!val;
+        else if (kind === 'int') pipeline.settings[key] = parseInt(val, 10) || DEFAULT_SETTINGS[key];
+        else if (kind === 'number') {
+          var num = Number(val);
+          pipeline.settings[key] = isNaN(num) ? DEFAULT_SETTINGS[key] : num;
+        } else {
+          pipeline.settings[key] = String(val);
+        }
+      }
+    }
+    pipeline.settings.preset = 'Custom';
+    pipeline.activeFocusDistance = pipeline.settings.manualFocusDistance;
+
+    if (behavior) {
+      if (behavior._setPreset) behavior._setPreset('Custom');
+      writeBehaviorProperties(behavior, pipeline.settings);
+    }
+  }
+
   /* ------------------------------------------------------------- Public API Singleton */
 
   gdjs.__cinematicPostFX3D = {
     PRESETS: PRESETS,
+    CUSTOM_PRESETS: CUSTOM_PRESETS,
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     PostProcessorPipeline: PostProcessorPipeline,
     CinematicPostFXPass: CinematicPostFXPass,
@@ -2326,8 +2492,11 @@
       // behavior's own properties so the per-frame sync stays consistent with it.
       // "Custom" means "use my property values as-is".
       var presetName = typeof behavior._getPreset === 'function' ? behavior._getPreset() : 'Custom';
-      if (presetName && presetName !== 'Custom' && PRESETS[presetName]) {
-        Object.assign(pipeline.settings, PRESETS[presetName]);
+      var chosen = (presetName && presetName !== 'Custom')
+        ? (PRESETS[presetName] || CUSTOM_PRESETS[presetName])
+        : null;
+      if (chosen) {
+        Object.assign(pipeline.settings, chosen);
         pipeline.settings.preset = presetName;
         writeBehaviorProperties(behavior, pipeline.settings);
       }
@@ -2361,7 +2530,7 @@
     },
 
     applyPreset: function (runtimeScene, behavior, presetName) {
-      var preset = PRESETS[presetName];
+      var preset = PRESETS[presetName] || CUSTOM_PRESETS[presetName];
       if (!preset) return;
       var pipeline = (behavior && behavior.__cinematicPipeline) || ensurePipeline(runtimeScene, '');
       if (!pipeline) return;
@@ -2375,6 +2544,77 @@
         writeBehaviorProperties(behavior, pipeline.settings);
       }
     },
+
+    saveCustomPreset: function (runtimeScene, behavior, name) {
+      var slot = (name && String(name).trim()) || 'PlayerCustom';
+      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);
+      var settings = pipeline ? pipeline.settings : DEFAULT_SETTINGS;
+      var data = extractSettings(settings);
+      CUSTOM_PRESETS[slot] = Object.assign({}, data);
+      PRESETS[slot] = Object.assign({}, data);
+    },
+
+    applyCustomPreset: function (runtimeScene, behavior, name) {
+      var slot = (name && String(name).trim()) || 'PlayerCustom';
+      var custom = CUSTOM_PRESETS[slot] || PRESETS[slot];
+      if (custom) {
+        applyCustomSettings(runtimeScene, behavior, custom);
+        var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);
+        if (pipeline) pipeline.settings.preset = slot;
+        if (behavior && behavior._setPreset) behavior._setPreset(slot);
+      }
+    },
+
+    hasCustomPreset: function (name) {
+      var slot = (name && String(name).trim()) || 'PlayerCustom';
+      return !!(CUSTOM_PRESETS[slot] || (slot === 'PlayerCustom' && PRESETS.PlayerCustom));
+    },
+
+    exportSettingsJSON: function (runtimeScene, behavior) {
+      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);
+      var settings = pipeline ? pipeline.settings : DEFAULT_SETTINGS;
+      return JSON.stringify(extractSettings(settings));
+    },
+
+    applySettingsJSON: function (runtimeScene, behavior, jsonString) {
+      if (!jsonString) return;
+      try {
+        var obj = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+        applyCustomSettings(runtimeScene, behavior, obj);
+      } catch (e) {
+        warnOnce('jsonParseFail', 'Failed to parse JSON in ApplySettingsFromJSON: ' + e.message);
+      }
+    },
+
+    saveSettingsToVariable: function (runtimeScene, behavior, gdjsVariable) {
+      if (!gdjsVariable) return;
+      var pipeline = (behavior && behavior.__cinematicPipeline) || getPipeline(runtimeScene);
+      var settings = pipeline ? pipeline.settings : DEFAULT_SETTINGS;
+      var data = extractSettings(settings);
+      if (typeof gdjsVariable.fromJSObject === 'function') {
+        gdjsVariable.fromJSObject(data);
+      } else if (typeof gdjsVariable.setString === 'function') {
+        gdjsVariable.setString(JSON.stringify(data));
+      }
+    },
+
+    applySettingsFromVariable: function (runtimeScene, behavior, gdjsVariable) {
+      if (!gdjsVariable) return;
+      var data = null;
+      if (typeof gdjsVariable.toJSObject === 'function') {
+        data = gdjsVariable.toJSObject();
+      } else if (typeof gdjsVariable.getAsString === 'function') {
+        try {
+          data = JSON.parse(gdjsVariable.getAsString());
+        } catch (e) {}
+      }
+      if (data && typeof data === 'object') {
+        applyCustomSettings(runtimeScene, behavior, data);
+      }
+    },
+
+    applyCustomSettings: applyCustomSettings,
+    extractSettings: extractSettings,
 
     updateSettings: function (runtimeScene, behavior, newSettings) {
       var pipeline = (behavior && behavior.__cinematicPipeline) || ensurePipeline(runtimeScene, '');

@@ -1,5 +1,73 @@
 # Changelog
 
+## 2.6.0 — The actual flicker: binary gates on per-pixel values
+
+With every effect enabled, the flicker was **motion blur**, and it was two bugs in four lines.
+
+```glsl
+if (velLen > 0.0005 && velLen < 0.1) {   // hard gate
+  vec3 blurAccum = finalRGB;             // centre tap from the composited image...
+  for (int m = 1; m < 6; m++)
+    blurAccum += texture2D(tColor, ...); // ...the other five from the raw scene
+  finalRGB = blurAccum / 6.0;
+}
+```
+
+- **The velocity test was a binary gate on a per-pixel quantity.** Velocity is reconstructed from each pixel's own depth, so neighbouring pixels cross any fixed threshold on different frames. Patches of the screen therefore snap between blurred and sharp every frame while the camera moves. Strength is now a `smoothstep` ramp in and out, and the result is blended by it.
+- **The taps were mixed from two different buffers.** The accumulator was seeded with the fully composited colour (ambient occlusion, reflections and bloom included) and the remaining five samples came from the raw scene colour. The instant the gate flipped on, every affected pixel jumped from 100% composited to five-sixths raw — a large brightness step, which is what made the toggling so visible. All six taps now come from the same buffer.
+
+**Also softened:** SSR rejected reflection rays on `R.z > 0.0`, a hard sign test sitting exactly where the depth-reconstructed normal is noisiest, so grazing surfaces flipped between reflecting and not. It now fades out across a small angular band.
+
+**Regression guard.** `check-shaders.mjs` now fails the build on any branch that gates a per-pixel continuous value (velocity, reflection direction, circle of confusion, brightness) without a ramp. Genuinely binary tests — a raymarch hit, a normal facing check — are listed explicitly with the reason. Verified both ways: the current shaders pass, and reintroducing the original velocity gate fails the build.
+
+**Note on the previous two releases.** The bloom threshold colour space (2.3.0) and the bloom/focus coupling (2.5.0) were real bugs and remain fixed, but neither was this symptom. This one only manifests while the camera moves, which is precisely when motion blur is the only effect doing anything different.
+
+---
+
+## 2.5.0 — Bloom decoupled from focus
+
+The flicker reported against 2.3.0 and 2.4.0 was not in the bloom pyramid at all.
+
+**Bloom was sampling the Depth of Field output.** Depth of Field is not static while the camera moves: autofocus re-raycasts every third frame and the focus plane eases toward whatever the crosshair happens to hit, so the Circle of Confusion changes continuously. Defocusing a bright highlight spreads its energy and lowers its peak — which can push it under the bloom threshold entirely. The glow then switches off and back on as focus drifts. Because a threshold is a hard boundary, that presents as a flicker rather than a shimmer, and it only happens when Depth of Field is enabled, which is true of `CyberpunkNeon`, `CinematicMovie` and `HorrorGrim`.
+
+- **Bloom now samples the scene from before the defocus.** A defocused highlight blooms as though it were sharp, which is a small static inaccuracy in place of a large moving one. A regression test asserts the pyramid never reads the depth-of-field target.
+- **The autofocus ease was slowed from 0.15 to 0.08 per frame.** The raycast target jumps whenever the crosshair crosses an object edge, which is constant while moving; a slower ease turns those steps into a pull rather than a lurch.
+
+The pyramid fixes in 2.3.0 and the clamp and radius controls in 2.4.0 remain correct and worth having — the tent upsample genuinely was doing no blurring, and the threshold genuinely was in the wrong colour space. They were just not the cause of this particular symptom.
+
+**Tests:** 81 → 82 runtime assertions.
+
+---
+
+## 2.4.0 — Bloom stability in motion
+
+Follow-up to 2.3.0, addressing the symptom actually reported: bloom flickering while the camera moves.
+
+The likely cause was the tent-upsample bug fixed in 2.3.0 — with its offsets collapsed to sub-texel distances the upsample chain did no blurring at all, so the pyramid summed sharp aliased mips and every bright sub-pixel feature shimmered under motion. Bloom's entire temporal stability comes from that progressive blur. Two standard mitigations on top of it:
+
+- **`BloomMaxBrightness` (Bloom Firefly Clamp, default 12.0).** Bounds how bright a single pixel may be before it enters the pyramid. One specular glint at 50.0 moving between texels can swing a whole mip frame to frame; clamping the input bounds that swing. This is the first thing to lower if flicker persists.
+- **`BloomRadius` (default 1.0).** Width of the blur at each pyramid step. Wider is softer and noticeably more stable in motion. This also brings the extension to parity with GDevelop's built-in bloom, which exposes strength, radius and threshold.
+
+Both come with actions, and `BloomRadius` with an expression.
+
+**Tests:** 80 → 81 runtime assertions.
+
+---
+
+## 2.3.0 — Bloom actually blooms
+
+**Bloom was producing nothing at all.** Three bugs, the first fatal:
+
+- **The threshold was applied in the wrong colour space.** The composer buffer is linear HDR — GDevelop converts to sRGB in `OutputPass` at the very end — but the default threshold of `0.9` had been chosen as if it were a display value. In linear light a surface that looks bright grey on screen is only about `0.6`, so `0.9` needs roughly sRGB 0.96 to pass: the first mip zeroed the entire image and bloom added exactly nothing. `HorrorGrim` at `1.2` could never have bloomed anything but emissive materials. GDevelop's own 3D bloom effect ships with a threshold of **0** for precisely this reason. The default is now `0.3`, presets are retuned to 0.25–0.6, and the property documents that the value is linear light.
+- **The downsample was passed the destination texel size instead of the source's.** The 13-tap footprint is defined in source texels, and the destination is half the size, so every tap was spread twice as far as intended.
+- **The upsample had the same bug, with worse consequences.** The tent filter samples the smaller mip below it, so using the larger destination's texel size collapsed all nine offsets to sub-texel distances — the tent degenerated into plain bilinear and did no blurring whatsoever.
+
+Regression tests now assert that each pyramid stage receives its own source texel size, and that no preset or default threshold sits above what real geometry can reach in linear light.
+
+**Tests:** 78 → 80 runtime assertions.
+
+---
+
 ## 2.2.0 — Memory, resolve, hygiene
 
 **Memory**
@@ -18,7 +86,18 @@
 - The temporary material stash key is deleted from `userData` rather than set to `undefined`.
 - **The layer's effect composer is looked up fresh each frame** instead of cached forever, so a composer rebuilt by GDevelop does not leave the pass attaching depth to render targets nothing draws into.
 
-**Tests:** 66 → 76 assertions, including lazy allocation per effect, the roughness channel, and a simulated GL failure during the mask render.
+**Testing**
+
+- **The generated extension is now tested, not just parsed.** `test-extension.mjs` executes every action, condition and expression from the built JSON against a mock GDevelop events context. That glue is assembled by string concatenation, and the build previously only checked it parsed — a mistyped `getArgument` name, a settings key that does not exist, or a `Set` action that forgets to write back to its behavior property (and so silently reverts on the next frame) would all have shipped. It also asserts every declared parameter is read, that action/expression pairs round-trip through the same setting, that every preset applies completely, and that the JSON is not stale relative to the runtime.
+- The build runs both suites and refuses to report success if either fails.
+- Covered the last untested runtime exports: `parseColor`, `applyCineon`, `karisLumaWeight`.
+
+**Tests:** 66 → 78 runtime assertions, plus 13 new assertions over the generated extension.
+
+**Housekeeping**
+
+- Removed the unused `str`, `freeFn` and `evFree` build helpers.
+- Corrected documentation that still described the AO and reflection buffers as fixed half resolution now that `EffectQuality` controls them.
 
 ---
 

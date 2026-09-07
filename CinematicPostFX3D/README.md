@@ -26,6 +26,12 @@ Sensible starting points:
 | SSR Max Distance | 400 | 150 – 800 |
 | Manual Focus Distance | 700 | wherever your subject is |
 
+**Bloom is computed from the scene before Depth of Field**, on purpose. Reading the defocused image would tie glow brightness to the focus plane, which moves constantly under autofocus, and a highlight that spreads when defocused can drop below the bloom threshold and switch the glow off entirely.
+
+**If bloom flickers while the camera moves**, that is a bright sub-pixel feature landing in a different texel each frame. Lower **Bloom Firefly Clamp** (bounds how much one pixel can swing a mip) or raise **Bloom Radius** (a wider blur is a more stable blur). Both are far more effective than lowering intensity.
+
+Bloom thresholds are in **linear light**, not display values: the composer buffer is linear HDR and GDevelop converts to sRGB at the very end, so a surface that looks bright grey on screen is only about 0.6 here. Useful thresholds are well below 1.0; GDevelop own bloom effect uses 0.
+
 The aperture and bokeh radius are scale-free: defocus is measured *relative* to the focus distance, so `f/2.8` looks the same whether your scene is 5 units deep or 5000.
 
 ---
@@ -38,7 +44,7 @@ The aperture and bokeh radius are scale-free: defocus is measured *relative* to 
 | **Screen-Space Reflections** | yes | DDA screen-space raymarch with 4-step binary refinement, Schlick Fresnel weighting, and distance + screen-edge fade. Gated by a per-pixel reflectivity mask so only smooth or metallic surfaces reflect, then resolved with a blur that widens on rough surfaces. Reduced resolution. |
 | **13-Tap Karis HDR Bloom** | no | Half-res pyramid, 5 mips, anti-firefly luma weighting on the first mip, progressive upsample that **adds** each matching mip back in. Optional anamorphic streaks via a dedicated wide horizontal blur pass, with a colour tint. |
 | **Bokeh Depth of Field** | yes | 16-tap golden-angle spiral, dimensionless Circle of Confusion, optional centre-screen autofocus raycast with eased focus pulls. |
-| **Motion Blur** | yes | Camera velocity reconstructed from depth and the previous frame's view-projection matrix. 6 samples. |
+| **Motion Blur** | yes | Camera velocity reconstructed from depth and the previous frame's view-projection matrix. 6 samples, ramped in and out by speed so it cannot pop on and off. |
 | **Chromatic Aberration** | no | Radial R/B split. |
 | **Tone Mapping** | no | ACES Filmic, Reinhard, Cineon or Linear. Runs before GDevelop's `OutputPass`, which handles the sRGB conversion. |
 
@@ -57,7 +63,7 @@ GDevelop's default 3D material is fully rough (`roughness 1`, `metalness 0`) and
 ```mermaid
 flowchart TD
     RP["GDevelop RenderPass<br/>(scene colour + depth texture)"]
-    GTAO["GTAO horizon search<br/>half res"]
+    GTAO["GTAO horizon search<br/>EffectQuality res"]
     BL["Bilateral blur H then V"]
     MASK["Reflectivity mask<br/>material roughness + metalness"]
     SSR["SSR DDA raymarch<br/>mask-gated"]
@@ -78,34 +84,49 @@ flowchart TD
 
 ---
 
-## Presets
+## Presets & Player Custom Graphics
 
-Set the **Preset Profile** property and it is applied once when the behavior is created, overwriting the properties below it. Leave it on **`Custom`** to use your own values. The **Apply cinematic preset** action does the same thing at runtime.
+Set the **Preset Profile** property and it is applied once when the behavior is created, overwriting the properties below it. Leave it on **`Custom`** to use your own values, or **`PlayerCustom`** to load the player's saved settings. The **Apply cinematic preset** action does the same thing at runtime.
 
 | Preset | SSR | GTAO | Bloom | Flares | DOF | Motion Blur |
 | :--- | :---: | :---: | :---: | :---: | :--- | :---: |
-| **`CyberpunkNeon`** | 0.9 | 1.0 | 1.5 | 0.6 blue | on, autofocus, f/5.6 | 0.3 |
-| **`CinematicMovie`** | 0.4 | 1.2 | 0.8 | 0.2 | on, autofocus, f/2.4 | 0.5 |
-| **`HorrorGrim`** | off | 1.8 | 0.3 | off | on, fixed at 320 units, f/1.8 | 0.2 |
-| **`CleanRealistic`** | 0.6 | 1.0 | 0.6 | off | off | 0.2 |
-| **`PerformanceLite`** | off | off | 0.5 | off | off | off |
+| **`DefaultGameplay`** | 0.5 | 1.0 | 0.5 | off | off | 0.15 |
+| **`CinematicCutscene`**| 0.4 | 1.2 | 0.8 | 0.25 | on, autofocus, f/2.8 | 0.4 |
+| **`VibrantFantasy`**   | 0.6 | 1.1 | 0.85 warm | off | off | 0.15 |
+| **`NightNeon`**        | 0.85 | 1.0 | 1.2 | 0.35 blue | on, autofocus, f/5.6 | 0.3 |
+| **`HorrorTension`**    | off | 1.6 (no bounce) | 0.3 | off | on, autofocus, f/3.2 | 0.2 |
+| **`PerformanceLite`**  | off | off | 0.5 | off | off | off |
+| **`PlayerCustom`**     | user | user | user | user | user | user |
 
----
+### Player Custom Graphics Actions
 
-## Quick start
+You can save and load the player's custom graphics settings directly in GDevelop event sheets:
 
-1. Add the **Cinematic Post-Processing 3D** behavior to any object on (or associated with) your 3D layer.
-2. Set **Target Layer** to the name of your 3D layer, or leave it empty for the base layer. The layer must be rendering in 3D.
-3. Pick a **Preset Profile**, or leave it on `Custom` and switch on the effects you want.
-4. If nothing seems to happen, tick **Log Diagnostics** and check the browser console.
+* **Structure Variables**:
+  * Action: **Save post-processing settings to global variable** (`SaveSettingsToGlobalVariable`)
+  * Action: **Apply post-processing settings from global variable** (`ApplySettingsFromGlobalVariable`)
+  * *(Also available for scene variables: `SaveSettingsToSceneVariable` / `ApplySettingsFromSceneVariable`)*
+* **Named Custom Presets (In-Memory)**:
+  * Action: **Save current settings as custom preset slot** (`SaveCurrentToCustomPreset`)
+  * Action: **Apply custom preset slot** (`ApplyCustomPreset`)
+  * Condition: **Custom preset slot exists** (`HasCustomPreset`)
+* **Storage / Disk Persistence (JSON)**:
+  * Expression: `Object.CinematicPostFX3D::ExportSettingsToJSON()`
+  * Action: **Apply post-processing settings from JSON** (`ApplySettingsFromJSON`)
 
-In the event sheet:
+**Example event sheet pattern for player settings:**
+```
+// On Game Start:
+Condition: Global Variable Playercustomizedgraphicsettingsset == true
+Action: Apply post-processing settings from global variable GlobalVariable(PlayerGraphics)
+Else:
+Action: Apply cinematic preset "DefaultGameplay" on PostProcessingManager
 
-- `CinematicPostFX3D::SetDOFEnabled(true)` and `SetAutofocus(true)` for a cutscene rack focus
-- `SetSSREnabled(true)` and `SetSSRIntensity(0.85)` for wet streets
-- `SetBloomIntensity(2.0)` on an explosion
-
----
+// In Pause / Graphics Options Menu:
+Action: Save current post-processing settings to global variable GlobalVariable(PlayerGraphics)
+Action: Change Global Variable Playercustomizedgraphicsettingsset = true
+Action: (Optional) Write GlobalVariableString(PlayerGraphics) to Storage "Settings"
+```
 
 ## Limits & caveats
 
@@ -132,6 +153,12 @@ node test-runtime.mjs
 ```
 
 Runs the pipeline against a Three.js mock that models render-target dispose semantics and composer ping-pong, and asserts on which passes run and what uniforms they receive.
+
+```bash
+node test-extension.mjs
+```
+
+Tests the *generated* `CinematicPostFX3D.json` rather than the runtime source: it executes every action, condition and expression against a mock GDevelop events context. This catches the class of bug the build's parse check cannot — a mistyped `getArgument` name, a settings key that does not exist, or a `Set` action that forgets to write back to its behavior property and so silently reverts on the next frame. It also fails if the JSON is stale relative to the runtime.
 
 ```bash
 node check-shaders.mjs

@@ -106,7 +106,7 @@ bool isSky(float linearZ) { return linearZ >= uFar * 0.995; }
 
 ### A. Ground Truth Ambient Occlusion
 
-Four screen-space slices, six horizon steps per side, at half resolution.
+Four screen-space slices, six horizon steps per side, at whatever `EffectQuality` selects (half by default).
 
 For each slice, a plane is built through the view vector `V = normalize(-P)` and the slice direction, the surface normal is projected into it, and the signed angle of that projection is `γ`. Horizon angles `h₁` (toward `+tangent`) and `h₂` (toward `−tangent`) start at `±π/2` and close in as occluders are found, faded by distance so a sample at the radius edge contributes nothing.
 
@@ -140,7 +140,7 @@ with `a₁ = 2.0404a − 0.3324`, `b₁ = −4.7951a + 0.6417`, `c₁ = 2.7552a 
 
 ### B. Screen-Space Reflections
 
-Half resolution. Reflect the view vector about the depth-derived normal, reject rays heading back toward the camera, then march in screen space with the step count from `SSRRaySteps` (8–64). Ray length and surface thickness both scale with view depth:
+Runs at `EffectQuality` resolution. Reflect the view vector about the depth-derived normal, reject rays heading back toward the camera, then march in screen space with the step count from `SSRRaySteps` (8–64). Ray length and surface thickness both scale with view depth:
 
 ```glsl
 rayLen    = min(uMaxDistance, max(1.0, linearZ * 2.0));
@@ -200,11 +200,17 @@ up[i]   = tent(up[i+1])   + down[i]
 
 Without the additive term the pyramid collapses to the smallest mip blurred repeatedly and every mid-frequency component of the glow is lost.
 
+**Bloom samples the scene from before Depth of Field.** This is deliberate and is the one place the pipeline departs from physical ordering. Reading the DOF output couples glow brightness to the focus plane, and the focus plane is not static: autofocus re-raycasts every third frame and eases toward whatever the crosshair hits, which changes constantly while the camera moves. Defocusing a bright highlight spreads its energy and lowers its peak, which can push it under the bloom threshold entirely — so the glow switches off and back on as focus drifts. Because the threshold makes it bistable, that reads as a hard flicker rather than a shimmer. Sampling before the defocus means a blurred highlight blooms as though it were sharp, which is a small static inaccuracy in place of a large moving one.
+
 Anamorphic streaks get their own pass: a 13-tap horizontal-only blur of the finished bloom buffer at a wide stride. The look comes from a lens whose aperture is far wider than it is tall, so highlights smear sideways and nowhere else — the previous two-tap version inside the composite was a lateral smear, not a streak. The pass is skipped entirely at zero flare strength.
 
 ### E. Motion Blur
 
-World position is reconstructed from depth and the inverse view-projection matrix, reprojected through the previous frame's view-projection, and the NDC delta becomes a velocity vector. Six samples along it. Velocities below `0.0005` or above `0.1` NDC are rejected, which suppresses both jitter and the smear on the first frame after a teleport. This is camera velocity only — per-object motion vectors would need a G-buffer.
+World position is reconstructed from depth and the inverse view-projection matrix, reprojected through the previous frame's view-projection, and the NDC delta becomes a velocity vector. Six samples along it, all taken from the same colour buffer.
+
+**Velocity is ramped, not gated.** Blur strength is `smoothstep(0.0004, 0.0025, |v|) * (1 - smoothstep(0.06, 0.12, |v|))` and the result is blended by that strength. This matters more than it looks: velocity is derived from each pixel's *own* depth, so a fixed threshold is crossed by neighbouring pixels on different frames, and patches of the screen snap between blurred and sharp every frame while the camera moves. That is what flicker is. The upper ramp still suppresses the enormous smear on the first frame after a teleport, but fades into it rather than switching.
+
+This is camera velocity only — per-object motion vectors would need a G-buffer.
 
 ### F. Tone Mapping
 

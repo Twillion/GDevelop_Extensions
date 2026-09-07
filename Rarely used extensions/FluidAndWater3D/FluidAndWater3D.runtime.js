@@ -2750,7 +2750,28 @@
    * same resolution - so cascade 0's cell (x, y) lands on cascade 1's ((4x) mod n, (4y) mod n) with
    * no interpolation at all. That exact mapping is what makes summing them on the CPU cheap.
    */
-  function computeCombinedFoam(ocean, f0, f1, threshold) {
+  /**
+   * Surface elevation of the WHOLE sea at a world point: swell, wind chop and the cross swell.
+   *
+   * Everything that asks where the water is - buoyancy, "is this underwater", surface queries -
+   * has to read the same surface the vertex shader draws. Leaving the cross swell out of this
+   * would float a boat on a sea that is not the one on screen.
+   */
+  function combinedSurfaceHeight(ocean, x, y) {
+    if (!ocean || !ocean.field) return 0.0;
+    var h = ocean.field.sampleHeight(x, y);
+    if (ocean.isWaveWorks && ocean.field1) {
+      h += (ocean.cascadeWeight !== undefined ? ocean.cascadeWeight : 0.65)
+        * ocean.field1.sampleHeight(x, y);
+    }
+    if (ocean.field2) {
+      h += (ocean.swellWeight !== undefined ? ocean.swellWeight : 0.55)
+        * ocean.field2.sampleHeight(x, y);
+    }
+    return h;
+  }
+
+  function computeCombinedFoam(ocean, f0, f1, threshold, f2, swellW) {
     var n = f0.n;
     var n1 = f1.n;
     var cell = f0.tileSize / n;
@@ -2763,11 +2784,18 @@
     var ratio = Math.max(1, Math.round(f0.tileSize / f1.tileSize));
 
     var dxA = f0.dispX, dyA = f0.dispY, dxB = f1.dispX, dyB = f1.dispY;
+    // The cross swell shares cascade 0's grid exactly, so it indexes the same way.
+    var dxC = f2 ? f2.dispX : null, dyC = f2 ? f2.dispY : null;
+    var sw = f2 ? (swellW !== undefined ? swellW : 0.55) : 0;
     function dxAt(x, y) {
-      return (dxA[y * n + x] + dxB[((y * ratio) % n1) * n1 + ((x * ratio) % n1)] * cw) * chop;
+      var i = y * n + x;
+      return (dxA[i] + dxB[((y * ratio) % n1) * n1 + ((x * ratio) % n1)] * cw
+        + (dxC ? dxC[i] * sw : 0)) * chop;
     }
     function dyAt(x, y) {
-      return (dyA[y * n + x] + dyB[((y * ratio) % n1) * n1 + ((x * ratio) % n1)] * cw) * chop;
+      var i = y * n + x;
+      return (dyA[i] + dyB[((y * ratio) % n1) * n1 + ((x * ratio) % n1)] * cw
+        + (dyC ? dyC[i] * sw : 0)) * chop;
     }
 
     for (var y = 0; y < n; y++) {
@@ -5026,9 +5054,8 @@
         ocean.cascadeTileSize = cascadeTile;
         ocean.field1 = new OceanField(ocean.resolution, cascadeTile, {
           windSpeed: ocean.windSpeed,
-          // The cross swell: cascade 1 runs at an angle to the wind so the two trains actually
-          // meet. Without this every crest travels the same way and nothing ever converges.
-          windDirection: ocean.windDirection + (ocean.swellAngle || 0),
+          // Wind chop travels WITH the wind. The cross swell is its own sea, rebuilt below.
+          windDirection: ocean.windDirection,
           amplitude: 1.0,
           smallWaveCutoff: Math.max(cascadeTile / ocean.resolution * 0.25, 0.5),
           unitsPerMetre: ocean.unitsPerMetre,
@@ -5036,6 +5063,24 @@
           seed: ocean.seed + 101
         });
         ocean.field1.normalizeToWindSpeed(ocean.unitsPerMetre, ocean.waveHeightScale);
+
+        // The cross swell shares cascade 0's tile, so a resize has to rebuild it at the new one.
+        // Left alone it would keep the old wavelength and drift out of scale with the sea it runs
+        // across, which is the whole point of it.
+        ocean.field2 = null;
+        if (ocean.swellWeight > 0.001) {
+          ocean.field2 = new OceanField(ocean.resolution, desiredTile, {
+            windSpeed: ocean.windSpeed,
+            windDirection: ocean.windDirection + (ocean.swellAngle || 0),
+            amplitude: 1.0,
+            smallWaveCutoff: Math.max(desiredTile / ocean.resolution * 0.25, 0.5),
+            unitsPerMetre: ocean.unitsPerMetre,
+            wavelengthScale: ocean.wavelengthScale,
+            seed: ocean.seed + 977
+          });
+          ocean.field2.normalizeToWindSpeed(ocean.unitsPerMetre, ocean.waveHeightScale);
+        }
+
         if (ocean.material && ocean.material.uniforms) {
           if (ocean.material.uniforms.u_TileSize) ocean.material.uniforms.u_TileSize.value = desiredTile;
           if (ocean.material.uniforms.u_CascadeTileSize) ocean.material.uniforms.u_CascadeTileSize.value = cascadeTile;
@@ -5245,13 +5290,19 @@
         var field0 = ocean.field;
         var field1 = ocean.field1;
         field0.evolve(time, 1.0);
+        var field2 = ocean.field2;
+        // Declared HERE, before the fold uses it. It was below the fold call, and `var` hoisting
+        // meant the fold silently read `undefined` and fell back to a constant - so the swell
+        // weight had no effect at all and every setting measured identically.
+        var sw = field2 ? (ocean.swellWeight !== undefined ? ocean.swellWeight : 0.55) : 0;
+        if (field2) field2.evolve(time, 1.0);
         if (field1) {
           field1.evolve(time, 1.0);
           // The fold has to be measured on the surface actually DRAWN, which is both cascades
           // summed. Measuring each field alone can never see the one thing a crossing sea is for:
           // two trains running into each other. Each field's Jacobian only knows its own waves, so
           // a convergence BETWEEN them is invisible to both.
-          computeCombinedFoam(ocean, field0, field1, foamThresholdFor(ocean));
+          computeCombinedFoam(ocean, field0, field1, foamThresholdFor(ocean), field2, sw);
         } else {
           field0.computeFoam(ocean.foamBuffer, ocean.choppiness, foamThresholdFor(ocean));
         }
@@ -5262,13 +5313,16 @@
           var sl0 = ocean.slopeData;
           for (var i = 0; i < n0 * n0; i++) {
             var o0 = i * 4;
-            data0[o0] = field0.dispX[i];
-            data0[o0 + 1] = field0.dispY[i];
-            data0[o0 + 2] = field0.height[i];
+            // The cross swell shares this exact grid, so it simply adds. No second texture, no
+            // extra sampler, no shader change - the surface the vertex shader reads is already the
+            // sum of both seas.
+            data0[o0] = field0.dispX[i] + (field2 ? field2.dispX[i] * sw : 0);
+            data0[o0 + 1] = field0.dispY[i] + (field2 ? field2.dispY[i] * sw : 0);
+            data0[o0 + 2] = field0.height[i] + (field2 ? field2.height[i] * sw : 0);
             data0[o0 + 3] = ocean.foamBuffer[i];
             if (sl0) {
-              sl0[o0] = field0.slopeX[i];
-              sl0[o0 + 1] = field0.slopeY[i];
+              sl0[o0] = field0.slopeX[i] + (field2 ? field2.slopeX[i] * sw : 0);
+              sl0[o0 + 1] = field0.slopeY[i] + (field2 ? field2.slopeY[i] * sw : 0);
               // Blue channel was spare; the plume mask rides along for free.
               sl0[o0 + 2] = field0.plume[i];
             }
@@ -5391,9 +5445,7 @@
       var obj = ocean.object;
       var baseZ = (obj.getZ ? obj.getZ() : 0) + ((obj.getDepth && obj.getDepth() > 0) ? obj.getDepth() : 0);
       var edge = waterEdgeInfluenceAt(state, x, y, ocean.layerName, baseZ, waterSpanOf(ocean));
-      var waveDisp = (ocean.isWaveWorks && ocean.field1)
-        ? (ocean.field.sampleHeight(x, y) + (ocean.cascadeWeight !== undefined ? ocean.cascadeWeight : 0.65) * ocean.field1.sampleHeight(x, y))
-        : ocean.field.sampleHeight(x, y);
+      var waveDisp = combinedSurfaceHeight(ocean, x, y);
       return baseZ + (waveDisp +
         interactionDisplacementAt(ocean, x, y, state.time)) * edge.attenuation;
     },
@@ -5405,9 +5457,7 @@
       var obj = ocean.object;
       var baseZ = (obj.getZ ? obj.getZ() : 0) + ((obj.getDepth && obj.getDepth() > 0) ? obj.getDepth() : 0);
       var edge = waterEdgeInfluenceAt(state, x, y, ocean.layerName, baseZ, waterSpanOf(ocean));
-      var waveDisp = (ocean.isWaveWorks && ocean.field1)
-        ? (ocean.field.sampleHeight(x, y) + (ocean.cascadeWeight !== undefined ? ocean.cascadeWeight : 0.65) * ocean.field1.sampleHeight(x, y))
-        : ocean.field.sampleHeight(x, y);
+      var waveDisp = combinedSurfaceHeight(ocean, x, y);
       return (waveDisp +
         interactionDisplacementAt(ocean, x, y, state.time)) * edge.attenuation;
     },
@@ -5479,9 +5529,8 @@
         var cascadeTile = ocean.cascadeTileSize || Math.max(ocean.tileSize * (ocean.cascadeScale || 0.25), 10.0);
         ocean.field1.buildSpectrum({
           windSpeed: ocean.windSpeed,
-          // The cross swell: cascade 1 runs at an angle to the wind so the two trains actually
-          // meet. Without this every crest travels the same way and nothing ever converges.
-          windDirection: ocean.windDirection + (ocean.swellAngle || 0),
+          // Wind chop travels WITH the wind. The cross swell is its own sea, rebuilt below.
+          windDirection: ocean.windDirection,
           amplitude: 1.0,
           smallWaveCutoff: Math.max(cascadeTile / ocean.resolution * 0.25, 0.5),
           unitsPerMetre: ocean.unitsPerMetre,
@@ -5489,6 +5538,20 @@
           seed: ocean.seed + 101
         });
         ocean.field1.normalizeToWindSpeed(ocean.unitsPerMetre, ocean.waveHeightScale);
+      }
+      // The cross swell is driven by the same wind, offset by the swell angle. Skipping it here
+      // would leave half the sea running at the old wind long after the storm changed.
+      if (ocean.field2) {
+        ocean.field2.buildSpectrum({
+          windSpeed: ocean.windSpeed,
+          windDirection: ocean.windDirection + (ocean.swellAngle || 0),
+          amplitude: 1.0,
+          smallWaveCutoff: Math.max(ocean.tileSize / ocean.resolution * 0.25, 0.5),
+          unitsPerMetre: ocean.unitsPerMetre,
+          wavelengthScale: ocean.wavelengthScale,
+          seed: ocean.seed + 977
+        });
+        ocean.field2.normalizeToWindSpeed(ocean.unitsPerMetre, ocean.waveHeightScale);
       }
 
     },
@@ -5587,7 +5650,11 @@
         // crests can never meet - which is why the sea never looked like it was smacking into
         // itself. A real sea crosses because swell from elsewhere runs at an angle to the local
         // wind. 0 restores the old single-direction behaviour.
-        swellAngle: num(options.swellAngle, 48.0),
+        swellAngle: num(options.swellAngle, 60.0),
+        // How much of the sea is the cross swell. 0 disables the second sea entirely and saves its
+        // FFTs; at 0.55 it is a real swell running across the wind rather than a ripple on it.
+        swellWeight: (options.swellWeight !== undefined)
+          ? clamp(num(options.swellWeight, 0.55), 0.0, 1.5) : 0.55,
         resolution: res,
         beaufortScale: options.beaufortScale || 'Beaufort 4 - Moderate Breeze',
         windSpeed: (options.windSpeed !== undefined && options.windSpeed !== null && options.windSpeed >= 0) ? Number(options.windSpeed) : 7.0,
@@ -5674,10 +5741,8 @@
 
       ocean.field1 = new OceanField(res, cascadeTile, {
         windSpeed: ocean.windSpeed,
-        // The cross swell: cascade 1 runs at an angle to the wind so the two trains actually meet.
-        // Phillips spreading is cos-squared about the wind and cuts upwind energy to 7%, so with a
-        // single direction every crest travels the same way and nothing can ever converge.
-        windDirection: ocean.windDirection + (ocean.swellAngle || 0),
+        // Wind chop travels WITH the wind. The cross swell is its own sea now, below.
+        windDirection: ocean.windDirection,
         amplitude: 1.0,
         smallWaveCutoff: Math.max(cascadeTile / res * 0.25, 0.5),
         unitsPerMetre: ocean.unitsPerMetre,
@@ -5686,6 +5751,28 @@
       });
       ocean.field1.normalizeToWindSpeed(ocean.unitsPerMetre, ocean.waveHeightScale);
       ocean.cascadeFoamBuffer = new Float32Array(res * res);
+
+      // The CROSS SWELL: a second sea of comparable wavelength running at an angle to the wind.
+      //
+      // This is what makes two crests able to meet. Putting the angle on the detail cascade only
+      // ever crossed chop over swell - the trains were four times apart in wavelength, so nothing
+      // the size of a wave ever collided with anything else the size of a wave.
+      //
+      // It shares cascade 0's tile AND resolution deliberately: identical grids sum exactly, so it
+      // needs no texture, no uniform and no shader change. It costs one more set of FFTs, and
+      // nothing on the GPU at all.
+      if (ocean.swellWeight > 0.001) {
+        ocean.field2 = new OceanField(res, tile, {
+          windSpeed: ocean.windSpeed,
+          windDirection: ocean.windDirection + (ocean.swellAngle || 0),
+          amplitude: 1.0,
+          smallWaveCutoff: Math.max(tile / res * 0.25, 0.5),
+          unitsPerMetre: ocean.unitsPerMetre,
+          wavelengthScale: ocean.wavelengthScale,
+          seed: ocean.seed + 977
+        });
+        ocean.field2.normalizeToWindSpeed(ocean.unitsPerMetre, ocean.waveHeightScale);
+      }
 
       if (THREE_OK && typeof THREE.DataTexture === 'function') {
         ocean.texData = new Float32Array(res * res * 4);
@@ -7692,9 +7779,7 @@
 
         var shore = waterEdgeInfluenceAt(state, px, py, ocean.layerName, waterTopZ,
           waterSpanOf(ocean));
-        var waveH = (ocean.isWaveWorks && ocean.field1)
-          ? (ocean.field.sampleHeight(px, py) + (ocean.cascadeWeight !== undefined ? ocean.cascadeWeight : 0.65) * ocean.field1.sampleHeight(px, py))
-          : ocean.field.sampleHeight(px, py);
+        var waveH = combinedSurfaceHeight(ocean, px, py);
         var surfZ = waterTopZ + (waveH +
           interactionDisplacementAt(ocean, px, py, state.time)) * shore.attenuation;
         sumSurfZ += surfZ;
@@ -8368,11 +8453,7 @@
         // No field yet (the volume's real size only arrives after onCreated) means no surface to
         // be under; falling through to the Gerstner path would read octaves an ocean never has.
         if (!holder.field) return 0.0;
-        disp = (holder.isWaveWorks && holder.field1)
-          ? (holder.field.sampleHeight(x, y) +
-             (holder.cascadeWeight !== undefined ? holder.cascadeWeight : 0.65) *
-             holder.field1.sampleHeight(x, y))
-          : holder.field.sampleHeight(x, y);
+        disp = combinedSurfaceHeight(holder, x, y);
       } else {
         disp = evaluateGerstnerDisplacement(x, y, state.time, waveConfigOf(holder, 0));
       }

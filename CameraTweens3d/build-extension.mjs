@@ -60,9 +60,9 @@ const state = CT.getState(behavior);
 
 /**
  * The runtime IIFE is self-guarding, so embedding it more than once is harmless — but each copy
- * is 40+ KB of the project file, and the two per-frame hooks re-enter it every single frame for
- * every instance. It is embedded exactly twice: once in the extension's `onFirstSceneLoaded`,
- * and once in the behavior's `onCreated` in case a behavior is attached before that ever runs.
+ * is 59 KB of the project file, and a per-frame hook would re-enter it every single frame for
+ * every instance. It is embedded exactly once, in the behavior's `onCreated`, which the engine
+ * runs before any other entry point this extension has (see `globalFunctions` below).
  */
 const ev = (inlineCode, { withRuntime = false } = {}) => [{
   type: 'BuiltinCommonInstructions::JsCode',
@@ -177,6 +177,7 @@ const BEHAVIOR_OPTIONS = `{
   motionSicknessMode: behavior._getMotionSicknessMode ? behavior._getMotionSicknessMode() : 'Default for Preset',
   worldUnitsPerMeter: behavior._getWorldUnitsPerMeter ? behavior._getWorldUnitsPerMeter() : 0,
   walkSpeedReference: behavior._getWalkSpeedReference ? behavior._getWalkSpeedReference() : 0,
+  terrainMicroJitterIntensity: behavior._getTerrainMicroJitterIntensity ? behavior._getTerrainMicroJitterIntensity() : 0,
   layerName: behavior._getLayer ? behavior._getLayer() : ''
 }`;
 
@@ -327,7 +328,7 @@ const actions = [
     'Action', [
       num('Pitch', 'Upward pitch kick in degrees', '3.0'),
       num('Yaw', 'Horizontal yaw kick in degrees', '0.5'),
-      num('KickbackZ', 'Backward kickback displacement in meters', '0.04'),
+      num('KickbackZ', 'Backward kickback displacement in world units', '4'),
     ],
     `CT.applyRecoil(behavior, eventsFunctionContext.getArgument("Pitch"), eventsFunctionContext.getArgument("Yaw"), eventsFunctionContext.getArgument("KickbackZ"));\n`,
     { group: G_COMBAT }),
@@ -427,6 +428,13 @@ const actions = [
     'Dynamically adjusts idle breathing sway amplitude multiplier.',
     'Action', [num('Intensity', 'Breathing intensity multiplier', '1.0')],
     `CT.setBreathingIntensity(behavior, eventsFunctionContext.getArgument("Intensity"));\n`,
+    { group: G_TUNING }),
+
+  fn('SetTerrainMicroJitterIntensity', 'Set terrain micro-jitter intensity',
+    'Set terrain micro-jitter intensity on _PARAM0_ to _PARAM2_ metres',
+    'Sets the noisy vertical motion added while grounded and moving. Use 0 to disable it.',
+    'Action', [num('Intensity', 'Vertical jitter amplitude in metres (0 disables)', '0.0')],
+    `CT.setTerrainMicroJitterIntensity(behavior, eventsFunctionContext.getArgument("Intensity"));\n`,
     { group: G_TUNING }),
 
   fn('SetTargetLayer', 'Set target 3D layer',
@@ -654,6 +662,12 @@ const expressions = [
     'Expression', [],
     `eventsFunctionContext.returnValue = CT.getManualLeanAngle(behavior);\n`,
     { group: G_EXPRESSIONS }),
+
+  fn('TerrainMicroJitterIntensity', 'Terrain micro-jitter intensity', '',
+    'Returns the configured terrain micro-jitter amplitude in metres.',
+    'Expression', [],
+    `eventsFunctionContext.returnValue = CT.getTerrainMicroJitterIntensity(behavior);\n`,
+    { group: G_EXPRESSIONS }),
 ];
 
 /* ------------------------------------------------------------------ Behavior Properties */
@@ -749,6 +763,10 @@ const behavior = {
       'The movement speed, in world units per second, that counts as a full-amplitude walk. Leave at 0 to read it from the character behavior.',
       '0', { group: G_P_SCALE }),
 
+    prop('TerrainMicroJitterIntensity', 'Number', 'Terrain Micro-Jitter (metres, 0 = off)',
+      'Noisy vertical camera motion while grounded and moving. Set to 0 for a stable camera; 0.015 matches the original effect.',
+      '0', { group: G_P_MODULES }),
+
     prop('Layer', 'String', 'Target 3D Layer',
       'Name of the 3D layer containing the camera (leave empty for Base layer).', '',
       { group: G_P_SCALE })
@@ -758,15 +776,20 @@ const behavior = {
 
 /* ------------------------------------------------------------------ Global Functions */
 
-const globalFunctions = [
-  {
-    name: 'onFirstSceneLoaded',
-    functionType: 'Action',
-    private: true,
-    events: [{ type: 'BuiltinCommonInstructions::JsCode', inlineCode: runtime }],
-    parameters: [],
-  },
-];
+/**
+ * None. The runtime used to be embedded a second time in an `onFirstSceneLoaded` free function,
+ * on the theory that it was a safety net in case a behavior was attached before that hook ran.
+ * The ordering is the other way round: `runtimescene.js`'s `loadFromScene` calls
+ * `createObjectsFrom(...)` — which runs `RuntimeObject.onCreated()` and therefore every behavior's
+ * `onCreated` — *before* it iterates `gdjs.callbacksFirstRuntimeSceneLoaded`. So for any instance
+ * placed in the scene editor the behavior hook installs the runtime first and the free hook only
+ * ever hit the `if (gdjs.__cameraTweens3D) return;` guard.
+ *
+ * Every one of this extension's 59 ACEs takes the behavior as a parameter, so none of them can be
+ * reached without an instance whose `onCreated` has already run. That makes the second copy dead
+ * weight — 59 KB, a quarter of the exported JSON. CinematicPostFX3D ships the same way.
+ */
+const globalFunctions = [];
 
 /* ------------------------------------------------------------------ Extension Manifest */
 
@@ -776,7 +799,7 @@ const extension = {
   extensionNamespace: '',
   fullName: 'Camera Tweens 3D',
   name: EXTENSION_NAME,
-  version: '1.2.0',
+  version: '1.3.0',
   shortDescription: 'Procedural camera motion: head bobbing, run/walk leaning, critically damped weapon recoil, jump landing shocks, trauma shakes (T^2), dynamic FOV, and anti-nausea comfort mode.',
   description: `**CameraTweens3D** is a modular, high-polish procedural camera modifier and tweening extension for **GDevelop 5 (Three.js backend)**.
 

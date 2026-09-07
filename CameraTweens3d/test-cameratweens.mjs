@@ -167,6 +167,7 @@ function onCreatedOptions(over = {}) {
     motionSicknessMode: 'Default for Preset',
     worldUnitsPerMeter: 100,
     walkSpeedReference: 0,
+    terrainMicroJitterIntensity: 0,
     layerName: '',
     ...over,
   };
@@ -219,6 +220,11 @@ console.log('3. Presets and module profiles');
   assert.strictEqual(st.bobIntensity, 0.8, 'Tactical preset bob');
   assert.strictEqual(st.leanMaxAngle, 2.0, 'Tactical preset strafe');
   assert.strictEqual(st.sprintFOVBonus, 8.0, 'Tactical preset sprint FOV');
+  assert.strictEqual(st.stairJitterIntensity, 0,
+    'explicit terrain micro-jitter property must override the preset default');
+  CT.setTerrainMicroJitterIntensity(b, 0.02);
+  assert.strictEqual(CT.getTerrainMicroJitterIntensity(b), 0.02,
+    'terrain micro-jitter must be adjustable and readable at runtime');
 }
 {
   // D2 regression: the untouched property defaults used to overwrite the preset here.
@@ -321,12 +327,31 @@ function dropTest(fallUnitsPerSecond) {
 }
 
 const slow = dropTest(300);  // ~3 m/s
-const fast = dropTest(700);  // ~7 m/s, still under the compression clamp
+const fast = dropTest(700);  // ~7 m/s
 assert.strictEqual(slow.triggers, 1, `D5: a landing must fire exactly once (got ${slow.triggers})`);
 assert.strictEqual(fast.triggers, 1, `D5: a landing must fire exactly once (got ${fast.triggers})`);
 assert.ok(fast.impulse > slow.impulse * 1.5,
   `D4: a harder landing must hit harder (slow ${slow.impulse.toFixed(1)} vs fast ${fast.impulse.toFixed(1)})`);
-pass(`fires once per landing, and scales with fall speed (${slow.impulse.toFixed(0)} -> ${fast.impulse.toFixed(0)})`);
+
+// D4 was only half fixed. Scaling the metric clamps into world units raised the ceiling but kept
+// it: `clamp(speed * 0.04, 0, 0.4)` still flattened every fall above 10 m/s, and the pitch dip
+// flattened above ~5.5 m/s — a drop of under two metres. The two cases above were both chosen to
+// sit under that ceiling, so the suite never saw it. `softSaturate` replaces the hard clamps, so
+// the response stays strictly monotonic however far you fell.
+const big = dropTest(1500);   // 15 m/s — the old compression clamp saturated at 10
+const huge = dropTest(3000);  // 30 m/s — identical to the above before this fix
+assert.ok(huge.impulse > big.impulse * 1.2,
+  `D4: the impulse must keep growing past the old clamp ` +
+  `(15 m/s ${big.impulse.toFixed(1)} vs 30 m/s ${huge.impulse.toFixed(1)})`);
+
+// ...and the soft knee must not change the feel of an ordinary landing. tanh is within ~1% of
+// linear in the range the old clamp never reached, so existing tuning carries over untouched.
+const linearRatio = fast.impulse / slow.impulse;
+assert.ok(Math.abs(linearRatio - 700 / 300) < 0.05,
+  `an ordinary landing must still respond linearly to fall speed (got ${linearRatio.toFixed(3)}x, ` +
+  `expected ${(700 / 300).toFixed(3)}x)`);
+pass(`fires once per landing, scales with fall speed (${slow.impulse.toFixed(0)} -> ${fast.impulse.toFixed(0)}), ` +
+  `and keeps scaling past the old clamp (${big.impulse.toFixed(0)} -> ${huge.impulse.toFixed(0)})`);
 
 {
   // The same, driven by a character behavior instead of position differences.
@@ -497,6 +522,33 @@ console.log('9. Trauma, recoil and expression fidelity');
   assert.strictEqual(CT.isRecoilActive(b), true, 'D18: yaw-only recoil must count as active');
 }
 {
+  // Kickback is in world units, like every other length in the extension. It used to be the one
+  // exception — taken as metres while `RecoilKickbackZ()` reported world units — so a project that
+  // read the expression and fed it back to the action overshot by WorldUnitsPerMeter (100x).
+  const scene = makeScene();
+  const o = makeObject(), b = {};
+  const st = CT.initialize(o, b, onCreatedOptions());
+  st.recoilYawRandomness = 0;                 // keep the assertion deterministic
+  assert.strictEqual(st.unitScale, 100, 'precondition: the default scale is 100 units/metre');
+
+  CT.applyRecoil(b, 0, 0, 4);                 // 4 world units back
+  step(scene, o, b);
+  const peak = Math.abs(CT.getRecoilKickbackZ(b));
+  assert.ok(peak > 0.05 && peak < 40,
+    `kickback must land in world units, not metres (got ${peak.toFixed(3)} world units for a 4-unit kick)`);
+
+  // Round-tripping the expression back through the action must not blow up by 100x.
+  const st2 = (() => {
+    const o2 = makeObject(), b2 = {};
+    CT.initialize(o2, b2, onCreatedOptions());
+    CT.getState(b2).recoilYawRandomness = 0;
+    CT.applyRecoil(b2, 0, 0, peak);
+    return CT.getState(b2);
+  })();
+  assert.ok(Math.abs(st2.recoilZVel) < Math.abs(st.recoilZVel) * 1.2,
+    'feeding RecoilKickbackZ() back into Apply weapon recoil must be stable, not 100x larger');
+}
+{
   // D17: the expressions must report what was applied, damping included.
   const scene = makeScene();
   const o = makeObject(), b = {};
@@ -546,7 +598,7 @@ assert.strictEqual(extensionJson.eventsBasedBehaviors.length, 1);
 
 const behDef = extensionJson.eventsBasedBehaviors[0];
 const props = behDef.propertyDescriptors;
-assert.strictEqual(props.length, 16, `expected 16 properties, found ${props.length}`);
+assert.strictEqual(props.length, 17, `expected 17 properties, found ${props.length}`);
 for (const p of props) {
   assert.ok(p.group, `property ${p.name} has no editor group`);
 }
@@ -559,21 +611,30 @@ for (const cp of choiceProps) {
 
 const baseFOVProp = props.find((p) => p.name === 'BaseFOV');
 assert.strictEqual(baseFOVProp.value, '0', 'D3: BaseFOV must default to "inherit the layer"');
+const terrainJitterProp = props.find((p) => p.name === 'TerrainMicroJitterIntensity');
+assert.strictEqual(terrainJitterProp.value, '0', 'terrain micro-jitter must default to off');
 
 const lifecycleNames = behDef.eventsFunctions.filter((f) => f.private).map((f) => f.name).sort();
 assert.deepStrictEqual(lifecycleNames,
   ['doStepPostEvents', 'doStepPreEvents', 'onActivate', 'onCreated', 'onDeActivate', 'onDestroy'],
   'D13: activate/deactivate hooks must be wired');
 
-// D19: the runtime is embedded exactly twice, and never inside a per-frame hook.
+// D19: the runtime is embedded exactly ONCE, in `onCreated`, and never in a per-frame hook.
+//
+// The second copy used to live in an `onFirstSceneLoaded` free function, described as a safety net
+// for a behavior attached before that hook ran. The engine runs them the other way round:
+// `runtimescene.js` `loadFromScene` calls `createObjectsFrom(...)` — hence `RuntimeObject
+// .onCreated()` and every behavior's `onCreated` — before it iterates
+// `gdjs.callbacksFirstRuntimeSceneLoaded`. Since every ACE here takes the behavior as a parameter,
+// none can be reached before `onCreated` has installed the runtime, so the free copy never ran.
 const marker = 'Procedural Camera Motion, Shakes';
 const allBlocks = [
   ...extensionJson.eventsFunctions.flatMap((f) => f.events.map((e) => ({ name: 'ext.' + f.name, code: e.inlineCode }))),
   ...behDef.eventsFunctions.flatMap((f) => f.events.map((e) => ({ name: f.name, code: e.inlineCode }))),
 ];
 const withRuntime = allBlocks.filter((b) => b.code.includes(marker)).map((b) => b.name).sort();
-assert.deepStrictEqual(withRuntime, ['ext.onFirstSceneLoaded', 'onCreated'],
-  `D19: runtime should be embedded only in onFirstSceneLoaded and onCreated (found in ${withRuntime.join(', ')})`);
+assert.deepStrictEqual(withRuntime, ['onCreated'],
+  `D19: runtime should be embedded only in onCreated (found in ${withRuntime.join(', ')})`);
 
 // D22: a `behavior` parameter with no supplementaryInformation makes the code generator emit
 // `getBehavior("")`, which returns undefined — so every ACE throws on its first call while the
@@ -590,9 +651,9 @@ for (const f of behDef.eventsFunctions) {
 const actionsList = behDef.eventsFunctions.filter((f) => f.functionType === 'Action' && !f.private);
 const conditionsList = behDef.eventsFunctions.filter((f) => f.functionType === 'Condition');
 const expressionsList = behDef.eventsFunctions.filter((f) => f.functionType === 'Expression');
-assert.strictEqual(actionsList.length, 35, `expected 35 actions, found ${actionsList.length}`);
+assert.strictEqual(actionsList.length, 36, `expected 36 actions, found ${actionsList.length}`);
 assert.strictEqual(conditionsList.length, 7, `expected 7 conditions, found ${conditionsList.length}`);
-assert.strictEqual(expressionsList.length, 17, `expected 17 expressions, found ${expressionsList.length}`);
+assert.strictEqual(expressionsList.length, 18, `expected 18 expressions, found ${expressionsList.length}`);
 
 // Every action/condition/expression must reach a function that actually exists on the runtime.
 for (const f of [...actionsList, ...conditionsList, ...expressionsList]) {

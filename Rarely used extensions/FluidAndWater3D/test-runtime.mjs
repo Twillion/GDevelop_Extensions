@@ -1004,11 +1004,14 @@ assert.ok(foamSeen < 1000, 'Not the entire surface should be breaking at once');
 assert.ok(foamSum / 1024 < 0.8, 'Mean fold should be well below 1');
 
 // The surface the shader displaces and the height buoyancy samples must be the same number.
-// This is a dual-cascade ocean, so the expected value is cascade 0 plus the weighted cascade 1 -
-// exactly the sum the vertex shader displaces by.
+// Three seas go into that surface - the swell, the wind chop, and the cross swell running at an
+// angle to the wind - and the expected value is the same weighted sum the vertex shader displaces
+// by. A boat floating on cascade 0 alone would sit on a sea nobody can see.
 const sampled = FW.getOceanWaveHeightAt(oceanScene2, oceanBeh, 1234, 5678);
 const expectedHeight = ocean.field.sampleHeight(1234, 5678)
-  + ocean.cascadeWeight * ocean.field1.sampleHeight(1234, 5678);
+  + ocean.cascadeWeight * ocean.field1.sampleHeight(1234, 5678)
+  + (ocean.field2 ? ocean.swellWeight * ocean.field2.sampleHeight(1234, 5678) : 0);
+assert.ok(!!ocean.field2, 'this ocean should have a cross swell, or the check below proves nothing');
 assert.ok(Math.abs(sampled - expectedHeight) < 1e-9,
   'WaveHeightAt must read the same fields the textures were built from');
 const surfZ = FW.getOceanSurfaceZ(oceanScene2, oceanBeh, 1234, 5678);
@@ -1606,6 +1609,11 @@ console.log('--- Test 22: OceanWaveWorks3D multi-cascade ocean, Beaufort scale p
     targetWaterBody: 'WaveWorksOcean',
   });
 
+  // Start the hull under the water rather than at a fixed altitude. Where the surface sits at
+  // any one spot is whatever phase the three seas happen to be in there - on a gale with a
+  // 4.8m significant height it can be metres either side of the still line - and this test is
+  // about the buoyancy response, not about that phase.
+  boatZ = FW.getOceanSurfaceZ(wwScene, wwBeh, 200, 200) - 60;
   FW.stepBuoyancy(wwScene, boatObj, boatBeh, 0.016);
   assert.strictEqual(wwBuoy.isFloating, true, 'Boat must float on OceanWaveWorks3D');
   assert.ok(wwBuoy.lastForce > 0, 'Buoyancy must apply positive upward lift force on WaveWorks ocean');
@@ -3936,11 +3944,14 @@ console.log('--- Test 48: wave-collision spray fires where crests meet, and only
   // Crests can only smack into each other if there is more than one direction of travel. The
   // Phillips spreading is cos-squared about the wind and cuts upwind energy to 7%, so a single
   // train marches downwind in parallel and nothing ever converges - which is exactly what "the
-  // waves cannot even smack against each other" looked like. The cross swell runs cascade 1 at an
-  // angle so the two trains actually meet.
+  // waves cannot even smack against each other" looked like.
+  //
+  // The fix is a SECOND FULL SEA at the same wavelength running across the wind. Angling the
+  // detail cascade instead was not enough: that cascade is four times shorter, so it only ever
+  // crossed chop over swell and nothing crest-sized ever met anything else crest-sized.
   {
     // A LARGE, gentle body. On a small steep tile the waves converge from steepening alone and
-    // the swell angle barely shows; the crossing matters exactly where the sea is broad enough
+    // the second sea barely shows; the crossing matters exactly where the sea is broad enough
     // that a single train would otherwise just march.
     const bigSea = (nm) => ({
       getX: () => 0, getY: () => 0, getZ: () => 0,
@@ -3949,26 +3960,63 @@ console.log('--- Test 48: wave-collision spray fires where crests meet, and only
       getAngle: () => 0, getRotationX: () => 0, getRotationY: () => 0, isHidden: () => false,
       get3DRendererObject: () => ({ isMesh: true, material: null, visible: true, traverse() {} }),
     });
-    const hardAt = (angle) => {
+    const oceanWith = (angle, weight) => {
       const sc = makeScene();
       const o = FW.registerWaveWorksOcean(sc, bigSea('Cross'), {}, {
         beaufortScale: 'Beaufort 9 - Strong Gale', resolution: 64, gridSubdivisions: 64,
-        swellAngle: angle });
+        swellAngle: angle, swellWeight: weight });
       FW.updateOceanField(o, 3.0);
+      return o;
+    };
+    const hardAt = (angle, weight) => {
+      const o = oceanWith(angle, weight);
       let hard = 0;
       for (let i = 0; i < o.field.plume.length; i++) if (o.field.plume[i] > 0.6) hard++;
       return 100 * hard / o.field.plume.length;
     };
-    const parallel = hardAt(0);
-    const crossed = hardAt(48);
-    assert.ok(crossed > parallel * 2.0, 'a crossing sea must collide far harder than a parallel ' +
-      'one: ' + crossed.toFixed(2) + '% against ' + parallel.toFixed(2) + '%. If these match, the ' +
-      'swell angle is not reaching cascade 1 and every crest is still travelling the same way.');
+
+    // Strength 0 is a single sea: the old behaviour, and the baseline to beat.
+    const single = hardAt(0, 0);
+    const crossed = hardAt(60, 0.55);
+    const full = hardAt(60, 1.0);
+    assert.ok(crossed > single * 2.0, 'a crossing sea must collide far harder than a single ' +
+      'train: ' + crossed.toFixed(2) + '% against ' + single.toFixed(2) + '%. If these match, the ' +
+      'cross swell is not reaching the surface and every crest is still travelling the same way.');
+    assert.ok(full > crossed, 'cross-swell strength must be a real dial, not a switch: 1.0 gave ' +
+      full.toFixed(2) + '% against 0.55 giving ' + crossed.toFixed(2) + '%');
+
+    // Strength 0 must skip the second sea outright rather than multiply it by zero every frame.
+    assert.ok(!oceanWith(60, 0).field2, 'cross-swell strength 0 must not build the second field');
+    assert.ok(!!oceanWith(60, 0.55).field2, 'a non-zero cross swell must build a second field');
+
+    // The second sea has to share cascade 0's grid exactly, or summing it would need interpolation.
+    const o = oceanWith(60, 0.55);
+    assert.strictEqual(o.field2.n, o.field.n, 'cross swell must share cascade 0 resolution');
+    assert.strictEqual(o.field2.tileSize, o.field.tileSize, 'cross swell must share cascade 0 tile');
 
     // And the collision has to be measured on the COMBINED surface. Each cascade's own Jacobian
-    // only knows its own waves, so a convergence between the two trains is invisible to both.
+    // only knows its own waves, so a convergence between the trains is invisible to both.
     assert.ok(/function computeCombinedFoam/.test(runtimeCode),
       'fold and collision must be computed on both cascades summed, not per cascade');
+
+    // A resize retunes the tile. The cross swell has to come with it or it keeps the old
+    // wavelength and stops being a comparable sea.
+    FW.rebuildOceanForSize(o, 9000, 9000);
+    assert.ok(!!o.field2, 'resize must not drop the cross swell');
+    assert.strictEqual(o.field2.tileSize, o.field.tileSize,
+      'resize must rebuild the cross swell at the new tile');
+
+    // Same for a wind change: it drives both seas.
+    const windScene = makeScene();
+    const windBeh = {};
+    const windOcean = FW.registerWaveWorksOcean(windScene, bigSea('Wind'), windBeh, {
+      beaufortScale: 'Beaufort 9 - Strong Gale', resolution: 32, gridSubdivisions: 32 });
+    const beforeWind = windOcean.field2.significantWaveHeight;
+    FW.setOceanWind(windScene, windBeh, 4.0, 0);
+    assert.ok(!!windOcean.field2, 'a wind change must not drop the cross swell');
+    assert.ok(windOcean.field2.significantWaveHeight < beforeWind * 0.5,
+      'dropping the wind must calm the cross swell too, not leave it running the old gale: ' +
+      windOcean.field2.significantWaveHeight.toFixed(1) + ' against ' + beforeWind.toFixed(1));
   }
 
   // The plume mask belongs to cascade 0 only. Cascade 1 is ~4x steeper on a quarter-size tile, so

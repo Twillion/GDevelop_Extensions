@@ -47,6 +47,42 @@ for (const [name, glsl] of Object.entries(gdjs.__shaders)) {
   const dead = declared.filter((u) => count(code, u) <= 1);
   if (dead.length) problems.push('declared but never read: ' + dead.join(', '));
 
+  // Hard per-pixel gates on continuous quantities are how this pipeline produced flicker:
+  // velocity, reflection direction and circle-of-confusion all vary per pixel and per frame,
+  // so any fixed threshold on them makes neighbouring pixels snap between two very different
+  // outputs on consecutive frames.
+  //
+  // A gate is fine if the same value also feeds a mix() or smoothstep() — then the branch is
+  // only skipping negligible work and the transition itself is still continuous.
+  const KNOWN_DISCONTINUITIES = {
+    // Inherently binary: a ray either intersects the depth buffer or it does not. The SSR
+    // resolve blur is what softens the resulting boundary.
+    ssr: ['deltaZ < 0.0 && deltaZ > -thickness', 'rView.z < bPos.z', 'reflectivity < 0.01'],
+    // Reconstructed normals must face the camera; there is no continuous alternative.
+    gtao: ['dot(n, -pC) < 0.0'],
+    // Below half a pixel of blur the gathered result already equals the sharp one.
+    dof: ['centerCoC < 0.5', 'sZ < centerZ'],
+  };
+
+  const rampedValues = new Set(
+    [...glsl.matchAll(/\b([A-Za-z_]\w*)\s*=[^;]*\bsmoothstep\s*\(/g)].map((m) => m[1])
+  );
+
+  const suspicious = glsl.split('\n')
+    .map((l, i) => [i + 1, l.trim()])
+    .filter(([, l]) => /^if\s*\(/.test(l))
+    .filter(([, l]) => /velLen|velocity|R\.z|CoC|strength|brightness|reflectivity|Fade/.test(l))
+    .filter(([, l]) => !(KNOWN_DISCONTINUITIES[name] || []).some((k) => l.includes(k)))
+    .filter(([, l]) => {
+      // Safe when the gated identifier is also blended somewhere in this shader.
+      const ident = (l.match(/^if\s*\(\s*!?([A-Za-z_]\w*)/) || [])[1];
+      return !(ident && rampedValues.has(ident));
+    });
+
+  for (const [line, text] of suspicious) {
+    problems.push(`line ${line} gates a per-pixel continuous value without a ramp: ${text}`);
+  }
+
   if (problems.length) {
     failures++;
     console.error(`  ${name}: ${problems.join('; ')}`);

@@ -429,3 +429,79 @@ publishing the JSON into `Twillion-s-Extensions/extensions/`.
 
 Suggested order once 1.1.0 has been run in the engine: **U3, U4, U7** have the best
 effort-to-feel ratio; **U8** is the one that makes the README's third-person and vehicle claims true.
+
+---
+
+## What changed in 1.3.0
+
+Four defects found by reading the shipped code and the installed engine side by side, rather than
+by re-reading the review above.
+
+### D23 — MAJOR. D4 was only half fixed: the landing impulse still saturated.
+
+1.1.0 scaled the landing clamps into world units and the review recorded the defect as closed. The
+ceiling moved; it did not go away. At the shipped constants:
+
+| Clamp | Hard cap | Reached at | In a GDevelop scene |
+| :-- | --: | --: | :-- |
+| `compression` | `0.4` | 10 m/s | a 5 m drop |
+| `pitchDip` (`landingPitchDip` 3.0) | `10.0` | 5.5 m/s | a **1.6 m** drop |
+
+So every fall past roughly two metres produced the identical thump — the same symptom D4 described,
+one order of magnitude further out. The suite missed it because both of its cases (300 and 700 u/s)
+were chosen to sit under the ceiling, with a comment saying so.
+
+**Fixed** by replacing both hard clamps with `softSaturate(x, cap) = cap · tanh(x / cap)`: identical
+to the old linear response while `x` stays under a fifth of the cap, strictly monotonic for every
+input, asymptotic instead of clipping. Caps are `1.6` and `60.0`, chosen so the plausible gameplay
+range (a hard landing is 7–8 m/s, a long fall 15, a death fall 30) stays within ~1% of the old
+response. Regression: phase 6 now also drops from 15 m/s and 30 m/s and requires the second to hit
+harder, plus asserts the ordinary range is still linear to within 5%.
+
+### D24 — MODERATE. `Apply weapon recoil` took metres while `RecoilKickbackZ()` reported world units.
+
+`API_REFERENCE.md` opens with "everything you type in and everything you read back is in world
+units". The kickback argument was the sole exception, and the asymmetry was live: reading
+`RecoilKickbackZ()` and feeding it back into the action overshot by `WorldUnitsPerMeter` — 100× at
+the default scale. **Fixed**: the action takes world units and converts internally; default `0.04`
+→ `4`. Regression in phase 9 asserts the round trip is stable.
+
+### D25 — MINOR. The `onFirstSceneLoaded` runtime copy never ran. 59 KB, a quarter of the JSON.
+
+D19 cut four embeds to two and kept the second "in case a behavior is attached before
+`onFirstSceneLoaded` runs". The engine runs them the other way round: `runtimescene.js`'s
+`loadFromScene` calls `createObjectsFrom(...)` — hence `RuntimeObject.onCreated()` and every
+behavior's `onCreated` — **before** it iterates `gdjs.callbacksFirstRuntimeSceneLoaded`. And every
+one of the 59 ACEs takes the behavior as a parameter, so none is reachable before `onCreated` has
+installed the runtime. The free copy only ever hit the `if (gdjs.__cameraTweens3D) return;` guard.
+
+**Fixed** by dropping the free function; the runtime is embedded once, in `onCreated`.
+CinematicPostFX3D already ships this way. **243.8 KB → 181.9 KB.**
+
+### D26 — MINOR. Two documentation claims did not match the engine.
+
+- **Physics Car 3D.** The README claimed ground state, fall speed, forward speed and strafe speed
+  all came from the behavior. `PhysicsCar3DRuntimeBehavior` exposes `isOnFloor()` and
+  `getEngineSpeed()`, and the latter returns engine **RPM**, not a linear velocity — so
+  `resolveSources`, which requires all three speed getters, correctly takes a car as a ground source
+  only and differences its position for every speed. Documented as it actually behaves.
+- **`Set turn lean angle`.** Named and documented as degrees, but the maths is
+  `-yawRate · 0.01 · turnLeanAngle`, i.e. degrees of roll **per 100°/s of yaw**. At the `Standard`
+  value of 1.5 an ordinary 60°/s turn banks 0.9°, not 1.5°. The maths is left alone — changing it
+  would silently retune every project — and the docs now say what the number means.
+
+### Verified, not changed
+
+Read against the installed GDJS r160 during the same pass, and correct as they stand: the
+critically damped spring solver is the exact analytic solution (position **and** velocity);
+`BOB_PHASE_PERIOD` is 4π, which is what `cos(phase/2)` needs to wrap continuously; the shake clock
+wraps by an exact multiple of the 256 lattice period so all six noise channels stay continuous
+together; `channelRelease` skipping `layer.setCamera3DFieldOfView` is safe because
+`_threeCameraDirty` only ever drives `updateProjectionMatrix()`, which the extension calls itself;
+and the six shake channel offsets stay distinct modulo 256.
+
+### Still open after 1.3.0
+
+**U3** footstep events · **U4** positional trauma from a blast origin · **U5** named layered shake
+sources · **U6** recoil patterns and recentre · **U8** third-person and vehicle rig modes ·
+**U9** cinematic one-shots · **U12** an example scene and publication.
