@@ -1081,3 +1081,40 @@ whiteout (41% of a Beaufort 4 sea) and it is the one that must never come back.
 The harness scenario had been hardcoding `foamStyle: 'Natural'`, which masked the shipped default
 from every screenshot taken through it. It now passes nothing unless `?foam=` is given, so what gets
 photographed is what users get.
+
+---
+
+## 4.3.0 — the water had no depth to look into
+
+Reported as the reflection maths looking wrong. It was not the reflection maths — Schlick, `reflect()`,
+the sky gradient and the sun lobe were all fine. The problem was upstream, in the optical depth.
+
+`column` was `u_WaterDepth`, the water body's **Z thickness**. On a body 3568 units deep against a
+130-unit extinction depth that is **27 extinction lengths**: `transmit` underflows to zero in every
+channel, in every pixel. Consequences, all visible in the screenshots:
+
+- `u_ShallowColor` never appears at all. The turquoise the palette is built around is unreachable.
+- The water contributes no spatial variation, because a constant column produces a constant colour.
+- With nothing but a constant behind it, Fresnel at a low camera (~0.8) leaves the surface a mirror
+  of a procedural sky that has no clouds and no structure - one flat pale wash.
+
+Two changes:
+
+**The optical path is clamped and view-dependent.** `min(column, extinctionDepth * 1.5)` stops the
+*shape* of the volume deciding the look, and dividing by `NdotV` makes the path longer at grazing
+angles, which is where an ocean's near-dark / far-bright gradient actually comes from. There was no
+such gradient before because the column was the same everywhere.
+
+**Fresnel has a ceiling** (`u_FresnelMax`, 0.72). Physically it reaches 1.0 at grazing and the
+surface becomes a perfect mirror; with a featureless procedural sky that is a large flat wash.
+Holding some water colour back is what keeps the sea reading as water from a low camera.
+
+Verified in the harness at Beaufort 6 and 9, from a low camera and from above: 0 GLSL errors, and the
+surface now shows near-field teal, brighter reflection toward the horizon, and dark troughs where
+before every pixel was the same pale cyan.
+
+### Note
+
+A deep water volume is a reasonable thing to author - it is a collision shape as much as a visual
+one - so tying optical depth to it was a trap rather than a setting. `ExtinctionDepth` is the control
+that was always meant to own this, and now does.
