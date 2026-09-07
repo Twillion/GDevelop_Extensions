@@ -990,3 +990,73 @@ only read as though a second water model still existed.
 Full suite green, `check-shaders` passes with WATER2 dropped from its list, and both surviving water
 paths were run in the harness on real WebGL: the WaveWorks program still links with an empty info
 log and 0 GLSL errors, and the `gerstner` scenario (WaterBody3D) still reaches DONE.
+
+---
+
+## 4.1.0 — aligned with Rare's actual method
+
+Driven by `REFERENCE_AUDIT_SOT.md`, which compared what we built against the talk itself rather than
+against memory. Four of the five divergences are closed.
+
+### The foam threshold is real now
+
+Rare generate foam with `saturate((foamThreshold - detJ) / foamThreshold)`. Ours hardcoded that
+threshold to **1.0** — the most permissive value it can take — so foam appeared wherever the surface
+compressed at all, and a second threshold downstream then tried to take it back. Two controls
+fighting over one decision.
+
+`computeFoam` takes the threshold now, and the coverage slider drives it: asking for more foam
+biases the Jacobian, which is exactly the control the talk describes turning up for storms. The
+downstream band drops to a fixed soft toe (0.02) whose only job is to stop single texels popping.
+
+Generated foam, measured per rung on a 5000-unit tile:
+
+| rung | cells folding | strongly folding |
+| :--- | ---: | ---: |
+| Beaufort 2 | 0.0% | 0.0% |
+| Beaufort 4 | 1.1% | 0.0% |
+| Beaufort 6 | 21.3% | 0.0% |
+| Beaufort 9 | 38.9% | 9.0% |
+| Beaufort 12 | 47.2% | 24.5% |
+
+Foam is meaningfully sparser than before at moderate sea states. That is the intended behaviour —
+Rare's own "no bias" slide generates foam at three points across an entire wave profile — and the
+coverage slider is the way back up.
+
+### The progressive blur is on
+
+Their two consecutive slides make the argument: raw Jacobian foam is captioned **"Too Noisy"**, and
+the fix is not a threshold, it is progressively blurring an accumulation buffer frame by frame. Our
+buffer already did exactly that — ping-ponged targets, 4-tap blur, exponential decay, injection via
+`max(blurred * decay, generated)` — and was switched off, never having run on hardware.
+
+It is the default path now, and when live it **is** the foam rather than a `max()` on top of the
+instantaneous fold; taking the max would put the hard un-blurred stamp back and undo the blur.
+
+Verified in the harness on real WebGL2 at Beaufort 4, 6 and 9: `foam buffer: live, shader reading
+it`, 0 GLSL errors. The capability gate, the `resetState()` bracketing and the first-frame read-back
+all stay, so it still degrades to the stateless mask on hardware that cannot host it.
+
+### Foam frequency follows dispersion
+
+*"a high frequency foam texture at the crest... blend to a lower frequency texture as it blends
+out."* The octave mix now reads the buffer: fresh foam samples the fine octave at 0.46, dispersed
+foam falls to 0.10. It was a constant per preset before.
+
+### The subsurface mask goes back to the flanks
+
+Rare drive SSS from *"the choppiness vertex offsets... a mask for where the SIDES of the waves are"*.
+That is `length(totalDisp.xy)`, which is what we originally had. In 3.1.0 it was measured
+correlating 0.086 with elevation, read as "nearly flat, therefore broken", and changed to elevation.
+
+But a flanks mask **should** be uncorrelated with height — it peaks between crest and trough. The
+measurement was right and the conclusion was wrong; the only real defect was the divisor, which
+pinned the mask at 1.0 across a third of the surface. Restored, with the corrected `0.85 x Hs`.
+
+Test 44 previously asserted the elevation version, so it was pinning the regression. It now asserts
+the flanks mask, and Test 43 keeps the saturation guard that catches the defect that did exist.
+
+### Not done
+
+Spray still uses its own eigenvalue detector rather than spawning from the foam signal as Rare do.
+That is a simplification rather than a fix, and the detector works, so it stays for now.

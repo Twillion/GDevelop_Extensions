@@ -2708,11 +2708,15 @@
   var PLUME_ONSET = 0.95;
   var PLUME_RANGE = 0.45;
 
-  OceanField.prototype.computeFoam = function (out, choppiness) {
+  OceanField.prototype.computeFoam = function (out, choppiness, foamThreshold) {
     var n = this.n;
     var cell = this.tileSize / n;
     var dx = this.dispX, dy = this.dispY;
     var chop = (typeof choppiness === "number" && choppiness > 0) ? choppiness : 1.0;
+    // Below this determinant the surface counts as breaking. Small values mean "only where it
+    // actually folds"; larger values bias the Jacobian for more foam, which is the knob Rare
+    // describes turning up for storms.
+    var thr = (typeof foamThreshold === "number" && foamThreshold > 0.001) ? foamThreshold : 1.0;
     var inv2h = chop / (2.0 * cell);
     var plume = this.plume;
 
@@ -2727,11 +2731,15 @@
         var dydx = (dy[y * n + xp] - dy[y * n + xm]) * inv2h;
         var dydy = (dy[yp * n + x] - dy[ym * n + x]) * inv2h;
 
-        // Fold amount, matching the GPU assemble pass: 0 = flat, 1 = fully folded. Storing the
-        // raw Jacobian would make an unpopulated field read as maximum foam.
+        // Rare's formula: saturate((foamThreshold - detJ) / foamThreshold). The determinant sits
+        // between +1 and +2 on open water and dips below zero only where the surface folds over
+        // itself - their own slide shows foam generated at three points across a whole wave
+        // profile. This used to hardcode the threshold to 1.0, the most permissive value it can
+        // take, so foam was generated wherever the surface compressed at all and then had to be
+        // thresholded back down afterwards. Biasing the Jacobian IS the foam control.
         var a = 1.0 + dxdx, d = 1.0 + dydy;
         var jacobian = a * d - dxdy * dydx;
-        out[i] = clamp(1.0 - jacobian, 0.0, 1.0);
+        out[i] = clamp((thr - jacobian) / thr, 0.0, 1.0);
 
         // Colliding crests, as distinct from an ordinary breaking one. The displacement
         // gradient tensor has two eigenvalues: a wave spilling down its face compresses in ONE
@@ -2749,6 +2757,15 @@
     }
     return out;
   };
+
+  /**
+   * The Jacobian bias, from the foam coverage slider. Rare's control for "more foam" is to bias the
+   * determinant threshold up, not to widen a ramp after the fact, so coverage maps here.
+   */
+  function foamThresholdFor(ocean) {
+    var cov = (ocean && typeof ocean.foamCoverage === 'number') ? ocean.foamCoverage : 0.35;
+    return clamp(0.40 + cov * 0.95, 0.05, 1.15);
+  }
 
   var WAVEWORKS_VERTEX_SHADER = [
     'precision highp float;',
@@ -2860,12 +2877,12 @@
     '',
     '  vWorldPosition = worldPos.xyz;',
     '  vGdXY = vec2(worldPos.x, -worldPos.y);',
-    '  // Crest mask, from elevation above the still plane - the same thing the Gerstner shader',
-    '  // reads off dPos.z. It used to be length(totalDisp.xy), on the theory that the choppiness',
-    '  // offset peaks on wave tops. It does not: measured against elevation that correlates at',
-    '  // 0.086 and is essentially flat across the field, so subsurface and glitter were being',
-    '  // driven by a constant. Elevation correlates at 0.88, because it IS the crest.',
-    '  vPeak = clamp(totalDisp.z / max(u_PeakReference, 1.0), 0.0, 1.0);',
+    '  // Rare drive subsurface from "the choppiness vertex offsets... a mask for where the SIDES',
+    '  // of the waves are", so this is the horizontal offset magnitude, not elevation. It was',
+    '  // briefly changed to elevation after measuring it correlating only 0.086 with height - but',
+    '  // a flanks mask SHOULD be uncorrelated with height, since it peaks between crest and trough.',
+    '  // The real defect was the divisor, which pinned it at 1.0 across a third of the surface.',
+    '  vPeak = clamp(length(totalDisp.xy) / max(u_PeakReference, 1.0), 0.0, 1.0);',
     '  vShoreAttenuation = shoreAttenuation;',
     '  vInteractionFoam = interactionFoam * shoreAttenuation;',
     '',
@@ -3129,9 +3146,16 @@
     '  float along = 0.010 * fScale;',
     '  vec2 foamFrame = vec2(dot(vGdXY, wDir) * along + u_Time * 0.22,',
     '                        dot(vGdXY, wCross) * along * fStreak - u_Time * 0.05);',
+    '  // How fresh this foam is. Straight off the crest the buffer is bright; after a few frames',
+    '  // of progressive blur it has spread and faded. Rare blend two authored foam textures on',
+    '  // exactly this signal - high frequency at the crest, lower frequency as it blends out -',
+    '  // so the octave mix follows it rather than being fixed per preset.',
+    '  float freshness = (u_FoamBufferOn > 0.5) ? clamp(texture2D(u_FoamBuffer, vFieldUv).r, 0.0, 1.0)',
+    '                                          : clamp(fold, 0.0, 1.0);',
     '  float foamLace = foamNoise(foamFrame * 6.0);',
     '  float laceFine = foamNoise(foamFrame * 17.0 + vec2(11.3, 4.9));',
-    '  foamLace = clamp(foamLace * 0.72 + laceFine * 0.28, 0.0, 1.0);',
+    '  float fineMix = mix(0.10, 0.46, freshness);',
+    '  foamLace = clamp(foamLace * (1.0 - fineMix) + laceFine * fineMix, 0.0, 1.0);',
     '  // Bite is contrast about the midpoint. Low leaves a soft wash that reads as spume; high cuts',
     '  // the lace into hard-edged islands with clean water between them.',
     '  float fBite = (u_FoamBite > 0.001) ? u_FoamBite : 1.0;',
@@ -3142,18 +3166,22 @@
     '  // belong here. Feeding it in made a Beaufort 4 sea 41% solid white, because it saturates',
     '  // at a fraction of the wave height while the fold is still down at 0.14.',
     '  float crest = clamp(max(fold, plume0 * 0.85), 0.0, 1.0);',
-    '  // With the persistent buffer on, foam remembers where it has been and streaks behind the',
-    '  // crest. Off (the default) this term is skipped and the mask is purely of this frame.',
+    '  // With the buffer live it IS the foam, not an addition to it: the blit already injected',
+    '  // this frame generation into it and blurred that against every previous frame, which is',
+    '  // the progressive blur the whole look depends on. Taking max() with the instantaneous fold',
+    '  // would put the hard un-blurred stamp back on top and undo it.',
     '  if (u_FoamBufferOn > 0.5) {',
-    '    crest = clamp(max(crest, texture2D(u_FoamBuffer, vFieldUv).r), 0.0, 1.0);',
+    '    crest = clamp(texture2D(u_FoamBuffer, vFieldUv).r, 0.0, 1.0);',
     '  }',
-    '  // Sized to cascade 0, whose 90th percentile climbs 0.009 / 0.089 / 0.245 / 0.549 / 0.904',
-    '  // across Beaufort 2, 4, 6, 9 and 12 without ever saturating. The Gerstner shader keeps a',
-    '  // wider band on purpose - its fold is a different quantity on a different scale.',
-    '  float crestThreshold = max(0.22 - u_FoamCoverage * 0.23, 0.02);',
+    '  // The fold arriving here is ALREADY the foam intensity: the field generates it with the',
+    '  // Rare rule, saturate((threshold - detJ) / threshold), so it is sparse and strong at',
+    '  // source and the coverage slider biases that threshold. This band now only needs a soft',
+    '  // toe to stop single texels popping - it used to re-threshold an over-generous signal,',
+    '  // which meant two controls fighting over the same decision.',
+    '  float crestThreshold = 0.02;',
     '  // Softness widens the ramp: a painterly sea wants smeared edges, a toon one wants a step.',
     '  float softness = (u_FoamSoftness > 0.001) ? u_FoamSoftness : 1.0;',
-    '  float capWidth = max(u_FoamCoverage * 0.14, 0.04) * softness;',
+    '  float capWidth = max(u_FoamCoverage * 0.35, 0.12) * softness;',
     '  float cap = smoothstep(crestThreshold, min(crestThreshold + capWidth, 1.0), crest);',
     '  float trailBand = smoothstep(max(crestThreshold - capWidth * 0.6, 0.0), crestThreshold + 0.02, crest);',
     '  // The noise gates the trailing foam, so a calm sea shows none of it at all.',
@@ -5080,11 +5108,11 @@
         var field0 = ocean.field;
         var field1 = ocean.field1;
         field0.evolve(time, 1.0);
-        field0.computeFoam(ocean.foamBuffer, ocean.choppiness);
+        field0.computeFoam(ocean.foamBuffer, ocean.choppiness, foamThresholdFor(ocean));
 
         if (field1) {
           field1.evolve(time, 1.0);
-          field1.computeFoam(ocean.cascadeFoamBuffer, ocean.choppiness);
+          field1.computeFoam(ocean.cascadeFoamBuffer, ocean.choppiness, foamThresholdFor(ocean));
         }
 
         var n0 = field0.n;
@@ -5145,14 +5173,14 @@
         // rather than freezing whatever it was at registration.
         if (ocean.material && ocean.material.uniforms && ocean.material.uniforms.u_PeakReference) {
           ocean.material.uniforms.u_PeakReference.value =
-            Math.max(ocean.significantWaveHeight * 0.5, 1.0);
+            Math.max(ocean.significantWaveHeight * 0.85, 1.0);
         }
         return;
       }
 
       var field = ocean.field;
       field.evolve(time, 1.0);
-      field.computeFoam(ocean.foamBuffer, ocean.choppiness);
+      field.computeFoam(ocean.foamBuffer, ocean.choppiness, foamThresholdFor(ocean));
 
       if (!ocean.texData) return;
       var data = ocean.texData;
@@ -5446,7 +5474,12 @@
         initialHeight: height,
         isCameraUnderwater: false,
         isSpectralOcean: true,
-        persistentFoam: options.persistentFoam !== undefined ? !!options.persistentFoam : false,
+        // ON by default from 4.1.0. Rare's two slides make the case better than any argument:
+        // raw Jacobian foam is captioned "Too Noisy", and the fix is not a threshold, it is
+        // progressively blurring the accumulation buffer frame by frame. Without it we are
+        // stuck at the noisy slide and papering over it with procedural break-up noise.
+        // The capability gate and the first-frame read-back still make this degrade safely.
+        persistentFoam: options.persistentFoam !== undefined ? !!options.persistentFoam : true,
         anisotropy: parseAnisotropy(options.textureAnisotropy !== undefined ? options.textureAnisotropy : 4, 4),
         foamRT: null,
         field: null,
@@ -5580,11 +5613,11 @@
             u_CascadeTexel: { value: 1.0 / res },
             u_Choppiness: { value: ocean.choppiness },
             u_CascadeWeight: { value: ocean.cascadeWeight },
-            // Reference for the subsurface/glitter crest mask, which now divides ELEVATION.
-            // Significant wave height is 4 sigma by definition, so a strong crest sits near
-            // Hs * 0.5 above the still plane; that is the divisor which puts vPeak at 1.0 on the
-            // tops and 0.0 everywhere below the waterline.
-            u_PeakReference: { value: Math.max(ocean.significantWaveHeight * 0.5, 1.0) },
+            // Divides the horizontal choppiness offset. Measured |displacement| runs to 0.49 x Hs
+            // on a Beaufort 2 sea and 1.44 x Hs on a Beaufort 12 one, with a 90th percentile near
+            // 0.85 x Hs throughout - so that is the divisor. The original 0.28 pinned it at 1.0
+            // across a third of the surface, which is what made this look broken.
+            u_PeakReference: { value: Math.max(ocean.significantWaveHeight * 0.85, 1.0) },
             u_Opacity: { value: ocean.opacity },
             u_MicroDetail: { value: ocean.microDetail },
             u_WindDir: {

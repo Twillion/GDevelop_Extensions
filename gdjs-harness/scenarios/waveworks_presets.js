@@ -242,6 +242,13 @@
         '  streak ' + fu.u_FoamStreak.value.toFixed(1) +
         '  bite ' + fu.u_FoamBite.value.toFixed(2) +
         '  trail ' + fu.u_FoamTrail.value.toFixed(2), 'ok');
+      // The progressive blur is the whole point of 4.1.0 and it has never run on hardware.
+      H.log('foam buffer: ' + (ocean.foamRT
+        ? (ocean.foamRT.failed ? 'ALLOCATED BUT FAILED' : 'live, ' +
+            (ocean.material.uniforms.u_FoamBufferOn.value > 0.5 ? 'shader reading it' : 'shader NOT reading it'))
+        : 'not allocated (fell back to the stateless mask)'),
+        (ocean.foamRT && !ocean.foamRT.failed &&
+         ocean.material.uniforms.u_FoamBufferOn.value > 0.5) ? 'ok' : 'bad');
       H.log('steepness Hs/tile ' + (ocean.significantWaveHeight / ocean.tileSize).toFixed(3) +
         '   Hs ' + ocean.significantWaveHeight.toFixed(0) +
         '  foamCov ' + ocean.material.uniforms.u_FoamCoverage.value.toFixed(2) +

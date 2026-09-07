@@ -2167,7 +2167,7 @@ const extension = {
   category: '3D',
   author: 'Twillion',
   license: 'MIT',
-  version: '4.0.0',
+  version: '4.1.0',
   iconUrl,
   previewIconUrl: iconUrl,
   helpPath: '',
