@@ -115,6 +115,8 @@ const LIGHT_OPTIONS = `{
   iesProfile: behavior._getIESProfile ? behavior._getIESProfile() : 'None',
   castContactShadows: behavior._getCastContactShadows ? behavior._getCastContactShadows() : true,
   shadowBias: behavior._getShadowBias ? behavior._getShadowBias() : 0.02,
+  castShadow: behavior._getCastShadows ? behavior._getCastShadows() : false,
+  sourceRadius: behavior._getSourceRadius ? behavior._getSourceRadius() : 0.0,
   flickerMode: behavior._getFlickerMode ? behavior._getFlickerMode() : 'None',
   flickerSpeed: behavior._getFlickerSpeed ? behavior._getFlickerSpeed() : 8.0,
   flickerIntensityVariation: behavior._getFlickerIntensityVariation ? behavior._getFlickerIntensityVariation() : 0.25
@@ -249,6 +251,24 @@ if (behavior._setCastContactShadows) behavior._setCastContactShadows(val);
 AL.updateLight(runtimeScene, object, behavior, { castContactShadows: val });
 `, { group: G_LIGHT_SHADOW }),
 
+  fn('SetCastShadows', 'Enable SDF soft shadows',
+    'Enable SDF soft shadows on _PARAM0_: _PARAM2_',
+    'Toggle Signed Distance Field raymarched soft shadows for this light.', 'Action',
+    [bool('Enable', 'Enable SDF shadows')],
+    `const val = !!eventsFunctionContext.getArgument("Enable");
+if (behavior._setCastShadows) behavior._setCastShadows(val);
+AL.updateLight(runtimeScene, object, behavior, { castShadow: val });
+`, { group: G_LIGHT_SHADOW }),
+
+  fn('SetSourceRadius', 'Set light source radius',
+    'Set light source radius on _PARAM0_ to _PARAM2_',
+    'Set physical light source radius for penumbra calculation (in world units; 0 uses 5% of light radius).', 'Action',
+    [num('SourceRadius', 'Physical source radius in world units', '0.0')],
+    `const val = eventsFunctionContext.getArgument("SourceRadius");
+if (behavior._setSourceRadius) behavior._setSourceRadius(val);
+AL.updateLight(runtimeScene, object, behavior, { sourceRadius: val });
+`, { group: G_LIGHT_SHADOW }),
+
   fn('SetShadowBias', 'Set shadow bias',
     'Set shadow bias on _PARAM0_ to _PARAM2_',
     'Set normal offset bias to prevent self-shadow acne.', 'Action',
@@ -313,6 +333,14 @@ eventsFunctionContext.returnValue = !!(light && light.isInFrustum);
     `const light = behavior.__alLight;
 eventsFunctionContext.returnValue = !!(light && light.flickerMode !== 'None' && light.flickerIntensityVariation > 0);
 `, { group: G_LIGHT_FX }),
+
+  fn('CastsShadows', 'Clustered light casts SDF shadows',
+    '_PARAM0_ clustered light casts SDF shadows',
+    'Check if the clustered light is configured to cast SDF shadows.', 'Condition',
+    [],
+    `const light = behavior.__alLight;
+eventsFunctionContext.returnValue = !!(light && light.castShadow);
+`, { group: G_LIGHT_SHADOW }),
 ];
 
 const lightExpressions = [
@@ -372,6 +400,13 @@ eventsFunctionContext.returnValue = light ? light.spotOuterAngle : 45.0;
 eventsFunctionContext.returnValue = light ? light.shadowBias : 0.02;
 `, { group: G_LIGHT_SHADOW, expressionType: 'number' }),
 
+  fn('SourceRadius', 'Light source radius',
+    '', 'Return the physical source radius for penumbra calculations in world units.', 'Expression',
+    [],
+    `const light = behavior.__alLight;
+eventsFunctionContext.returnValue = light ? (light.sourceRadius || 0.0) : 0.0;
+`, { group: G_LIGHT_SHADOW, expressionType: 'number' }),
+
   fn('FlickerSpeed', 'Flicker frequency in Hz',
     '', 'Return the animation oscillation speed.', 'Expression',
     [],
@@ -419,6 +454,8 @@ const clusteredLightBehavior = {
       extraInformation: ['None', 'WallSconce', 'StreetLamp', 'Downlight', 'Searchlight']
     }),
     prop('CastContactShadows', 'Boolean', 'Cast Contact Micro-Shadows', 'Enable screen-space contact micro-shadows.', 'true'),
+    prop('CastShadows', 'Boolean', 'Cast SDF Shadows', 'Cast raymarched soft shadows from the static scene Signed Distance Field volume.', 'false'),
+    prop('SourceRadius', 'Number', 'Light Source Radius', 'Physical light source radius for penumbra calculation (in world units, 0 uses 5% of light radius).', '0.0'),
     prop('ShadowBias', 'Number', 'Shadow Bias', 'Normal offset bias to prevent self-shadow acne.', '0.02'),
     prop('FlickerMode', 'Choice', 'Flicker Mode', 'Procedural animation pattern.', 'None', {
       extraInformation: ['None', 'FireFlicker', 'FluorescentHum', 'SirenStrobe', 'PulseWave']
@@ -437,7 +474,6 @@ const clusteredLightBehavior = {
 /* ========================================================= Global / Scene Manager Functions */
 
 const G_SCENE_CONTROL = 'Clustered Lighting — Scene Controls';
-const G_SCENE_ATMOSPHERE = 'Clustered Lighting — Atmospheric Fog';
 const G_SCENE_DIAGNOSTICS = 'Clustered Lighting — Diagnostics';
 
 const freeActions = [
@@ -454,27 +490,6 @@ const freeActions = [
     [num('MaxLights', 'Maximum active lights (64 - 512)', '256')],
     `AL.setMaxLights(runtimeScene, eventsFunctionContext.getArgument("MaxLights"));\n`,
     { group: G_SCENE_CONTROL, withRuntime: true }),
-
-  freeFn('SetVolumetricFogEnabled', 'Enable volumetric atmospheric fog',
-    'Enable clustered volumetric atmospheric fog in scene: _PARAM0_',
-    'Toggle clustered atmospheric light scattering and god rays.', 'Action',
-    [bool('Enable', 'Enable volumetric fog')],
-    `AL.setVolumetricFogEnabled(runtimeScene, !!eventsFunctionContext.getArgument("Enable"));\n`,
-    { group: G_SCENE_ATMOSPHERE, withRuntime: true }),
-
-  freeFn('SetVolumetricFogDensity', 'Set volumetric atmospheric fog density',
-    'Set volumetric atmospheric fog density to _PARAM0_',
-    'Configure scene-wide clustered atmospheric light scattering and god ray density.', 'Action',
-    [num('Density', 'Atmospheric medium density (e.g. 0.02)', '0.02')],
-    `AL.setVolumetricFogDensity(runtimeScene, eventsFunctionContext.getArgument("Density"));\n`,
-    { group: G_SCENE_ATMOSPHERE, withRuntime: true }),
-
-  freeFn('SetVolumetricAnisotropy', 'Set volumetric forward scattering anisotropy',
-    'Set volumetric fog forward scattering anisotropy to _PARAM0_',
-    'Adjust god ray directional bias (g factor between 0.0 and 0.9).', 'Action',
-    [num('Anisotropy', 'Henyey-Greenstein forward scattering factor (0.0 to 0.9)', '0.4')],
-    `AL.setVolumetricAnisotropy(runtimeScene, eventsFunctionContext.getArgument("Anisotropy"));\n`,
-    { group: G_SCENE_ATMOSPHERE, withRuntime: true }),
 
   freeFn('EnableContactShadows', 'Enable clustered contact micro-shadows',
     'Enable clustered contact micro-shadows: _PARAM0_',
@@ -498,14 +513,6 @@ const freeConditions = [
     [],
     `eventsFunctionContext.returnValue = AL.isWebGL2Available(runtimeScene);\n`,
     { group: G_SCENE_CONTROL, withRuntime: true }),
-
-  freeFn('IsVolumetricFogEnabled', 'Volumetric fog is enabled in scene',
-    'Volumetric fog is enabled in scene',
-    'Check if atmospheric clustered light scattering is active.', 'Condition',
-    [],
-    `const s = AL.stateOf(runtimeScene);
-eventsFunctionContext.returnValue = !!(s && s.enableVolumetricFog);
-`, { group: G_SCENE_ATMOSPHERE, withRuntime: true }),
 ];
 
 const freeExpressions = [
@@ -832,6 +839,101 @@ const receiverBehavior = {
   ],
 };
 
+/* ========================================================= SDFVolume3D Behavior */
+
+const SDF_VOL_OPTIONS = `{
+  resX: behavior._getResolutionX ? behavior._getResolutionX() : 128,
+  resY: behavior._getResolutionY ? behavior._getResolutionY() : 128,
+  resZ: behavior._getResolutionZ ? behavior._getResolutionZ() : 32,
+  autoBakeOnStart: behavior._getAutoBakeOnStart ? behavior._getAutoBakeOnStart() : false
+}`;
+
+const sdfVolumeLifecycle = [
+  {
+    name: 'onCreated', fullName: 'onCreated', description: '', functionType: 'Action',
+    private: true, parameters: [...OB],
+    events: ev(BEHAVIOR_PREAMBLE + `AL.registerSDFVolume(runtimeScene, object, behavior, ${SDF_VOL_OPTIONS});\n`, { withRuntime: true }),
+  },
+  {
+    name: 'doStepPreEvents', fullName: 'doStepPreEvents', description: '', functionType: 'Action',
+    private: true, parameters: [...OB],
+    events: ev(BEHAVIOR_PREAMBLE + `AL.updateSDFVolume(runtimeScene, object, behavior, ${SDF_VOL_OPTIONS});\n`),
+  },
+  {
+    name: 'onDestroy', fullName: 'onDestroy', description: '', functionType: 'Action',
+    private: true, parameters: [...OB],
+    events: ev(BEHAVIOR_PREAMBLE + `AL.disposeSDFVolume(runtimeScene, behavior);\n`),
+  },
+];
+
+const G_SDF_VOL_CONFIG = 'SDF Volume — Configuration';
+
+const sdfVolumeActions = [
+  fn('SetAutoBakeOnStart', 'Enable / disable auto-bake on start',
+    'Enable auto-bake on start on SDF volume _PARAM0_: _PARAM2_',
+    'Automatically start baking Signed Distance Field when the scene starts.', 'Action',
+    [bool('AutoBake', 'Automatically bake SDF when scene starts')],
+    `const auto = !!eventsFunctionContext.getArgument("AutoBake");
+if (behavior._setAutoBakeOnStart) behavior._setAutoBakeOnStart(auto);
+const vol = AL.sdfVolumeOf(behavior);
+if (vol) vol.autoBakeOnStart = auto;
+`, { group: G_SDF_VOL_CONFIG }),
+];
+
+const sdfVolumeConditions = [
+  fn('IsAutoBakeOnStart', 'Auto-bake on start is enabled',
+    'Auto-bake on start is enabled on SDF volume _PARAM0_',
+    'True if this volume bakes itself when the scene starts.', 'Condition',
+    [],
+    `const vol = AL.sdfVolumeOf(behavior);
+eventsFunctionContext.returnValue = !!(vol && vol.autoBakeOnStart);
+`, { group: G_SDF_VOL_CONFIG }),
+
+  fn('IsVolumeBaked', 'SDF volume holds baked data',
+    'SDF volume _PARAM0_ holds baked data',
+    'True once an SDF bake has completed or SDF data has been loaded from a file.', 'Condition',
+    [],
+    `const vol = AL.sdfVolumeOf(behavior);
+eventsFunctionContext.returnValue = !!(vol && vol.isBaked);
+`, { group: G_SDF_VOL_CONFIG }),
+];
+
+const sdfVolumeExpressions = [
+  fn('VoxelCount', 'Total voxel count',
+    '', 'Total voxels in this SDF volume: ResolutionX * ResolutionY * ResolutionZ.', 'Expression',
+    [],
+    `const vol = AL.sdfVolumeOf(behavior);
+eventsFunctionContext.returnValue = vol ? (vol.resX * vol.resY * vol.resZ) : 0;
+`, { group: G_SDF_VOL_CONFIG, expressionType: 'number' }),
+
+  fn('VoxelSize', 'Voxel world size',
+    '', 'Size of one voxel in world units.', 'Expression',
+    [],
+    `const vol = AL.sdfVolumeOf(behavior);
+eventsFunctionContext.returnValue = vol ? (vol.voxelSize || 0) : 0;
+`, { group: G_SDF_VOL_CONFIG, expressionType: 'number' }),
+];
+
+const sdfVolumeBehavior = {
+  name: 'SDFVolume3D',
+  fullName: 'Signed Distance Field Volume 3D',
+  description: 'Attach to a 3D Box (Cube3D) to define the spatial bounds and voxel resolution for static scene Signed Distance Field (SDF) soft shadows. The box transform sets the volume bounds; the box itself is hidden at runtime. One SDF volume per scene.',
+  objectType: 'Scene3D::Cube3DObject',
+  private: false,
+  propertyDescriptors: [
+    prop('ResolutionX', 'Number', 'Resolution X', 'Voxel grid resolution along world X. Clamped to [8, 256].', '128'),
+    prop('ResolutionY', 'Number', 'Resolution Y', 'Voxel grid resolution along world Y. Clamped to [8, 256].', '128'),
+    prop('ResolutionZ', 'Number', 'Resolution Z (Height)', 'Voxel grid resolution along world Z (height axis). Clamped to [4, 128].', '32'),
+    prop('AutoBakeOnStart', 'Boolean', 'Auto-Bake On Start', 'Automatically bake scene SDF when the scene starts.', 'false'),
+  ],
+  eventsFunctions: [
+    ...sdfVolumeLifecycle,
+    ...sdfVolumeActions,
+    ...sdfVolumeConditions,
+    ...sdfVolumeExpressions,
+  ],
+};
+
 /* ================================================= Light Probe Free Functions ======== */
 
 const G_PROBE_CONTROL = 'Light Probes — Scene Controls';
@@ -999,6 +1101,187 @@ const probeFreeExpressions = [
     { group: G_PROBE_METRICS, withRuntime: true, expressionType: 'number' }),
 ];
 
+/* ================================================= SDF Shadows Free Functions ======== */
+
+const G_SDF_CONTROL = 'SDF Shadows — Scene Controls';
+const G_SDF_BAKE = 'SDF Shadows — Baking';
+const G_SDF_METRICS = 'SDF Shadows — Metrics';
+
+const sdfFreeActions = [
+  freeFn('SetSDFShadowsEnabled', 'Enable SDF soft shadows',
+    'Enable Signed Distance Field raymarched soft shadows in scene: _PARAM0_',
+    'Globally enable or disable Signed Distance Field soft shadows.', 'Action',
+    [bool('Enable', 'Enable SDF shadows')],
+    `AL.setSDFShadowsEnabled(runtimeScene, !!eventsFunctionContext.getArgument("Enable"));\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('SetMaxShadowedLights', 'Set maximum SDF shadowed lights',
+    'Set maximum SDF shadowed dynamic lights to _PARAM0_',
+    'Configure the maximum number of dynamic lights casting SDF shadows per fragment.', 'Action',
+    [num('Count', 'Maximum shadowed lights (e.g. 4)', '4')],
+    `AL.setMaxShadowedLights(runtimeScene, eventsFunctionContext.getArgument("Count"));\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('SetPointShadowDistance', 'Set point light shadow distance',
+    'Set point light shadow trace distance to _PARAM0_',
+    'Maximum distance in world units for tracing shadows from point and spot lights.', 'Action',
+    [num('Distance', 'Trace distance in world units', '800.0')],
+    `AL.setPointShadowDistance(runtimeScene, eventsFunctionContext.getArgument("Distance"));\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('SetSDFSunSoftness', 'Set directional sun shadow softness',
+    'Set directional sun shadow angular diameter to _PARAM0_ degrees',
+    'Angular diameter in degrees (larger values yield softer penumbras).', 'Action',
+    [num('Degrees', 'Sun angular diameter in degrees (e.g. 1.8)', '1.8')],
+    `AL.setSDFSunSoftness(runtimeScene, eventsFunctionContext.getArgument("Degrees"));\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('SetSDFHitEps', 'Set SDF raymarch surface hit threshold',
+    'Set SDF raymarch surface hit threshold to _PARAM0_',
+    'Relative fraction of voxel size below which a ray is considered hitting the surface.', 'Action',
+    [num('Epsilon', 'Surface hit threshold fraction (e.g. 0.05)', '0.05')],
+    `AL.setSDFHitEps(runtimeScene, eventsFunctionContext.getArgument("Epsilon"));\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('SetSDFNormalBias', 'Set SDF shadow normal bias',
+    'Set SDF shadow normal offset bias to _PARAM0_',
+    'Multiplier on voxel size along the surface normal to avoid self-shadow acne.', 'Action',
+    [num('Bias', 'Normal bias multiplier (e.g. 1.0)', '1.0')],
+    `AL.setSDFNormalBias(runtimeScene, eventsFunctionContext.getArgument("Bias"));\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('SetSDFVolumeBounds', 'Set SDF volume bounds',
+    'Set SDF volume bounds to Min: (_PARAM0_, _PARAM1_, _PARAM2_), Max: (_PARAM3_, _PARAM4_, _PARAM5_)',
+    'Set the SDF volume bounds explicitly in GDevelop world coordinates. From this point on the authoring cube no longer controls the volume.', 'Action',
+    [
+      num('MinX', 'Minimum X in GDevelop coordinates', '0'),
+      num('MinY', 'Minimum Y in GDevelop coordinates', '0'),
+      num('MinZ', 'Minimum Z in GDevelop coordinates', '0'),
+      num('MaxX', 'Maximum X in GDevelop coordinates', '2000'),
+      num('MaxY', 'Maximum Y in GDevelop coordinates', '2000'),
+      num('MaxZ', 'Maximum Z in GDevelop coordinates', '500'),
+    ],
+    `AL.setSDFVolumeBounds(
+  runtimeScene,
+  eventsFunctionContext.getArgument("MinX"),
+  eventsFunctionContext.getArgument("MinY"),
+  eventsFunctionContext.getArgument("MinZ"),
+  eventsFunctionContext.getArgument("MaxX"),
+  eventsFunctionContext.getArgument("MaxY"),
+  eventsFunctionContext.getArgument("MaxZ")
+);
+`, { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('StartSDFBake', 'Start SDF volume bake',
+    'Start baking scene Signed Distance Field volume',
+    'Extracts triangles from static scene geometry and bakes exact Euclidean distance transform into a 3D texture.', 'Action',
+    [],
+    `AL.startSDFBake(runtimeScene);\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+
+  freeFn('CancelSDFBake', 'Cancel SDF volume bake',
+    'Cancel the in-progress SDF bake',
+    'Abandon an in-progress SDF bake.', 'Action',
+    [],
+    `AL.cancelSDFBake(runtimeScene);\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+
+  freeFn('SetSDFBakeBudgetMs', 'Set SDF bake per-frame budget',
+    'Set SDF bake per-frame budget to _PARAM0_ ms',
+    'Maximum milliseconds spent baking each frame so gameplay stays smooth.', 'Action',
+    [num('BudgetMs', 'Maximum milliseconds to spend baking per frame', '8.0')],
+    `AL.setSDFBakeBudgetMs(runtimeScene, eventsFunctionContext.getArgument("BudgetMs"));\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+
+  freeFn('ExportSDFData', 'Export SDF data to file',
+    'Export SDF data to binary file _PARAM0_',
+    'Download the baked SDF volume as a .sdf.bin file for instant loading in production. Browser contexts only.', 'Action',
+    [str('FileName', 'File name for exported .sdf.bin', 'scene.sdf.bin')],
+    `AL.exportSDFData(runtimeScene, eventsFunctionContext.getArgument("FileName"));\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+
+  freeFn('LoadSDFDataFromFile', 'Load SDF data from file',
+    'Load SDF data from file _PARAM0_',
+    'Fetch a .sdf.bin file and apply it to the active volume. The file bounds win over the authoring cube from that point on.', 'Action',
+    [str('FilePath', 'URL or path to the .sdf.bin file', 'scene.sdf.bin')],
+    `AL.loadSDFDataFromFile(runtimeScene, eventsFunctionContext.getArgument("FilePath"));\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+];
+
+const sdfFreeConditions = [
+  freeFn('IsSDFShadowsEnabled', 'SDF soft shadows are enabled',
+    'SDF soft shadows are enabled in scene',
+    'Check if Signed Distance Field soft shadows are enabled.', 'Condition',
+    [],
+    `eventsFunctionContext.returnValue = AL.isSDFShadowsEnabled(runtimeScene);\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('IsSDFVolumeLoaded', 'SDF volume is loaded',
+    'SDF volume is loaded and active',
+    'True once an SDFVolume3D exists in the scene and its 3D texture is allocated.', 'Condition',
+    [],
+    `eventsFunctionContext.returnValue = AL.isSDFVolumeLoaded(runtimeScene);\n`,
+    { group: G_SDF_CONTROL, withRuntime: true }),
+
+  freeFn('IsSDFBakeInProgress', 'SDF bake is in progress',
+    'SDF bake is currently in progress',
+    'True while the amortised SDF bake is still running.', 'Condition',
+    [],
+    `eventsFunctionContext.returnValue = AL.isSDFBakeInProgress(runtimeScene);\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+
+  freeFn('IsSDFBakeComplete', 'SDF bake is complete',
+    'SDF bake has completed',
+    'True once an SDF bake has finished and the results are uploaded to the 3D texture.', 'Condition',
+    [],
+    `eventsFunctionContext.returnValue = AL.isSDFBakeComplete(runtimeScene);\n`,
+    { group: G_SDF_BAKE, withRuntime: true }),
+];
+
+const sdfFreeExpressions = [
+  freeFn('SDFBakeProgress', 'SDF bake progress (0.0 to 1.0)',
+    '', 'Fraction of SDF bake completed (0.0 to 1.0).', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getSDFBakeProgress(runtimeScene);\n`,
+    { group: G_SDF_BAKE, withRuntime: true, expressionType: 'number' }),
+
+  freeFn('SDFVRAMBytes', 'SDF texture VRAM bytes',
+    '', 'Bytes of GPU memory held by the SDF 3D texture (R16F, 2 bytes per voxel).', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getSDFVRAMBytes(runtimeScene);\n`,
+    { group: G_SDF_METRICS, withRuntime: true, expressionType: 'number' }),
+
+  freeFn('SDFVoxelCount', 'Total SDF voxel count',
+    '', 'Total voxels in the active SDF volume: ResolutionX * ResolutionY * ResolutionZ.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getSDFVoxelCount(runtimeScene);\n`,
+    { group: G_SDF_METRICS, withRuntime: true, expressionType: 'number' }),
+
+  freeFn('SDFVoxelSize', 'SDF voxel world size',
+    '', 'Physical size of an SDF voxel in world units.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getSDFVoxelSize(runtimeScene);\n`,
+    { group: G_SDF_METRICS, withRuntime: true, expressionType: 'number' }),
+
+  freeFn('MaxShadowedLights', 'Max SDF shadowed lights count',
+    '', 'Current maximum number of dynamic lights casting SDF shadows.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getMaxShadowedLights(runtimeScene);\n`,
+    { group: G_SDF_CONTROL, withRuntime: true, expressionType: 'number' }),
+
+  freeFn('PointShadowDistance', 'Point light shadow distance',
+    '', 'Current point light shadow trace distance in world units.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getPointShadowDistance(runtimeScene);\n`,
+    { group: G_SDF_CONTROL, withRuntime: true, expressionType: 'number' }),
+
+  freeFn('SDFSunSoftness', 'Directional sun shadow softness (deg)',
+    '', 'Current directional sun angular diameter in degrees.', 'Expression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getSDFSunSoftness(runtimeScene);\n`,
+    { group: G_SDF_CONTROL, withRuntime: true, expressionType: 'number' }),
+];
+
 /* ================================================= Extension Lifecycle Installer ==== */
 
 // GDevelop recognises `onSceneLoaded` as an extension lifecycle function and calls it on
@@ -1022,14 +1305,14 @@ const extension = {
   name: 'AdvancedLighting3D',
   fullName: 'Advanced Lighting 3D',
   version: '2.0.0',
-  description: 'High-fidelity clustered forward dynamic multi-lighting AND baked indirect light-probe GI for GDevelop 5 (Three.js WebGL2). Scales scenes to 500+ active dynamic lights (Point, Spot, Area Capsule) with flat 60 FPS performance, zero shader recompilation stutter, Karis representative point area specular reflections, blackbody Kelvin colour temperatures, IES photometric distributions, Frostbite windowed attenuation, procedural flicker waveforms and volumetric god rays. A LightProbeVolume3D bakes the scene ambient into a 3D texture that ReceiveLightProbes objects sample per fragment, so characters pick up the indirect colour of wherever they are standing. Both halves share one shader injection and one program cache key. Supersedes and replaces the separate ClusteredLightManager3D and LightProbeGrid3D extensions, which could not safely coexist: each overrode customProgramCacheKey with a constant on the same shared materials.',
-  shortDescription: 'Clustered forward multi-lighting (500+ lights, Karis area specular, Kelvin blackbody) plus baked light-probe indirect GI.',
+  description: 'High-fidelity clustered forward dynamic multi-lighting, baked indirect light-probe GI, AND Signed Distance Field (SDF) raymarched soft shadows for GDevelop 5 (Three.js WebGL2). Scales scenes to 500+ active dynamic lights (Point, Spot, Area Capsule) with flat 60 FPS performance, zero shader recompilation stutter, Karis representative point area specular reflections, blackbody Kelvin colour temperatures, IES photometric distributions, Frostbite windowed attenuation, and procedural flicker waveforms. A LightProbeVolume3D bakes the scene ambient into a 3D texture that ReceiveLightProbes objects sample per fragment. An SDFVolume3D bakes the static scene into a distance volume for Quilez-penumbra contact and soft shadows. All features share one shader injection and one program cache key.',
+  shortDescription: 'Clustered forward multi-lighting (500+ lights, Karis area specular), baked light-probe indirect GI, and static SDF soft shadows.',
   category: '3D',
   author: 'Twillion',
   previewIconUrl: iconUrl,
   iconUrl: iconUrl,
   helpPath: '',
-  tags: ['3d', 'light', 'lighting', 'clustered', 'forward', 'pbr', 'specular', 'volumetric', 'fog', 'pointlight', 'spotlight', 'area light', 'probe', 'light probe', 'gi', 'global illumination', 'ambient', 'indirect', 'bake'],
+  tags: ['3d', 'light', 'lighting', 'clustered', 'forward', 'pbr', 'specular', 'sdf', 'shadows', 'soft shadows', 'pointlight', 'spotlight', 'area light', 'probe', 'light probe', 'gi', 'global illumination', 'ambient', 'indirect', 'bake'],
   authorIds: [],
   dependencies: [],
   globalVariables: [],
@@ -1042,11 +1325,15 @@ const extension = {
     ...probeFreeActions,
     ...probeFreeConditions,
     ...probeFreeExpressions,
+    ...sdfFreeActions,
+    ...sdfFreeConditions,
+    ...sdfFreeExpressions,
   ],
   eventsBasedBehaviors: [
     clusteredLightBehavior,
     volumeBehavior,
     receiverBehavior,
+    sdfVolumeBehavior,
   ],
 };
 

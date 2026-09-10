@@ -2,7 +2,7 @@
   "author": "Christopher Monhollen (Twillion)",
   "category": "3D",
   "extensionNamespace": "",
-  "fullName": "Material 3D",
+  "fullName": "Material Master",
   "name": "MaterialMaster",
   "version": "4.0.0",
   "shortDescription": "Composable 3D material behaviors for PBR maps, physical surfaces, animation, procedural patterns, wetness and custom lighting.",

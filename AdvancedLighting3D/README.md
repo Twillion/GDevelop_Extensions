@@ -1,27 +1,31 @@
-# AdvancedLighting3D — Clustered Forward Dynamic Lighting + Baked Indirect GI for GDevelop
+# AdvancedLighting3D — Clustered Dynamic Lighting, Baked Indirect GI & SDF Soft Shadows
 
 **AdvancedLighting3D** is a complete dynamic lighting architecture and material pipeline for
-**GDevelop 5 (Three.js WebGL2 backend)**. It covers both halves of a scene's lighting:
+**GDevelop 5 (Three.js WebGL2 backend)**. It covers direct light, indirect GI, and raymarched soft shadows:
 
-**Direct light.** By partitioning the camera view frustum into a 3D grid of **3,456 spatial clusters**
+1. **Direct light.** By partitioning the camera view frustum into a 3D grid of **3,456 spatial clusters**
 ($16 \times 9 \times 24$ depth slices), it lets scenes carry **100 to 500+ active dynamic lights**
 (torches, streetlamps, campfires, neon signs, magic spells, muzzle flashes) with zero shader
 recompilations, flat 60 FPS performance, and cinema-grade fidelity (Karis area light specular
-reflections, volumetric fog shafts, blackbody Kelvin colour temperatures, IES photometric profiles,
-and screen-space contact micro-shadows).
+reflections, blackbody Kelvin colour temperatures, IES photometric profiles, and spot cones).
 
-**Indirect light.** A **`LightProbeVolume3D`** bakes the scene's ambient into a small RGBA16F 3D
+2. **Indirect light.** A **`LightProbeVolume3D`** bakes the scene's ambient into a small RGBA16F 3D
 texture that **`ReceiveLightProbes`** objects sample per fragment, so a character walking under a
 canopy, into a cave, or along a red-lit corridor picks up the ambient colour of *that place* instead
 of the single flat ambient value a scene otherwise gets. About 16 KB of VRAM at default settings and
 no additional draw calls.
 
-> **Why one extension.** Both halves inject into the same `lights_fragment_begin` chunk of the same
-> shared materials. As two separate extensions they collided on `customProgramCacheKey`, so Three
-> could hand a material the other one's compiled program — silently, since a bad 3D shader in
-> GDevelop fails without an error. Merged, there is **one injection, one cache key and one
-> post-events tick**, and the probe term and the clustered loop are ordered correctly against each
-> other by construction.
+3. **Signed Distance Field (SDF) Soft Shadows.** An **`SDFVolume3D`** bakes scene geometry into an
+R16F 3D Signed Distance Field via exact Ericson triangle queries and Felzenszwalb's $O(N)$ separable
+Euclidean Distance Transform. The injected PBR shader raymarches this distance field with Quilez's
+improved penumbra estimator, delivering physically accurate contact-hardening soft shadows for the
+directional Sun and up to 16 closest clustered dynamic lights — without shadow maps, cascade acne,
+or extra render passes.
+
+> **Why one extension.** All three systems inject into the same `lights_fragment_begin` chunk of the same
+> shared materials. Unifying them provides **one injection, one customProgramCacheKey and one
+> post-events tick**, guaranteeing that direct clustered lights, probe irradiance, and SDF raymarched
+> shadows evaluate in optimal mathematical order with zero cache collisions.
 
 ---
 
@@ -32,22 +36,25 @@ no additional draw calls.
 - **Physically Based Area Lights (Karis Model):** Replaces artificial pinpoint specular reflections with realistic broad reflections for glowing embers, light bulbs, and neon tube/capsule lights.
 - **Blackbody Radiation Color Temperature:** Set authentic physical lighting in Kelvin (1,800K candle flames to 8,500K moonlight).
 - **IES Photometric Profiles:** Real-world architectural light distributions (wall sconces, streetlamps, spotlights, downlights), carried to the GPU in the fourth light texel.
+- **Volumetric SDF Soft Shadows:** Fast 3D Signed Distance Field raymarching using Inigo Quilez's penumbra estimator. Contact-hardening soft shadows for the directional Sun and up to 16 dynamic clustered lights with zero shadow maps or cascade seams.
+- **O(N) Separable Euclidean Distance Transform:** Static geometry is converted into high-precision distance volumes using Ericson triangle distance tests and 3-axis Felzenszwalb parabolic envelopes under an amortised frame budget.
 - **Baked Indirect Light Probes:** A 3D grid of probes captures occlusion and coloured bounce, sampled with one hardware-filtered `sampler3D` fetch per fragment. Caves go dark because there is rock overhead; the corridor goes red because the wall beside it is red.
 - **Day / Night Probe Blending:** Two baked states blended on the GPU by a single global factor — no CPU recomputation, no rebake.
-- **Amortised Raycast Baker:** Baking runs under a per-frame millisecond budget so the game stays responsive, and the result exports to a `.lpg.bin` so shipping builds load instead of rebaking.
+- **Binary Stream Files (.lpg.bin & .sdf.bin):** Both probe grids and SDF distance volumes can be exported during authoring and loaded instantly in shipping builds with zero runtime baking.
 - **Hybrid Co-Existence Pipeline:** Seamlessly adds to GDevelop's native Sun, skybox and ambient light without breaking changes.
 
 ---
 
-## 📐 The Clustered Lighting Pipeline
+## 📐 The Unified Lighting Pipeline
 
 ```mermaid
 flowchart TD
-    subgraph "1. Dynamic Scene Lights"
+    subgraph "1. Dynamic Scene Lights & SDF Volume"
         L1["Point Lights & Torches"]
         L2["Neon Tubes & Area Capsules"]
         L3["Spotlights & Flashlights"]
-        L4["Magic Projectiles & Muzzle Flashes"]
+        L4["Directional Sun Light"]
+        SDFVol["SDF Volume 3D Grid"]
     end
 
     subgraph "2. CPU View-Space Broadphase (< 0.1ms)"
@@ -56,10 +63,11 @@ flowchart TD
         Arvo["Arvo Sphere/Cone-to-AABB Tests"]
     end
 
-    subgraph "3. Packed WebGL2 GPU Buffers (< 50 KB VRAM)"
-        TexLight["uClusteredLightData (RGBA32F)<br/>PosXYZ, Radius, ColorRGB, Intensity, AreaCapsule"]
+    subgraph "3. Packed WebGL2 GPU Buffers (< 1 MB VRAM)"
+        TexLight["uClusteredLightData (RGBA32F)<br/>PosXYZ, Radius, ColorRGB, ShadowFlag, SrcRadius"]
         Tex3D["uClusterGrid3D (Data3DTexture RG32UI)<br/>16x9x24 Voxels -> (Offset, Count)"]
         TexIdx["uLightIndexList (DataTexture R16UI)<br/>Concatenated Light Index Stream"]
+        TexSDF["uSdfVolume (Data3DTexture R16F)<br/>Global Signed Distance Field Volume"]
     end
 
     subgraph "4. Injected PBR Material Shader"
@@ -67,18 +75,19 @@ flowchart TD
         Lookup["Sample (Offset, Count) in 3D Cluster Texture"]
         Karis["Karis Area Specular + Frostbite Windowed Attenuation"]
         Shape["IES Profile + Spot Inner/Outer Cone"]
+        Raymarch["Quilez SDF Shadow Raymarcher (Sun + Clustered)"]
         Probe["Probe Grid Irradiance (receivers only)"]
     end
 
     L1 --> Cam
     L2 --> Cam
     L3 --> Cam
-    L4 --> Cam
     Cam --> Frustum
     Frustum --> Arvo
     Arvo --> TexLight
     Arvo --> Tex3D
     Arvo --> TexIdx
+    SDFVol --> TexSDF
 
     TexLight --> Karis
     Tex3D --> Lookup
@@ -86,7 +95,10 @@ flowchart TD
     Frag --> Lookup
     Lookup --> Karis
     Karis --> Shape
-    Shape --> FinalLit["Final Lit Surface"]
+    TexSDF --> Raymarch
+    L4 --> Raymarch
+    Shape --> Raymarch
+    Raymarch --> FinalLit["Final Lit Surface"]
     Probe --> FinalLit
 ```
 
@@ -102,10 +114,11 @@ flowchart TD
 | **Specular Reflections** | Pinpoint plastic white dots | **Realistic Area Lights (Karis Tube & Sphere)** |
 | **Light Color Modeling** | Manual RGB hex codes | **Kelvin Blackbody Temperature (1,800K–8,500K)** |
 | **Light Profiles** | Uniform spheres only | **IES Photometric Lobes (Sconces, Downlights)** |
+| **Dynamic Shadows** | Traditional shadow maps: multi-pass rasterization, acne, peter-panning, strictly limited light count | **SDF Raymarched Soft Shadows: single 3D distance field, contact hardening, Sun + clustered lights, zero extra draw calls** |
 | **Indirect / Ambient Light** | One flat ambient value for the whole scene | **Spatially varying baked probe grid (occlusion + coloured bounce)** |
 | **Ambient in a Cave** | Same as outdoors | **Dark, because the bake saw rock overhead** |
 | **Day / Night Ambient** | Manual re-tint | **Two baked volumes blended by one GPU factor** |
-| **GPU VRAM Overhead** | Low | **< 60 KB clustered + ~16 KB probes (default grid)** |
+| **GPU VRAM Overhead** | High with multiple shadow maps | **< 60 KB clustered + ~16 KB probes + ~512 KB–2 MB SDF volume** |
 
 ---
 
@@ -127,19 +140,25 @@ flowchart TD
 
 ### Adding baked indirect light
 
-5. **Define the volume.** Add a **Cube3D** to the scene, stretch it over the level with the 3D scale
+5. **Define the probe volume.** Add a **Cube3D** to the scene, stretch it over the level with the 3D scale
    gizmo and add the **`LightProbeVolume3D`** behavior. The cube's bounds are the volume's bounds and
    the cube hides itself at runtime. Note that **Z is the height axis** in GDevelop, so the default
    grid is $16 \times 16 \times 4$.
 6. **Attach receivers.** Add **`ReceiveLightProbes`** to your player, enemies and props. Receivers
-   also keep receiving clustered dynamic lights — the two features share one shader.
-7. **Bake.** Call `StartProbeBake()` once and poll `IsProbeBakeComplete()`. **This is the step that
-   produces cave shadowing and coloured bounce**; until you run it you have a sky/ground gradient and
-   nothing more. Export with `ExportProbeData` so shipping builds load the result instead of rebaking.
+   also keep receiving clustered dynamic lights and SDF shadows — all three share one shader.
+7. **Bake probes.** Call `StartProbeBake()` once and poll `IsProbeBakeComplete()`. Export with
+   `ExportProbeData` so shipping builds load the `.lpg.bin` directly instead of rebaking.
 
-Baking is not instant. At the default 1,024 probes it is a few thousand scene raycasts, amortised
-across frames under `SetProbeBakeBudgetMs`. Raising resolution raises the cost as the product of all
-three axes: $32 \times 8 \times 32$ is eight times the work of the default.
+### Adding Signed Distance Field (SDF) Soft Shadows
+
+8. **Define the shadow volume.** Add a **Cube3D** bounding the static level geometry and attach the
+   **`SDFVolume3D`** behavior. Set dimensions like $64 \times 64 \times 32$ or $128 \times 128 \times 32$.
+9. **Bake geometry.** Enable **`AutoBakeOnStart`** or call `StartSDFBake()`. The amortised Felzenszwalb
+   algorithm calculates exact Euclidean distance fields across all static meshes. Export with `ExportSDFData`
+   to save an `.sdf.bin` file and load it in production via `LoadSDFDataFromFile`.
+10. **Enable shadow casting.** On any `ClusteredLight3D`, check **`CastShadows`** (true) and set
+    **`SourceRadius`** (e.g. 5.0–20.0 for soft penumbra). The Three.js directional Sun light automatically
+    casts raymarched soft shadows across the distance field!
 
 ---
 
@@ -147,14 +166,12 @@ three axes: $32 \times 8 \times 32$ is eight times the work of the default.
 
 | | |
 | :--- | :--- |
-| **WebGL2** | Required by both halves. `sampler3D` and `usampler3D` do not exist in GLSL ES 1.00, so there is no degraded mode. Check `IsSupported()` before your setup events. |
-| **Lit standard materials** | Injection is applied to `MeshStandardMaterial` only. Objects set to material type **Basic** cannot receive either clustered light or probe light — `MeshBasicMaterial` has no lighting at all. The extension warns once, naming the material. |
-| **Units** | The clustered light `Radius` and `CapsuleLength` are in **metres**; the runtime converts at 100 world units per metre. Probe bounds and `NormalBiasOffset` stay in raw GDevelop world units (pixels). A humanoid character is 50-200 units tall, so roughly 0.5-2 m. |
-| **Probe volumes per scene** | One. Overlapping-volume blending is not implemented. |
-| **Probe working scale** | Sensible from roughly a room up to a few thousand units per axis. At the default 16 probes per horizontal axis, a 2,000-unit level gives ~125-unit spacing — about a character and a half. |
-| **Scene editor** | Clustered lights **do** render live in the 3D scene editor. GDevelop's in-game editor runs no events, so the extension registers a `gdjs.registerInGameEditorPostStepCallback` — the one per-frame hook available while authoring — and drives the broadphase from there. Flicker and muzzle flashes are pinned to the configured intensity in the editor so authoring is against a steady light. |
-
----
+| **WebGL2** | Required by all systems. `sampler3D` and `usampler3D` do not exist in GLSL ES 1.00, so there is no degraded mode. Check `IsSupported()` before your setup events. |
+| **Lit standard materials** | Injection is applied to `MeshStandardMaterial` only. Objects set to material type **Basic** cannot receive clustered light, probe light, or SDF shadows — `MeshBasicMaterial` has no lighting at all. The extension warns once, naming the material. |
+| **Units** | The clustered light `Radius`, `CapsuleLength` and `SourceRadius` are in **metres**; the runtime converts at 100 world units per metre. Probe/SDF bounds and offsets stay in raw GDevelop world units. |
+| **SDF & Probe volumes per scene** | One active probe volume and one active SDF volume per scene. Overlapping multi-volume blending is not implemented. |
+| **SDF Static Geometry** | The distance field is baked from static scene meshes. Dynamic skinned characters receive shadows from the static world; dynamic character self-shadowing is not evaluated in the static SDF volume. |
+| **Scene editor** | Clustered lights **do** render live in the 3D scene editor via `gdjs.registerInGameEditorPostStepCallback`. Flicker and muzzle flashes are pinned to the configured intensity in the editor so authoring is against a steady light. |
 
 ---
 
@@ -204,19 +221,14 @@ have something on screen and `CPUBroadphaseTimeMs()` says you need to.
 
 ---
 
-## ❌ What this extension does *not* do
-
-Listed because earlier revisions of this README claimed otherwise. These are configurable in the
-editor and settable from events — the values are stored and reported back correctly — but **nothing
-reads them at render time**:
+## ❌ Architectural boundaries
 
 | Feature | Status |
 | :--- | :--- |
-| **Volumetric fog / god rays** | Not implemented. `SetVolumetricFogEnabled`, `SetVolumetricFogDensity` and `SetVolumetricAnisotropy` set scene state that no shader code consumes. Doing this properly needs a raymarched pass, not a term in the forward material shader. |
-| **Screen-space contact shadows (SSCS)** | Not implemented. `EnableContactShadows`, and the per-light `CastContactShadows` / `ShadowBias` properties, are inert. SSCS needs a depth texture, which GDevelop's post-processing composer does not expose. |
-| **Configurable cluster grid** | `ClusterGridX/Y/Z` are compile-time constants (16 × 9 × 24). There is no action or property that changes them. |
-| **Multiple layers** | The cluster broadphase reads the camera and scene from the base layer (`""`) only. Lights and probe volumes on other layers are not handled. |
-| **Multiple probe volumes** | One per scene. Overlapping-volume blending is not implemented. |
+| **Dynamic character shadow casters** | SDF volumes represent static world geometry. Dynamic skinned characters do not write into the static SDF volume; they receive shadows cast by the world. |
+| **Projective Decals** | Planned in a dedicated decoupled package (`ClusteredDetail`), not part of lighting. |
+| **Configurable cluster grid** | `ClusterGridX/Y/Z` are compile-time constants (16 × 9 × 24). |
+| **Multiple layers** | The cluster broadphase reads the camera and scene from the base layer (`""`) only. Lights, probes, and SDF volumes on other layers are not handled. |
 
 Everything else in this document is wired end to end and covered by the test suite.
 

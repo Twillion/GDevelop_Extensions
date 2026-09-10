@@ -49,6 +49,7 @@ mindmap
 | 📁 **[`CameraTweens3d/`](./CameraTweens3d)** | 8-Module Procedural Motion, Shakes, Spring-Dampers & 4 Genre Presets | Implemented | [README](./CameraTweens3d/README.md) · [Plan](./CameraTweens3d/IMPLEMENTATION_PLAN.md) · [API](./CameraTweens3d/API_REFERENCE.md) |
 | 📁 **[`CascadedShadowMaps3D/`](./CascadedShadowMaps3D)** | 3–4 Depth Cascades, Texel Snapping, 16-Tap Poisson PCF & Contact Shadows | Complete Blueprint | [README](./CascadedShadowMaps3D/README.md) · [Plan](./CascadedShadowMaps3D/IMPLEMENTATION_PLAN.md) · [API](./CascadedShadowMaps3D/API_REFERENCE.md) |
 | 📁 **[`CinematicPostFX3D/`](./CinematicPostFX3D)** | All-in-One SSR Reflections, GTAO Ambient Occlusion, 13-Tap Karis Bloom, Bokeh DOF | Implemented | [README](./CinematicPostFX3D/README.md) · [Plan](./CinematicPostFX3D/IMPLEMENTATION_PLAN.md) · [API](./CinematicPostFX3D/API_REFERENCE.md) |
+| 📁 **[`ClusteredDetail/`](./ClusteredDetail)** | Clustered Forward Projective Decals (0 Draw Calls, Bullet Holes, Blood, Scorch Marks, Runes) | Complete Blueprint | [README](./ClusteredDetail/README.md) · [Plan](./ClusteredDetail/IMPLEMENTATION_PLAN.md) · [API](./ClusteredDetail/API_REFERENCE.md) |
 | 📁 **[`AdvancedLighting3D/`](./AdvancedLighting3D)** | 16x9x24 Frustum Clustered Multi-Lights (500+ Lights, Karis Area Specular, Volumetric Fog, SSCS) | Complete Blueprint | [README](./AdvancedLighting3D/README.md) · [Plan](./AdvancedLighting3D/IMPLEMENTATION_PLAN.md) · [API](./AdvancedLighting3D/API_REFERENCE.md) |
 | 📁 **[`ExternalSkeletalAnimator3D/`](./ExternalSkeletalAnimator3D)** | Multi-Clip External GLB Animation Player, Bone Sockets & Jolt Ragdoll Physics | Implemented / Active | [README](./ExternalSkeletalAnimator3D/README.md) · [Plan](./ExternalSkeletalAnimator3D/PLAN.md) |
 | 📁 **[`FluidAndWater3D/`](./FluidAndWater3D)** | Sizable Gerstner Oceans, Jolt Buoyancy, Snell's Window & Pourable SPH Liquids | Implemented | [README](./FluidAndWater3D/README.md) · [Plan](./FluidAndWater3D/IMPLEMENTATION_PLAN.md) · [API](./FluidAndWater3D/API_REFERENCE.md) |
@@ -232,15 +233,17 @@ mindmap
 
 ---
 
-### 4.3 `DecalProjector3D` (Impacts, Blood, Tracks & Scorch Marks)
-* **Type:** Custom 3D Object / Action
-* **Purpose:** Dynamically projects 2D textures onto arbitrary 3D surfaces without clipping or z-fighting.
+### 4.3 `ClusteredDetail` (Clustered Forward Projective Decals) — *[Folder: ClusteredDetail/](./ClusteredDetail)*
+* **Type:** Global Scene Manager & Behavior
+* **Purpose:** High-performance 3D projective decal pipeline (bullet holes, footsteps, blood splatters, scorch marks, puddles, glowing runes) rendered with **0 extra draw calls** and **0 geometry slicing hitches**.
 * **Key Features:**
-  - Conforms to uneven terrain, curved walls, and complex meshes.
-  - Automatic FIFO recycling pool (oldest decals fade out and get reused).
-  - Decal lifetime duration and fade-out animations.
-* **Technical Mechanism:** Utilizes Three.js `DecalGeometry` to clip and project quad geometry against target static meshes.
-* **Impact / Priority:** ⭐⭐⭐⭐ *(Essential for shooter, combat, and vehicle feedback)*
+  - **Zero Draw Call Overhead:** All decals render inside the standard forward mesh passes of surfaces receiving decals.
+  - **3D OBB Frustum Clustering:** Decal boxes are culled into the 3D cluster grid ($16 \times 9 \times 24$), yielding flat $O(1)$ evaluation.
+  - **Normal Angle Rejection & Falloff:** Cosine threshold eliminates back-projection and stretching on steep perpendicular walls.
+  - **Multi-Channel PBR Blending:** AlphaBlend, Multiply (scorch/dirt), NormalOnly (cracks/dents), and EmissiveGlow (runes/lasers).
+  - **Instant Ring Buffer Spawning:** Spawning a decal simply writes an OBB transform to a GPU DataTexture.
+* **Technical Mechanism:** Global Three.js `MeshStandardMaterial` / `MeshPhysicalMaterial` forward shader chunk injection sampling cluster grid headers and projecting world coordinates into decal box space.
+* **Impact / Priority:** ⭐⭐⭐⭐⭐ *(Crucial for shooter feedback, footsteps, environmental grime, and combat effects)*
 
 ---
 

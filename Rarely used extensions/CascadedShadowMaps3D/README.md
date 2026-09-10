@@ -1,5 +1,10 @@
 # CascadedShadowMaps3D — High-Fidelity Cascaded Shadow Maps & Contact Shadows for GDevelop
 
+> **Integration status:** Retained as the CSM design record for AdvancedLighting3D. The intended
+> implementation is a selectable `CSM` mode alongside `SDF`, with `Hybrid` as the default. See
+> `AdvancedLighting3D/SHADOW_SELECTOR_IMPLEMENTATION_PLAN.md` for ownership, lifecycle, API, and
+> verification requirements.
+
 **CascadedShadowMaps3D (CSM)** is an advanced directional shadow architecture for **GDevelop 5 (Three.js WebGL2 backend)**.
 
 It replaces GDevelop's single, blurry directional shadow map with **3 to 4 tightly fitted depth cascade sub-frustums**, combined with **Light-Space Texel Stabilization (Snapping)**, **Poisson Disk PCF Soft Filtering**, and **Screen-Space Contact Shadows (SSCS)**. 

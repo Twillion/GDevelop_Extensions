@@ -13,11 +13,11 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 | :--- | :--- | :---: | :--- |
 | Max lights | `SetMaxLights` | `256` | Dynamic lights streamed to the GPU simultaneously ($64 - 512$). Changing it reallocates the light data texture. |
 | Master brightness | `SetGlobalIntensity` | `1.0` | Multiplier over all clustered lights. |
+| SDF Shadows | `SetSDFShadowsEnabled` | `true` | Enable or disable raymarched distance field soft shadows globally. |
+| Max Shadowed Lights | `SetMaxShadowedLights` | `4` | Cap on simultaneous shadowed clustered point/spot lights ($1 - 16$). |
+| Point Shadow Distance | `SetPointShadowDistance` | `800.0` | Cutoff distance in world units beyond which point/spot shadows are skipped. |
+| Sun Penumbra Softness | `SetSDFSunSoftness` | `1.8` | Angular diameter in degrees of directional Sun source ($0.1 - 10.0^\circ$). |
 | Cluster grid | *(none)* | `16 x 9 x 24` | Compile-time constants. Not configurable. |
-
-`SetVolumetricFogEnabled`, `SetVolumetricFogDensity`, `SetVolumetricAnisotropy` and
-`EnableContactShadows` exist and store scene state, but **no shader code reads them** — see the
-"What this extension does not do" section of the README.
 
 ---
 
@@ -28,7 +28,7 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 | :--- | :--- | :---: | :--- |
 | **`LightType`** | Choice | `"Point"` | Light emission geometry: `"Point"`, `"Spot"`, or `"AreaCapsule"`. |
 | **`Intensity`** | Number | `1.0` | Base radiant intensity multiplier. |
-| **`Radius`** | Number | `12.0` | Maximum reach in **metres**, converted at 100 world units per metre (so 12 m = 1200 units). Attenuation reaches **exactly 0** at the boundary — beyond it a surface is not dim, it is unlit. Lowering this is the main performance lever, but never at the cost of losing the light. |
+| **`Radius`** | Number | `12.0` | Maximum reach in **metres**, converted at 100 world units per metre (so 12 m = 1200 units). Attenuation reaches **exactly 0** at the boundary — beyond it a surface is not dim, it is unlit. |
 | **`CapsuleLength`** | Number | `2.0` | Length of tube/bar in meters (only for `AreaCapsule`). |
 | **`SpotInnerAngle`** | Number | `25.0` | Inner cone cutoff in degrees (only for `Spot`). |
 | **`SpotOuterAngle`** | Number | `45.0` | Outer cone soft penumbra in degrees (only for `Spot`). |
@@ -41,16 +41,18 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 | **`LightColor`** | Color | `"255; 180; 100"` | Direct RGB color when `ColorMode` is `"RGB"`. |
 | **`EmissiveBoost`** | Number | `1.0` | Over-bright color boost for bloom/glow effects. |
 
-### Group 3: IES Profiles & Contact Shadows
+### Group 3: IES Profiles & Shadows
 | Property | Type | Default | Description |
 | :--- | :--- | :---: | :--- |
 | **`IESProfile`** | Choice | `"None"` | Architectural photometric profile: `"None"`, `"WallSconce"`, `"StreetLamp"`, `"Downlight"`, `"Searchlight"`. |
-| **`CastContactShadows`**| Boolean | `true` | Enables screen-space raytraced micro-shadows from this specific light. |
+| **`CastShadows`** | Boolean | `false` | Enables SDF volumetric raymarched soft shadows from this specific light. |
+| **`SourceRadius`** | Number | `10.0` | Physical light source radius in world units for penumbra softness calculation. |
+| **`CastContactShadows`**| Boolean | `true` | Compatibility flag for micro-shadows. |
 | **`ShadowBias`** | Number | `0.02` | Normal offset bias to prevent self-shadow acne. |
 
 ### Group 4: Procedural Animation & Flicker
 | Property | Type | Default | Description |
-| :--- | :--- | :---: | :---: |
+| :--- | :--- | :---: | :--- |
 | **`FlickerMode`** | Choice | `"None"` | Animation pattern: `"None"`, `"FireFlicker"`, `"FluorescentHum"`, `"SirenStrobe"`, `"PulseWave"`. |
 | **`FlickerSpeed`** | Number | `8.0` | Oscillation / noise frequency (Hz). |
 | **`FlickerIntensityVariation`** | Number | `0.25` | Amplitude of random flicker brightness changes ($0.0 - 1.0$). |
@@ -59,14 +61,20 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 
 ## 3. Actions
 
-### Manager Actions
+### Scene & Light Manager Actions
 * **`Set global clustered light intensity to _PARAM0_`**: Master scene brightness multiplier.
 * **`Set maximum active streamed dynamic lights to _PARAM0_`**: Light budget, $64 - 512$. Reallocates the light data texture.
-* *Inert (state only, no shader reads them):* `Set volumetric atmospheric fog density`, `Set volumetric fog forward scattering anisotropy`, `Enable clustered contact micro-shadows`, `Enable volumetric atmospheric fog`.
+* **`Enable or disable SDF soft shadows in scene (_PARAM0_)`**: Global toggle for distance field shadows.
+* **`Set maximum simultaneous SDF shadowed lights to _PARAM0_`**: Budget limit ($1 - 16$) for point/spot soft shadows.
+* **`Set maximum point light shadow distance to _PARAM0_`**: Distance cutoff (world units) for dynamic light shadows.
+* **`Set directional sun shadow softness angle to _PARAM0_`**: Penumbra softness angle in degrees ($0.1 - 10.0^\circ$).
+* **`Set SDF hit epsilon to _PARAM0_`** / **`Set SDF normal bias to _PARAM0_`**: Raymarcher surface offset tuning.
 
 ### Object Actions (`ClusteredLight3D`)
 * **`Set light intensity on _PARAM0_ to _PARAM1_`**: Update brightness.
 * **`Set light attenuation radius on _PARAM0_ to _PARAM1_`**: Change maximum reach in meters.
+* **`Set whether light casts shadows on _PARAM0_ to _PARAM1_`**: Toggle SDF soft shadow casting for this light.
+* **`Set light source radius on _PARAM0_ to _PARAM1_`**: Set light emitter radius for penumbra softness.
 * **`Set light color temperature in Kelvin on _PARAM0_ to _PARAM1_`**: Set physical color (e.g. `1800` for candle, `6500` for fluorescent).
 * **`Set light RGB color on _PARAM0_ to _PARAM1_`**: Set custom RGB color string (e.g. `"#00ffcc"` or `"0;255;200"`).
 * **`Set spotlight angles on _PARAM0_ (Inner: _PARAM1_, Outer: _PARAM2_)`**: Adjust spot focus and soft penumbra.
@@ -80,7 +88,8 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 
 * **`Is clustered light active on _PARAM0_`**: Checks if light is currently emitting within camera frustum.
 * **`Is light within camera view frustum on _PARAM0_`**: True if light's bounding sphere intersects the active camera frustum.
-* **`Is volumetric fog enabled in scene`**: Checks if atmospheric light scattering is active.
+* **`Does light cast shadows on _PARAM0_`**: True if `CastShadows` is enabled on this light.
+* **`Are SDF soft shadows enabled in scene`**: True if global SDF shadow raymarching is active.
 * **`Is light procedural flicker active on _PARAM0_`**: Checks if animated flicker/pulse is running.
 
 ---
@@ -93,11 +102,16 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 * **`Object.ClusteredLight3D::ColorTemperature()`**: Returns color temperature in Kelvin.
 * **`Object.ClusteredLight3D::CapsuleLength()`**: Returns tube length in meters.
 * **`Object.ClusteredLight3D::ViewDistance()`**: Distance from active camera to light in meters.
+* **`Object.ClusteredLight3D::SourceRadius()`**: Returns light source radius in world units.
 
-### Manager Diagnostics
+### Manager Diagnostics & Metrics
 * **`AdvancedLighting3D::ActiveLightCount()`**: Total number of lights rendered in the current frame.
 * **`AdvancedLighting3D::MaxLightsInSingleCluster()`**: Peak light count in the densest cluster (for performance monitoring).
 * **`AdvancedLighting3D::CPUBroadphaseTimeMs()`**: Execution time in milliseconds for CPU light binning.
+* **`AdvancedLighting3D::SDFVoxelCount()`**: Total voxel count ($resX \times resY \times resZ$) of active SDF volume.
+* **`AdvancedLighting3D::SDFVRAMBytes()`**: GPU memory allocated for the 3D distance field (2 bytes per voxel).
+* **`AdvancedLighting3D::SDFBakeProgress()`**: Baking progress from 0.0 to 1.0 (triangle query phase -> EDT phase).
+* **`AdvancedLighting3D::SDFSunSoftness()`**: Current directional Sun shadow softness angle in degrees.
 
 ---
 
@@ -148,7 +162,7 @@ the grid.
 ## 8. `ReceiveLightProbes` (Behavior — attach to any lit 3D object)
 
 Samples the active probe volume per fragment. Receivers also keep receiving clustered dynamic
-lights: both features come from the same injected shader.
+lights and SDF shadows: all features come from the same injected shader.
 
 | Property | Type | Default | Description |
 | :--- | :--- | :---: | :--- |
@@ -160,10 +174,6 @@ lights: both features come from the same injected shader.
 **Actions:** `SetIntensityMultiplier`, `SetNormalBiasOffset`, `SetEnabled`.
 **Conditions:** `IsReceiving`, `IsEnabled`.
 **Expressions:** `ProbeIntensity()`, `ProbeNormalBias()`.
-
-Attaching the behavior **clones** the object's materials, because GDevelop memoises materials
-game-wide and the probe uniforms are per-instance. `onDestroy` restores the shared originals and
-disposes the clones.
 
 ---
 
@@ -181,62 +191,100 @@ disposes the clones.
 
 ### Conditions
 * **`IsProbeVolumeLoaded`**, **`IsProbeBakeInProgress`**, **`IsProbeBakeComplete`**, **`IsDayNightModeEnabled`**.
-* **`IsSupported`** is shared with the clustered half — one WebGL2 check covers both.
+* **`IsSupported`** is shared across all systems — one WebGL2 check covers all features.
 
 ### Expressions
 * **`DayNightBlend()`**, **`ActiveProbeCount()`**, **`ProbeSpacingX/Y/Z()`**, **`ProbeBakeProgress()`**, **`ProbeVRAMBytes()`**.
 
 ---
 
-## 10. Shader Interface
+## 10. `SDFVolume3D` (Behavior — attach to a Cube3D)
 
-Both features are injected into a **single** `onBeforeCompile` on each material, with a cache key of
-the form `GD_ADVLIGHT3D_V6|CL1|G3D<0|1>|LP<0|1>`. The `LP` digit is what keeps a probe receiver's program
-distinct from a plain clustered one; a shared constant key here is exactly the failure that made the
-two extensions unsafe to use together.
+Defines the bounding volume and 3D voxel resolution for Signed Distance Field soft shadows.
+The cube's scale and position represent the shadow volume in world space; the cube hides itself at runtime.
 
-**Injection points**
+| Property | Type | Default | Description |
+| :--- | :--- | :---: | :--- |
+| **`ResolutionX`** | Number | `128` | Distance field voxels along world X ($8 - 256$). |
+| **`ResolutionY`** | Number | `128` | Distance field voxels along world Y ($8 - 256$). |
+| **`ResolutionZ`** | Number | `32` | Distance field voxels along world Z ($4 - 128$). |
+| **`AutoBakeOnStart`** | Boolean | `false` | Automatically extract static meshes and compute distance field when the scene loads. |
 
-| Chunk | What is added |
-| :--- | :--- |
-| `#include <lights_fragment_begin>` | The probe term (`irradiance += evaluateLightProbeGrid(...)`), then the clustered light loop writing `reflectedLight.directDiffuse` / `directSpecular`. Order matters: `irradiance` is consumed later by `lights_fragment_end`. |
-| `#include <worldpos_vertex>` | `vProbeWorldPos`, instancing-aware. Receivers only. |
+**Actions:** `SetAutoBakeOnStart`.
+**Conditions:** `IsAutoBakeOnStart`, `IsVolumeBaked`.
+**Expressions:** `VoxelCount()`.
+
+---
+
+## 11. SDF Soft Shadow Scene Functions
+
+### Actions
+* **`SetSDFVolumeBounds(minX, minY, minZ, maxX, maxY, maxZ)`**: Manually set distance field boundaries in GDevelop world units.
+* **`SetSDFShadowsEnabled(_PARAM0_)`**: Globally enable or disable SDF soft shadow raymarching.
+* **`SetMaxShadowedLights(_PARAM0_)`**: Maximum simultaneous dynamic point/spot lights that raymarch shadows ($1 - 16$).
+* **`SetPointShadowDistance(_PARAM0_)`**: View distance cutoff (world units) for dynamic light shadow evaluation.
+* **`SetSDFSunSoftness(_PARAM0_)`**: Angular diameter in degrees ($0.1 - 10.0^\circ$) for directional Sun penumbra.
+* **`SetSDFHitEps(_PARAM0_)`**: Surface intersection distance threshold in voxels (default `0.05`).
+* **`SetSDFNormalBias(_PARAM0_)`**: Offset along surface normal in voxels to prevent self-shadowing acne (default `1.0`).
+* **`StartSDFBake()`** / **`CancelSDFBake()`**: Start or stop background distance field computation.
+* **`SetSDFBakeBudgetMs(_PARAM0_)`**: Per-frame CPU time budget in milliseconds for triangle query seeding (default `8.0`).
+* **`ExportSDFData(_PARAM0_)`**: Download baked distance field as an `.sdf.bin` file.
+* **`LoadSDFDataFromFile(_PARAM0_)`**: Fetch and apply an `.sdf.bin` binary file asynchronously.
+
+### Conditions
+* **`IsSDFVolumeLoaded`**: True if the 3D distance field texture is allocated on the GPU.
+* **`IsSDFBakeInProgress`**: True while triangle queries or Felzenszwalb transform are actively executing.
+* **`IsSDFBakeComplete`**: True when distance field computation is fully finished.
+* **`AreSDFShadowsEnabled`**: True if SDF shadow evaluation is enabled.
+
+### Expressions
+* **`SDFVoxelCount()`**: Total number of voxels in the active distance field.
+* **`SDFVRAMBytes()`**: GPU VRAM footprint in bytes for the R16F texture.
+* **`SDFBakeProgress()`**: Baking progress ratio from $0.0$ to $1.0$.
+* **`SDFSunSoftness()`**: Directional Sun softness angle in degrees.
+
+---
+
+## 12. Shader Interface
+
+All features are injected into a **single** `onBeforeCompile` on each material, with a cache key of
+the form:
+`GD_ADVLIGHT3D_V6|CL1|G3D<0|1>|LP<0|1>|SDF<0|1>`
+
+**Defines Injected**
+- `AL_SDF_SHADOWS 1` (when an active SDF volume is loaded and shadows are enabled)
 
 **Uniforms**
 
 | Name | Type | Meaning |
 | :--- | :--- | :--- |
 | `uClusteredLightData` | `sampler2D` RGBA32F | 4 texels per light — see the packing table below. |
-| `uClusterGrid3D` / `uClusterGrid2D` | `usampler3D` / `usampler2D` RG32UI | Per-cluster `(offset, count)`. The 2D form is the fallback when `Data3DTexture` is unavailable. |
+| `uClusterGrid3D` / `uClusterGrid2D` | `usampler3D` / `usampler2D` RG32UI | Per-cluster `(offset, count)`. |
 | `uLightIndexList` | `usampler2D` R16UI | Concatenated per-cluster light index stream, 2048 x 108. |
-| `uClusterGridDims` | `vec3` | Grid dimensions as floats. Deliberately not `ivec3`: three uploads integer uniforms through `uniform3iv`, which needs a real array. |
+| `uClusterGridDims` | `vec3` | Grid dimensions as floats. |
 | `uProbeVolumeDay` / `uProbeVolumeNight` | `sampler3D` RGBA16F | Baked probe volumes. |
-| `uProbeVolumeMin` / `uProbeVolumeSize` | `vec3` | Volume bounds in **mirrored** three space: min is `[minX, -maxY, minZ]`. |
-| `uProbeIntensity` | `float` | `volumeIntensity × instanceMultiplier × globalIntensity × π`. The fixed π factor preserves GDevelop r160's legacy light-unit brightness without polling Three.js's deprecated `useLegacyLights` property. Starts at `0.0`. |
-| `uProbeDayNightBlend`, `uProbeNormalBias` | `float` | Blend factor and normal offset. |
+| `uProbeVolumeMin` / `uProbeVolumeSize` | `vec3` | Probe volume bounds in Three.js space. |
+| `uProbeIntensity` | `float` | Probe radiance intensity scaling. |
+| `uProbeDayNightBlend`, `uProbeNormalBias` | `float` | Probe blend factor and normal offset. |
+| `uSdfVolume` | `sampler3D` R16F | 3D Signed Distance Field texture storing world-unit Euclidean distance. |
+| `uSdfMin` / `uSdfSize` | `vec3` | SDF bounding box in Three.js space ($[minX, -maxY, minZ]$). |
+| `uSdfParams` | `vec4` | `(invVoxelSize, hitEps, normalBias, inflate)`. |
+| `uViewToWorld` | `mat4` | Current camera view-to-world transformation matrix. |
+| `uMaxShadowedLights` | `int` | Maximum simultaneous dynamic lights allowed to trace shadows. |
+| `uPointShadowDistance`| `float` | Distance threshold for dynamic light shadow raymarching. |
 
-**Engine interface used** (Three r160): `geometryPosition`, `geometryNormal`, `geometryViewDir`,
-`F_Schlick(f0, f90, dotVH)`, `D_GGX(alpha, dotNH)`, `V_GGX_SmithCorrelated(alpha, dotNL, dotNV)`,
-`inverseTransformDirection`, `PI`, `RECIPROCAL_PI`. Note there is **no** `G_Smith` in r160, and
-`vViewPosition` is the *negated* fragment position — `geometryPosition` is the position.
-
-**Light data packing** — 4 RGBA32F texels per light, `uClusteredLightData` is `MaxLights * 4` wide:
+**Light data packing** — 4 RGBA32F texels per light:
 
 | Texel | `.x` | `.y` | `.z` | `.w` |
 | :---: | :--- | :--- | :--- | :--- |
 | 0 | view-space position x | y | z | attenuation radius |
 | 1 | colour r | g | b | intensity |
 | 2 | view-space direction x | y | z | type flag: `0` point, `cos(outer)` spot, `10 + halfLength` capsule |
-| 3 | IES profile id (0-4) | `cos(innerAngle)` | — | — |
-
-**Light index list** — `uLightIndexList` is a **2048 x 108** R16UI texture, addressed as
-`ivec2(i % 2048, i / 2048)`. A 1D strip would need 221,184 texels of width, over thirteen times the
-16,384 that typical desktop hardware allows and 108 times the 2,048 WebGL2 guarantees; the
-upload failed silently and every fetch returned index 0.
+| 3 | IES profile id (0-4) | `cos(innerAngle)` | shadow flag (`1.0` if `CastShadows`) | source radius (penumbra size) |
 
 ---
 
-## 11. `.lpg.bin` Format
+## 13. `.lpg.bin` Format
 
 Little-endian. Byte offsets:
 
@@ -252,6 +300,19 @@ Little-endian. Byte offsets:
 | `56` | `resX·resY·resZ·8` | Day payload, RGBA16F, indexed `((z·resY + y)·resX + x)·4` |
 | … | same | Night payload, if the flag is set |
 
-Loading a file **locks the bounds**: the file's bounds are the ones its data was baked against, so
-the authoring cube stops driving the volume. A bounds mismatch warns once. Truncated files, bad
-magic, unknown versions and out-of-range resolutions are all rejected rather than throwing.
+---
+
+## 14. `.sdf.bin` Format
+
+Little-endian. Byte offsets:
+
+| Offset | Size | Field |
+| :--- | :--- | :--- |
+| `0` | 4 | Magic `SDF3` |
+| `4` | 4 | `uint32` version — must be `1` |
+| `8`, `12`, `16` | 4 each | `uint32` resX, resY, resZ (each in $[4, 256]$) |
+| `20` | 1 | Encoding — `0` = R16F half-float Euclidean distance |
+| `21` | 1 | Flags — reserved (`0`) |
+| `22` | 10 | Reserved, zero |
+| `32` | 24 | `float32` minX, minY, minZ, maxX, maxY, maxZ — **unmirrored** GDevelop coordinates |
+| `56` | `resX·resY·resZ·2` | Distance field payload, R16F, indexed `(z·resY + y)·resX + x` |

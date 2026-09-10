@@ -53,6 +53,11 @@ globalThis.THREE = {
     transformDirection(m) { return this; }
     normalize() { return this; }
   },
+  Vector4: class {
+    constructor(x = 0, y = 0, z = 0, w = 0) { this.x = x; this.y = y; this.z = z; this.w = w; }
+    set(x, y, z, w) { this.x = x; this.y = y; this.z = z; this.w = w; return this; }
+    copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; this.w = v.w; return this; }
+  },
   Color: class {
     constructor() { this.r = 0; this.g = 0; this.b = 0; }
     setRGB(r, g, b) { this.r = r; this.g = g; this.b = b; return this; }
@@ -61,6 +66,8 @@ globalThis.THREE = {
     constructor() { this.elements = new Float32Array(16); }
     identity() { return this; }
     makeTranslation(x, y, z) { this.t = [x, y, z]; return this; }
+    copy(m) { if (m && m.elements) this.elements.set(m.elements); return this; }
+    clone() { const res = new this.constructor(); res.copy(this); return res; }
   },
   Group: class {
     constructor() { this.children = []; }
@@ -150,7 +157,7 @@ globalThis.THREE = {
 // Evaluate the runtime script
 new Function(runtimeCode)();
 
-const AL = gdjs.__advancedLighting3D;
+let AL = gdjs.__advancedLighting3D;
 assert.ok(AL, 'gdjs.__advancedLighting3D must be defined');
 
 /* ------------------------------------------------------------------ helpers */
@@ -997,6 +1004,251 @@ assert.strictEqual(gdjs.__advancedLighting3D.__runtimeVersion, '2026.09.02.8',
   'The replacement runtime must identify the current build');
 assert.strictEqual(typeof registeredCallbacks.editorStep, 'function',
   'The replacement runtime must install its editor callback');
+AL = gdjs.__advancedLighting3D;
 console.log('  Passed: stale singleton replaced and editor callback refreshed.');
 
-console.log('\nALL 25 ADVANCED LIGHTING 3D UNIT TESTS PASSED CLEANLY (clustered + light probes)!\n');
+console.log('\n--- Test 27: Point-to-triangle squared distance (closestPointOnTriangleSq) ---');
+{
+  const ptDistSq = AL.__internals.closestPointOnTriangleSq;
+  assert.strictEqual(typeof ptDistSq, 'function', 'closestPointOnTriangleSq must be exported in internals');
+
+  // Triangle in XY plane at Z=0: A(0,0,0), B(10,0,0), C(0,10,0)
+  // Interior query: (2, 2, 5) -> closest is (2, 2, 0), d^2 = 25
+  const dInterior = ptDistSq(2, 2, 5,  0, 0, 0,  10, 0, 0,  0, 10, 0);
+  assert.ok(Math.abs(dInterior - 25.0) < 1e-5, `Interior point distance expected 25, got ${dInterior}`);
+
+  // Vertex query: (-3, -4, 0) -> closest is A(0, 0, 0), d^2 = 9 + 16 = 25
+  const dVertex = ptDistSq(-3, -4, 0,  0, 0, 0,  10, 0, 0,  0, 10, 0);
+  assert.ok(Math.abs(dVertex - 25.0) < 1e-5, `Vertex region distance expected 25, got ${dVertex}`);
+
+  // Edge AB query: (5, -4, 0) -> closest is (5, 0, 0), d^2 = 16
+  const dEdgeAB = ptDistSq(5, -4, 0,  0, 0, 0,  10, 0, 0,  0, 10, 0);
+  assert.ok(Math.abs(dEdgeAB - 16.0) < 1e-5, `Edge AB distance expected 16, got ${dEdgeAB}`);
+
+  // Edge AC query: (-3, 5, 0) -> closest is (0, 5, 0), d^2 = 9
+  const dEdgeAC = ptDistSq(-3, 5, 0,  0, 0, 0,  10, 0, 0,  0, 10, 0);
+  assert.ok(Math.abs(dEdgeAC - 9.0) < 1e-5, `Edge AC distance expected 9, got ${dEdgeAC}`);
+
+  // Edge BC query: (8, 8, 0) -> closest is on hypotenuse x + y = 10 at (5, 5, 0), d^2 = (8-5)^2 + (8-5)^2 = 18
+  const dEdgeBC = ptDistSq(8, 8, 0,  0, 0, 0,  10, 0, 0,  0, 10, 0);
+  assert.ok(Math.abs(dEdgeBC - 18.0) < 1e-5, `Edge BC distance expected 18, got ${dEdgeBC}`);
+
+  console.log('  Passed: Ericson Voronoi feature region tests are exact.');
+}
+
+console.log('\n--- Test 28: Felzenszwalb 1D EDT and Separable 3D EDT exactness ---');
+{
+  const felz1D = AL.__internals.felzenszwalb1D;
+  const run3DEDT = AL.__internals.run3DEDT;
+  assert.strictEqual(typeof felz1D, 'function', 'felzenszwalb1D must be exported in internals');
+  assert.strictEqual(typeof run3DEDT, 'function', 'run3DEDT must be exported in internals');
+
+  // 1D test: f = [1e20, 0, 1e20, 1e20, 1e20]
+  const n = 5;
+  const f = new Float32Array([1e20, 0, 1e20, 1e20, 1e20]);
+  const d = new Float32Array(n);
+  const v = new Int32Array(n);
+  const z = new Float32Array(n + 1);
+  felz1D(f, d, v, z, n);
+  const expected1D = [1, 0, 1, 4, 9];
+  for (let i = 0; i < n; i++) {
+    assert.strictEqual(d[i], expected1D[i], `1D EDT at index ${i} expected ${expected1D[i]}, got ${d[i]}`);
+  }
+
+  // 3D test: 8x8x8 grid with one seed at (3, 3, 3) = 0
+  const S = 8;
+  const grid = new Float32Array(S * S * S);
+  grid.fill(1e20);
+  grid[(3 * S + 3) * S + 3] = 0; // index for (3, 3, 3)
+
+  run3DEDT(grid, S, S, S);
+
+  // Center must be 0
+  assert.strictEqual(grid[(3 * S + 3) * S + 3], 0.0, 'Center voxel must be 0');
+
+  // Axis query (3, 3, 5) -> dist = 2.0
+  const dAxis = grid[(5 * S + 3) * S + 3];
+  assert.ok(Math.abs(dAxis - 2.0) < 1e-5, `Axis query expected 2.0, got ${dAxis}`);
+
+  // Diagonal query (4, 5, 5) -> dist = sqrt((4-3)^2 + (5-3)^2 + (5-3)^2) = sqrt(1 + 4 + 4) = 3.0
+  const dDiag = grid[(5 * S + 5) * S + 4];
+  assert.ok(Math.abs(dDiag - 3.0) < 1e-5, `Diagonal query expected 3.0, got ${dDiag}`);
+
+  console.log('  Passed: Felzenszwalb O(n) parabolic envelope and 3D Euclidean distances are exact.');
+}
+
+console.log('\n--- Test 29: SDF Binary format (.sdf.bin) round-trip and validation ---');
+{
+  const exportSDFBinary = AL.__internals.exportSDFBinary;
+  const loadSDFBinary = AL.__internals.loadSDFBinary;
+  assert.strictEqual(typeof exportSDFBinary, 'function', 'exportSDFBinary must be exported');
+  assert.strictEqual(typeof loadSDFBinary, 'function', 'loadSDFBinary must be exported');
+
+  const testScene = { ...mockScene };
+  const mockSDFObject = {
+    getX: () => 100, getY: () => 200, getZ: () => 300,
+    getWidth: () => 1000, getHeight: () => 1000, getDepth: () => 500,
+    getRenderer: () => null,
+    getDepth: () => 500
+  };
+  const sdfBehavior = {};
+  const vol = AL.registerSDFVolume(testScene, mockSDFObject, sdfBehavior, { resX: 16, resY: 16, resZ: 8 });
+  assert.ok(vol, 'SDF volume must be registered');
+
+  // Set known test distances in vol.data
+  const totalVoxels = 16 * 16 * 8;
+  for (let i = 0; i < totalVoxels; i++) {
+    vol.data[i] = AL.toHalf(i * 0.25);
+  }
+
+  const bin = exportSDFBinary(vol);
+  assert.ok(bin instanceof ArrayBuffer, 'exportSDFBinary must return an ArrayBuffer');
+  assert.strictEqual(bin.byteLength, 56 + totalVoxels * 2, 'File size must match 56-byte header + payload');
+
+  const view = new DataView(bin);
+  // Magic: SDF3
+  assert.strictEqual(String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)), 'SDF3');
+  assert.strictEqual(view.getUint32(4, true), 1, 'Version must be 1');
+  assert.strictEqual(view.getUint32(8, true), 16, 'ResX must be 16');
+  assert.strictEqual(view.getUint32(12, true), 16, 'ResY must be 16');
+  assert.strictEqual(view.getUint32(16, true), 8, 'ResZ must be 8');
+  assert.strictEqual(view.getUint8(20), 0, 'Encoding must be 0 (R16F)');
+
+  // Corrupt file rejection
+  assert.strictEqual(loadSDFBinary(testScene, new ArrayBuffer(40)), false, 'Truncated header rejected');
+  const badMagic = new ArrayBuffer(56 + totalVoxels * 2);
+  assert.strictEqual(loadSDFBinary(testScene, badMagic), false, 'Invalid magic rejected');
+
+  // Round trip load
+  const loaded = loadSDFBinary(testScene, bin);
+  assert.strictEqual(loaded, true, 'Valid SDF binary must load cleanly');
+  assert.strictEqual(vol.isBaked, true, 'Volume isBaked must be set to true');
+  assert.strictEqual(vol.boundsLocked, true, 'Volume boundsLocked must be set to true');
+  assert.strictEqual(vol.resX, 16);
+  assert.strictEqual(vol.resY, 16);
+  assert.strictEqual(vol.resZ, 8);
+  assert.strictEqual(AL.fromHalf(vol.data[10]), 2.5, 'Loaded distance values must match original half-floats');
+
+  console.log('  Passed: .sdf.bin 56-byte header, R16F payload round-trip and validation verified.');
+}
+
+console.log('\n--- Test 30: SDF Material Program Cache Key and Shader Defines ---');
+{
+  const testScene = { ...mockScene };
+  const state = AL.stateOf(testScene);
+  const mat = makeStandardMaterial('SDFTestMat');
+
+  // Without SDF:
+  state.enableSDFShadows = false;
+  state.sdfVolume = null;
+  AL.__internals.injectShaderOnMaterial(mat, state, null);
+  const keyNoSDF = mat.customProgramCacheKey();
+  assert.strictEqual(keyNoSDF.includes('|SDF1'), false, 'Program cache key without SDF must not contain |SDF1');
+
+  // With SDF active:
+  state.enableSDFShadows = true;
+  state.sdfVolume = {
+    texture: {},
+    isBaked: true,
+    threeMin: new THREE.Vector3(0, 0, 0),
+    threeSize: new THREE.Vector3(100, 100, 100),
+    resX: 16, resY: 16, resZ: 8, voxelSize: 6.25,
+    maxX: 100, minX: 0
+  };
+  mat.__alInjection = null; // force re-inject
+  AL.__internals.injectShaderOnMaterial(mat, state, null);
+  const keyWithSDF = mat.customProgramCacheKey();
+  assert.ok(keyWithSDF.endsWith('|SDF1'), `Program cache key with SDF must end with |SDF1, got ${keyWithSDF}`);
+
+  // Test shader defines and uniforms in onBeforeCompile
+  const mockShader = {
+    fragmentShader: '#include <lights_fragment_begin>\nvoid main() {}',
+    vertexShader: '#include <worldpos_vertex>\nvoid main() {}',
+    defines: {},
+    uniforms: {}
+  };
+  mat.onBeforeCompile(mockShader);
+  assert.strictEqual(mockShader.defines.AL_SDF_SHADOWS, 1, 'AL_SDF_SHADOWS define must be set to 1');
+  assert.ok(mockShader.uniforms.uSdfVolume, 'uSdfVolume uniform must be declared');
+  assert.ok(mockShader.uniforms.uSdfMin, 'uSdfMin uniform must be declared');
+  assert.ok(mockShader.uniforms.uSdfSize, 'uSdfSize uniform must be declared');
+  assert.ok(mockShader.uniforms.uSdfParams, 'uSdfParams uniform must be declared');
+  assert.ok(mockShader.uniforms.uViewToWorld, 'uViewToWorld uniform must be declared');
+  assert.ok(mockShader.uniforms.uMaxShadowedLights, 'uMaxShadowedLights uniform must be declared');
+  assert.ok(mockShader.uniforms.uPointShadowDistance, 'uPointShadowDistance uniform must be declared');
+
+  console.log('  Passed: SDF program cache key (|SDF1), AL_SDF_SHADOWS define and uniforms confirmed.');
+}
+
+console.log('\n--- Test 31: 4th Texel Light Data Packing (Shadow Flag and Source Radius) ---');
+{
+  const testScene = { ...mockScene };
+  const mockCam = {
+    fov: 60, aspect: 16 / 9, near: 0.1, far: 1000.0,
+    matrixWorldInverse: new THREE.Matrix4(),
+    matrixWorld: new THREE.Matrix4(),
+    updateMatrixWorld: () => {}
+  };
+  testScene.getLayer = () => ({
+    getRenderer: () => ({
+      getThreeCamera: () => mockCam,
+      getThreeScene: () => null
+    })
+  });
+
+  const state = AL.registerSceneManager(testScene);
+  const lightObj = {
+    getX: () => 0, getY: () => 0, getZ: () => 50,
+    getRenderer: () => null
+  };
+  const lightBeh = {};
+  AL.registerLight(testScene, lightObj, lightBeh, {
+    lightType: 'Point',
+    radius: 10.0,
+    castShadow: true,
+    sourceRadius: 25.0
+  });
+
+  AL.doStepPostEvents(testScene);
+
+  // Check 4th texel floats (indices 12..15 for light 0)
+  const shadowFlag = state.lightDataArray[14];
+  const srcRadius = state.lightDataArray[15];
+  assert.strictEqual(shadowFlag, 1.0, 'Shadow flag (shape.z) must be 1.0 when castShadow is true');
+  assert.strictEqual(srcRadius, 25.0, 'Source radius (shape.w) must match configured sourceRadius');
+
+  // Toggle shadow off
+  AL.updateLight(testScene, lightObj, lightBeh, { castShadow: false });
+  AL.doStepPostEvents(testScene);
+  assert.strictEqual(state.lightDataArray[14], 0.0, 'Shadow flag (shape.z) must be 0.0 when castShadow is false');
+
+  console.log('  Passed: 4th texel shadow flag and source radius packing verified.');
+}
+
+console.log('\n--- Test 32: SDF Volume Lifecycle, Scene Cleanup and Diagnostics ---');
+{
+  const testScene = { ...mockScene };
+  const mockSDFObj = {
+    getX: () => 0, getY: () => 0, getZ: () => 0,
+    getWidth: () => 1600, getHeight: () => 1600, getDepth: () => 400,
+    getRenderer: () => null,
+    getZ: () => 0, getDepth: () => 400
+  };
+  const beh = {};
+  const vol = AL.registerSDFVolume(testScene, mockSDFObj, beh, { resX: 32, resY: 32, resZ: 16 });
+  assert.ok(vol, 'SDF volume must be registered');
+  assert.strictEqual(AL.getSDFVoxelCount(testScene), 32 * 32 * 16, 'Voxel count must match product of dimensions');
+  assert.strictEqual(AL.getSDFVRAMBytes(testScene), 32 * 32 * 16 * 2, 'VRAM bytes must be 2 bytes per voxel');
+  assert.strictEqual(AL.isSDFVolumeLoaded(testScene), true, 'Volume texture must be allocated');
+
+  // Cleanup
+  registeredCallbacks.unloaded(testScene);
+  const stateAfter = AL.stateOf(testScene);
+  assert.strictEqual(stateAfter.sdfVolume, null, 'sdfVolume must be null after scene cleanup');
+  assert.strictEqual(stateAfter.dummySdfTexture, null, 'dummySdfTexture must be null after scene cleanup');
+
+  console.log('  Passed: SDF volume lifecycle, VRAM metrics and scene teardown verified.');
+}
+
+console.log('\nALL 31 ADVANCED LIGHTING 3D UNIT TESTS PASSED CLEANLY (clustered + light probes + SDF shadows)!\n');
+

@@ -1,0 +1,1839 @@
+{
+  "author": "Twillion",
+  "category": "3D",
+  "dimension": "",
+  "extensionNamespace": "",
+  "fullName": "Extruded Sprite 3D",
+  "gdevelopVersion": ">=5.5.222",
+  "helpPath": "",
+  "iconUrl": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiBpZD0ibWRpLWN1YmUtb3V0bGluZSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGQ9Ik0yMSAxNi41QzIxIDE2Ljg4IDIwLjc5IDE3LjIxIDIwLjQ3IDE3LjM4TDEyLjU3IDIxLjgyQzEyLjQxIDIxLjk0IDEyLjIxIDIyIDEyIDIyUzExLjU5IDIxLjk0IDExLjQzIDIxLjgyTDMuNTMgMTcuMzhDMy4yMSAxNy4yMSAzIDE2Ljg4IDMgMTYuNVY3LjVDMyA3LjEyIDMuMjEgNi43OSAzLjUzIDYuNjJMMTEuNDMgMi4xOEMxMS41OSAyLjA2IDExLjc5IDIgMTIgMlMxMi40MSAyLjA2IDEyLjU3IDIuMThMMjAuNDcgNi42MkMyMC43OSA2Ljc5IDIxIDcuMTIgMjEgNy41VjE2LjVNMTIgNC4xNUw2LjA0IDcuNUwxMiAxMC44NUwxNy45NiA3LjVMMTIgNC4xNU01IDE1LjkxTDExIDE5LjI5VjEyLjU4TDUgOS4yMVYxNS45MU0xOSAxNS45MVY5LjIxTDEzIDEyLjU4VjE5LjI5TDE5IDE1LjkxWiIgLz48L3N2Zz4=",
+  "name": "ExtrudedSprite3D",
+  "previewIconUrl": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiBpZD0ibWRpLWN1YmUtb3V0bGluZSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGQ9Ik0yMSAxNi41QzIxIDE2Ljg4IDIwLjc5IDE3LjIxIDIwLjQ3IDE3LjM4TDEyLjU3IDIxLjgyQzEyLjQxIDIxLjk0IDEyLjIxIDIyIDEyIDIyUzExLjU5IDIxLjk0IDExLjQzIDIxLjgyTDMuNTMgMTcuMzhDMy4yMSAxNy4yMSAzIDE2Ljg4IDMgMTYuNVY3LjVDMyA3LjEyIDMuMjEgNi43OSAzLjUzIDYuNjJMMTEuNDMgMi4xOEMxMS41OSAyLjA2IDExLjc5IDIgMTIgMlMxMi40MSAyLjA2IDEyLjU3IDIuMThMMjAuNDcgNi42MkMyMC43OSA2Ljc5IDIxIDcuMTIgMjEgNy41VjE2LjVNMTIgNC4xNUw2LjA0IDcuNUwxMiAxMC44NUwxNy45NiA3LjVMMTIgNC4xNU01IDE1LjkxTDExIDE5LjI5VjEyLjU4TDUgOS4yMVYxNS45MU0xOSAxNS45MVY5LjIxTDEzIDEyLjU4VjE5LjI5TDE5IDE1LjkxWiIgLz48L3N2Zz4=",
+  "shortDescription": "Turns 2D sprite animations into extruded 3D meshes with optional static pixel-mesh physics.",
+  "version": "0.5.3",
+  "description": "An animated sprite extruded into a real 3D mesh. Edit animations like a regular Sprite, then use the normal 3D object width, height, and depth controls to size it. Front and back faces are textured with the sprite image, side walls are generated where solid pixels touch transparent pixels, so the object can receive 3D lights and cast silhouette-accurate shadows. Includes an optional Pixel Art Physics Mesh behavior for Static Physics3D objects.",
+  "tags": [
+    "3d",
+    "sprite",
+    "extrude",
+    "mesh",
+    "shadow",
+    "voxel"
+  ],
+  "authorIds": [],
+  "dependencies": [],
+  "globalVariables": [],
+  "sceneVariables": [],
+  "eventsFunctions": [
+    {
+      "description": "Install the shared runtime before any scene runs.",
+      "fullName": "onFirstSceneLoaded",
+      "functionType": "Action",
+      "name": "onFirstSceneLoaded",
+      "private": true,
+      "sentence": "",
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::Standard",
+          "conditions": [],
+          "actions": [
+            {
+              "type": {
+                "value": "ExtrudedSprite3D::DefineHelperClasses"
+              },
+              "parameters": [
+                "",
+                ""
+              ]
+            }
+          ]
+        }
+      ],
+      "parameters": [],
+      "objectGroups": []
+    },
+    {
+      "description": "Install the shared Extruded Sprite 3D runtime (renderer, billboard and pixel physics mesh). Runs once per game.",
+      "fullName": "Define helper classes",
+      "functionType": "Action",
+      "name": "DefineHelperClasses",
+      "private": true,
+      "sentence": "Define helper classes JavaScript code",
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "// Extruded Sprite 3D - shared runtime.\n// Installed once per game by onFirstSceneLoaded (and defensively by onCreated).\n// Everything below is idempotent: re-running it is a no-op.\nif (typeof THREE === 'undefined') {\n    return;\n}\n\nif (!gdjs.__extrudedSprite3D) {\n  const maskCache = new Map();\n  const geometryCache = new Map();\n  const materialCache = new Map();\n  const depthMaterialCache = new Map();\n  const liveRenderers = new Set();\n  const warnedOnce = new Set();\n  const MASK_CACHE_LIMIT = 32;\n  const GEOMETRY_CACHE_LIMIT = 64;\n  const MATERIAL_CACHE_LIMIT = 128;\n  const warnOnce = (key, message) => {\n    if (warnedOnce.has(key)) {\n      return;\n    }\n    warnedOnce.add(key);\n    console.warn(\"[ExtrudedSprite3D] \" + message);\n  };\n  // Caches are shared between every instance, so an entry can only be thrown\n  // away when no live renderer is still drawing with it.\n  const collectGeometriesInUse = () => {\n    const inUse = new Set();\n    liveRenderers.forEach((renderer) => {\n      if (renderer.currentGeometryKey) {\n        inUse.add(renderer.currentGeometryKey);\n      }\n    });\n    return inUse;\n  };\n  const collectMaterialsInUse = () => {\n    const inUse = new Set();\n    liveRenderers.forEach((renderer) => {\n      const meshes = [renderer.frontBackMesh, renderer.sideMesh, renderer.frontBackWireMesh, renderer.sideWireMesh];\n      for (const mesh of meshes) {\n        if (!mesh) {\n          continue;\n        }\n        if (mesh.material) {\n          inUse.add(mesh.material.uuid);\n        }\n        if (mesh.customDepthMaterial) {\n          inUse.add(mesh.customDepthMaterial.uuid);\n        }\n        if (mesh.customDistanceMaterial) {\n          inUse.add(mesh.customDistanceMaterial.uuid);\n        }\n      }\n    });\n    return inUse;\n  };\n  const trimGeometryCache = () => {\n    if (geometryCache.size <= GEOMETRY_CACHE_LIMIT) {\n      return;\n    }\n    const inUse = collectGeometriesInUse();\n    for (const key of Array.from(geometryCache.keys())) {\n      if (geometryCache.size <= GEOMETRY_CACHE_LIMIT) {\n        break;\n      }\n      if (inUse.has(key)) {\n        continue;\n      }\n      const entry = geometryCache.get(key);\n      geometryCache.delete(key);\n      if (entry.frontBack) {\n        entry.frontBack.dispose();\n      }\n      if (entry.side) {\n        entry.side.dispose();\n      }\n    }\n  };\n  const trimMaterialCache = (cache) => {\n    if (cache.size <= MATERIAL_CACHE_LIMIT) {\n      return;\n    }\n    const inUse = collectMaterialsInUse();\n    for (const key of Array.from(cache.keys())) {\n      if (cache.size <= MATERIAL_CACHE_LIMIT) {\n        break;\n      }\n      const material = cache.get(key);\n      if (!material || inUse.has(material.uuid)) {\n        continue;\n      }\n      cache.delete(key);\n      material.dispose();\n    }\n  };\n  const trimMaskCache = () => {\n    for (const key of Array.from(maskCache.keys())) {\n      if (maskCache.size <= MASK_CACHE_LIMIT) {\n        break;\n      }\n      maskCache.delete(key);\n    }\n  };\n  const getAlphaData = (imageName, image) => {\n    let entry = maskCache.get(imageName);\n    if (entry) {\n      return entry;\n    }\n    const width = image.width;\n    const height = image.height;\n    const canvas = document.createElement(\"canvas\");\n    canvas.width = width;\n    canvas.height = height;\n    const context = canvas.getContext(\"2d\", { willReadFrequently: true });\n    if (!context) {\n      throw new Error(\"Could not get a 2D context to read the sprite alpha.\");\n    }\n    context.drawImage(image, 0, 0);\n    // Throws a SecurityError on a cross-origin image: the caller falls back to\n    // a flat quad rather than letting the object fail to be created.\n    const rgba = context.getImageData(0, 0, width, height).data;\n    const alpha = new Uint8Array(width * height);\n    const colors = new Float32Array(width * height * 3);\n    for (let index = 0; index < alpha.length; index++) {\n      const rgbaIndex = index * 4;\n      alpha[index] = rgba[rgbaIndex + 3];\n      colors[index * 3] = rgba[rgbaIndex] / 255;\n      colors[index * 3 + 1] = rgba[rgbaIndex + 1] / 255;\n      colors[index * 3 + 2] = rgba[rgbaIndex + 2] / 255;\n    }\n    entry = { width, height, alpha, colors };\n    maskCache.set(imageName, entry);\n    trimMaskCache();\n    return entry;\n  };\n  const makeFrontBackGeometry = (width, height, depth) => {\n    const D = Math.max(1, depth);\n    const faceZOffset = Math.min(0.02, D * 0.001);\n    const frontBack = new THREE.BufferGeometry();\n    frontBack.setAttribute(\"position\", new THREE.BufferAttribute(new Float32Array([\n      0,\n      0,\n      D + faceZOffset,\n      width,\n      0,\n      D + faceZOffset,\n      width,\n      height,\n      D + faceZOffset,\n      0,\n      height,\n      D + faceZOffset,\n      0,\n      0,\n      -faceZOffset,\n      width,\n      0,\n      -faceZOffset,\n      width,\n      height,\n      -faceZOffset,\n      0,\n      height,\n      -faceZOffset\n    ]), 3));\n    frontBack.setAttribute(\"normal\", new THREE.BufferAttribute(new Float32Array([\n      0,\n      0,\n      1,\n      0,\n      0,\n      1,\n      0,\n      0,\n      1,\n      0,\n      0,\n      1,\n      0,\n      0,\n      -1,\n      0,\n      0,\n      -1,\n      0,\n      0,\n      -1,\n      0,\n      0,\n      -1\n    ]), 3));\n    const e = 1e-4;\n    frontBack.setAttribute(\"uv\", new THREE.BufferAttribute(new Float32Array([\n      e,\n      1 - e,\n      1 - e,\n      1 - e,\n      1 - e,\n      e,\n      e,\n      e,\n      e,\n      1 - e,\n      1 - e,\n      1 - e,\n      1 - e,\n      e,\n      e,\n      e\n    ]), 2));\n    frontBack.setIndex(new THREE.BufferAttribute(new Uint32Array([0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6]), 1));\n    return frontBack;\n  };\n  const makeEmptySideGeometry = () => {\n    const side = new THREE.BufferGeometry();\n    side.setAttribute(\"position\", new THREE.BufferAttribute(new Float32Array(0), 3));\n    side.setAttribute(\"normal\", new THREE.BufferAttribute(new Float32Array(0), 3));\n    side.setAttribute(\"color\", new THREE.BufferAttribute(new Float32Array(0), 3));\n    side.setIndex(new THREE.BufferAttribute(new Uint32Array(0), 1));\n    side.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 0);\n    side.boundingBox = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));\n    return side;\n  };\n  // Used when the sprite pixels cannot be read (cross-origin texture, missing\n  // 2D context...): the object still shows its front and back faces.\n  const buildFlatGeometry = (key, width, height, depth) => {\n    let entry = geometryCache.get(key);\n    if (entry) {\n      return entry;\n    }\n    entry = {\n      frontBack: makeFrontBackGeometry(width, height, depth),\n      side: makeEmptySideGeometry(),\n      triangleCount: 4,\n      vertexCount: 8,\n      generationTimeMs: 0,\n      width,\n      height\n    };\n    geometryCache.set(key, entry);\n    trimGeometryCache();\n    return entry;\n  };\n  const getOrBuildGeometry = (imageName, image, alphaThreshold, depth) => {\n    const key = imageName + \"|\" + alphaThreshold + \"|\" + depth;\n    let entry = geometryCache.get(key);\n    if (entry) {\n      return entry;\n    }\n    const startTime = performance.now();\n    const mask = getAlphaData(imageName, image);\n    const width = mask.width;\n    const height = mask.height;\n    const alpha = mask.alpha;\n    const colors = mask.colors;\n    const threshold = Math.max(1, alphaThreshold);\n    const isSolid = (x, y) => x >= 0 && y >= 0 && x < width && y < height && alpha[y * width + x] >= threshold;\n    const D = Math.max(1, depth);\n    const sideInset = 0;\n    const frontBack = makeFrontBackGeometry(width, height, depth);\n    const positions = [];\n    const normals = [];\n    const wallColors = [];\n    const indices = [];\n    let wallVertexCount = 0;\n    const pushWall = (x0, y0, x1, y1, nx, ny, colorX, colorY) => {\n      const insetX = -nx * sideInset;\n      const insetY = -ny * sideInset;\n      positions.push(x0 + insetX, y0 + insetY, 0, x1 + insetX, y1 + insetY, 0, x1 + insetX, y1 + insetY, D, x0 + insetX, y0 + insetY, D);\n      for (let corner = 0; corner < 4; corner++) {\n        normals.push(nx, ny, 0);\n      }\n      const colorIndex = (colorY * width + colorX) * 3;\n      const r = colors[colorIndex];\n      const g = colors[colorIndex + 1];\n      const b = colors[colorIndex + 2];\n      for (let corner = 0; corner < 4; corner++) {\n        wallColors.push(r, g, b);\n      }\n      indices.push(wallVertexCount, wallVertexCount + 1, wallVertexCount + 2, wallVertexCount, wallVertexCount + 2, wallVertexCount + 3);\n      wallVertexCount += 4;\n    };\n    for (let y = 0; y < height; y++) {\n      for (let x = 0; x < width; x++) {\n        if (!isSolid(x, y)) {\n          continue;\n        }\n        if (!isSolid(x - 1, y)) {\n          pushWall(x, y + 1, x, y, -1, 0, x, y);\n        }\n        if (!isSolid(x + 1, y)) {\n          pushWall(x + 1, y, x + 1, y + 1, 1, 0, x, y);\n        }\n        if (!isSolid(x, y - 1)) {\n          pushWall(x, y, x + 1, y, 0, -1, x, y);\n        }\n        if (!isSolid(x, y + 1)) {\n          pushWall(x + 1, y + 1, x, y + 1, 0, 1, x, y);\n        }\n      }\n    }\n    const side = new THREE.BufferGeometry();\n    side.setAttribute(\"position\", new THREE.BufferAttribute(new Float32Array(positions), 3));\n    side.setAttribute(\"normal\", new THREE.BufferAttribute(new Float32Array(normals), 3));\n    side.setAttribute(\"color\", new THREE.BufferAttribute(new Float32Array(wallColors), 3));\n    side.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));\n    if (positions.length === 0) {\n      side.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 0);\n      side.boundingBox = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));\n    }\n    entry = {\n      frontBack,\n      side,\n      triangleCount: 4 + indices.length / 3,\n      vertexCount: 8 + wallVertexCount,\n      generationTimeMs: performance.now() - startTime,\n      width,\n      height\n    };\n    geometryCache.set(key, entry);\n    trimGeometryCache();\n    return entry;\n  };\n  const forgetImage = (imageName) => {\n    maskCache.delete(imageName);\n    const prefix = imageName + \"|\";\n    // Entries still displayed by another instance are dropped from the cache\n    // (so the next build really rebuilds) but not disposed under its feet.\n    const inUse = collectGeometriesInUse();\n    for (const key of Array.from(geometryCache.keys())) {\n      if (key.indexOf(prefix) !== 0) {\n        continue;\n      }\n      const entry = geometryCache.get(key);\n      geometryCache.delete(key);\n      if (inUse.has(key)) {\n        continue;\n      }\n      if (entry.frontBack) {\n        entry.frontBack.dispose();\n      }\n      if (entry.side) {\n        entry.side.dispose();\n      }\n    }\n  };\n  const parseColor = (colorString) => {\n    const color = new THREE.Color();\n    const text = String(colorString);\n    if (text.indexOf(\";\") === -1) {\n      color.set(text);\n      return color;\n    }\n    const parts = text.split(\";\");\n    const red = Math.min(255, Math.max(0, Number(parts[0]) || 0));\n    const green = Math.min(255, Math.max(0, Number(parts[1]) || 0));\n    const blue = Math.min(255, Math.max(0, Number(parts[2]) || 0));\n    color.setRGB(red / 255, green / 255, blue / 255, THREE.SRGBColorSpace);\n    return color;\n  };\n  const tempColorChannels = { r: 0, g: 0, b: 0 };\n  // Every notation parseColor accepts (\"255;128;0\", \"#ff8000\", \"orange\") is\n  // reduced to one canonical \"R;G;B\" string. Colours are stored normalized, so\n  // comparing two of them is a plain string comparison and the tint cache does\n  // not hold one material per spelling of the same colour.\n  const normalizeColor = (colorString) => {\n    const color = parseColor(colorString);\n    if (typeof color.getRGB === \"function\") {\n      color.getRGB(tempColorChannels, THREE.SRGBColorSpace);\n    } else {\n      tempColorChannels.r = color.r;\n      tempColorChannels.g = color.g;\n      tempColorChannels.b = color.b;\n    }\n    const channel = (value) => Math.min(255, Math.max(0, Math.round(Number(value) * 255) || 0));\n    return channel(tempColorChannels.r) + \";\" + channel(tempColorChannels.g) + \";\" + channel(tempColorChannels.b);\n  };\n  const getFaceMaterial = (imageName, texture, alphaTest, unlit, tintColor) => {\n    const textureKey = texture && texture.uuid ? texture.uuid : imageName;\n    const tint = tintColor || \"255;255;255\";\n    const key = \"face|\" + textureKey + \"|\" + alphaTest + \"|\" + unlit + \"|\" + tint;\n    let material = materialCache.get(key);\n    if (material) {\n      return material;\n    }\n    const parameters = {\n      map: texture,\n      alphaTest: Math.max(alphaTest, 1 / 255),\n      side: THREE.DoubleSide,\n      color: parseColor(tint)\n    };\n    if (unlit) {\n      material = new THREE.MeshBasicMaterial(parameters);\n    } else {\n      material = new THREE.MeshStandardMaterial(Object.assign({\n        metalness: 0,\n        roughness: 1\n      }, parameters));\n    }\n    material.shadowSide = THREE.DoubleSide;\n    materialCache.set(key, material);\n    trimMaterialCache(materialCache);\n    return material;\n  };\n  const getSideMaterial = (colorString, unlit, useVertexColors, tintColor) => {\n    const tint = tintColor || \"255;255;255\";\n    const key = \"side|\" + colorString + \"|\" + unlit + \"|\" + useVertexColors + \"|\" + tint;\n    let material = materialCache.get(key);\n    if (material) {\n      return material;\n    }\n    const baseColor = parseColor(useVertexColors ? \"255;255;255\" : colorString);\n    if (tint !== \"255;255;255\") {\n      baseColor.multiply(parseColor(tint));\n    }\n    const parameters = {\n      side: THREE.DoubleSide,\n      vertexColors: !!useVertexColors,\n      color: baseColor\n    };\n    if (unlit) {\n      material = new THREE.MeshBasicMaterial(parameters);\n    } else {\n      material = new THREE.MeshStandardMaterial(Object.assign({\n        metalness: 0,\n        roughness: 1\n      }, parameters));\n    }\n    material.shadowSide = THREE.DoubleSide;\n    materialCache.set(key, material);\n    trimMaterialCache(materialCache);\n    return material;\n  };\n  const getWireframeMaterial = (colorString) => {\n    const key = \"wire|\" + colorString;\n    let material = materialCache.get(key);\n    if (material) {\n      return material;\n    }\n    material = new THREE.MeshBasicMaterial({\n      color: parseColor(colorString),\n      side: THREE.DoubleSide,\n      wireframe: true,\n      transparent: true,\n      opacity: 0.85,\n      depthWrite: false\n    });\n    materialCache.set(key, material);\n    trimMaterialCache(materialCache);\n    return material;\n  };\n  const getDepthMaterial = (imageName, texture, alphaTest, shadowDepthBias) => {\n    const textureKey = texture && texture.uuid ? texture.uuid : imageName;\n    const bias = Number.isFinite(shadowDepthBias) ? shadowDepthBias : 0;\n    const key = textureKey + \"|\" + alphaTest + \"|\" + bias;\n    let material = depthMaterialCache.get(key);\n    if (material) {\n      return material;\n    }\n    const parameters = {\n      depthPacking: THREE.RGBADepthPacking,\n      side: THREE.DoubleSide\n    };\n    if (texture) {\n      parameters.map = texture;\n      parameters.alphaTest = Math.max(alphaTest, 1 / 255);\n    }\n    if (bias !== 0) {\n      parameters.polygonOffset = true;\n      parameters.polygonOffsetFactor = bias;\n      parameters.polygonOffsetUnits = bias;\n    }\n    material = new THREE.MeshDepthMaterial(parameters);\n    depthMaterialCache.set(key, material);\n    trimMaterialCache(depthMaterialCache);\n    return material;\n  };\n  const getDistanceMaterial = (imageName, texture, alphaTest, shadowDepthBias) => {\n    if (!THREE.MeshDistanceMaterial) {\n      return null;\n    }\n    const textureKey = texture && texture.uuid ? texture.uuid : imageName;\n    const bias = Number.isFinite(shadowDepthBias) ? shadowDepthBias : 0;\n    const key = \"distance|\" + textureKey + \"|\" + alphaTest + \"|\" + bias;\n    let material = depthMaterialCache.get(key);\n    if (material) {\n      return material;\n    }\n    const parameters = {\n      side: THREE.DoubleSide\n    };\n    if (texture) {\n      parameters.map = texture;\n      parameters.alphaTest = Math.max(alphaTest, 1 / 255);\n    }\n    if (bias !== 0) {\n      parameters.polygonOffset = true;\n      parameters.polygonOffsetFactor = bias;\n      parameters.polygonOffsetUnits = bias;\n    }\n    material = new THREE.MeshDistanceMaterial(parameters);\n    depthMaterialCache.set(key, material);\n    trimMaterialCache(depthMaterialCache);\n    return material;\n  };\n  // Scratch values for point lookups, so reading a point every frame allocates\n  // nothing.\n  const tempPointVector = new THREE.Vector3();\n  const tempPointMatrix = new THREE.Matrix4();\n  const tempPointMatrixProduct = new THREE.Matrix4();\n  const pointResult = [0, 0, 0];\n  // A single empty geometry shared by every mesh until its real one is built,\n  // so creating an object allocates nothing that has to be disposed later.\n  const sharedEmptyGeometry = new THREE.BufferGeometry();\n  sharedEmptyGeometry.setAttribute(\"position\", new THREE.BufferAttribute(new Float32Array(0), 3));\n  sharedEmptyGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 0);\n  sharedEmptyGeometry.boundingBox = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));\n  class ExtrudedSprite3DRenderer {\n    constructor(object) {\n      this.object = object;\n      this.visualFlippedX = false;\n      this.currentGeometryKey = null;\n      this.currentImageName = null;\n      this.currentTexture = null;\n      this.disposed = false;\n      this.stats = {\n        triangleCount: 0,\n        vertexCount: 0,\n        generationTimeMs: 0,\n        width: 0,\n        height: 0\n      };\n      this.depth = 0;\n      this.alphaThreshold = 128;\n      this.sideColor = \"128;128;128\";\n      this.useSpriteSideColors = true;\n      this.color = \"255;255;255\";\n      this.unlit = false;\n      this.castShadow = true;\n      this.receiveShadow = false;\n      this.avoidSelfShadow = true;\n      this.shadowBias = 0;\n      this.wireframe = false;\n      this.readProperties();\n      this.root = new THREE.Group();\n      this.root.name = \"ExtrudedSprite3D\";\n      const wireMaterial = getWireframeMaterial(\"0;0;0\");\n      this.frontBackMesh = new THREE.Mesh(sharedEmptyGeometry, wireMaterial);\n      this.sideMesh = new THREE.Mesh(sharedEmptyGeometry, wireMaterial);\n      this.frontBackWireMesh = new THREE.Mesh(sharedEmptyGeometry, wireMaterial);\n      this.sideWireMesh = new THREE.Mesh(sharedEmptyGeometry, wireMaterial);\n      this.frontBackWireMesh.visible = false;\n      this.sideWireMesh.visible = false;\n      this.frontBackWireMesh.renderOrder = 1;\n      this.sideWireMesh.renderOrder = 1;\n      this.root.add(this.frontBackMesh);\n      this.root.add(this.sideMesh);\n      this.root.add(this.frontBackWireMesh);\n      this.root.add(this.sideWireMesh);\n      object.get3DRendererObject().add(this.root);\n      liveRenderers.add(this);\n      this.onFrameChange = () => this.updateFrame();\n      this.updateFrame();\n      const animator = object.getAnimator();\n      if (animator) {\n        animator.setOnFrameChangeCallback(this.onFrameChange);\n      }\n    }\n    readProperties() {\n      const object = this.object;\n      const read = (name, defaultValue) => {\n        const getter = object[\"_get\" + name];\n        return typeof getter === \"function\" ? getter.call(object) : defaultValue;\n      };\n      const toNumber = (value, defaultValue) => {\n        const number = Number(value);\n        return Number.isFinite(number) ? number : defaultValue;\n      };\n      const toBoolean = (value) => value === true || value === \"true\" || value === 1 || value === \"1\";\n      this.alphaThreshold = Math.min(255, Math.max(0, Math.round(toNumber(read(\"AlphaThreshold\", 128), 128))));\n      this.sideColor = String(read(\"SideColor\", \"128;128;128\"));\n      this.useSpriteSideColors = toBoolean(read(\"UseSpriteSideColors\", true));\n      this.color = normalizeColor(read(\"Color\", \"255;255;255\"));\n      this.unlit = toBoolean(read(\"Unlit\", false));\n      this.castShadow = toBoolean(read(\"CastShadow\", true));\n      this.receiveShadow = toBoolean(read(\"ReceiveShadow\", false));\n      this.avoidSelfShadow = toBoolean(read(\"AvoidSelfShadow\", true));\n      this.shadowBias = toNumber(read(\"ShadowBias\", 0), 0);\n      this.wireframe = toBoolean(read(\"DebugWireframe\", false));\n    }\n    // Writes a value back to the object property so the runtime state and the\n    // value shown in the editor/expressions cannot drift apart.\n    writeProperty(name, value) {\n      const setter = this.object[\"_set\" + name];\n      if (typeof setter === \"function\") {\n        setter.call(this.object, value);\n      }\n    }\n    setColor(color) {\n      const colorString = normalizeColor(color || \"255;255;255\");\n      if (this.color === colorString) {\n        return;\n      }\n      this.color = colorString;\n      this.writeProperty(\"Color\", colorString);\n      this.applyMaterials();\n    }\n    getColor() {\n      return this.color;\n    }\n    getLocalDepth(width) {\n      const object = this.object;\n      const renderedDepth = (() => {\n        if (typeof object.getDepth === \"function\") {\n          const value = Number(object.getDepth());\n          if (Number.isFinite(value) && value > 0) {\n            return value;\n          }\n        }\n        const minZ = Number(object._minZ);\n        const maxZ = Number(object._maxZ);\n        if (Number.isFinite(minZ) && Number.isFinite(maxZ) && maxZ > minZ) {\n          return maxZ - minZ;\n        }\n        return 8;\n      })();\n      const scaleZ = typeof object.getScaleZ === \"function\" ? Math.abs(Number(object.getScaleZ())) : NaN;\n      if (Number.isFinite(scaleZ) && scaleZ > 1e-4) {\n        return Math.max(1, renderedDepth / scaleZ);\n      }\n      const renderedWidth = typeof object.getWidth === \"function\" ? Number(object.getWidth()) : width;\n      const scaleX = width > 0 && Number.isFinite(renderedWidth) && renderedWidth > 0 ? renderedWidth / width : 1;\n      return Math.max(1, renderedDepth / Math.max(Math.abs(scaleX), 1e-4));\n    }\n    updateFrame() {\n      if (this.disposed) {\n        return;\n      }\n      const object = this.object;\n      const animator = object.getAnimator();\n      const frame = animator ? animator.getCurrentFrame() : null;\n      const frameMaterial = frame ? frame.texture : null;\n      const texture = frameMaterial && frameMaterial.map ? frameMaterial.map : null;\n      const image = texture ? texture.image : null;\n      if (!frame || !image || !image.width) {\n        this.root.visible = false;\n        return;\n      }\n      this.root.visible = true;\n      const imageName = frame.image;\n      // Quantized so that a sub-pixel depth wobble cannot spawn a new mesh\n      // (and a new cache entry) on every frame.\n      this.depth = Math.round(this.getLocalDepth(image.width) * 1000) / 1000;\n      const geometryKey = imageName + \"|\" + this.alphaThreshold + \"|\" + this.depth;\n      let materialsNeedUpdate = this.currentTexture !== texture || this.currentImageName !== imageName;\n      if (this.currentGeometryKey !== geometryKey) {\n        let entry;\n        try {\n          entry = getOrBuildGeometry(imageName, image, this.alphaThreshold, this.depth);\n        } catch (error) {\n          warnOnce(\n            imageName,\n            'The pixels of \"' + imageName + '\" could not be read (' +\n            (error && error.message ? error.message : error) +\n            '), so this sprite is extruded without side walls.'\n          );\n          entry = buildFlatGeometry(\"flat|\" + geometryKey, image.width, image.height, this.depth);\n        }\n        this.frontBackMesh.geometry = entry.frontBack;\n        this.sideMesh.geometry = entry.side;\n        this.frontBackWireMesh.geometry = entry.frontBack;\n        this.sideWireMesh.geometry = entry.side;\n        this.stats = entry;\n        this.currentGeometryKey = geometryKey;\n        materialsNeedUpdate = true;\n      }\n      if (materialsNeedUpdate) {\n        this.currentImageName = imageName;\n        this.currentTexture = texture;\n        this.applyMaterials();\n      }\n      const width = this.stats.width;\n      const height = this.stats.height;\n      const origin = frame.origin;\n      const center = frame.center;\n      const flipX = this.visualFlippedX;\n      this.root.scale.set(flipX ? -1 : 1, 1, 1);\n      this.root.position.set(-origin.x + (flipX ? 2 * center.x : 0), -origin.y, 0);\n      object.setRotationCenter3D(center.x - origin.x, center.y - origin.y, this.depth / 2);\n      const hitBoxes = object._untransformedHitBoxes;\n      if (frame.hasCustomHitBoxes) {\n        const customHitBoxes = frame.customHitBoxes;\n        let i = 0;\n        for (let len = customHitBoxes.length; i < len; ++i) {\n          const sourceVertices = customHitBoxes[i].vertices;\n          if (i >= hitBoxes.length) {\n            hitBoxes.push(new gdjs.Polygon());\n          }\n          let j = 0;\n          for (const len2 = sourceVertices.length; j < len2; ++j) {\n            const point = sourceVertices[j];\n            if (j >= hitBoxes[i].vertices.length) {\n              hitBoxes[i].vertices.push([0, 0]);\n            }\n            hitBoxes[i].vertices[j][0] = point[0] - origin.x;\n            hitBoxes[i].vertices[j][1] = point[1] - origin.y;\n          }\n          hitBoxes[i].vertices.length = j;\n        }\n        hitBoxes.length = i;\n      } else if (hitBoxes.length === 0) {\n        const hitBox = new gdjs.Polygon();\n        hitBoxes.push(hitBox);\n        const vertices = hitBox.vertices;\n        vertices.push([-origin.x, -origin.y]);\n        vertices.push([-origin.x + width, -origin.y]);\n        vertices.push([-origin.x + width, -origin.y + height]);\n        vertices.push([-origin.x, -origin.y + height]);\n      }\n      const aabb = object._unrotatedAABB;\n      aabb.min[0] = -origin.x;\n      aabb.min[1] = -origin.y;\n      aabb.max[0] = -origin.x + width;\n      aabb.max[1] = -origin.y + height;\n      object._minZ = 0;\n      object._maxZ = this.depth;\n      object._isUntransformedHitBoxesDirty = false;\n    }\n    applyMaterials() {\n      if (!this.currentTexture || this.disposed) {\n        return;\n      }\n      const imageName = this.currentImageName || \"\";\n      const alphaTest = this.alphaThreshold / 255;\n      this.frontBackMesh.material = getFaceMaterial(imageName, this.currentTexture, alphaTest, this.unlit, this.color);\n      this.frontBackMesh.customDepthMaterial = getDepthMaterial(imageName, this.currentTexture, alphaTest, this.shadowBias);\n      const frontBackDistance = getDistanceMaterial(imageName, this.currentTexture, alphaTest, this.shadowBias);\n      if (frontBackDistance) {\n        this.frontBackMesh.customDistanceMaterial = frontBackDistance;\n      }\n      this.sideMesh.material = getSideMaterial(this.sideColor, this.unlit, this.useSpriteSideColors, this.color);\n      this.sideMesh.customDepthMaterial = getDepthMaterial(\"side\", null, 0, this.shadowBias);\n      const sideDistance = getDistanceMaterial(\"side\", null, 0, this.shadowBias);\n      if (sideDistance) {\n        this.sideMesh.customDistanceMaterial = sideDistance;\n      }\n      this.frontBackWireMesh.material = getWireframeMaterial(\"0;0;0\");\n      this.sideWireMesh.material = getWireframeMaterial(\"0;0;0\");\n      this.frontBackWireMesh.visible = this.wireframe;\n      this.sideWireMesh.visible = this.wireframe;\n      this.frontBackWireMesh.castShadow = false;\n      this.frontBackWireMesh.receiveShadow = false;\n      this.sideWireMesh.castShadow = false;\n      this.sideWireMesh.receiveShadow = false;\n      const faceReceiveShadow = this.receiveShadow && (!this.castShadow || !this.avoidSelfShadow);\n      const sideReceiveShadow = this.receiveShadow;\n      this.frontBackMesh.castShadow = this.castShadow;\n      this.frontBackMesh.receiveShadow = faceReceiveShadow;\n      this.sideMesh.castShadow = this.castShadow;\n      this.sideMesh.receiveShadow = sideReceiveShadow;\n    }\n    getFrame() {\n      const animator = this.object.getAnimator ? this.object.getAnimator() : null;\n      return animator ? animator.getCurrentFrame() : null;\n    }\n    // \"\", \"Origin\", \"Center\"/\"Centre\" and any unknown name resolve the same way\n    // they do on a regular Sprite: unknown names fall back to the origin.\n    getFramePoint(name) {\n      const frame = this.getFrame();\n      if (!frame) {\n        return null;\n      }\n      if (typeof frame.getPoint === \"function\") {\n        return frame.getPoint(name);\n      }\n      if (frame.points && frame.points.containsKey && frame.points.containsKey(name)) {\n        return frame.points.get(name);\n      }\n      return frame.origin || null;\n    }\n    hasPoint(name) {\n      if (name === \"Origin\" || name === \"Center\" || name === \"Centre\") {\n        return true;\n      }\n      const frame = this.getFrame();\n      return !!(frame && frame.points && frame.points.containsKey && frame.points.containsKey(name));\n    }\n    // Reads a sprite point in scene coordinates. depthRatio picks where through\n    // the extrusion the point sits: 0 is the back face, 1 the front face.\n    // The point goes through the mesh's own world matrix, so object position,\n    // scale, 3D rotation, flips and the visual flip are all accounted for.\n    getPointPosition(name, depthRatio, result) {\n      const object = this.object;\n      result[0] = typeof object.getX === \"function\" ? object.getX() : 0;\n      result[1] = typeof object.getY === \"function\" ? object.getY() : 0;\n      result[2] = typeof object.getZ === \"function\" ? object.getZ() : 0;\n      if (this.disposed) {\n        return result;\n      }\n      const point = this.getFramePoint(name);\n      if (!point || !this.root.parent) {\n        return result;\n      }\n      // The three.js group is only synced with the object before rendering, so\n      // it has to be brought up to date to answer during the events sheet.\n      const objectRenderer = typeof object.getRenderer === \"function\" ? object.getRenderer() : null;\n      if (objectRenderer && typeof objectRenderer.ensureUpToDate === \"function\") {\n        objectRenderer.ensureUpToDate();\n      }\n      // A layer's THREE.Scene is mirrored (scale.y = -1), so matrixWorld is NOT\n      // in scene coordinates: it hands back a negated Y. Accumulate the local\n      // matrices only up to the layer group, whose space is what GDevelop calls\n      // the scene coordinates. Walking the chain also keeps this correct when\n      // the object is nested inside another custom object.\n      tempPointMatrix.identity();\n      let node = this.root;\n      while (node && node.parent && !node.parent.isScene) {\n        node.updateMatrix();\n        tempPointMatrixProduct.multiplyMatrices(node.matrix, tempPointMatrix);\n        tempPointMatrix.copy(tempPointMatrixProduct);\n        node = node.parent;\n      }\n      const ratio = Number.isFinite(depthRatio) ? depthRatio : 0.5;\n      tempPointVector.set(Number(point.x) || 0, Number(point.y) || 0, this.depth * ratio);\n      tempPointVector.applyMatrix4(tempPointMatrix);\n      result[0] = tempPointVector.x;\n      result[1] = tempPointVector.y;\n      result[2] = tempPointVector.z;\n      return result;\n    }\n    rebuild(dropCaches) {\n      if (this.disposed) {\n        return;\n      }\n      if (dropCaches && this.currentImageName) {\n        const imageName = this.currentImageName;\n        this.currentGeometryKey = null;\n        this.frontBackMesh.geometry = sharedEmptyGeometry;\n        this.sideMesh.geometry = sharedEmptyGeometry;\n        this.frontBackWireMesh.geometry = sharedEmptyGeometry;\n        this.sideWireMesh.geometry = sharedEmptyGeometry;\n        // Drops every threshold/depth variant of that image, not just the\n        // one currently displayed.\n        forgetImage(imageName);\n      }\n      this.currentGeometryKey = null;\n      this.updateFrame();\n    }\n    dispose() {\n      if (this.disposed) {\n        return;\n      }\n      this.disposed = true;\n      liveRenderers.delete(this);\n      const animator = this.object.getAnimator ? this.object.getAnimator() : null;\n      if (animator && animator._onFrameChange === this.onFrameChange) {\n        animator.setOnFrameChangeCallback(null);\n      }\n      if (this.root.parent) {\n        this.root.parent.remove(this.root);\n      }\n      this.root.clear();\n      this.currentTexture = null;\n      this.currentImageName = null;\n      this.currentGeometryKey = null;\n    }\n  }\n  gdjs.__extrudedSprite3D = {\n    ExtrudedSprite3DRenderer,\n    getOrBuildGeometry,\n    getFaceMaterial,\n    getSideMaterial,\n    getDepthMaterial,\n    getDistanceMaterial,\n    getWireframeMaterial,\n    forgetImage,\n    maskCache,\n    geometryCache,\n    materialCache,\n    depthMaterialCache,\n    liveRenderers,\n    pointResult,\n    parseColor,\n    normalizeColor,\n    // Reads the renderer of a picked object, or null when the object is not an\n    // Extruded Sprite 3D (or was created before this runtime was installed).\n    getRenderer: (object) => {\n      const data = object && object.__extrudedSprite3D;\n      return data && data.renderer && !data.renderer.disposed ? data.renderer : null;\n    }\n  };\n}\n\nif (!gdjs.__billboard3D) {\n    gdjs.__billboard3D = (function () {\n        const tempCameraPosition = new THREE.Vector3();\n        const tempObjectPosition = new THREE.Vector3();\n        const tempQuaternion = new THREE.Quaternion();\n        const invertQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);\n        const tempEuler = new THREE.Euler(0, 0, 0, 'ZYX');\n\n        const getThreeObject = (object) => {\n            if (!object) {\n                return null;\n            }\n            if (typeof object.get3DRendererObject === 'function') {\n                try {\n                    const threeObject = object.get3DRendererObject();\n                    if (threeObject) {\n                        return threeObject;\n                    }\n                }\n                catch (error) {}\n            }\n            const renderer = typeof object.getRenderer === 'function' ? object.getRenderer() : null;\n            if (!renderer) {\n                return null;\n            }\n            if (typeof renderer.get3DRendererObject === 'function') {\n                try {\n                    const threeObject = renderer.get3DRendererObject();\n                    if (threeObject) {\n                        return threeObject;\n                    }\n                }\n                catch (error) {}\n            }\n            return renderer._threeObject || renderer.object3D || null;\n        };\n\n        const getCamera = (runtimeScene, object) => {\n            const layerName = object && typeof object.getLayer === 'function' ? object.getLayer() : '';\n            const layer = runtimeScene.getLayer(layerName || '');\n            const renderer = layer && typeof layer.getRenderer === 'function' ? layer.getRenderer() : null;\n            return renderer && typeof renderer.getThreeCamera === 'function' ? renderer.getThreeCamera() : null;\n        };\n\n        const getBoolean = (behavior, name, defaultValue) => {\n            const getter = behavior && behavior['_get' + name];\n            if (typeof getter !== 'function') {\n                return defaultValue;\n            }\n            const value = getter.call(behavior);\n            return value === true || value === 'true' || value === 1 || value === '1';\n        };\n\n        const getString = (behavior, name, defaultValue) => {\n            const getter = behavior && behavior['_get' + name];\n            return typeof getter === 'function' ? String(getter.call(behavior)) : defaultValue;\n        };\n\n        const setObjectRotation = (object, threeObject, rotationX, rotationY, rotationZ, quaternion) => {\n            if (typeof object.setRotationX === 'function' &&\n                typeof object.setRotationY === 'function' &&\n                typeof object.setAngle === 'function') {\n                object.setRotationX(rotationX);\n                object.setRotationY(rotationY);\n                object.setAngle(rotationZ);\n                return;\n            }\n            if (quaternion && threeObject.quaternion) {\n                threeObject.quaternion.copy(quaternion);\n            }\n            else if (threeObject.rotation) {\n                threeObject.rotation.set(\n                    THREE.MathUtils.degToRad(rotationX),\n                    THREE.MathUtils.degToRad(rotationY),\n                    THREE.MathUtils.degToRad(rotationZ),\n                    'ZYX'\n                );\n            }\n        };\n\n        const apply = (runtimeScene, object, behavior) => {\n            if (!getBoolean(behavior, 'Enabled', true)) {\n                return;\n            }\n            const threeObject = getThreeObject(object);\n            const camera = getCamera(runtimeScene, object);\n            if (!threeObject || !camera) {\n                return;\n            }\n            const mode = getString(behavior, 'Mode', 'Full').toLowerCase();\n            const invert = getBoolean(behavior, 'Invert', false);\n            threeObject.updateMatrixWorld && threeObject.updateMatrixWorld(true);\n            camera.updateMatrixWorld && camera.updateMatrixWorld(true);\n\n            if (mode.indexOf('y') !== -1) {\n                threeObject.getWorldPosition(tempObjectPosition);\n                camera.getWorldPosition(tempCameraPosition);\n                const dx = tempCameraPosition.x - tempObjectPosition.x;\n                const dz = tempCameraPosition.z - tempObjectPosition.z;\n                if (Math.abs(dx) + Math.abs(dz) < 0.00001) {\n                    return;\n                }\n                const rotationY = THREE.MathUtils.radToDeg(Math.atan2(dx, dz) + (invert ? Math.PI : 0));\n                setObjectRotation(object, threeObject, 0, rotationY, 0, null);\n                return;\n            }\n\n            camera.getWorldQuaternion(tempQuaternion);\n            if (invert) {\n                tempQuaternion.multiply(invertQuaternion);\n            }\n            tempEuler.setFromQuaternion(tempQuaternion, 'ZYX');\n            setObjectRotation(\n                object,\n                threeObject,\n                THREE.MathUtils.radToDeg(tempEuler.x),\n                THREE.MathUtils.radToDeg(tempEuler.y),\n                THREE.MathUtils.radToDeg(tempEuler.z),\n                tempQuaternion\n            );\n        };\n\n        return { apply, getThreeObject };\n    })();\n}\n\nif (!gdjs.__extrudedSprite3DPhysicsMesh) {\n  gdjs.__extrudedSprite3DPhysicsMesh = (function() {\n    const toBool = (value) => value === true || value === 'true' || value === 'yes' || value === 1 || value === '1';\n    const getString = (behavior, name, fallback) => {\n      const getter = behavior && behavior['_get' + name];\n      return typeof getter === 'function' ? String(getter.call(behavior)) : fallback;\n    };\n    const getBoolean = (behavior, name, fallback) => {\n      const getter = behavior && behavior['_get' + name];\n      return typeof getter === 'function' ? toBool(getter.call(behavior)) : fallback;\n    };\n    const setBoolean = (behavior, name, value) => {\n      const setter = behavior && behavior['_set' + name];\n      if (typeof setter === 'function') setter.call(behavior, !!value);\n    };\n    const getState = (behavior) => {\n      if (!behavior.__extrudedSprite3DPhysicsMeshState) {\n        behavior.__extrudedSprite3DPhysicsMeshState = {\n          installed: false,\n          physicsBehavior: null,\n          previousUpdater: null,\n          lastSignature: '',\n          lastError: '',\n          triangleCount: 0,\n          vertexCount: 0\n        };\n      }\n      return behavior.__extrudedSprite3DPhysicsMeshState;\n    };\n    const getPhysicsBehavior = (eventsBehavior, object) => {\n      if (!object || typeof object.getBehavior !== 'function') return null;\n      const name = getString(eventsBehavior, 'Physics3DBehaviorName', 'Physics3D') || 'Physics3D';\n      try {\n        const behavior = object.getBehavior(name);\n        return behavior || null;\n      } catch (error) {\n        return null;\n      }\n    };\n    const getRenderer = (object) => {\n      const data = object && object.__extrudedSprite3D;\n      return data && data.renderer && !data.renderer.disposed ? data.renderer : null;\n    };\n    const makeSignature = (eventsBehavior, object, renderer, physicsBehavior) => {\n      const followVisualFlip = getBoolean(eventsBehavior, 'FollowVisualFlip', false);\n      return [\n        renderer.currentGeometryKey || '',\n        object.getWidth ? object.getWidth() : 0,\n        object.getHeight ? object.getHeight() : 0,\n        object.getDepth ? object.getDepth() : 0,\n        object.getScaleX ? object.getScaleX() : 1,\n        object.getScaleY ? object.getScaleY() : 1,\n        object.getScaleZ ? object.getScaleZ() : 1,\n        object.isFlippedX && object.isFlippedX() ? 1 : 0,\n        object.isFlippedY && object.isFlippedY() ? 1 : 0,\n        object.isFlippedZ && object.isFlippedZ() ? 1 : 0,\n        followVisualFlip && renderer.visualFlippedX ? 1 : 0,\n        physicsBehavior.shapeOffsetX || 0,\n        physicsBehavior.shapeOffsetY || 0,\n        physicsBehavior.shapeOffsetZ || 0,\n        physicsBehavior.shapeScale || 1\n      ].join('|');\n    };\n    const createPixelShapeSettings = (eventsBehavior, object, physicsBehavior, state) => {\n      if (typeof Jolt === 'undefined') throw new Error('Jolt is not loaded. Add and enable the Physics3D behavior on this object.');\n      const renderer = getRenderer(object);\n      if (!renderer) throw new Error('This behavior must be added to an Extruded Sprite 3D object.');\n      if (!renderer.currentGeometryKey && typeof renderer.updateFrame === 'function') renderer.updateFrame();\n      if (!renderer.currentGeometryKey || !renderer.frontBackMesh || !renderer.sideMesh) {\n        throw new Error('The extruded sprite mesh is not ready yet. Make sure the object has a valid sprite frame.');\n      }\n      const frame = object.getAnimator && object.getAnimator() ? object.getAnimator().getCurrentFrame() : null;\n      const centerX = frame && frame.center ? Number(frame.center.x) || 0 : (object.getUnscaledCenterX ? object.getUnscaledCenterX() : 0);\n      const centerY = frame && frame.center ? Number(frame.center.y) || 0 : (object.getUnscaledCenterY ? object.getUnscaledCenterY() : 0);\n      const centerZ = renderer.depth / 2;\n      const followVisualFlip = getBoolean(eventsBehavior, 'FollowVisualFlip', false);\n      const visualFlipX = followVisualFlip && !!renderer.visualFlippedX;\n      const sharedData = physicsBehavior._sharedData;\n      const worldInvScale = sharedData && sharedData.worldInvScale ? sharedData.worldInvScale : 1;\n      const scaleX = (object.getScaleX ? object.getScaleX() : 1) * (object.isFlippedX && object.isFlippedX() ? -1 : 1) * worldInvScale;\n      const scaleY = (object.getScaleY ? object.getScaleY() : 1) * (object.isFlippedY && object.isFlippedY() ? -1 : 1) * worldInvScale;\n      const scaleZ = (object.getScaleZ ? object.getScaleZ() : 1) * (object.isFlippedZ && object.isFlippedZ() ? -1 : 1) * worldInvScale;\n      const shouldTrianglesBeFlipped = scaleX * scaleY * scaleZ < 0;\n      const vertexList = new Jolt.VertexList();\n      const float3 = new Jolt.Float3(0, 0, 0);\n      const indexedTriangle = new Jolt.IndexedTriangle();\n      const indexedTriangleList = new Jolt.IndexedTriangleList();\n      const physicsMaterialList = new Jolt.PhysicsMaterialList();\n      // Hoisted out of pushVertex: these are constant for the whole mesh.\n      const meshWidth = renderer.stats ? Number(renderer.stats.width) || 0 : (object.getUnscaledWidth ? object.getUnscaledWidth() : 0);\n      const isFlippedX = !!(object.isFlippedX && object.isFlippedX());\n      let vertexOffset = 0;\n      let triangleCount = 0;\n      const pushVertex = (x, y, z) => {\n        const baseX = isFlippedX ? (visualFlipX ? -x + 3 * centerX - meshWidth : x + centerX - meshWidth) : (visualFlipX ? -x + centerX : x - centerX);\n        float3.x = baseX * scaleX;\n        float3.y = (y - centerY) * scaleY;\n        float3.z = (z - centerZ) * scaleZ;\n        vertexList.push_back(float3);\n      };\n      const pushTriangle = (a, b, c) => {\n        indexedTriangle.set_mIdx(0, shouldTrianglesBeFlipped ? b : a);\n        indexedTriangle.set_mIdx(1, shouldTrianglesBeFlipped ? a : b);\n        indexedTriangle.set_mIdx(2, c);\n        indexedTriangleList.push_back(indexedTriangle);\n        triangleCount++;\n      };\n      const addGeometry = (geometry) => {\n        if (!geometry || !geometry.getAttribute) return;\n        const position = geometry.getAttribute('position');\n        if (!position || !position.count) return;\n        const base = vertexOffset;\n        for (let index = 0; index < position.count; index++) {\n          pushVertex(position.getX(index), position.getY(index), position.getZ(index));\n        }\n        const geometryIndex = geometry.getIndex && geometry.getIndex();\n        if (geometryIndex) {\n          for (let index = 0; index < geometryIndex.count; index += 3) {\n            pushTriangle(base + geometryIndex.getX(index), base + geometryIndex.getX(index + 1), base + geometryIndex.getX(index + 2));\n          }\n        } else {\n          for (let index = 0; index < position.count; index += 3) {\n            pushTriangle(base + index, base + index + 1, base + index + 2);\n          }\n        }\n        vertexOffset += position.count;\n      };\n      addGeometry(renderer.frontBackMesh.geometry);\n      addGeometry(renderer.sideMesh.geometry);\n      if (triangleCount <= 0) {\n        throw new Error('The generated sprite mesh has no triangles. Check the alpha threshold and sprite image.');\n      }\n      const meshSettings = new Jolt.MeshShapeSettings(vertexList, indexedTriangleList, physicsMaterialList);\n      if (meshSettings.Sanitize) meshSettings.Sanitize();\n      Jolt.destroy(vertexList);\n      Jolt.destroy(float3);\n      Jolt.destroy(indexedTriangle);\n      Jolt.destroy(indexedTriangleList);\n      Jolt.destroy(physicsMaterialList);\n      const shapeScale = physicsBehavior.shapeScale || 1;\n      const offset = sharedData.getVec3(\n        (physicsBehavior.shapeOffsetX || 0) * shapeScale * worldInvScale,\n        (physicsBehavior.shapeOffsetY || 0) * shapeScale * worldInvScale,\n        (physicsBehavior.shapeOffsetZ || 0) * shapeScale * worldInvScale\n      );\n      state.triangleCount = triangleCount;\n      state.vertexCount = vertexOffset;\n      return new Jolt.RotatedTranslatedShapeSettings(offset, sharedData.getQuat(0, 0, 0, 1), meshSettings);\n    };\n    const createPixelShape = (eventsBehavior, object, physicsBehavior, state) => {\n      const settings = createPixelShapeSettings(eventsBehavior, object, physicsBehavior, state);\n      const result = settings.Create();\n      if (result && result.IsValid && !result.IsValid()) {\n        const error = result.GetError ? String(result.GetError()) : 'Jolt rejected the generated mesh shape.';\n        Jolt.destroy(settings);\n        throw new Error(error);\n      }\n      const shape = result.Get();\n      Jolt.destroy(settings);\n      return shape;\n    };\n    class PixelMeshBodyUpdater {\n      constructor(eventsBehavior, object, physicsBehavior, state) {\n        this.__extrudedSprite3DPixelMeshUpdater = true;\n        this.eventsBehavior = eventsBehavior;\n        this.object = object;\n        this.behavior = physicsBehavior;\n        this.state = state;\n        this.defaultUpdater = new gdjs.Physics3DRuntimeBehavior.DefaultBodyUpdater(physicsBehavior);\n      }\n      _createShapeOrFallback() {\n        const physicsBehavior = this.behavior;\n        if (physicsBehavior.bodyType !== 'Static') {\n          this.state.lastError = 'Pixel art physics mesh only supports Static Physics3D bodies.';\n          return physicsBehavior.createShape();\n        }\n        try {\n          const shape = createPixelShape(this.eventsBehavior, this.object, physicsBehavior, this.state);\n          this.state.lastError = '';\n          return shape;\n        } catch (error) {\n          this.state.lastError = error && error.message ? String(error.message) : String(error);\n          return physicsBehavior.createShape();\n        }\n      }\n      createAndAddBody() {\n        const behavior = this.behavior;\n        const sharedData = behavior._sharedData;\n        const shape = this._createShapeOrFallback();\n        const bodyCreationSettings = new Jolt.BodyCreationSettings(\n          shape,\n          behavior._getPhysicsPosition(sharedData.getRVec3(0, 0, 0)),\n          behavior._getPhysicsRotation(sharedData.getQuat(0, 0, 0, 1)),\n          behavior.bodyType === 'Static' ? Jolt.EMotionType_Static : behavior.bodyType === 'Kinematic' ? Jolt.EMotionType_Kinematic : Jolt.EMotionType_Dynamic,\n          behavior.getBodyLayer()\n        );\n        bodyCreationSettings.mMotionQuality = behavior.bullet ? Jolt.EMotionQuality_LinearCast : Jolt.EMotionQuality_Discrete;\n        bodyCreationSettings.mAllowedDOFs = behavior.fixedRotation ? Jolt.EAllowedDOFs_TranslationX | Jolt.EAllowedDOFs_TranslationY | Jolt.EAllowedDOFs_TranslationZ : Jolt.EAllowedDOFs_All;\n        bodyCreationSettings.mFriction = behavior.friction;\n        bodyCreationSettings.mRestitution = behavior.restitution;\n        bodyCreationSettings.mLinearDamping = behavior.linearDamping;\n        bodyCreationSettings.mAngularDamping = behavior.angularDamping;\n        bodyCreationSettings.mGravityFactor = behavior.gravityScale;\n        if (behavior.massOverride > 0) {\n          bodyCreationSettings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;\n          bodyCreationSettings.mMassPropertiesOverride.mMass = behavior.massOverride;\n        }\n        const body = sharedData.bodyInterface.CreateBody(bodyCreationSettings);\n        Jolt.destroy(bodyCreationSettings);\n        sharedData.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);\n        return body;\n      }\n      updateObjectFromBody() { this.defaultUpdater.updateObjectFromBody(); }\n      updateBodyFromObject() { this.defaultUpdater.updateBodyFromObject(); }\n      recreateShape() {\n        const behavior = this.behavior;\n        if (behavior._body === null) {\n          if (!behavior._createBody()) return;\n        }\n        behavior._sharedData.bodyInterface.SetShape(\n          behavior._body.GetID(),\n          this._createShapeOrFallback(),\n          true,\n          Jolt.EActivation_Activate\n        );\n      }\n      destroyBody() { this.defaultUpdater.destroyBody(); }\n    }\n    const restore = (eventsBehavior) => {\n      const state = getState(eventsBehavior);\n      const physicsBehavior = state.physicsBehavior;\n      if (physicsBehavior && physicsBehavior.bodyUpdater && physicsBehavior.bodyUpdater.__extrudedSprite3DPixelMeshUpdater && physicsBehavior.bodyUpdater.eventsBehavior === eventsBehavior) {\n        physicsBehavior.bodyUpdater = state.previousUpdater || new gdjs.Physics3DRuntimeBehavior.DefaultBodyUpdater(physicsBehavior);\n        physicsBehavior._needToRecreateShape = true;\n      }\n      state.installed = false;\n      state.physicsBehavior = null;\n      state.previousUpdater = null;\n      state.lastSignature = '';\n    };\n    const apply = (eventsBehavior, object, force) => {\n      const state = getState(eventsBehavior);\n      if (!gdjs.Physics3DRuntimeBehavior || !gdjs.Physics3DRuntimeBehavior.DefaultBodyUpdater) {\n        state.lastError = 'Physics3D runtime is not loaded. Add the Physics3D behavior to this object.';\n        return false;\n      }\n      const renderer = getRenderer(object);\n      if (!renderer) {\n        state.lastError = 'This behavior must be added to an Extruded Sprite 3D object.';\n        return false;\n      }\n      const physicsBehavior = getPhysicsBehavior(eventsBehavior, object);\n      if (!physicsBehavior) {\n        state.lastError = 'Physics3D behavior was not found on this object.';\n        return false;\n      }\n      if (physicsBehavior.bodyType !== 'Static') {\n        state.lastError = 'Pixel art physics mesh only supports Static Physics3D bodies.';\n        return false;\n      }\n      if (state.physicsBehavior && state.physicsBehavior !== physicsBehavior) restore(eventsBehavior);\n      if (!state.installed || physicsBehavior.bodyUpdater.eventsBehavior !== eventsBehavior) {\n        state.previousUpdater = physicsBehavior.bodyUpdater;\n        physicsBehavior.bodyUpdater = new PixelMeshBodyUpdater(eventsBehavior, object, physicsBehavior, state);\n        state.physicsBehavior = physicsBehavior;\n        state.installed = true;\n        physicsBehavior._needToRecreateShape = true;\n      }\n      // The mesh only has to be built once; after that the signature below is\n      // what decides whether the collision shape has to be rebuilt.\n      if (!renderer.currentGeometryKey && typeof renderer.updateFrame === 'function') renderer.updateFrame();\n      const signature = makeSignature(eventsBehavior, object, renderer, physicsBehavior);\n      if (force || state.lastSignature !== signature) {\n        state.lastSignature = signature;\n        physicsBehavior._needToRecreateShape = true;\n      }\n      state.lastError = '';\n      return true;\n    };\n    const tick = (eventsBehavior, object) => {\n      if (eventsBehavior.activated && !eventsBehavior.activated()) return;\n      apply(eventsBehavior, object, false);\n    };\n    const rebuild = (eventsBehavior, object) => apply(eventsBehavior, object, true);\n    const isApplied = (eventsBehavior) => {\n      const state = getState(eventsBehavior);\n      const physicsBehavior = state.physicsBehavior;\n      return !!(state.installed && physicsBehavior && physicsBehavior.bodyUpdater && physicsBehavior.bodyUpdater.__extrudedSprite3DPixelMeshUpdater && physicsBehavior.bodyUpdater.eventsBehavior === eventsBehavior);\n    };\n    return { getState, apply, tick, rebuild, restore, isApplied, setBoolean };\n  })();\n}",
+          "parameterObjects": "",
+          "useStrict": true,
+          "eventsSheetExpanded": true
+        }
+      ],
+      "parameters": [],
+      "objectGroups": []
+    }
+  ],
+  "eventsFunctionsFolderStructure": {
+    "folderName": "__ROOT",
+    "children": [
+      {
+        "functionName": "onFirstSceneLoaded"
+      },
+      {
+        "functionName": "DefineHelperClasses"
+      }
+    ]
+  },
+  "eventsBasedBehaviors": [
+    {
+      "description": "Makes any object with a 3D renderer face the active 3D camera. It is safe to add to Extruded Sprite 3D, Sprite3D, Cube3DObject, Model3D, and other objects that expose get3DRendererObject().",
+      "fullName": "Billboard 3D",
+      "helpPath": "",
+      "iconUrl": "",
+      "name": "Billboard3D",
+      "objectType": "",
+      "previewIconUrl": "",
+      "eventsFunctions": [
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "onCreated",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::Standard",
+              "conditions": [],
+              "actions": [
+                {
+                  "type": {
+                    "value": "ExtrudedSprite3D::DefineHelperClasses"
+                  },
+                  "parameters": [
+                    "",
+                    ""
+                  ]
+                }
+              ]
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "doStepPreEvents",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__billboard3D;\nif (!runtime) return;\nconst object = (typeof objects !== 'undefined' && objects.length) ? objects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior'));\nif (!behavior) return;\nruntime.apply(runtimeScene, object, behavior);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable the billboard behavior.",
+          "fullName": "Set enabled",
+          "functionType": "Action",
+          "group": "Billboard 3D",
+          "name": "SetEnabled",
+          "sentence": "Set billboard behavior of _PARAM0_ enabled: _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": [
+                "const objectList = eventsFunctionContext.getObjects('Object');",
+                "const behaviorName = eventsFunctionContext.getBehaviorName('Behavior');",
+                "const enabled = !!eventsFunctionContext.getArgument('Enabled');",
+                "for (let i = 0; i < objectList.length; i++) {",
+                "    const behavior = objectList[i].getBehavior(behaviorName);",
+                "    if (behavior && behavior._setEnabled) {",
+                "        behavior._setEnabled(enabled);",
+                "    }",
+                "}",
+                ""
+              ],
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": false
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::Billboard3D",
+              "type": "behavior"
+            },
+            {
+              "defaultValue": "true",
+              "description": "Enabled",
+              "name": "Enabled",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        }
+      ],
+      "eventsFunctionsFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "functionName": "onCreated"
+          },
+          {
+            "functionName": "doStepPreEvents"
+          },
+          {
+            "folderName": "Billboard 3D",
+            "children": [
+              {
+                "functionName": "SetEnabled"
+              }
+            ]
+          }
+        ]
+      },
+      "propertyDescriptors": [
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Enabled",
+          "description": "Turn billboarding on for this object.",
+          "name": "Enabled"
+        },
+        {
+          "value": "Full",
+          "type": "Choice",
+          "label": "Mode",
+          "description": "Full copies the camera orientation. Y axis only keeps the object upright and rotates around Y.",
+          "choices": [
+            {
+              "label": "Full",
+              "value": "Full"
+            },
+            {
+              "label": "Y axis only",
+              "value": "Y axis only"
+            }
+          ],
+          "name": "Mode"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Invert facing",
+          "description": "Turn this on if the object faces away from the camera.",
+          "name": "Invert"
+        }
+      ],
+      "propertiesFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "propertyName": "Enabled"
+          },
+          {
+            "propertyName": "Mode"
+          },
+          {
+            "propertyName": "Invert"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PixelArtPhysicsMesh",
+      "fullName": "Pixel Art Physics Mesh",
+      "description": "Replaces a Static Physics3D body shape with the generated Extruded Sprite 3D pixel-art mesh.",
+      "eventsFunctions": [
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "onCreated",
+          "private": true,
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::Standard",
+              "conditions": [],
+              "actions": [
+                {
+                  "type": {
+                    "value": "ExtrudedSprite3D::DefineHelperClasses"
+                  },
+                  "parameters": [
+                    "",
+                    ""
+                  ]
+                }
+              ]
+            }
+          ],
+          "parameters": [],
+          "objectGroups": []
+        },
+        {
+          "name": "doStepPreEvents",
+          "fullName": "doStepPreEvents",
+          "functionType": "Action",
+          "private": true,
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !object || !behavior) return;\nruntime.tick(behavior, object);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [],
+          "objectGroups": [],
+          "sentence": ""
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "onDestroy",
+          "functionType": "Action",
+          "private": true,
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return;\nruntime.restore(behavior);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [],
+          "objectGroups": [],
+          "sentence": ""
+        },
+        {
+          "name": "ApplyPixelPhysicsMesh",
+          "fullName": "Apply pixel art physics mesh",
+          "functionType": "Action",
+          "group": "Pixel Art Physics Mesh",
+          "description": "Install or refresh the generated mesh as the static Physics3D collision shape.",
+          "sentence": "Apply the generated pixel art physics mesh to _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !object || !behavior) return;\nruntime.rebuild(behavior, object);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "RestoreDefaultPhysicsMesh",
+          "fullName": "Restore default Physics3D mesh",
+          "functionType": "Action",
+          "group": "Pixel Art Physics Mesh",
+          "description": "Stop using the generated pixel mesh and restore the previous Physics3D body updater.",
+          "sentence": "Restore the default Physics3D body updater of _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return;\nruntime.restore(behavior);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "SetFollowVisualFlip",
+          "fullName": "Set follow visual flip",
+          "functionType": "Action",
+          "group": "Pixel Art Physics Mesh",
+          "description": "Choose whether the physics mesh mirrors the visual-only horizontal flip.",
+          "sentence": "Set whether _PARAM0_'s physics mesh follows visual flip: _PARAM2_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !object || !behavior) return;\nruntime.setBoolean(behavior, 'FollowVisualFlip', !!eventsFunctionContext.getArgument('Enable'));\nruntime.rebuild(behavior, object);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            },
+            {
+              "description": "Follow visual flip",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "IsApplied",
+          "fullName": "Pixel art physics mesh is applied",
+          "functionType": "Condition",
+          "group": "Pixel Art Physics Mesh",
+          "description": "True when this behavior has replaced the Physics3D body updater.",
+          "sentence": "The pixel art physics mesh is applied to _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return false;\nreturn runtime.isApplied(behavior);\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "HasError",
+          "fullName": "Pixel art physics mesh has an error",
+          "functionType": "Condition",
+          "group": "Pixel Art Physics Mesh",
+          "description": "True if the last apply/rebuild reported an error.",
+          "sentence": "The pixel art physics mesh of _PARAM0_ has an error",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return false;\nreturn !!runtime.getState(behavior).lastError;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "name": "PhysicsTriangleCount",
+          "fullName": "Physics triangle count",
+          "functionType": "Expression",
+          "expressionType": {
+            "type": "expression"
+          },
+          "group": "Pixel Art Physics Mesh",
+          "description": "Number of triangles sent to the Jolt mesh shape.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return 0;\nreturn runtime.getState(behavior).triangleCount || 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": [],
+          "sentence": ""
+        },
+        {
+          "name": "PhysicsVertexCount",
+          "fullName": "Physics vertex count",
+          "functionType": "Expression",
+          "expressionType": {
+            "type": "expression"
+          },
+          "group": "Pixel Art Physics Mesh",
+          "description": "Number of vertices sent to the Jolt mesh shape.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return 0;\nreturn runtime.getState(behavior).vertexCount || 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": [],
+          "sentence": ""
+        },
+        {
+          "name": "LastError",
+          "fullName": "Last error",
+          "functionType": "StringExpression",
+          "expressionType": {
+            "type": "string"
+          },
+          "group": "Pixel Art Physics Mesh",
+          "description": "Return the last pixel mesh physics error.",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3DPhysicsMesh;\nconst object = eventsFunctionContext.getObjects('Object')[0];\nconst behavior = object && object.getBehavior ? object.getBehavior(eventsFunctionContext.getBehaviorName('Behavior')) : null;\nif (!runtime || !behavior) return '';\nreturn String(runtime.getState(behavior).lastError || '');\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "type": "object"
+            },
+            {
+              "description": "Behavior",
+              "name": "Behavior",
+              "supplementaryInformation": "ExtrudedSprite3D::PixelArtPhysicsMesh",
+              "type": "behavior"
+            }
+          ],
+          "objectGroups": [],
+          "sentence": ""
+        }
+      ],
+      "eventsFunctionsFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "functionName": "onCreated"
+          },
+          {
+            "functionName": "doStepPreEvents"
+          },
+          {
+            "functionName": "onDestroy"
+          },
+          {
+            "functionName": "ApplyPixelPhysicsMesh"
+          },
+          {
+            "functionName": "RestoreDefaultPhysicsMesh"
+          },
+          {
+            "functionName": "SetFollowVisualFlip"
+          },
+          {
+            "functionName": "IsApplied"
+          },
+          {
+            "functionName": "HasError"
+          },
+          {
+            "functionName": "PhysicsTriangleCount"
+          },
+          {
+            "functionName": "PhysicsVertexCount"
+          },
+          {
+            "functionName": "LastError"
+          }
+        ]
+      },
+      "propertyDescriptors": [
+        {
+          "value": "Physics3D",
+          "type": "String",
+          "label": "Physics3D behavior name",
+          "description": "Name of the built-in Physics3D behavior to replace. The body must be Static.",
+          "group": "Physics",
+          "name": "Physics3DBehaviorName"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Follow visual flip",
+          "description": "Mirror the physics mesh when the Extruded Sprite visual-only flip is enabled. Leave off to keep visual flip independent from physics and hitboxes.",
+          "group": "Physics",
+          "name": "FollowVisualFlip"
+        }
+      ],
+      "propertiesFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "propertyName": "Physics3DBehaviorName"
+          },
+          {
+            "propertyName": "FollowVisualFlip"
+          }
+        ]
+      },
+      "helpPath": "",
+      "iconUrl": "",
+      "objectType": "",
+      "previewIconUrl": ""
+    }
+  ],
+  "eventsBasedObjects": [
+    {
+      "areaMaxX": 64,
+      "areaMaxY": 64,
+      "areaMaxZ": 64,
+      "areaMinX": 0,
+      "areaMinY": 0,
+      "areaMinZ": 0,
+      "defaultName": "",
+      "description": "An animated sprite extruded into a 3D mesh using the object's normal 3D depth, able to receive 3D lights and cast shadows.",
+      "fullName": "Extruded Sprite 3D",
+      "helpPath": "",
+      "iconUrl": "",
+      "is3D": true,
+      "isAnimatable": true,
+      "isUsingLegacyInstancesRenderer": true,
+      "name": "ExtrudedSprite3D",
+      "previewIconUrl": "",
+      "objects": [],
+      "objectsFolderStructure": {
+        "folderName": "__ROOT"
+      },
+      "objectsGroups": [],
+      "layers": [
+        {
+          "ambientLightColorB": 200,
+          "ambientLightColorG": 200,
+          "ambientLightColorR": 200,
+          "camera2DPlaneMaxDrawingDistance": 5000,
+          "camera3DFarPlaneDistance": 10000,
+          "camera3DFieldOfView": 45,
+          "camera3DNearPlaneDistance": 3,
+          "cameraType": "",
+          "followBaseLayerCamera": false,
+          "isLightingLayer": false,
+          "isLocked": false,
+          "name": "",
+          "renderingType": "",
+          "visibility": true,
+          "cameras": [
+            {
+              "defaultSize": true,
+              "defaultViewport": true,
+              "height": 0,
+              "viewportBottom": 1,
+              "viewportLeft": 0,
+              "viewportRight": 1,
+              "viewportTop": 0,
+              "width": 0
+            }
+          ],
+          "effects": []
+        }
+      ],
+      "instances": [],
+      "editionSettings": [],
+      "eventsFunctions": [
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "onCreated",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::Standard",
+              "conditions": [],
+              "actions": [
+                {
+                  "type": {
+                    "value": "ExtrudedSprite3D::DefineHelperClasses"
+                  },
+                  "parameters": [
+                    "",
+                    ""
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/** @type {gdjs.CustomRuntimeObject3D} */\nconst object = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects[0]\n    : eventsFunctionContext.getObjects('Object')[0];\nconst runtime = gdjs.__extrudedSprite3D;\nif (!runtime || !object || object.__extrudedSprite3D) return;\nconst renderer = new runtime.ExtrudedSprite3DRenderer(object);\nobject.__extrudedSprite3D = {\n    renderer: renderer\n};\nobject.setColor = function(color) {\n    renderer.setColor(color);\n};\nobject.getColor = function() {\n    return renderer.getColor();\n};\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the alpha threshold used to decide which pixels are solid, then rebuild the mesh.",
+          "fullName": "Set alpha threshold",
+          "functionType": "Action",
+          "name": "SetAlphaThreshold",
+          "sentence": "Set the alpha threshold of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const value = Number(eventsFunctionContext.getArgument('Threshold'));\n    const threshold = Math.min(255, Math.max(0, Math.round(Number.isFinite(value) ? value : 128)));\n    renderer.alphaThreshold = threshold;\n    renderer.writeProperty('AlphaThreshold', threshold);\n    renderer.rebuild(false);\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Alpha threshold (0-255)",
+              "longDescription": "Pixels with an alpha value greater or equal to this are considered solid.",
+              "name": "Threshold",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the solid color of the generated side walls when sprite edge colors are disabled.",
+          "fullName": "Set side color",
+          "functionType": "Action",
+          "name": "SetSideColor",
+          "sentence": "Set the side color of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const color = String(eventsFunctionContext.getArgument('Color'));\n    renderer.sideColor = color;\n    renderer.writeProperty('SideColor', color);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Side wall color",
+              "name": "Color",
+              "type": "color"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable shadow casting for the extruded mesh.",
+          "fullName": "Set cast shadows",
+          "functionType": "Action",
+          "name": "SetCastShadow",
+          "sentence": "Set shadow casting of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const enable = !!eventsFunctionContext.getArgument('Enable');\n    renderer.castShadow = enable;\n    renderer.writeProperty('CastShadow', enable);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable cast shadows",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable receiving shadows from other objects.",
+          "fullName": "Set receive shadows",
+          "functionType": "Action",
+          "name": "SetReceiveShadow",
+          "sentence": "Set shadow receiving of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const enable = !!eventsFunctionContext.getArgument('Enable');\n    renderer.receiveShadow = enable;\n    renderer.writeProperty('ReceiveShadow', enable);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable receive shadows",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable the acne-safe mode that prevents the flat sprite faces from receiving their own shadow while the object casts shadows.",
+          "fullName": "Set self-shadow protection",
+          "functionType": "Action",
+          "name": "SetAvoidSelfShadow",
+          "sentence": "Set self-shadow protection of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const enable = !!eventsFunctionContext.getArgument('Enable');\n    renderer.avoidSelfShadow = enable;\n    renderer.writeProperty('AvoidSelfShadow', enable);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Avoid self-shadow acne on the flat sprite faces",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the object-specific offset used when this mesh is rendered into shadow maps.",
+          "fullName": "Set shadow bias",
+          "functionType": "Action",
+          "name": "SetShadowBias",
+          "sentence": "Set shadow bias of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const value = Number(eventsFunctionContext.getArgument('Bias'));\n    const bias = Number.isFinite(value) ? value : 0;\n    renderer.shadowBias = bias;\n    renderer.writeProperty('ShadowBias', bias);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Shadow bias",
+              "longDescription": "A polygon offset applied to this object in shadow-map passes. Use small values when an extruded sprite casts and receives shadows and shows acne or detached shadows.",
+              "name": "Bias",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Enable or disable wireframe rendering (debug).",
+          "fullName": "Set wireframe rendering",
+          "functionType": "Action",
+          "name": "SetWireframe",
+          "sentence": "Set wireframe rendering of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const enable = !!eventsFunctionContext.getArgument('Enable');\n    renderer.wireframe = enable;\n    renderer.writeProperty('DebugWireframe', enable);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable wireframe",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Toggle wireframe rendering on or off (debug).",
+          "fullName": "Toggle wireframe rendering",
+          "functionType": "Action",
+          "name": "ToggleWireframe",
+          "sentence": "Toggle wireframe rendering of _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    renderer.wireframe = !renderer.wireframe;\n    renderer.writeProperty('DebugWireframe', renderer.wireframe);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Drop the cached data of the current image and rebuild the extruded mesh.",
+          "fullName": "Rebuild mesh",
+          "functionType": "Action",
+          "name": "RebuildMesh",
+          "sentence": "Rebuild the extruded mesh of _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    renderer.rebuild(true);\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Number of triangles in the current extruded mesh.",
+          "fullName": "Triangle count",
+          "functionType": "Expression",
+          "name": "TriangleCount",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        eventsFunctionContext.returnValue = renderer.stats.triangleCount;\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Number of vertices in the current extruded mesh.",
+          "fullName": "Vertex count",
+          "functionType": "Expression",
+          "name": "VertexCount",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        eventsFunctionContext.returnValue = renderer.stats.vertexCount;\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Time in milliseconds it took to generate the current mesh (0 until generated; cached meshes report their original generation time).",
+          "fullName": "Generation time (ms)",
+          "functionType": "Expression",
+          "name": "GenerationTimeMs",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        eventsFunctionContext.returnValue = renderer.stats.generationTimeMs;\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Width in pixels of the current animation frame image.",
+          "fullName": "Image width",
+          "functionType": "Expression",
+          "name": "ImageWidth",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        eventsFunctionContext.returnValue = renderer.stats.width;\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Height in pixels of the current animation frame image.",
+          "fullName": "Image height",
+          "functionType": "Expression",
+          "name": "ImageHeight",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        eventsFunctionContext.returnValue = renderer.stats.height;\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "expressionType": {
+            "type": "expression"
+          },
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Flip the visual mesh of the 3D sprite horizontally without affecting the object's physics or hitboxes. This acts completely independently of the default GDevelop flip action.",
+          "fullName": "Flip visual mesh horizontally",
+          "functionType": "Action",
+          "name": "SetVisualFlipX",
+          "sentence": "Flip visual mesh of _PARAM0_ horizontally: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    renderer.visualFlippedX = !!eventsFunctionContext.getArgument('Enable');\n    renderer.updateFrame();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable visual flip",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Check if the visual mesh of the 3D sprite is horizontally flipped.",
+          "fullName": "Visual mesh is horizontally flipped",
+          "functionType": "Condition",
+          "name": "IsVisualFlippedX",
+          "sentence": "_PARAM0_ visual mesh is horizontally flipped",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        if (renderer.visualFlippedX) return true;\n    }\n}\nreturn false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Draw the mesh with a flat, unlit material (ignores 3D lights).",
+          "fullName": "Set unlit",
+          "functionType": "Action",
+          "name": "SetUnlit",
+          "sentence": "Set unlit rendering of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const enable = !!eventsFunctionContext.getArgument('Enable');\n    renderer.unlit = enable;\n    renderer.writeProperty('Unlit', enable);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Enable unlit rendering",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Colour the extruded side walls with the sprite's own edge pixels instead of the flat side colour.",
+          "fullName": "Set sprite edge colours on sides",
+          "functionType": "Action",
+          "name": "SetUseSpriteSideColors",
+          "sentence": "Use sprite edge colours for the sides of _PARAM0_: _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const enable = !!eventsFunctionContext.getArgument('Enable');\n    renderer.useSpriteSideColors = enable;\n    renderer.writeProperty('UseSpriteSideColors', enable);\n    renderer.applyMaterials();\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Use the sprite edge colours",
+              "name": "Enable",
+              "type": "yesorno"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Check if the debug wireframe overlay is shown.",
+          "fullName": "Wireframe rendering is enabled",
+          "functionType": "Condition",
+          "name": "IsWireframe",
+          "sentence": "_PARAM0_ is showing its debug wireframe",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        if (renderer.wireframe) return true;\n    }\n}\nreturn false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "fullName": "",
+          "functionType": "Action",
+          "name": "onDestroy",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    renderer.dispose();\n    object.__extrudedSprite3D = null;\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "X position, in scene coordinates, of a point of the current animation frame. Points are read through the mesh's world transform, so object position, size, 3D rotation and flipping are all taken into account.",
+          "fullName": "Point X position",
+          "functionType": "Expression",
+          "name": "PointX",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        const position = renderer.getPointPosition(\n            String(eventsFunctionContext.getArgument('Name')),\n            0.5,\n            runtime.pointResult);\n        eventsFunctionContext.returnValue = position[0];\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Point name",
+              "longDescription": "Name of a point defined in the object's animation editor. Leave empty (or use \"Origin\") for the origin point, \"Center\" for the center point.",
+              "name": "Name",
+              "type": "string"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Y position, in scene coordinates, of a point of the current animation frame. Points are read through the mesh's world transform, so object position, size, 3D rotation and flipping are all taken into account.",
+          "fullName": "Point Y position",
+          "functionType": "Expression",
+          "name": "PointY",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        const position = renderer.getPointPosition(\n            String(eventsFunctionContext.getArgument('Name')),\n            0.5,\n            runtime.pointResult);\n        eventsFunctionContext.returnValue = position[1];\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Point name",
+              "longDescription": "Name of a point defined in the object's animation editor. Leave empty (or use \"Origin\") for the origin point, \"Center\" for the center point.",
+              "name": "Name",
+              "type": "string"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Z position, in scene coordinates, of a point of the current animation frame, halfway through the extrusion depth. Use \"Point Z position at depth\" to sit on the front or back face instead. Points are read through the mesh's world transform, so object position, size, 3D rotation and flipping are all taken into account.",
+          "fullName": "Point Z position",
+          "functionType": "Expression",
+          "name": "PointZ",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        const position = renderer.getPointPosition(\n            String(eventsFunctionContext.getArgument('Name')),\n            0.5,\n            runtime.pointResult);\n        eventsFunctionContext.returnValue = position[2];\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Point name",
+              "longDescription": "Name of a point defined in the object's animation editor. Leave empty (or use \"Origin\") for the origin point, \"Center\" for the center point.",
+              "name": "Name",
+              "type": "string"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Z position, in scene coordinates, of a point of the current animation frame, at a chosen place through the extrusion depth. Points are read through the mesh's world transform, so object position, size, 3D rotation and flipping are all taken into account.",
+          "fullName": "Point Z position at depth",
+          "functionType": "Expression",
+          "name": "PointZAtDepth",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        const position = renderer.getPointPosition(\n            String(eventsFunctionContext.getArgument('Name')),\n            Number(eventsFunctionContext.getArgument('DepthRatio')),\n            runtime.pointResult);\n        eventsFunctionContext.returnValue = position[2];\n        return;\n    }\n}\neventsFunctionContext.returnValue = 0;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Point name",
+              "longDescription": "Name of a point defined in the object's animation editor. Leave empty (or use \"Origin\") for the origin point, \"Center\" for the center point.",
+              "name": "Name",
+              "type": "string"
+            },
+            {
+              "description": "Depth position (0 to 1)",
+              "longDescription": "0 is the back face, 0.5 the middle of the extrusion, 1 the front face. Values outside 0-1 push the point beyond the mesh.",
+              "name": "DepthRatio",
+              "type": "number"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Check that the current animation frame defines this point. \"Origin\", \"Center\" and \"Centre\" always exist.",
+          "fullName": "Point exists",
+          "functionType": "Condition",
+          "name": "HasPoint",
+          "sentence": "_PARAM0_ has the point _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        if (renderer.hasPoint(String(eventsFunctionContext.getArgument('Name')))) return true;\n        return false;\n    }\n}\nreturn false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Point name",
+              "longDescription": "Name of a point defined in the object's animation editor. Leave empty (or use \"Origin\") for the origin point, \"Center\" for the center point.",
+              "name": "Name",
+              "type": "string"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Move another object onto one of this object's points, halfway through the extrusion depth. The first picked Extruded Sprite 3D is used as the anchor, so use a \"For each object\" event to attach one object per instance.",
+          "fullName": "Put an object at a point",
+          "functionType": "Action",
+          "name": "PutObjectAtPoint",
+          "sentence": "Put _PARAM1_ at the point _PARAM2_ of _PARAM0_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nconst targets = eventsFunctionContext.getObjects('TargetObject');\nif (!targets || targets.length === 0) return;\nconst name = String(eventsFunctionContext.getArgument('Name'));\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    const position = renderer.getPointPosition(name, 0.5, runtime.pointResult);\n    for (const target of targets) {\n        if (typeof target.setX === 'function') target.setX(position[0]);\n        if (typeof target.setY === 'function') target.setY(position[1]);\n        if (typeof target.setZ === 'function') target.setZ(position[2]);\n    }\n    return;\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Object to move",
+              "name": "TargetObject",
+              "type": "object"
+            },
+            {
+              "description": "Point name",
+              "longDescription": "Name of a point defined in the object's animation editor. Leave empty (or use \"Origin\") for the origin point, \"Center\" for the center point.",
+              "name": "Name",
+              "type": "string"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Change the tint color of the extruded sprite (both the sprite faces and the extruded sides).",
+          "fullName": "Change tint color",
+          "functionType": "Action",
+          "name": "SetColor",
+          "sentence": "Change the tint color of _PARAM0_ to _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return;\nconst color = String(eventsFunctionContext.getArgument('Color'));\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    renderer.setColor(color);\n}\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Tint color",
+              "longDescription": "RGB color (e.g. \"255;128;0\" or \"#ff8000\"). \"255;255;255\" restores original colors.",
+              "name": "Color",
+              "type": "color"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "The tint color of the extruded sprite, in \"R;G;B\" format.",
+          "fullName": "Tint color",
+          "functionType": "StringExpression",
+          "name": "Color",
+          "sentence": "",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (runtime) {\n    for (const object of picked) {\n        const renderer = runtime.getRenderer(object);\n        if (!renderer) continue;\n        eventsFunctionContext.returnValue = renderer.getColor();\n        return;\n    }\n}\neventsFunctionContext.returnValue = '255;255;255';\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            }
+          ],
+          "objectGroups": []
+        },
+        {
+          "description": "Compare the tint color of the extruded sprite. Colors are compared by value, so \"#ff8000\" and \"255;128;0\" are recognised as the same color.",
+          "fullName": "Tint color",
+          "functionType": "Condition",
+          "name": "IsColor",
+          "sentence": "The tint color of _PARAM0_ is _PARAM1_",
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const runtime = gdjs.__extrudedSprite3D;\nconst picked = (typeof objects !== 'undefined' && objects && objects.length)\n    ? objects\n    : eventsFunctionContext.getObjects('Object');\nif (!runtime) return false;\nconst targetColor = runtime.normalizeColor(eventsFunctionContext.getArgument('Color'));\nfor (const object of picked) {\n    const renderer = runtime.getRenderer(object);\n    if (!renderer) continue;\n    return renderer.getColor() === targetColor;\n}\nreturn false;\n",
+              "parameterObjects": "",
+              "useStrict": true,
+              "eventsSheetExpanded": true
+            }
+          ],
+          "parameters": [
+            {
+              "description": "Object",
+              "name": "Object",
+              "supplementaryInformation": "ExtrudedSprite3D::ExtrudedSprite3D",
+              "type": "object"
+            },
+            {
+              "description": "Tint color to compare",
+              "name": "Color",
+              "type": "color"
+            }
+          ],
+          "objectGroups": []
+        }
+      ],
+      "eventsFunctionsFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "functionName": "onCreated"
+          },
+          {
+            "functionName": "onDestroy"
+          },
+          {
+            "functionName": "SetAlphaThreshold"
+          },
+          {
+            "functionName": "SetSideColor"
+          },
+          {
+            "functionName": "SetUseSpriteSideColors"
+          },
+          {
+            "functionName": "IsColor"
+          },
+          {
+            "functionName": "Color"
+          },
+          {
+            "functionName": "SetColor"
+          },
+          {
+            "functionName": "SetUnlit"
+          },
+          {
+            "functionName": "SetCastShadow"
+          },
+          {
+            "functionName": "SetReceiveShadow"
+          },
+          {
+            "functionName": "SetAvoidSelfShadow"
+          },
+          {
+            "functionName": "SetShadowBias"
+          },
+          {
+            "functionName": "SetWireframe"
+          },
+          {
+            "functionName": "ToggleWireframe"
+          },
+          {
+            "functionName": "IsWireframe"
+          },
+          {
+            "functionName": "RebuildMesh"
+          },
+          {
+            "functionName": "TriangleCount"
+          },
+          {
+            "functionName": "VertexCount"
+          },
+          {
+            "functionName": "GenerationTimeMs"
+          },
+          {
+            "functionName": "ImageWidth"
+          },
+          {
+            "functionName": "ImageHeight"
+          },
+          {
+            "functionName": "SetVisualFlipX"
+          },
+          {
+            "functionName": "IsVisualFlippedX"
+          },
+          {
+            "folderName": "Points",
+            "children": [
+              {
+                "functionName": "PointX"
+              },
+              {
+                "functionName": "PointY"
+              },
+              {
+                "functionName": "PointZ"
+              },
+              {
+                "functionName": "PointZAtDepth"
+              },
+              {
+                "functionName": "HasPoint"
+              },
+              {
+                "functionName": "PutObjectAtPoint"
+              }
+            ]
+          }
+        ]
+      },
+      "propertyDescriptors": [
+        {
+          "value": "128",
+          "type": "Number",
+          "label": "Alpha threshold (0-255)",
+          "description": "Pixels with an alpha value greater or equal to this are considered solid.",
+          "group": "Mesh",
+          "name": "AlphaThreshold"
+        },
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Use sprite edge colors for sides",
+          "description": "Color generated side walls from the nearest solid sprite pixels. Turn this off to use one fixed side wall color.",
+          "group": "Mesh",
+          "name": "UseSpriteSideColors"
+        },
+        {
+          "value": "128;128;128",
+          "type": "Color",
+          "label": "Side wall color",
+          "description": "Solid side wall color used when sprite edge colors are disabled.",
+          "group": "Mesh",
+          "name": "SideColor"
+        },
+        {
+          "value": "255;255;255",
+          "type": "Color",
+          "label": "Tint color",
+          "description": "Tint color applied to the extruded sprite faces and sides.",
+          "group": "Rendering",
+          "name": "Color"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Unlit",
+          "description": "Ignore 3D lights and render at full brightness (like a Basic material).",
+          "group": "Rendering",
+          "name": "Unlit"
+        },
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Cast shadows",
+          "description": "The mesh casts shadows when a directional light with shadows is active.",
+          "group": "Rendering",
+          "name": "CastShadow"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Receive shadows",
+          "description": "Receive shadows cast by other objects. When self-shadow protection is enabled, only the flat sprite faces are suppressed while the object also casts shadows; the extrusion sides still receive shadows.",
+          "group": "Rendering",
+          "name": "ReceiveShadow"
+        },
+        {
+          "value": "true",
+          "type": "Boolean",
+          "label": "Avoid self-shadow acne",
+          "description": "Keep receive shadows disabled on the flat sprite faces while this object casts shadows, preventing striped self-shadow artifacts. The extrusion sides still receive shadows.",
+          "group": "Rendering",
+          "name": "AvoidSelfShadow"
+        },
+        {
+          "value": "0",
+          "type": "Number",
+          "label": "Shadow bias",
+          "description": "Object-specific polygon offset used in shadow-map passes. Adjust if this object both casts and receives shadows and shows acne or detached shadows.",
+          "group": "Rendering",
+          "name": "ShadowBias"
+        },
+        {
+          "value": "false",
+          "type": "Boolean",
+          "label": "Debug wireframe",
+          "description": "Draw a wireframe overlay while keeping the filled/textured mesh visible.",
+          "group": "Debug",
+          "name": "DebugWireframe"
+        }
+      ],
+      "propertiesFolderStructure": {
+        "folderName": "__ROOT",
+        "children": [
+          {
+            "folderName": "Mesh",
+            "children": [
+              {
+                "propertyName": "AlphaThreshold"
+              },
+              {
+                "propertyName": "UseSpriteSideColors"
+              },
+              {
+                "propertyName": "SideColor"
+              }
+            ]
+          },
+          {
+            "folderName": "Rendering",
+            "children": [
+              {
+                "propertyName": "Color"
+              },
+              {
+                "propertyName": "Unlit"
+              },
+              {
+                "propertyName": "CastShadow"
+              },
+              {
+                "propertyName": "ReceiveShadow"
+              },
+              {
+                "propertyName": "AvoidSelfShadow"
+              },
+              {
+                "propertyName": "ShadowBias"
+              }
+            ]
+          },
+          {
+            "folderName": "Debug",
+            "children": [
+              {
+                "propertyName": "DebugWireframe"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -202,6 +202,146 @@
     return sqDist;
   }
 
+  // Ericson's closest point on triangle (Real-Time Collision Detection, Sec. 5.1.5).
+  // Returns squared distance from query point (px, py, pz) to triangle (A, B, C).
+  function closestPointOnTriangleSq(px, py, pz, ax, ay, az, bx, by, bz, cx, cy, cz) {
+    var abx = bx - ax, aby = by - ay, abz = bz - az;
+    var acx = cx - ax, acy = cy - ay, acz = cz - az;
+    var apx = px - ax, apy = py - ay, apz = pz - az;
+
+    var d1 = abx * apx + aby * apy + abz * apz;
+    var d2 = acx * apx + acy * apy + acz * apz;
+    if (d1 <= 0.0 && d2 <= 0.0) {
+      var dx = px - ax, dy = py - ay, dz = pz - az;
+      return dx * dx + dy * dy + dz * dz;
+    }
+
+    var bpx = px - bx, bpy = py - by, bpz = pz - bz;
+    var d3 = abx * bpx + aby * bpy + abz * bpz;
+    var d4 = acx * bpx + acy * bpy + acz * bpz;
+    if (d3 >= 0.0 && d4 <= d3) {
+      var dx = px - bx, dy = py - by, dz = pz - bz;
+      return dx * dx + dy * dy + dz * dz;
+    }
+
+    var vc = d1 * d4 - d3 * d2;
+    if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0) {
+      var v = d1 / (d1 - d3);
+      var qx = ax + v * abx, qy = ay + v * aby, qz = az + v * abz;
+      var dx = px - qx, dy = py - qy, dz = pz - qz;
+      return dx * dx + dy * dy + dz * dz;
+    }
+
+    var cpx = px - cx, cpy = py - cy, cpz = pz - cz;
+    var d5 = abx * cpx + aby * cpy + abz * cpz;
+    var d6 = acx * cpx + acy * cpy + acz * cpz;
+    if (d6 >= 0.0 && d5 <= d6) {
+      var dx = px - cx, dy = py - cy, dz = pz - cz;
+      return dx * dx + dy * dy + dz * dz;
+    }
+
+    var vb = d5 * d2 - d1 * d6;
+    if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0) {
+      var w = d2 / (d2 - d6);
+      var qx = ax + w * acx, qy = ay + w * acy, qz = az + w * acz;
+      var dx = px - qx, dy = py - qy, dz = pz - qz;
+      return dx * dx + dy * dy + dz * dz;
+    }
+
+    var va = d3 * d6 - d5 * d4;
+    if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0) {
+      var w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+      var qx = bx + w * (cx - bx), qy = by + w * (cy - by), qz = bz + w * (cz - bz);
+      var dx = px - qx, dy = py - qy, dz = pz - qz;
+      return dx * dx + dy * dy + dz * dz;
+    }
+
+    var denom = 1.0 / (va + vb + vc);
+    var v = vb * denom;
+    var w = vc * denom;
+    var qx = ax + abx * v + acx * w;
+    var qy = ay + aby * v + acy * w;
+    var qz = az + abz * v + acz * w;
+    var dx = px - qx, dy = py - qy, dz = pz - qz;
+    return dx * dx + dy * dy + dz * dz;
+  }
+
+  // Felzenszwalb & Huttenlocher 1D Euclidean Distance Transform (Theory of Computing, Vol 8, 2012).
+  // Computes lower parabolic envelope in O(n) time.
+  function felzenszwalb1D(f, d, v, z, n) {
+    var k = 0;
+    v[0] = 0;
+    z[0] = -1e20;
+    z[1] = 1e20;
+    for (var q = 1; q < n; q++) {
+      var fq = f[q];
+      var s = ((fq + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      while (s <= z[k]) {
+        k--;
+        s = ((fq + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      }
+      k++;
+      v[k] = q;
+      z[k] = s;
+      z[k + 1] = 1e20;
+    }
+    k = 0;
+    for (var q = 0; q < n; q++) {
+      while (z[k + 1] < q) {
+        k++;
+      }
+      var vk = v[k];
+      var diff = q - vk;
+      d[q] = diff * diff + f[vk];
+    }
+  }
+
+  // Separable 3D Distance Transform over a grid of size resX x resY x resZ.
+  // Modifies grid in-place from squared distances to Euclidean distance in voxel units.
+  function run3DEDT(grid, resX, resY, resZ) {
+    var maxDim = Math.max(resX, resY, resZ);
+    var f = new Float32Array(maxDim);
+    var d = new Float32Array(maxDim);
+    var v = new Int32Array(maxDim);
+    var z = new Float32Array(maxDim + 1);
+
+    // Pass 1: Along X axis
+    for (var k = 0; k < resZ; k++) {
+      for (var j = 0; j < resY; j++) {
+        var base = (k * resY + j) * resX;
+        for (var i = 0; i < resX; i++) f[i] = grid[base + i];
+        felzenszwalb1D(f, d, v, z, resX);
+        for (var i = 0; i < resX; i++) grid[base + i] = d[i];
+      }
+    }
+
+    // Pass 2: Along Y axis
+    for (var k = 0; k < resZ; k++) {
+      for (var i = 0; i < resX; i++) {
+        for (var j = 0; j < resY; j++) {
+          f[j] = grid[(k * resY + j) * resX + i];
+        }
+        felzenszwalb1D(f, d, v, z, resY);
+        for (var j = 0; j < resY; j++) {
+          grid[(k * resY + j) * resX + i] = d[j];
+        }
+      }
+    }
+
+    // Pass 3: Along Z axis
+    for (var j = 0; j < resY; j++) {
+      for (var i = 0; i < resX; i++) {
+        for (var k = 0; k < resZ; k++) {
+          f[k] = grid[(k * resY + j) * resX + i];
+        }
+        felzenszwalb1D(f, d, v, z, resZ);
+        for (var k = 0; k < resZ; k++) {
+          grid[(k * resY + j) * resX + i] = Math.sqrt(Math.max(0.0, d[k]));
+        }
+      }
+    }
+  }
+
   // Must match the branch order inside evaluateIESProfile in the GLSL prelude.
   var IES_PROFILE_IDS = {
     None: 0,
@@ -349,6 +489,21 @@
         bakeState: null,
         isBakeComplete: false,
         dummyProbeTexture: null,    // 1x1x1 white fallback
+
+        /* ---- SDF Shadows ---- */
+        sdfVolume: null,            // Active SDFVolume3D record
+        sdfBakeBudgetMs: 8.0,
+        sdfBakeState: null,
+        isSdfBakeComplete: false,
+        enableSDFShadows: true,
+        maxShadowedLights: 4,
+        pointShadowDistance: 800.0,
+        sdfSunSoftness: 1.8,        // degrees
+        sdfHitEps: 0.05,
+        sdfNormalBias: 1.0,
+        sdfInflate: 0.5,
+        dummySdfTexture: null,
+        viewToWorldMatrix: THREE_OK ? new THREE.Matrix4() : null,
 
         /* ---- Shared material bookkeeping ---- */
         // Every material this extension has injected, clustered-only or clustered+probes.
@@ -568,6 +723,56 @@
     return state.dummyProbeTexture;
   }
 
+  /* ------------------------------------------------------------- SDF 3D Textures */
+  function makeSDFData3DTexture(uint16Data, resX, resY, resZ) {
+    if (!THREE_OK) return null;
+    var tex = new THREE.Data3DTexture(uint16Data, resX, resY, resZ);
+    tex.format = (THREE.RedFormat !== undefined) ? THREE.RedFormat : (THREE.RedIntegerFormat || THREE.RGBAFormat);
+    tex.type = THREE.HalfFloatType;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.wrapR = THREE.ClampToEdgeWrapping;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  function getDummySDFTexture(state) {
+    if (!state.dummySdfTexture && THREE_OK) {
+      var d = new Uint16Array(1);
+      d[0] = toHalf(1e5);
+      state.dummySdfTexture = makeSDFData3DTexture(d, 1, 1, 1);
+    }
+    return state.dummySdfTexture;
+  }
+
+  function createDefaultSDFRecord() {
+    return {
+      object: null,
+      behavior: null,
+      resX: 128,
+      resY: 128,
+      resZ: 32,
+      voxelSize: 15.625,
+      minX: 0,
+      minY: 0,
+      minZ: 0,
+      maxX: 2000,
+      maxY: 2000,
+      maxZ: 500,
+      threeMin: THREE_OK ? new THREE.Vector3(0, -2000, 0) : { x: 0, y: -2000, z: 0 },
+      threeSize: THREE_OK ? new THREE.Vector3(2000, 2000, 500) : { x: 2000, y: 2000, z: 500 },
+      data: null,
+      texture: null,
+      isBaked: false,
+      boundsLocked: false,
+      isSigned: true,
+      isInflated: true
+    };
+  }
+
   // The pre-bake fallback: a pure altitude gradient, equivalent to a HemisphereLight.
   // Baking is what adds occlusion and coloured bounce on top of it.
   function generateAltitudeGradientBuffer(resX, resY, resZ, skyRgb, groundRgb, horizonRgb) {
@@ -698,6 +903,48 @@
     ''
   ].join('\n');
 
+  var GLSL_SDF_PRELUDE = [
+    '#ifdef AL_SDF_SHADOWS',
+    '  precision mediump sampler3D;',
+    '  uniform sampler3D uSdfVolume;',
+    '  uniform vec3  uSdfMin;',
+    '  uniform vec3  uSdfSize;',
+    '  uniform vec4  uSdfParams; // x: voxelSize, y: hitEps, z: normalBias, w: sunK',
+    '  uniform mat4  uViewToWorld;',
+    '  uniform uint  uMaxShadowedLights;',
+    '  uniform float uPointShadowDistance;',
+    '',
+    '  float sdfSampleStatic(vec3 wp) {',
+    '    vec3 uvw = (wp - uSdfMin) / uSdfSize;',
+    '    if (any(lessThan(uvw, vec3(0.0))) || any(greaterThan(uvw, vec3(1.0)))) return 1e6;',
+    '    return texture(uSdfVolume, uvw).r;',
+    '  }',
+    '',
+    '  float sdfShadow(vec3 ro, vec3 rd, float tMin, float tMax, float k, int maxSteps) {',
+    '    float res = 1.0;',
+    '    float t = tMin;',
+    '    float ph = 1e20;',
+    '    float voxelSize = uSdfParams.x;',
+    '    float hitEps = max(uSdfParams.y * voxelSize, 0.05);',
+    '    float minStep = 0.5 * voxelSize;',
+    '    float maxStep = 8.0 * voxelSize;',
+    '',
+    '    for (int i = 0; i < 32; i++) {',
+    '      if (i >= maxSteps || t >= tMax) break;',
+    '      float h = sdfSampleStatic(ro + rd * t);',
+    '      if (h < hitEps) return 0.0;',
+    '      float y = h * h / (2.0 * ph);',
+    '      float d = sqrt(max(h * h - y * y, 0.0));',
+    '      res = min(res, k * d / max(t - y, 1e-4));',
+    '      ph = h;',
+    '      t += clamp(h, minStep, maxStep);',
+    '    }',
+    '    return clamp(res, 0.0, 1.0);',
+    '  }',
+    '#endif',
+    ''
+  ].join('\n');
+
   // Declared unconditionally in the vertex shader so the varying always has a writer;
   // the fragment side is what the USE_PROBE_GRID guard switches on.
   var GLSL_PROBE_VERTEX_PRELUDE = [
@@ -718,13 +965,8 @@
     '#endif'
   ].join('\n');
 
-  // One replacement of lights_fragment_begin covers both features. Order matters:
-  // `irradiance` must be augmented before lights_fragment_end consumes it via
-  // RE_IndirectDiffuse, while the clustered loop writes reflectedLight directly.
-  //
-  // geometryPosition / geometryNormal / geometryViewDir are declared by
-  // lights_fragment_begin itself and are the correct view-space values. vViewPosition is
-  // the negated fragment position, so it must not be used as one.
+  // One replacement of lights_fragment_begin covers direct lighting, probes and SDF shadows.
+  // geometryPosition / geometryNormal / geometryViewDir are declared by lights_fragment_begin.
   var GLSL_FRAGMENT_HOOK = [
     '#include <lights_fragment_begin>',
     '',
@@ -736,6 +978,13 @@
     '#endif',
     '',
     '#ifdef USE_CLUSTERED_LIGHTS',
+    '  #ifdef AL_SDF_SHADOWS',
+    '    vec3 wp = (uViewToWorld * vec4(geometryPosition, 1.0)).xyz;',
+    '    vec3 nw = inverseTransformDirection(geometryNormal, viewMatrix);',
+    '    vec3 ro = wp + nw * max(uSdfParams.z * uSdfParams.x, 0.1);',
+    '    uint shadowedSoFar = 0u;',
+    '  #endif',
+    '',
     '  vec2 clusterScreenUv = gl_FragCoord.xy / uResolution.xy;',
     '  int cX = int(clamp(clusterScreenUv.x * uClusterGridDims.x, 0.0, uClusterGridDims.x - 1.0));',
     '  int cY = int(clamp(clusterScreenUv.y * uClusterGridDims.y, 0.0, uClusterGridDims.y - 1.0));',
@@ -764,8 +1013,6 @@
     '  vec3 clusteredSpecularAccum = vec3(0.0);',
     '',
     '  for (uint li = 0u; li < clusterCount; ++li) {',
-    '    // The index list is a 2D texture: a 1D strip would need 221,184 texels of width,',
-    '    // far past GL_MAX_TEXTURE_SIZE.',
     '    int gi = int(clusterOffset + li);',
     '    uint lightIdx = texelFetch(uLightIndexList,',
     '      ivec2(gi % AL_LIGHT_INDEX_WIDTH, gi / AL_LIGHT_INDEX_WIDTH), 0).r;',
@@ -782,8 +1029,6 @@
     '    float lightTypeFlag = extra.w;',
     '    bool isCapsule = lightTypeFlag > 10.0;',
     '',
-    '    // Diffuse tube illumination must be independent of the viewer. The Karis',
-    '    // representative point depends on V by design and is valid only for specular.',
     '    vec3 clDiffuseL = toLightCenter / max(centerDist, 0.0001);',
     '    vec3 clSpecularL = clDiffuseL;',
     '    float attenuationDistance = centerDist;',
@@ -806,20 +1051,15 @@
     '    float distMeters = attenuationDistance / AL_WORLD_UNITS_PER_METER;',
     '    float radiusMeters = radius / AL_WORLD_UNITS_PER_METER;',
     '    if (distMeters < radiusMeters) {',
-    '      // Frostbite windowed attenuation: smoothly reaches exactly 0 at the radius.',
     '      float num = max(1.0 - pow(distMeters / radiusMeters, 4.0), 0.0);',
     '      float atten = (num * num) / (distMeters * distMeters + 1.0);',
     '',
     '      if (!isCapsule && lightTypeFlag > 0.0) {',
-    '        // Spot: extra.xyz is the view-space direction, extra.w is cos(outerAngle) and',
-    '        // shape.y is cos(innerAngle). Full brightness inside the inner cone, smooth',
-    '        // penumbra out to the outer one.',
     '        float cosAngle = dot(-clDiffuseL, extra.xyz);',
     '        float cosInner = max(shape.y, lightTypeFlag + 0.0001);',
     '        atten *= clamp((cosAngle - lightTypeFlag) / (cosInner - lightTypeFlag), 0.0, 1.0);',
     '      }',
     '',
-    '      // IES photometric profile. shape.x is the profile id; 0 short-circuits to 1.0.',
     '      atten *= evaluateIESProfile(shape.x, extra.xyz, clDiffuseL);',
     '',
     '      float clDiffuseNdotL = max(dot(clN, clDiffuseL), 0.0);',
@@ -828,9 +1068,6 @@
     '      float clNdotH = max(dot(clN, clH), 0.0);',
     '      float clVdotH = max(dot(clV, clH), 0.0);',
     '',
-    '      // r160 BSDF interface: F_Schlick(f0, f90, dotVH), D_GGX(alpha, dotNH),',
-    '      // V_GGX_SmithCorrelated(alpha, dotNL, dotNV) — the visibility term already',
-    '      // folds in the 1 / (4 NdotL NdotV) denominator.',
     '      vec3 F = F_Schlick(material.specularColor, material.specularF90, clVdotH);',
     '      float D = D_GGX(alphaPrime, clNdotH);',
     '      float Vis = V_GGX_SmithCorrelated(alphaPrime, clSpecularNdotL, clNdotV);',
@@ -838,6 +1075,21 @@
     '      vec3 diff = (vec3(1.0) - F) * material.diffuseColor * RECIPROCAL_PI;',
     '',
     '      vec3 radiance = cInt.rgb * (cInt.w * atten * lightScaleFactor);',
+    '      #ifdef AL_SDF_SHADOWS',
+    '        float sdfShadowFactor = 1.0;',
+    '        if (shadowedSoFar < uMaxShadowedLights && (uint(shape.z) & 1u) == 1u && clDiffuseNdotL > 0.0) {',
+    '          vec3 Lw = inverseTransformDirection(clDiffuseL, viewMatrix);',
+    '          float srcR = max(shape.w, 0.01);',
+    '          float tMin = 2.0 * uSdfParams.x;',
+    '          float tMax = min(attenuationDistance, uPointShadowDistance);',
+    '          if (tMax > tMin) {',
+    '            float k = attenuationDistance / srcR;',
+    '            sdfShadowFactor = sdfShadow(ro, Lw, tMin, tMax, k, 12);',
+    '            shadowedSoFar++;',
+    '          }',
+    '        }',
+    '        radiance *= sdfShadowFactor;',
+    '      #endif',
     '      clusteredDiffuseAccum += diff * radiance * clDiffuseNdotL;',
     '      clusteredSpecularAccum += spec * radiance * clSpecularNdotL;',
     '    }',
@@ -883,17 +1135,16 @@
     }
 
     var existing = material.__alInjection;
-    if (existing && existing.probes === wantProbes && existing.version === RUNTIME_VERSION) {
+    var use3D = !!state.clusterGrid3DTexture;
+    var hasSDF = !!(state.enableSDFShadows && state.sdfVolume && (state.sdfVolume.texture || state.sdfVolume.isBaked));
+    if (existing && existing.probes === wantProbes && existing.sdf === hasSDF && existing.version === RUNTIME_VERSION) {
       state.hookedMaterials.add(material);
       return true;
     }
 
-    var use3D = !!state.clusterGrid3DTexture;
-    // V6 also forces materials compiled by an older editor runtime to rebuild and
-    // bind this runtime's textures instead of retaining frozen view-space light data.
-    var cacheKey = 'GD_ADVLIGHT3D_V6|CL1|G3D' + (use3D ? '1' : '0') + '|LP' + (wantProbes ? '1' : '0');
+    var cacheKey = 'GD_ADVLIGHT3D_V6|CL1|G3D' + (use3D ? '1' : '0') + '|LP' + (wantProbes ? '1' : '0') + (hasSDF ? '|SDF1' : '');
 
-    material.__alInjection = { probes: wantProbes, key: cacheKey, version: RUNTIME_VERSION };
+    material.__alInjection = { probes: wantProbes, sdf: hasSDF, key: cacheKey, version: RUNTIME_VERSION };
     material.customProgramCacheKey = function () {
       return cacheKey;
     };
@@ -922,6 +1173,7 @@
       shader.defines.AL_WORLD_UNITS_PER_METER = WORLD_UNITS_PER_METER.toFixed(1);
       if (use3D) shader.defines.USE_3D_CLUSTER_TEXTURE = 1;
       if (wantProbes) shader.defines.USE_PROBE_GRID = 1;
+      if (hasSDF) shader.defines.AL_SDF_SHADOWS = 1;
 
       // --- Clustered uniforms
       shader.uniforms.uClusteredLightData = { value: state.lightDataTexture };
@@ -935,6 +1187,20 @@
       shader.uniforms.uClusterCameraNear = { value: 0.1 };
       shader.uniforms.uClusterCameraFar = { value: 1000.0 };
       shader.uniforms.uGlobalClusteredIntensity = { value: state.globalIntensityScale };
+
+      // --- SDF uniforms
+      if (hasSDF) {
+        shader.uniforms.uSdfVolume = { value: state.sdfVolume ? state.sdfVolume.texture : null };
+        shader.uniforms.uSdfMin = { value: state.sdfVolume ? state.sdfVolume.threeMin : (THREE_OK ? new THREE.Vector3() : { x: 0, y: 0, z: 0 }) };
+        shader.uniforms.uSdfSize = { value: state.sdfVolume ? state.sdfVolume.threeSize : (THREE_OK ? new THREE.Vector3(1, 1, 1) : { x: 1, y: 1, z: 1 }) };
+        var vx = state.sdfVolume ? (state.sdfVolume.voxelSize || ((state.sdfVolume.maxX - state.sdfVolume.minX) / state.sdfVolume.resX)) : 10.0;
+        var sunK = 1.0 / Math.tan((state.sdfSunSoftness || 1.8) * Math.PI / 180.0);
+        shader.uniforms.uSdfParams = { value: (THREE_OK && THREE.Vector4) ? new THREE.Vector4(vx, state.sdfHitEps || 0.05, state.sdfNormalBias || 1.0, sunK) : { x: vx, y: 0.05, z: 1.0, w: sunK } };
+        shader.uniforms.uViewToWorld = { value: state.viewToWorldMatrix || (THREE_OK ? new THREE.Matrix4() : null) };
+        shader.uniforms.uMaxShadowedLights = { value: state.maxShadowedLights || 4 };
+        shader.uniforms.uPointShadowDistance = { value: state.pointShadowDistance || 800.0 };
+      }
+
       // --- Probe uniforms. Intensity starts at 0 so the frames between this compile and
       // the first syncReceiverUniforms() add no light, rather than a full-strength sample
       // of an unbound (black) texture.
@@ -953,7 +1219,7 @@
       // accumulate one dead uniform set per recompile for the material's lifetime.
       material.__alUniforms = shader.uniforms;
 
-      shader.fragmentShader = GLSL_CLUSTER_PRELUDE + '\n' + GLSL_PROBE_PRELUDE + '\n' + shader.fragmentShader;
+      shader.fragmentShader = GLSL_CLUSTER_PRELUDE + '\n' + GLSL_PROBE_PRELUDE + '\n' + GLSL_SDF_PRELUDE + '\n' + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <lights_fragment_begin>',
         GLSL_FRAGMENT_HOOK
@@ -1230,6 +1496,8 @@
         iesProfile: (options && options.iesProfile) || 'None',
         castContactShadows: options && options.castContactShadows !== undefined ? !!options.castContactShadows : true,
         shadowBias: options && options.shadowBias !== undefined ? options.shadowBias : 0.02,
+        castShadow: options && options.castShadow !== undefined ? !!options.castShadow : false,
+        sourceRadius: options && options.sourceRadius !== undefined ? options.sourceRadius : 0.0,
         flickerMode: (options && options.flickerMode) || 'None',
         flickerSpeed: options && options.flickerSpeed !== undefined ? options.flickerSpeed : 8.0,
         flickerIntensityVariation: options && options.flickerIntensityVariation !== undefined ? options.flickerIntensityVariation : 0.25,
@@ -1281,6 +1549,8 @@
     if (options.iesProfile !== undefined) light.iesProfile = options.iesProfile;
     if (options.castContactShadows !== undefined) light.castContactShadows = !!options.castContactShadows;
     if (options.shadowBias !== undefined) light.shadowBias = options.shadowBias;
+    if (options.castShadow !== undefined) light.castShadow = !!options.castShadow;
+    if (options.sourceRadius !== undefined) light.sourceRadius = options.sourceRadius;
     if (options.flickerMode !== undefined) light.flickerMode = options.flickerMode;
     if (options.flickerSpeed !== undefined) light.flickerSpeed = options.flickerSpeed;
     if (options.flickerIntensityVariation !== undefined) light.flickerIntensityVariation = options.flickerIntensityVariation;
@@ -2160,17 +2430,468 @@
     return true;
   }
 
+  /* ============================================================= SDF Volume & Baking == */
+
+  function registerSDFVolume(runtimeScene, object, behavior, options) {
+    if (!THREE_OK) return null;
+    options = options || {};
+    if (!isWebGL2Available(runtimeScene)) {
+      warnOnce('noWebGL2SDF', 'WebGL2 is not supported on this context. SDF Shadows are disabled.');
+      return null;
+    }
+
+    var state = stateOf(runtimeScene);
+    var vol = behavior.__alSdfVolume;
+    if (!vol) {
+      vol = behavior.__alSdfVolume = {
+        object: object,
+        behavior: behavior,
+        resX: clamp(Math.floor(options.resX || 128), 8, 256),
+        resY: clamp(Math.floor(options.resY || 128), 8, 256),
+        resZ: clamp(Math.floor(options.resZ || 32), 4, 128),
+        voxelSize: 15.625,
+        autoBakeOnStart: !!options.autoBakeOnStart,
+        bakedOnce: false,
+        isBaked: false,
+        boundsLocked: false,
+
+        minX: 0, minY: 0, minZ: 0,
+        maxX: 2000, maxY: 2000, maxZ: 500,
+
+        threeMin: new THREE.Vector3(0, -2000, 0),
+        threeSize: new THREE.Vector3(2000, 2000, 500),
+
+        data: null,
+        texture: null
+      };
+    }
+
+    state.sdfVolume = vol;
+
+    updateSDFVolumeProperties(vol, options);
+    syncSDFVolumeBoundsFromObject(vol, object);
+    ensureSDFTextures(vol);
+    hideVolumeCube(object);
+
+    if (vol.autoBakeOnStart && !vol.bakedOnce && !state.sdfBakeState && !state.isSdfBakeComplete) {
+      vol.bakedOnce = true;
+      startSDFBake(runtimeScene);
+    }
+
+    return vol;
+  }
+
+  function updateSDFVolumeProperties(vol, options) {
+    if (!vol || !options) return;
+    if (options.resX !== undefined) vol.resX = clamp(Math.floor(options.resX), 8, 256);
+    if (options.resY !== undefined) vol.resY = clamp(Math.floor(options.resY), 8, 256);
+    if (options.resZ !== undefined) vol.resZ = clamp(Math.floor(options.resZ), 4, 128);
+    if (options.autoBakeOnStart !== undefined) vol.autoBakeOnStart = !!options.autoBakeOnStart;
+  }
+
+  function syncSDFVolumeBoundsFromObject(vol, object) {
+    if (!vol || !object || vol.boundsLocked) return;
+    if (typeof object.getZ !== 'function' || typeof object.getDepth !== 'function') {
+      warnOnce('sdfVolumeNot3D',
+        'SDFVolume3D is attached to an object with no Z/depth (not a 3D object). ' +
+        'Attach it to a Cube3D, or set bounds explicitly with SetSDFVolumeBounds.');
+      return;
+    }
+    var x = object.getX ? object.getX() : 0;
+    var y = object.getY ? object.getY() : 0;
+    var z = object.getZ ? object.getZ() : 0;
+    var w = object.getWidth ? object.getWidth() : 2000;
+    var h = object.getHeight ? object.getHeight() : 2000;
+    var d = object.getDepth ? object.getDepth() : 500;
+
+    vol.minX = x;
+    vol.minY = y;
+    vol.minZ = z;
+    vol.maxX = x + Math.max(1, w);
+    vol.maxY = y + Math.max(1, h);
+    vol.maxZ = z + Math.max(1, d);
+
+    vol.threeMin.set(vol.minX, -vol.maxY, vol.minZ);
+    vol.threeSize.set(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
+    vol.voxelSize = (vol.maxX - vol.minX) / Math.max(1, vol.resX);
+  }
+
+  function ensureSDFTextures(vol) {
+    if (!vol) return;
+    var totalVoxels = vol.resX * vol.resY * vol.resZ;
+    if (!vol.data || vol.data.length !== totalVoxels) {
+      vol.data = new Uint16Array(totalVoxels);
+      var farHalf = toHalf(1e5);
+      for (var i = 0; i < totalVoxels; i++) {
+        vol.data[i] = farHalf;
+      }
+      if (vol.texture) vol.texture.dispose();
+      vol.texture = makeSDFData3DTexture(vol.data, vol.resX, vol.resY, vol.resZ);
+      vol.isBaked = false;
+    }
+    vol.voxelSize = (vol.maxX - vol.minX) / Math.max(1, vol.resX);
+  }
+
+  function disposeSDFVolume(runtimeScene, behavior) {
+    var vol = behavior && behavior.__alSdfVolume;
+    if (!vol) return;
+    var state = scenes.get(runtimeScene);
+    if (state && state.sdfVolume === vol) {
+      state.sdfVolume = null;
+    }
+    if (vol.texture) { vol.texture.dispose(); vol.texture = null; }
+    vol.data = null;
+    behavior.__alSdfVolume = null;
+  }
+
+  function extractTrianglesFromMeshes(meshes) {
+    var triangles = [];
+    if (!meshes || !meshes.length) return triangles;
+    var vA = THREE_OK ? new THREE.Vector3() : null;
+    var vB = THREE_OK ? new THREE.Vector3() : null;
+    var vC = THREE_OK ? new THREE.Vector3() : null;
+
+    for (var m = 0; m < meshes.length; m++) {
+      var mesh = meshes[m];
+      var geom = mesh.geometry;
+      if (!geom) continue;
+      var matWorld = mesh.matrixWorld || (THREE_OK ? new THREE.Matrix4() : null);
+
+      if (geom.attributes && geom.attributes.position) {
+        var pos = geom.attributes.position;
+        var index = geom.index;
+        if (index) {
+          for (var i = 0; i < index.count; i += 3) {
+            var ia = index.getX(i);
+            var ib = index.getX(i + 1);
+            var ic = index.getX(i + 2);
+            if (vA && matWorld) {
+              vA.set(pos.getX(ia), pos.getY(ia), pos.getZ(ia)).applyMatrix4(matWorld);
+              vB.set(pos.getX(ib), pos.getY(ib), pos.getZ(ib)).applyMatrix4(matWorld);
+              vC.set(pos.getX(ic), pos.getY(ic), pos.getZ(ic)).applyMatrix4(matWorld);
+              triangles.push(vA.x, vA.y, vA.z, vB.x, vB.y, vB.z, vC.x, vC.y, vC.z);
+            }
+          }
+        } else {
+          for (var i = 0; i < pos.count; i += 3) {
+            if (vA && matWorld) {
+              vA.set(pos.getX(i), pos.getY(i), pos.getZ(i)).applyMatrix4(matWorld);
+              vB.set(pos.getX(i + 1), pos.getY(i + 1), pos.getZ(i + 1)).applyMatrix4(matWorld);
+              vC.set(pos.getX(i + 2), pos.getY(i + 2), pos.getZ(i + 2)).applyMatrix4(matWorld);
+              triangles.push(vA.x, vA.y, vA.z, vB.x, vB.y, vB.z, vC.x, vC.y, vC.z);
+            }
+          }
+        }
+      }
+    }
+    return triangles;
+  }
+
+  function startSDFBake(runtimeScene) {
+    var state = stateOf(runtimeScene);
+    var vol = state.sdfVolume;
+    if (!vol) {
+      warnOnce('sdfBakeNoVol', 'Cannot bake: no active SDFVolume3D in this scene.');
+      return false;
+    }
+    if (state.sdfBakeState && state.sdfBakeState.inProgress) {
+      return false;
+    }
+
+    var meshes = collectBakeGeometry(runtimeScene, layerNameOf(vol.object));
+    var triangles = extractTrianglesFromMeshes(meshes);
+    var totalVoxels = vol.resX * vol.resY * vol.resZ;
+
+    var grid = new Float32Array(totalVoxels);
+    grid.fill(1e20);
+
+    state.sdfBakeState = {
+      inProgress: true,
+      phase: 0,
+      triangleIndex: 0,
+      totalTriangles: Math.floor(triangles.length / 9),
+      triangles: triangles,
+      grid: grid,
+      vol: vol
+    };
+
+    console.log('[AdvancedLighting3D] Baking SDF ' + vol.resX + 'x' + vol.resY + 'x' + vol.resZ +
+      ' (' + totalVoxels.toLocaleString() + ' voxels) against ' +
+      state.sdfBakeState.totalTriangles + ' triangles. Poll SDFBakeProgress() for progress.');
+    state.isSdfBakeComplete = false;
+    return true;
+  }
+
+  function cancelSDFBake(runtimeScene) {
+    var state = stateOf(runtimeScene);
+    if (state.sdfBakeState) {
+      state.sdfBakeState.inProgress = false;
+      state.sdfBakeState = null;
+    }
+  }
+
+  function stepSDFBake(runtimeScene) {
+    var state = stateOf(runtimeScene);
+    var bs = state.sdfBakeState;
+    if (!bs || !bs.inProgress) return;
+
+    var vol = bs.vol || state.sdfVolume;
+    if (!vol) {
+      bs.inProgress = false;
+      return;
+    }
+
+    var start = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+    var budget = state.sdfBakeBudgetMs || 8.0;
+
+    var resX = vol.resX;
+    var resY = vol.resY;
+    var resZ = vol.resZ;
+    var voxelSizeX = vol.threeSize.x / resX;
+    var voxelSizeY = vol.threeSize.y / resY;
+    var voxelSizeZ = vol.threeSize.z / resZ;
+    var voxelSize = vol.voxelSize || voxelSizeX;
+    var invVoxelSizeSq = 1.0 / (voxelSize * voxelSize);
+
+    var grid = bs.grid;
+    var tris = bs.triangles;
+    var numTris = bs.totalTriangles;
+
+    // Phase 0: Seeding narrow band around triangles
+    if (bs.phase === 0) {
+      while (bs.triangleIndex < numTris) {
+        var t = bs.triangleIndex;
+        var tIdx = t * 9;
+        var ax = tris[tIdx + 0], ay = tris[tIdx + 1], az = tris[tIdx + 2];
+        var bx = tris[tIdx + 3], by = tris[tIdx + 4], bz = tris[tIdx + 5];
+        var cx = tris[tIdx + 6], cy = tris[tIdx + 7], cz = tris[tIdx + 8];
+
+        var minTx = Math.min(ax, bx, cx);
+        var maxTx = Math.max(ax, bx, cx);
+        var minTy = Math.min(ay, by, cy);
+        var maxTy = Math.max(ay, by, cy);
+        var minTz = Math.min(az, bz, cz);
+        var maxTz = Math.max(az, bz, cz);
+
+        var padX = 2.0 * voxelSizeX;
+        var padY = 2.0 * voxelSizeY;
+        var padZ = 2.0 * voxelSizeZ;
+
+        var iMin = clamp(Math.floor((minTx - padX - vol.threeMin.x) / voxelSizeX), 0, resX - 1);
+        var iMax = clamp(Math.ceil((maxTx + padX - vol.threeMin.x) / voxelSizeX), 0, resX - 1);
+        var jMin = clamp(Math.floor((minTy - padY - vol.threeMin.y) / voxelSizeY), 0, resY - 1);
+        var jMax = clamp(Math.ceil((maxTy + padY - vol.threeMin.y) / voxelSizeY), 0, resY - 1);
+        var kMin = clamp(Math.floor((minTz - padZ - vol.threeMin.z) / voxelSizeZ), 0, resZ - 1);
+        var kMax = clamp(Math.ceil((maxTz + padZ - vol.threeMin.z) / voxelSizeZ), 0, resZ - 1);
+
+        for (var k = kMin; k <= kMax; k++) {
+          var pz = vol.threeMin.z + (k + 0.5) * voxelSizeZ;
+          for (var j = jMin; j <= jMax; j++) {
+            var py = vol.threeMin.y + (j + 0.5) * voxelSizeY;
+            var rowBase = (k * resY + j) * resX;
+            for (var i = iMin; i <= iMax; i++) {
+              var px = vol.threeMin.x + (i + 0.5) * voxelSizeX;
+              var d2 = closestPointOnTriangleSq(px, py, pz, ax, ay, az, bx, by, bz, cx, cy, cz);
+              var d2Voxel = d2 * invVoxelSizeSq;
+              var gIdx = rowBase + i;
+              if (d2Voxel < grid[gIdx]) {
+                grid[gIdx] = d2Voxel;
+              }
+            }
+          }
+        }
+
+        bs.triangleIndex++;
+
+        if ((bs.triangleIndex & 7) === 0) {
+          var now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+          if (now - start >= budget) return;
+        }
+      }
+
+      bs.phase = 1;
+      var nowAfterPhase0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+      if (nowAfterPhase0 - start >= budget) return;
+    }
+
+    // Phase 1: Separable 3D EDT
+    if (bs.phase === 1) {
+      run3DEDT(grid, resX, resY, resZ);
+      bs.phase = 2;
+      var nowAfterPhase1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+      if (nowAfterPhase1 - start >= budget) return;
+    }
+
+    // Phase 2: Convert grid to half-float texture
+    if (bs.phase === 2) {
+      var totalVoxels = resX * resY * resZ;
+      var buffer = new Uint16Array(totalVoxels);
+      for (var idx = 0; idx < totalVoxels; idx++) {
+        var worldDist = grid[idx] * voxelSize;
+        buffer[idx] = toHalf(worldDist);
+      }
+      vol.data = buffer;
+      if (vol.texture) vol.texture.dispose();
+      vol.texture = makeSDFData3DTexture(vol.data, resX, resY, resZ);
+      vol.isBaked = true;
+
+      bs.inProgress = false;
+      state.sdfBakeState = null;
+      state.isSdfBakeComplete = true;
+    }
+  }
+
+  function getSDFBakeProgress(runtimeScene) {
+    var state = stateOf(runtimeScene);
+    if (!state.sdfBakeState || !state.sdfBakeState.inProgress) {
+      return state.isSdfBakeComplete ? 1.0 : 0.0;
+    }
+    var bs = state.sdfBakeState;
+    if (bs.phase === 0) {
+      return bs.totalTriangles > 0 ? (bs.triangleIndex / bs.totalTriangles) * 0.8 : 0.8;
+    } else if (bs.phase === 1) {
+      return 0.9;
+    } else {
+      return 0.95;
+    }
+  }
+
+  // .sdf.bin layout: 56-byte header & bounds, then R16F distance payload.
+  function exportSDFBinary(vol) {
+    if (!vol || !vol.data) return null;
+    var totalVoxels = vol.resX * vol.resY * vol.resZ;
+    var payloadSize = totalVoxels * 2; // 2 bytes per half float
+    var totalSize = 56 + payloadSize;
+
+    var buffer = new ArrayBuffer(totalSize);
+    var view = new DataView(buffer);
+
+    // 0..3: magic 'SDF3'
+    view.setUint8(0, 0x53);
+    view.setUint8(1, 0x44);
+    view.setUint8(2, 0x46);
+    view.setUint8(3, 0x33);
+
+    view.setUint32(4, 1, true);           // version
+    view.setUint32(8, vol.resX, true);
+    view.setUint32(12, vol.resY, true);
+    view.setUint32(16, vol.resZ, true);
+    view.setUint8(20, 0);                 // encoding: 0 = R16F
+    view.setUint8(21, 0);                 // flags
+    for (var r = 22; r < 32; r++) view.setUint8(r, 0);
+
+    // 32..55: bounds, float32, unmirrored GDevelop coordinates
+    view.setFloat32(32, vol.minX, true);
+    view.setFloat32(36, vol.minY, true);
+    view.setFloat32(40, vol.minZ, true);
+    view.setFloat32(44, vol.maxX, true);
+    view.setFloat32(48, vol.maxY, true);
+    view.setFloat32(52, vol.maxZ, true);
+
+    new Uint16Array(buffer, 56, totalVoxels).set(vol.data);
+    return buffer;
+  }
+
+  function loadSDFBinary(runtimeScene, arrayBuffer) {
+    if (!arrayBuffer || arrayBuffer.byteLength < 56) return false;
+    var view = new DataView(arrayBuffer);
+
+    if (view.getUint8(0) !== 0x53 || view.getUint8(1) !== 0x44 ||
+        view.getUint8(2) !== 0x46 || view.getUint8(3) !== 0x33) {
+      warnOnce('badSDFMagic', 'Failed to load SDF data: invalid SDF3 header.');
+      return false;
+    }
+
+    var version = view.getUint32(4, true);
+    if (version !== 1) {
+      warnOnce('badSDFVersion', 'SDF file version ' + version + ' is not supported (expected 1).');
+      return false;
+    }
+
+    var encoding = view.getUint8(20);
+    if (encoding !== 0) {
+      warnOnce('badSDFEncoding', 'SDF file encoding ' + encoding + ' is not supported (expected 0 = R16F).');
+      return false;
+    }
+
+    var rx = view.getUint32(8, true);
+    var ry = view.getUint32(12, true);
+    var rz = view.getUint32(16, true);
+    if (rx < 2 || ry < 2 || rz < 2 || rx > 256 || ry > 256 || rz > 256) {
+      warnOnce('badSDFRes', 'SDF file resolution ' + rx + 'x' + ry + 'x' + rz +
+        ' is outside supported range [2, 256] per axis.');
+      return false;
+    }
+
+    var expectedBytes = 56 + rx * ry * rz * 2;
+    if (arrayBuffer.byteLength < expectedBytes) {
+      warnOnce('shortSDFFile', 'SDF file is truncated: expected at least ' + expectedBytes +
+        ' bytes for a ' + rx + 'x' + ry + 'x' + rz + ' volume, got ' + arrayBuffer.byteLength + '.');
+      return false;
+    }
+
+    var minX = view.getFloat32(32, true);
+    var minY = view.getFloat32(36, true);
+    var minZ = view.getFloat32(40, true);
+    var maxX = view.getFloat32(44, true);
+    var maxY = view.getFloat32(48, true);
+    var maxZ = view.getFloat32(52, true);
+
+    var totalVoxels = rx * ry * rz;
+    var state = stateOf(runtimeScene);
+    var vol = state.sdfVolume;
+
+    if (!vol) {
+      warnOnce('loadNoSDFVol', 'No active SDFVolume3D to apply loaded SDF data to.');
+      return false;
+    }
+
+    var boundsDiffer =
+      Math.abs(vol.minX - minX) > 1 || Math.abs(vol.minY - minY) > 1 || Math.abs(vol.minZ - minZ) > 1 ||
+      Math.abs(vol.maxX - maxX) > 1 || Math.abs(vol.maxY - maxY) > 1 || Math.abs(vol.maxZ - maxZ) > 1;
+    if (boundsDiffer) {
+      warnOnce('sdfBoundsMismatch',
+        'Loaded SDF data was baked for different bounds than the current volume cube. ' +
+        'Using file bounds; cube no longer controls this volume.');
+    }
+
+    vol.resX = rx;
+    vol.resY = ry;
+    vol.resZ = rz;
+    vol.minX = minX;
+    vol.minY = minY;
+    vol.minZ = minZ;
+    vol.maxX = maxX;
+    vol.maxY = maxY;
+    vol.maxZ = maxZ;
+    vol.boundsLocked = true;
+    vol.isBaked = true;
+
+    vol.threeMin.set(minX, -maxY, minZ);
+    vol.threeSize.set(maxX - minX, maxY - minY, maxZ - minZ);
+    vol.voxelSize = (maxX - minX) / rx;
+
+    vol.data = new Uint16Array(new Uint16Array(arrayBuffer, 56, totalVoxels));
+    if (vol.texture) vol.texture.dispose();
+    vol.texture = makeSDFData3DTexture(vol.data, rx, ry, rz);
+
+    return true;
+  }
+
   /* ============================================================= Per-frame Tick ======= */
 
   function doStepPostEvents(runtimeScene) {
     var state = scenes.get(runtimeScene);
     if (!state || !THREE_OK) return;
 
-    // Probe work first: baking and the debug buffers are independent of the clustered
-    // broadphase, and stepping the bake here keeps it off the critical path of the
+    // Probe and SDF work first: baking and the debug buffers are independent of the clustered
+    // broadphase, and stepping the bakes here keeps them off the critical path of the
     // uniform sync below.
     if (state.bakeState && state.bakeState.inProgress) {
       stepBake(runtimeScene);
+    }
+    if (state.sdfBakeState && state.sdfBakeState.inProgress) {
+      stepSDFBake(runtimeScene);
     }
     if (state.volume && state.volume.showDebugSpheres && state.volume.debugDirty) {
       updateProbeDebugMesh(runtimeScene, state.volume);
@@ -2184,6 +2905,9 @@
     // while Three normally refreshes matrixWorldInverse later in render(). Refresh it
     // here so CPU light packing and the shader use the same frame's camera transform.
     if (typeof camera.updateMatrixWorld === 'function') camera.updateMatrixWorld(true);
+    if (state.viewToWorldMatrix && typeof state.viewToWorldMatrix.copy === 'function' && camera.matrixWorld) {
+      state.viewToWorldMatrix.copy(camera.matrixWorld);
+    }
 
     updateClusterAABBs(state, camera);
     initTextures(state, runtimeScene);
@@ -2333,10 +3057,15 @@
       lightData[baseFloatIdx + 10] = dirZ;
       lightData[baseFloatIdx + 11] = extraParam;
 
+      var shadowFlag = light.castShadow ? 1.0 : 0.0;
+      var srcRadius = light.sourceRadius !== undefined && light.sourceRadius > 0.0
+        ? light.sourceRadius
+        : (light.radius * 0.05 * WORLD_UNITS_PER_METER);
+
       lightData[baseFloatIdx + 12] = iesId;
       lightData[baseFloatIdx + 13] = cosInner;
-      lightData[baseFloatIdx + 14] = 0.0;
-      lightData[baseFloatIdx + 15] = 0.0;
+      lightData[baseFloatIdx + 14] = shadowFlag;
+      lightData[baseFloatIdx + 15] = srcRadius;
 
       // 2. Depth slice range [kMin, kMax]
       var minZDist = Math.max(cameraNear, viewZ - cullRadius);
@@ -2458,6 +3187,28 @@
       if (uniforms.uClusterCameraNear) uniforms.uClusterCameraNear.value = cameraNear;
       if (uniforms.uClusterCameraFar) uniforms.uClusterCameraFar.value = cameraFar;
       if (uniforms.uGlobalClusteredIntensity) uniforms.uGlobalClusteredIntensity.value = state.globalIntensityScale;
+
+      if (uniforms.uViewToWorld && state.viewToWorldMatrix && uniforms.uViewToWorld.value && typeof uniforms.uViewToWorld.value.copy === 'function') {
+        uniforms.uViewToWorld.value.copy(state.viewToWorldMatrix);
+      }
+      if (uniforms.uMaxShadowedLights) uniforms.uMaxShadowedLights.value = state.maxShadowedLights;
+      if (uniforms.uPointShadowDistance) uniforms.uPointShadowDistance.value = state.pointShadowDistance;
+      if (uniforms.uSdfParams && state.sdfVolume) {
+        var vx = state.sdfVolume.voxelSize || ((state.sdfVolume.maxX - state.sdfVolume.minX) / state.sdfVolume.resX);
+        var sunK = 1.0 / Math.tan((state.sdfSunSoftness || 1.8) * Math.PI / 180.0);
+        if (uniforms.uSdfParams.value && typeof uniforms.uSdfParams.value.set === 'function') {
+          uniforms.uSdfParams.value.set(vx, state.sdfHitEps || 0.05, state.sdfNormalBias || 1.0, sunK);
+        }
+      }
+      if (uniforms.uSdfVolume && state.sdfVolume && state.sdfVolume.texture) {
+        uniforms.uSdfVolume.value = state.sdfVolume.texture;
+      }
+      if (uniforms.uSdfMin && state.sdfVolume && uniforms.uSdfMin.value && typeof uniforms.uSdfMin.value.copy === 'function') {
+        uniforms.uSdfMin.value.copy(state.sdfVolume.threeMin);
+      }
+      if (uniforms.uSdfSize && state.sdfVolume && uniforms.uSdfSize.value && typeof uniforms.uSdfSize.value.copy === 'function') {
+        uniforms.uSdfSize.value.copy(state.sdfVolume.threeSize);
+      }
     });
 
     state.cpuBroadphaseTimeMs = performance.now() - startTime;
@@ -2499,12 +3250,19 @@
     if (state.volume) {
       disposeVolume(runtimeScene, state.volume.behavior);
     }
+    if (state.sdfVolume) {
+      disposeSDFVolume(runtimeScene, state.sdfVolume.behavior);
+    }
     state.receivers.forEach(function (rec) {
       disposeReceiver(runtimeScene, rec.behavior);
     });
     if (state.dummyProbeTexture) {
       state.dummyProbeTexture.dispose();
       state.dummyProbeTexture = null;
+    }
+    if (state.dummySdfTexture) {
+      state.dummySdfTexture.dispose();
+      state.dummySdfTexture = null;
     }
     if (state.lightDataTexture) state.lightDataTexture.dispose();
     if (state.clusterGrid3DTexture) state.clusterGrid3DTexture.dispose();
@@ -2762,6 +3520,131 @@
       return true;
     },
 
+    /* ---- SDF Volume & Shadows ---- */
+    registerSDFVolume: registerSDFVolume,
+    updateSDFVolume: function (runtimeScene, object, behavior, options) {
+      var vol = behavior && behavior.__alSdfVolume;
+      if (!vol) return registerSDFVolume(runtimeScene, object, behavior, options);
+      updateSDFVolumeProperties(vol, options);
+      syncSDFVolumeBoundsFromObject(vol, object);
+      ensureSDFTextures(vol);
+      return vol;
+    },
+    disposeSDFVolume: disposeSDFVolume,
+    sdfVolumeOf: function (behavior) {
+      return behavior ? behavior.__alSdfVolume : null;
+    },
+    setSDFVolumeBounds: function (runtimeScene, minX, minY, minZ, maxX, maxY, maxZ) {
+      var vol = stateOf(runtimeScene).sdfVolume;
+      if (!vol) return;
+      vol.minX = minX;
+      vol.minY = minY;
+      vol.minZ = minZ;
+      vol.maxX = Math.max(minX + 1, maxX);
+      vol.maxY = Math.max(minY + 1, maxY);
+      vol.maxZ = Math.max(minZ + 1, maxZ);
+      vol.boundsLocked = true;
+      vol.threeMin.set(vol.minX, -vol.maxY, vol.minZ);
+      vol.threeSize.set(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
+      vol.voxelSize = (vol.maxX - vol.minX) / Math.max(1, vol.resX);
+    },
+    setSDFShadowsEnabled: function (runtimeScene, enable) {
+      stateOf(runtimeScene).enableSDFShadows = !!enable;
+    },
+    isSDFShadowsEnabled: function (runtimeScene) {
+      return !!stateOf(runtimeScene).enableSDFShadows;
+    },
+    setMaxShadowedLights: function (runtimeScene, count) {
+      stateOf(runtimeScene).maxShadowedLights = Math.max(0, Math.floor(count));
+    },
+    getMaxShadowedLights: function (runtimeScene) {
+      return stateOf(runtimeScene).maxShadowedLights;
+    },
+    setPointShadowDistance: function (runtimeScene, dist) {
+      stateOf(runtimeScene).pointShadowDistance = Math.max(0.0, dist);
+    },
+    getPointShadowDistance: function (runtimeScene) {
+      return stateOf(runtimeScene).pointShadowDistance;
+    },
+    setSDFSunSoftness: function (runtimeScene, deg) {
+      stateOf(runtimeScene).sdfSunSoftness = Math.max(0.1, deg);
+    },
+    getSDFSunSoftness: function (runtimeScene) {
+      return stateOf(runtimeScene).sdfSunSoftness;
+    },
+    setSDFHitEps: function (runtimeScene, eps) {
+      stateOf(runtimeScene).sdfHitEps = Math.max(0.001, eps);
+    },
+    setSDFNormalBias: function (runtimeScene, bias) {
+      stateOf(runtimeScene).sdfNormalBias = Math.max(0.0, bias);
+    },
+    startSDFBake: startSDFBake,
+    cancelSDFBake: cancelSDFBake,
+    setSDFBakeBudgetMs: function (runtimeScene, ms) {
+      stateOf(runtimeScene).sdfBakeBudgetMs = Math.max(1.0, ms);
+    },
+    isSDFBakeInProgress: function (runtimeScene) {
+      var state = stateOf(runtimeScene);
+      return !!(state.sdfBakeState && state.sdfBakeState.inProgress);
+    },
+    isSDFBakeComplete: function (runtimeScene) {
+      return !!stateOf(runtimeScene).isSdfBakeComplete;
+    },
+    getSDFBakeProgress: getSDFBakeProgress,
+    getSDFVRAMBytes: function (runtimeScene) {
+      var vol = stateOf(runtimeScene).sdfVolume;
+      if (!vol) return 0;
+      return vol.resX * vol.resY * vol.resZ * 2; // R16F = 2 bytes per voxel
+    },
+    getSDFVoxelCount: function (runtimeScene) {
+      var vol = stateOf(runtimeScene).sdfVolume;
+      return vol ? (vol.resX * vol.resY * vol.resZ) : 0;
+    },
+    getSDFVoxelSize: function (runtimeScene) {
+      var vol = stateOf(runtimeScene).sdfVolume;
+      return vol ? vol.voxelSize : 0;
+    },
+    isSDFVolumeLoaded: function (runtimeScene) {
+      var state = stateOf(runtimeScene);
+      return !!(state.sdfVolume && state.sdfVolume.texture);
+    },
+    exportSDFData: function (runtimeScene, fileName) {
+      var vol = stateOf(runtimeScene).sdfVolume;
+      if (!vol) return false;
+      var buffer = exportSDFBinary(vol);
+      if (!buffer) return false;
+
+      var name = fileName || 'scene.sdf.bin';
+      if (name.slice(-8) !== '.sdf.bin') name += '.sdf.bin';
+
+      if (typeof document !== 'undefined') {
+        var blob = new Blob([buffer], { type: 'application/octet-stream' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return true;
+      }
+      return false;
+    },
+    loadSDFDataFromBuffer: function (runtimeScene, arrayBuffer) {
+      return loadSDFBinary(runtimeScene, arrayBuffer);
+    },
+    loadSDFDataFromFile: function (runtimeScene, filePath) {
+      if (typeof fetch === 'undefined') return false;
+      fetch(filePath)
+        .then(function (res) { return res.arrayBuffer(); })
+        .then(function (buf) { loadSDFBinary(runtimeScene, buf); })
+        .catch(function (err) {
+          warnOnce('fetchFail', 'Failed to load SDF file "' + filePath + '": ' + err);
+        });
+      return true;
+    },
+
     // Internal seams for the unit test harness. Not part of the events API and not
     // referenced by any generated JsCode block.
     __internals: {
@@ -2773,7 +3656,15 @@
       GLSL_FRAGMENT_HOOK: GLSL_FRAGMENT_HOOK,
       GLSL_CLUSTER_PRELUDE: GLSL_CLUSTER_PRELUDE,
       GLSL_PROBE_PRELUDE: GLSL_PROBE_PRELUDE,
-      SPHERE_RAYS: SPHERE_RAYS
+      GLSL_SDF_PRELUDE: GLSL_SDF_PRELUDE,
+      SPHERE_RAYS: SPHERE_RAYS,
+      closestPointOnTriangleSq: closestPointOnTriangleSq,
+      felzenszwalb1D: felzenszwalb1D,
+      run3DEDT: run3DEDT,
+      extractTrianglesFromMeshes: extractTrianglesFromMeshes,
+      exportSDFBinary: exportSDFBinary,
+      loadSDFBinary: loadSDFBinary,
+      makeSDFData3DTexture: makeSDFData3DTexture
     }
   };
 
