@@ -4,3 +4,6 @@ desktop.ini
 .DS_Store
 *.tmp
 *.bak
+
+# GDJS harness: copied from the local GDevelop install by gdjs-harness/setup.mjs
+gdjs-harness/runtime/

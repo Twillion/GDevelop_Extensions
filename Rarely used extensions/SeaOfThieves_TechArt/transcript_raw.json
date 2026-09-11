@@ -1,0 +1,5122 @@
+[
+  {
+    "text": "cool so this is the technical art of sea",
+    "start": 0.179,
+    "duration": 6.481
+  },
+  {
+    "text": "of Thieves uh we have quite a bit of",
+    "start": 3.54,
+    "duration": 5.639
+  },
+  {
+    "text": "stuff to cover so I'm going to keep",
+    "start": 6.66,
+    "duration": 4.62
+  },
+  {
+    "text": "a very brisk pace",
+    "start": 9.179,
+    "duration": 4.141
+  },
+  {
+    "text": "photography and recording is encouraged",
+    "start": 11.28,
+    "duration": 5.04
+  },
+  {
+    "text": "uh there's going to be bits of code and",
+    "start": 13.32,
+    "duration": 4.74
+  },
+  {
+    "text": "math which hopefully you guys can take",
+    "start": 16.32,
+    "duration": 4.2
+  },
+  {
+    "text": "away and use",
+    "start": 18.06,
+    "duration": 4.979
+  },
+  {
+    "text": "and we will try to make the slides",
+    "start": 20.52,
+    "duration": 4.919
+  },
+  {
+    "text": "available probably from the rare website",
+    "start": 23.039,
+    "duration": 4.621
+  },
+  {
+    "text": "in the near future",
+    "start": 25.439,
+    "duration": 5.041
+  },
+  {
+    "text": "a little note about our Tech art team so",
+    "start": 27.66,
+    "duration": 4.8
+  },
+  {
+    "text": "it's split roughly into two halves we",
+    "start": 30.48,
+    "duration": 3.48
+  },
+  {
+    "text": "have some people working with",
+    "start": 32.46,
+    "duration": 3.42
+  },
+  {
+    "text": "configuration tools creating scripts",
+    "start": 33.96,
+    "duration": 4.14
+  },
+  {
+    "text": "doing binding and rigging supporting the",
+    "start": 35.88,
+    "duration": 5.699
+  },
+  {
+    "text": "artists and the other half we work more",
+    "start": 38.1,
+    "duration": 5.34
+  },
+  {
+    "text": "with the engine with shaders doing this",
+    "start": 41.579,
+    "duration": 6.181
+  },
+  {
+    "text": "Dev and bits of gameplay code so this is",
+    "start": 43.44,
+    "duration": 6.959
+  },
+  {
+    "text": "this talk is very much focused on the",
+    "start": 47.76,
+    "duration": 4.56
+  },
+  {
+    "text": "work of that second half of the tech art",
+    "start": 50.399,
+    "duration": 3.48
+  },
+  {
+    "text": "team and obviously we can do it without",
+    "start": 52.32,
+    "duration": 3.419
+  },
+  {
+    "text": "a wonderful and amazing rendering",
+    "start": 53.879,
+    "duration": 3.621
+  },
+  {
+    "text": "engineers",
+    "start": 55.739,
+    "duration": 5.521
+  },
+  {
+    "text": "so this is the launch trailer for sea of",
+    "start": 57.5,
+    "duration": 6.94
+  },
+  {
+    "text": "Thieves uh we released in March sea of",
+    "start": 61.26,
+    "duration": 6.24
+  },
+  {
+    "text": "Thieves is a shared World adventure game",
+    "start": 64.44,
+    "duration": 6.24
+  },
+  {
+    "text": "you grew up with friends or strangers",
+    "start": 67.5,
+    "duration": 6.78
+  },
+  {
+    "text": "and you go out onto the Open Seas and",
+    "start": 70.68,
+    "duration": 5.58
+  },
+  {
+    "text": "you get up to all kinds of pirate",
+    "start": 74.28,
+    "duration": 3.12
+  },
+  {
+    "text": "hijinks",
+    "start": 76.26,
+    "duration": 4.44
+  },
+  {
+    "text": "it is very much an open sandbox kind of",
+    "start": 77.4,
+    "duration": 6.66
+  },
+  {
+    "text": "world where the players can pretty much",
+    "start": 80.7,
+    "duration": 5.279
+  },
+  {
+    "text": "do whatever they want as opposed to",
+    "start": 84.06,
+    "duration": 3.84
+  },
+  {
+    "text": "being any kind of more guided experience",
+    "start": 85.979,
+    "duration": 5.101
+  },
+  {
+    "text": "so that brings all kinds of its own",
+    "start": 87.9,
+    "duration": 5.039
+  },
+  {
+    "text": "challenges because everything you do has",
+    "start": 91.08,
+    "duration": 5.64
+  },
+  {
+    "text": "to be robust and stand up to the players",
+    "start": 92.939,
+    "duration": 6.301
+  },
+  {
+    "text": "abusing it in all kinds of bizarre ways",
+    "start": 96.72,
+    "duration": 5.52
+  },
+  {
+    "text": "we have a single expensive asset then",
+    "start": 99.24,
+    "duration": 5.12
+  },
+  {
+    "text": "you have to be prepared for the players",
+    "start": 102.24,
+    "duration": 5.82
+  },
+  {
+    "text": "spending 48 hours straight Gathering 200",
+    "start": 104.36,
+    "duration": 5.56
+  },
+  {
+    "text": "versions of that asset and putting them",
+    "start": 108.06,
+    "duration": 4.14
+  },
+  {
+    "text": "down all into the same spot and then",
+    "start": 109.92,
+    "duration": 5.72
+  },
+  {
+    "text": "complaining about the performance",
+    "start": 112.2,
+    "duration": 3.44
+  },
+  {
+    "text": "[Music]",
+    "start": 116.38,
+    "duration": 6.15
+  },
+  {
+    "text": "so that's a quick preview of quite a few",
+    "start": 125.52,
+    "duration": 4.56
+  },
+  {
+    "text": "of the features we'll be talking about",
+    "start": 128.94,
+    "duration": 2.58
+  },
+  {
+    "text": "today",
+    "start": 130.08,
+    "duration": 3.78
+  },
+  {
+    "text": "so the theme of this talk is stylization",
+    "start": 131.52,
+    "duration": 5.06
+  },
+  {
+    "text": "and simulation",
+    "start": 133.86,
+    "duration": 5.7
+  },
+  {
+    "text": "specifically uh tigraph we see a lot of",
+    "start": 136.58,
+    "duration": 5.739
+  },
+  {
+    "text": "game talks about bringing photorealism",
+    "start": 139.56,
+    "duration": 5.399
+  },
+  {
+    "text": "and physically based rendering into",
+    "start": 142.319,
+    "duration": 5.101
+  },
+  {
+    "text": "real-time pipelines and we thought it'd",
+    "start": 144.959,
+    "duration": 4.561
+  },
+  {
+    "text": "be interesting to talk about how we",
+    "start": 147.42,
+    "duration": 4.74
+  },
+  {
+    "text": "combined that with a more stylized our",
+    "start": 149.52,
+    "duration": 3.66
+  },
+  {
+    "text": "Direction",
+    "start": 152.16,
+    "duration": 2.64
+  },
+  {
+    "text": "uh but hopefully while we're talking",
+    "start": 153.18,
+    "duration": 3.419
+  },
+  {
+    "text": "about this we'll also give you guys",
+    "start": 154.8,
+    "duration": 3.96
+  },
+  {
+    "text": "stuff that is useful that you can use in",
+    "start": 156.599,
+    "duration": 4.261
+  },
+  {
+    "text": "your games and to achieve your own art",
+    "start": 158.76,
+    "duration": 4.38
+  },
+  {
+    "text": "Direction whether that's photorealistic",
+    "start": 160.86,
+    "duration": 4.44
+  },
+  {
+    "text": "or stylized",
+    "start": 163.14,
+    "duration": 4.319
+  },
+  {
+    "text": "uh so there was a talk at gec this year",
+    "start": 165.3,
+    "duration": 4.079
+  },
+  {
+    "text": "by Ryan Stevenson who's our art director",
+    "start": 167.459,
+    "duration": 4.5
+  },
+  {
+    "text": "uh the art of sea of Thieves and he",
+    "start": 169.379,
+    "duration": 5.401
+  },
+  {
+    "text": "talked about the three art pillars and",
+    "start": 171.959,
+    "duration": 5.881
+  },
+  {
+    "text": "this work that we've done very much",
+    "start": 174.78,
+    "duration": 6.179
+  },
+  {
+    "text": "covers uh the challenges posed by the",
+    "start": 177.84,
+    "duration": 5.7
+  },
+  {
+    "text": "first two uh the first one is that it's",
+    "start": 180.959,
+    "duration": 5.581
+  },
+  {
+    "text": "an illustrative approach which most",
+    "start": 183.54,
+    "duration": 6.479
+  },
+  {
+    "text": "notably affected our work by the fact",
+    "start": 186.54,
+    "duration": 5.58
+  },
+  {
+    "text": "that we were kind of very averse to high",
+    "start": 190.019,
+    "duration": 6.121
+  },
+  {
+    "text": "frequency detail which goes counter to a",
+    "start": 192.12,
+    "duration": 7.14
+  },
+  {
+    "text": "lot of the stylistic trends in games and",
+    "start": 196.14,
+    "duration": 4.679
+  },
+  {
+    "text": "the second one is a world in motion",
+    "start": 199.26,
+    "duration": 4.08
+  },
+  {
+    "text": "which is that we wanted the entire world",
+    "start": 200.819,
+    "duration": 4.621
+  },
+  {
+    "text": "to be dynamic to not have any static",
+    "start": 203.34,
+    "duration": 5.039
+  },
+  {
+    "text": "frames have things moving and updating",
+    "start": 205.44,
+    "duration": 5.879
+  },
+  {
+    "text": "and reacting to the player's actions",
+    "start": 208.379,
+    "duration": 4.741
+  },
+  {
+    "text": "uh just some background we're using",
+    "start": 211.319,
+    "duration": 4.381
+  },
+  {
+    "text": "Unreal Engine 4 we started on 4.6 and we",
+    "start": 213.12,
+    "duration": 4.38
+  },
+  {
+    "text": "stopped taking our decent 410 it's",
+    "start": 215.7,
+    "duration": 3.72
+  },
+  {
+    "text": "deferred renderer and a reference",
+    "start": 217.5,
+    "duration": 5.159
+  },
+  {
+    "text": "platform was the Xbox One at 900 P30 so",
+    "start": 219.42,
+    "duration": 5.16
+  },
+  {
+    "text": "that's what all of the timing captures",
+    "start": 222.659,
+    "duration": 3.481
+  },
+  {
+    "text": "that you'll see in a stock are from",
+    "start": 224.58,
+    "duration": 4.379
+  },
+  {
+    "text": "however we also scaled up to Native 4K",
+    "start": 226.14,
+    "duration": 4.679
+  },
+  {
+    "text": "and Xbox One X and we try to hit as many",
+    "start": 228.959,
+    "duration": 5.34
+  },
+  {
+    "text": "PC specs as we can we use mostly stock",
+    "start": 230.819,
+    "duration": 6.06
+  },
+  {
+    "text": "ue4 Graphics we do some optimizations",
+    "start": 234.299,
+    "duration": 4.141
+  },
+  {
+    "text": "and slightly different techniques for",
+    "start": 236.879,
+    "duration": 5.101
+  },
+  {
+    "text": "shadows and for ssao we don't use screen",
+    "start": 238.44,
+    "duration": 6.0
+  },
+  {
+    "text": "space Reflections we just use planar",
+    "start": 241.98,
+    "duration": 4.5
+  },
+  {
+    "text": "water Reflections for the ocean we have",
+    "start": 244.44,
+    "duration": 4.14
+  },
+  {
+    "text": "a fully Dynamic time of day and we use",
+    "start": 246.48,
+    "duration": 3.539
+  },
+  {
+    "text": "like propagation volumes for real-time",
+    "start": 248.58,
+    "duration": 2.579
+  },
+  {
+    "text": "GI",
+    "start": 250.019,
+    "duration": 3.741
+  },
+  {
+    "text": "uh interestingly during this production",
+    "start": 251.159,
+    "duration": 4.92
+  },
+  {
+    "text": "bottlenecks have primarily been on CPU",
+    "start": 253.76,
+    "duration": 5.02
+  },
+  {
+    "text": "and memory not so much on the GPU so you",
+    "start": 256.079,
+    "duration": 4.141
+  },
+  {
+    "text": "might notice throughout the stock that",
+    "start": 258.78,
+    "duration": 3.179
+  },
+  {
+    "text": "some of things we've done have",
+    "start": 260.22,
+    "duration": 3.78
+  },
+  {
+    "text": "specifically been about offloading work",
+    "start": 261.959,
+    "duration": 4.141
+  },
+  {
+    "text": "from the CPU onto the GPU and as a",
+    "start": 264.0,
+    "duration": 4.46
+  },
+  {
+    "text": "result we sometimes maybe haven't",
+    "start": 266.1,
+    "duration": 6.06
+  },
+  {
+    "text": "optimized the GPU bits quite as much as",
+    "start": 268.46,
+    "duration": 6.4
+  },
+  {
+    "text": "we might have otherwise because that was",
+    "start": 272.16,
+    "duration": 5.099
+  },
+  {
+    "text": "not where the bottleneck was",
+    "start": 274.86,
+    "duration": 4.5
+  },
+  {
+    "text": "uh so this talk is split up into three",
+    "start": 277.259,
+    "duration": 4.081
+  },
+  {
+    "text": "parts so there's quite a bit to get",
+    "start": 279.36,
+    "duration": 3.839
+  },
+  {
+    "text": "through first off we'll be talking about",
+    "start": 281.34,
+    "duration": 3.48
+  },
+  {
+    "text": "water rendering then a little bit about",
+    "start": 283.199,
+    "duration": 3.06
+  },
+  {
+    "text": "the work we've done in clouds and",
+    "start": 284.82,
+    "duration": 5.36
+  },
+  {
+    "text": "finally some fun things with vertices",
+    "start": 286.259,
+    "duration": 3.921
+  },
+  {
+    "text": "uh so let's begin with the ocean which",
+    "start": 290.34,
+    "duration": 4.139
+  },
+  {
+    "text": "is the possibly the most notable feature",
+    "start": 292.62,
+    "duration": 3.0
+  },
+  {
+    "text": "of the game",
+    "start": 294.479,
+    "duration": 2.881
+  },
+  {
+    "text": "um Mark Lucas our lead rendering",
+    "start": 295.62,
+    "duration": 3.54
+  },
+  {
+    "text": "engineer and the rest of the team",
+    "start": 297.36,
+    "duration": 3.899
+  },
+  {
+    "text": "implemented uh fft water simulation",
+    "start": 299.16,
+    "duration": 4.8
+  },
+  {
+    "text": "based on tessendorf's uh simulating",
+    "start": 301.259,
+    "duration": 5.461
+  },
+  {
+    "text": "ocean water paper from 2001. it's a",
+    "start": 303.96,
+    "duration": 3.959
+  },
+  {
+    "text": "fairly straightforward implementation",
+    "start": 306.72,
+    "duration": 3.72
+  },
+  {
+    "text": "and on the tech art side we were mostly",
+    "start": 307.919,
+    "duration": 6.121
+  },
+  {
+    "text": "focused on using the Sim data to then",
+    "start": 310.44,
+    "duration": 6.539
+  },
+  {
+    "text": "develop the water surf Shader uh it's",
+    "start": 314.04,
+    "duration": 4.8
+  },
+  {
+    "text": "not physically based we haven't been",
+    "start": 316.979,
+    "duration": 3.301
+  },
+  {
+    "text": "able to find any particularly good",
+    "start": 318.84,
+    "duration": 4.74
+  },
+  {
+    "text": "models for doing water surface shading",
+    "start": 320.28,
+    "duration": 5.16
+  },
+  {
+    "text": "so our main problem was to how to",
+    "start": 323.58,
+    "duration": 3.959
+  },
+  {
+    "text": "integrate this with highly stylized R",
+    "start": 325.44,
+    "duration": 4.56
+  },
+  {
+    "text": "Direction because the highly realistic",
+    "start": 327.539,
+    "duration": 5.521
+  },
+  {
+    "text": "water that we get out of the tesundor",
+    "start": 330.0,
+    "duration": 6.18
+  },
+  {
+    "text": "fft method is very noisy lots of high",
+    "start": 333.06,
+    "duration": 5.24
+  },
+  {
+    "text": "frequency detail doesn't really sit",
+    "start": 336.18,
+    "duration": 5.6
+  },
+  {
+    "text": "necessarily that well with our art style",
+    "start": 338.3,
+    "duration": 6.04
+  },
+  {
+    "text": "we experimented with a few things we",
+    "start": 341.78,
+    "duration": 4.24
+  },
+  {
+    "text": "eventually noticed that even in like",
+    "start": 344.34,
+    "duration": 3.84
+  },
+  {
+    "text": "more style icgi movies the water tends",
+    "start": 346.02,
+    "duration": 4.5
+  },
+  {
+    "text": "to be more realistic so we've ended up",
+    "start": 348.18,
+    "duration": 4.859
+  },
+  {
+    "text": "airing more on that side of the equation",
+    "start": 350.52,
+    "duration": 6.0
+  },
+  {
+    "text": "rather than making it too stylized uh we",
+    "start": 353.039,
+    "duration": 6.241
+  },
+  {
+    "text": "mostly stylize the foam and we also",
+    "start": 356.52,
+    "duration": 4.5
+  },
+  {
+    "text": "boosted the strength of the subsurface",
+    "start": 359.28,
+    "duration": 3.84
+  },
+  {
+    "text": "scattering Beyond uh will be considered",
+    "start": 361.02,
+    "duration": 4.019
+  },
+  {
+    "text": "realistic to help it fit in with the",
+    "start": 363.12,
+    "duration": 5.519
+  },
+  {
+    "text": "style we also tried a few other things",
+    "start": 365.039,
+    "duration": 6.241
+  },
+  {
+    "text": "like we did try to simplify the shape of",
+    "start": 368.639,
+    "duration": 4.261
+  },
+  {
+    "text": "the water simplify the specular",
+    "start": 371.28,
+    "duration": 3.3
+  },
+  {
+    "text": "highlights take away some of that high",
+    "start": 372.9,
+    "duration": 4.079
+  },
+  {
+    "text": "frequency detail but essentially we",
+    "start": 374.58,
+    "duration": 4.38
+  },
+  {
+    "text": "found that if we did that the water",
+    "start": 376.979,
+    "duration": 6.541
+  },
+  {
+    "text": "looked less good so we decided to keep",
+    "start": 378.96,
+    "duration": 6.66
+  },
+  {
+    "text": "it a little bit more detailed but you",
+    "start": 383.52,
+    "duration": 4.619
+  },
+  {
+    "text": "know keep that uh wow factor of just",
+    "start": 385.62,
+    "duration": 4.32
+  },
+  {
+    "text": "seeing pretty water",
+    "start": 388.139,
+    "duration": 3.541
+  },
+  {
+    "text": "so for the subsurface scattering we use",
+    "start": 389.94,
+    "duration": 3.72
+  },
+  {
+    "text": "the choppiness vertex offsets from the",
+    "start": 391.68,
+    "duration": 4.799
+  },
+  {
+    "text": "fft skin Sim to generate a mask for",
+    "start": 393.66,
+    "duration": 4.62
+  },
+  {
+    "text": "where the sides of the waves are and",
+    "start": 396.479,
+    "duration": 3.361
+  },
+  {
+    "text": "then we just use a DOT product of the",
+    "start": 398.28,
+    "duration": 3.66
+  },
+  {
+    "text": "light and view Vector for the SSS",
+    "start": 399.84,
+    "duration": 4.079
+  },
+  {
+    "text": "contribution and this is what that looks",
+    "start": 401.94,
+    "duration": 4.8
+  },
+  {
+    "text": "like along with the specular",
+    "start": 403.919,
+    "duration": 5.461
+  },
+  {
+    "text": "and then the book of the work is in the",
+    "start": 406.74,
+    "duration": 5.04
+  },
+  {
+    "text": "film generation which we use using the",
+    "start": 409.38,
+    "duration": 4.8
+  },
+  {
+    "text": "methods uh described in tasendorf's",
+    "start": 411.78,
+    "duration": 3.359
+  },
+  {
+    "text": "paper",
+    "start": 414.18,
+    "duration": 3.299
+  },
+  {
+    "text": "um you take the Jacobian determinant of",
+    "start": 415.139,
+    "duration": 4.921
+  },
+  {
+    "text": "the transform and generates firm where",
+    "start": 417.479,
+    "duration": 5.041
+  },
+  {
+    "text": "it goes negative we inject pixels into a",
+    "start": 420.06,
+    "duration": 4.859
+  },
+  {
+    "text": "render Target which tiles across the",
+    "start": 422.52,
+    "duration": 5.76
+  },
+  {
+    "text": "tiny water surface so this is roughly an",
+    "start": 424.919,
+    "duration": 4.801
+  },
+  {
+    "text": "indicator of where the choppiness",
+    "start": 428.28,
+    "duration": 3.84
+  },
+  {
+    "text": "offsets cause the wave Peaks to overlap",
+    "start": 429.72,
+    "duration": 5.34
+  },
+  {
+    "text": "on themselves and then we bias the",
+    "start": 432.12,
+    "duration": 6.0
+  },
+  {
+    "text": "Jacobin to get more foam so if the water",
+    "start": 435.06,
+    "duration": 5.28
+  },
+  {
+    "text": "sort of slice graph looks like a bit in",
+    "start": 438.12,
+    "duration": 4.5
+  },
+  {
+    "text": "blue the yellow is the Jacobian of the",
+    "start": 440.34,
+    "duration": 4.02
+  },
+  {
+    "text": "transform and we just biased that down",
+    "start": 442.62,
+    "duration": 4.199
+  },
+  {
+    "text": "we get more bits of foam being generated",
+    "start": 444.36,
+    "duration": 4.739
+  },
+  {
+    "text": "that looks something like this when we",
+    "start": 446.819,
+    "duration": 3.841
+  },
+  {
+    "text": "rendered them into the render Target",
+    "start": 449.099,
+    "duration": 3.841
+  },
+  {
+    "text": "which looks kind of nice but it's",
+    "start": 450.66,
+    "duration": 4.2
+  },
+  {
+    "text": "definitely far too noisy for our art",
+    "start": 452.94,
+    "duration": 2.94
+  },
+  {
+    "text": "style",
+    "start": 454.86,
+    "duration": 2.7
+  },
+  {
+    "text": "so what we do is we actually",
+    "start": 455.88,
+    "duration": 3.96
+  },
+  {
+    "text": "progressively blur the render targets so",
+    "start": 457.56,
+    "duration": 4.259
+  },
+  {
+    "text": "what you get out of that is that where",
+    "start": 459.84,
+    "duration": 3.359
+  },
+  {
+    "text": "you have the peaks of the Waves you",
+    "start": 461.819,
+    "duration": 3.78
+  },
+  {
+    "text": "still get these kind of sharp crests but",
+    "start": 463.199,
+    "duration": 5.4
+  },
+  {
+    "text": "then that foam gradually dissipates over",
+    "start": 465.599,
+    "duration": 5.701
+  },
+  {
+    "text": "the progressive blur frame by frame uh",
+    "start": 468.599,
+    "duration": 6.181
+  },
+  {
+    "text": "we blend this with artist authored foam",
+    "start": 471.3,
+    "duration": 5.64
+  },
+  {
+    "text": "textures we have a high frequency foam",
+    "start": 474.78,
+    "duration": 3.96
+  },
+  {
+    "text": "texture at the crest of the wave and",
+    "start": 476.94,
+    "duration": 3.479
+  },
+  {
+    "text": "then when we blend to a lower frequency",
+    "start": 478.74,
+    "duration": 4.019
+  },
+  {
+    "text": "texture as it Blends out and then we",
+    "start": 480.419,
+    "duration": 5.461
+  },
+  {
+    "text": "blend this with the watercolor and this",
+    "start": 482.759,
+    "duration": 7.141
+  },
+  {
+    "text": "is most of the water rendering we also",
+    "start": 485.88,
+    "duration": 6.379
+  },
+  {
+    "text": "use the same",
+    "start": 489.9,
+    "duration": 4.56
+  },
+  {
+    "text": "Watercress where we generate foam to",
+    "start": 492.259,
+    "duration": 4.301
+  },
+  {
+    "text": "generate some particles off the top of",
+    "start": 494.46,
+    "duration": 4.859
+  },
+  {
+    "text": "the waves but that's basically it for",
+    "start": 496.56,
+    "duration": 4.44
+  },
+  {
+    "text": "stormy water we just increase the",
+    "start": 499.319,
+    "duration": 3.78
+  },
+  {
+    "text": "amplitude of the waves and we bias the",
+    "start": 501.0,
+    "duration": 3.96
+  },
+  {
+    "text": "Jacobian even further to get more foam",
+    "start": 503.099,
+    "duration": 3.801
+  },
+  {
+    "text": "that works pretty well",
+    "start": 504.96,
+    "duration": 7.139
+  },
+  {
+    "text": "this is by far the most expensive bit of",
+    "start": 506.9,
+    "duration": 7.019
+  },
+  {
+    "text": "rendering in the game",
+    "start": 512.099,
+    "duration": 4.56
+  },
+  {
+    "text": "as you can see here so most of these",
+    "start": 513.919,
+    "duration": 5.5
+  },
+  {
+    "text": "terms are fairly constant for updating",
+    "start": 516.659,
+    "duration": 5.281
+  },
+  {
+    "text": "the ffts and doing the various resolves",
+    "start": 519.419,
+    "duration": 5.04
+  },
+  {
+    "text": "calculating normals the most expensive",
+    "start": 521.94,
+    "duration": 3.78
+  },
+  {
+    "text": "bit at the end is where we draw the",
+    "start": 524.459,
+    "duration": 3.201
+  },
+  {
+    "text": "water surface that one's obviously",
+    "start": 525.72,
+    "duration": 4.32
+  },
+  {
+    "text": "mostly pixel Shader bounce so it's",
+    "start": 527.66,
+    "duration": 4.359
+  },
+  {
+    "text": "dependent on how much water you're",
+    "start": 530.04,
+    "duration": 3.6
+  },
+  {
+    "text": "actually seeing on the screen at one",
+    "start": 532.019,
+    "duration": 4.081
+  },
+  {
+    "text": "time in this case we're only seeing",
+    "start": 533.64,
+    "duration": 4.92
+  },
+  {
+    "text": "water so we're paying almost eight",
+    "start": 536.1,
+    "duration": 5.1
+  },
+  {
+    "text": "milliseconds for it but in that case",
+    "start": 538.56,
+    "duration": 3.839
+  },
+  {
+    "text": "we're not actually rendering anything",
+    "start": 541.2,
+    "duration": 3.06
+  },
+  {
+    "text": "else so the total frame time in this",
+    "start": 542.399,
+    "duration": 3.961
+  },
+  {
+    "text": "case was about 20 milliseconds so we can",
+    "start": 544.26,
+    "duration": 4.019
+  },
+  {
+    "text": "afford that",
+    "start": 546.36,
+    "duration": 5.46
+  },
+  {
+    "text": "next up we wanted to do an effect for",
+    "start": 548.279,
+    "duration": 5.581
+  },
+  {
+    "text": "the deck of the ship where we have",
+    "start": 551.82,
+    "duration": 3.44
+  },
+  {
+    "text": "shallow water",
+    "start": 553.86,
+    "duration": 3.479
+  },
+  {
+    "text": "sploshing around on the deck generated",
+    "start": 555.26,
+    "duration": 5.44
+  },
+  {
+    "text": "by the white bow waves we decided to run",
+    "start": 557.339,
+    "duration": 6.0
+  },
+  {
+    "text": "a surface water Sim uh we're assuming",
+    "start": 560.7,
+    "duration": 4.5
+  },
+  {
+    "text": "the deck is leaky which simplifies the",
+    "start": 563.339,
+    "duration": 3.601
+  },
+  {
+    "text": "fact that the water is never going to",
+    "start": 565.2,
+    "duration": 6.12
+  },
+  {
+    "text": "get too deep and we can assume that you",
+    "start": 566.94,
+    "duration": 5.94
+  },
+  {
+    "text": "know water's leaking away so we don't",
+    "start": 571.32,
+    "duration": 3.24
+  },
+  {
+    "text": "need to preserve the volume particularly",
+    "start": 572.88,
+    "duration": 2.82
+  },
+  {
+    "text": "accurately",
+    "start": 574.56,
+    "duration": 3.899
+  },
+  {
+    "text": "so we use a height field to present the",
+    "start": 575.7,
+    "duration": 4.74
+  },
+  {
+    "text": "deck of the ship and this captures like",
+    "start": 578.459,
+    "duration": 4.081
+  },
+  {
+    "text": "the crevices between the planks",
+    "start": 580.44,
+    "duration": 5.22
+  },
+  {
+    "text": "it's a fairly small render Target 512 by",
+    "start": 582.54,
+    "duration": 5.82
+  },
+  {
+    "text": "one line two and we run a two pass",
+    "start": 585.66,
+    "duration": 5.76
+  },
+  {
+    "text": "shallow water simulation based on this",
+    "start": 588.36,
+    "duration": 6.0
+  },
+  {
+    "text": "paper fast hydraulic erosion simulation",
+    "start": 591.42,
+    "duration": 4.74
+  },
+  {
+    "text": "visualization GPU",
+    "start": 594.36,
+    "duration": 4.38
+  },
+  {
+    "text": "essentially it just flows water from",
+    "start": 596.16,
+    "duration": 4.739
+  },
+  {
+    "text": "points where it's higher to neighboring",
+    "start": 598.74,
+    "duration": 4.8
+  },
+  {
+    "text": "cells where the water level is lower",
+    "start": 600.899,
+    "duration": 4.861
+  },
+  {
+    "text": "on the first bass we calculate the",
+    "start": 603.54,
+    "duration": 4.38
+  },
+  {
+    "text": "outflow for every cell and because the",
+    "start": 605.76,
+    "duration": 5.22
+  },
+  {
+    "text": "ship is rocking about on the waves we",
+    "start": 607.92,
+    "duration": 4.859
+  },
+  {
+    "text": "use the normal of the surface to",
+    "start": 610.98,
+    "duration": 4.58
+  },
+  {
+    "text": "actually bias the height Outlook",
+    "start": 612.779,
+    "duration": 5.701
+  },
+  {
+    "text": "generation at this step and this allows",
+    "start": 615.56,
+    "duration": 5.38
+  },
+  {
+    "text": "the water to roll back and forth across",
+    "start": 618.48,
+    "duration": 4.68
+  },
+  {
+    "text": "the deck of the ship when it rocks on",
+    "start": 620.94,
+    "duration": 3.899
+  },
+  {
+    "text": "the second pass We Gather inflow from",
+    "start": 623.16,
+    "duration": 3.359
+  },
+  {
+    "text": "neighboring cells and subtract outflow",
+    "start": 624.839,
+    "duration": 4.141
+  },
+  {
+    "text": "and the current amount of water gets",
+    "start": 626.519,
+    "duration": 3.721
+  },
+  {
+    "text": "rendered Into the Blue channel of the",
+    "start": 628.98,
+    "duration": 3.12
+  },
+  {
+    "text": "render Target and we also have",
+    "start": 630.24,
+    "duration": 3.9
+  },
+  {
+    "text": "persistent wetness if the cell contains",
+    "start": 632.1,
+    "duration": 4.44
+  },
+  {
+    "text": "water and that's written to the green",
+    "start": 634.14,
+    "duration": 5.28
+  },
+  {
+    "text": "Channel and then we subtract a little",
+    "start": 636.54,
+    "duration": 5.4
+  },
+  {
+    "text": "bit of water from the green and from the",
+    "start": 639.42,
+    "duration": 4.08
+  },
+  {
+    "text": "blue which means that the water drains",
+    "start": 641.94,
+    "duration": 4.38
+  },
+  {
+    "text": "away over time and the wetness dries up",
+    "start": 643.5,
+    "duration": 6.0
+  },
+  {
+    "text": "so this is what just the render Target",
+    "start": 646.32,
+    "duration": 4.74
+  },
+  {
+    "text": "visualization looks like of the blue",
+    "start": 649.5,
+    "duration": 3.48
+  },
+  {
+    "text": "channel so you can see it sploshes",
+    "start": 651.06,
+    "duration": 4.32
+  },
+  {
+    "text": "around and it gathers in some of these",
+    "start": 652.98,
+    "duration": 4.74
+  },
+  {
+    "text": "crevices between planks",
+    "start": 655.38,
+    "duration": 5.22
+  },
+  {
+    "text": "using this we generate a normal map and",
+    "start": 657.72,
+    "duration": 5.059
+  },
+  {
+    "text": "we modify the deck material properties",
+    "start": 660.6,
+    "duration": 4.44
+  },
+  {
+    "text": "so we interpolate between the deck",
+    "start": 662.779,
+    "duration": 4.481
+  },
+  {
+    "text": "normal the water normal and then we",
+    "start": 665.04,
+    "duration": 4.5
+  },
+  {
+    "text": "change the specular and the gloss and",
+    "start": 667.26,
+    "duration": 4.98
+  },
+  {
+    "text": "the diffuse and this is what the final",
+    "start": 669.54,
+    "duration": 5.58
+  },
+  {
+    "text": "result looks like in the game this is",
+    "start": 672.24,
+    "duration": 6.06
+  },
+  {
+    "text": "then connected up to sensors on the",
+    "start": 675.12,
+    "duration": 5.76
+  },
+  {
+    "text": "front of the ship which trigger the",
+    "start": 678.3,
+    "duration": 4.92
+  },
+  {
+    "text": "bowel waves when you crash into a wave",
+    "start": 680.88,
+    "duration": 4.98
+  },
+  {
+    "text": "on the ocean and this splashes water",
+    "start": 683.22,
+    "duration": 5.28
+  },
+  {
+    "text": "onto the deck and you see it get wet and",
+    "start": 685.86,
+    "duration": 4.86
+  },
+  {
+    "text": "roll about",
+    "start": 688.5,
+    "duration": 6.12
+  },
+  {
+    "text": "this is very cheap this is about 0.2",
+    "start": 690.72,
+    "duration": 6.359
+  },
+  {
+    "text": "milliseconds in total to update for a",
+    "start": 694.62,
+    "duration": 3.899
+  },
+  {
+    "text": "single ship and we tend to try and make",
+    "start": 697.079,
+    "duration": 3.661
+  },
+  {
+    "text": "sure we only do it for a ship at a time",
+    "start": 698.519,
+    "duration": 5.76
+  },
+  {
+    "text": "uh next up we wanted to have waterfalls",
+    "start": 700.74,
+    "duration": 7.14
+  },
+  {
+    "text": "and flowing water and we decided that we",
+    "start": 704.279,
+    "duration": 4.921
+  },
+  {
+    "text": "want to have a special system for",
+    "start": 707.88,
+    "duration": 4.5
+  },
+  {
+    "text": "generating intersection foam and also",
+    "start": 709.2,
+    "duration": 6.48
+  },
+  {
+    "text": "occlusion for waterfalls so we did this",
+    "start": 712.38,
+    "duration": 6.78
+  },
+  {
+    "text": "by again rendering uh the geometry to a",
+    "start": 715.68,
+    "duration": 4.8
+  },
+  {
+    "text": "separate render Target",
+    "start": 719.16,
+    "duration": 4.32
+  },
+  {
+    "text": "and what we do is we render the mesh for",
+    "start": 720.48,
+    "duration": 4.68
+  },
+  {
+    "text": "example a waterfall mesh with an",
+    "start": 723.48,
+    "duration": 3.9
+  },
+  {
+    "text": "unwrapped UV to that second render",
+    "start": 725.16,
+    "duration": 4.619
+  },
+  {
+    "text": "Target where the UV is the screen",
+    "start": 727.38,
+    "duration": 4.56
+  },
+  {
+    "text": "position of the mesh but for every pixel",
+    "start": 729.779,
+    "duration": 4.8
+  },
+  {
+    "text": "that we're rendering we still have its",
+    "start": 731.94,
+    "duration": 4.86
+  },
+  {
+    "text": "screen position in the projection from",
+    "start": 734.579,
+    "duration": 4.681
+  },
+  {
+    "text": "the camera in the actual scene so we",
+    "start": 736.8,
+    "duration": 4.38
+  },
+  {
+    "text": "know what the distance of that pixel is",
+    "start": 739.26,
+    "duration": 5.16
+  },
+  {
+    "text": "from the camera and we can also sample",
+    "start": 741.18,
+    "duration": 5.7
+  },
+  {
+    "text": "the scene depth that was rendered",
+    "start": 744.42,
+    "duration": 4.979
+  },
+  {
+    "text": "earlier in the G buffer pass and we",
+    "start": 746.88,
+    "duration": 5.519
+  },
+  {
+    "text": "actually know what is the distance of",
+    "start": 749.399,
+    "duration": 5.401
+  },
+  {
+    "text": "like the nearest solid thing like behind",
+    "start": 752.399,
+    "duration": 4.701
+  },
+  {
+    "text": "or in front of that pixel",
+    "start": 754.8,
+    "duration": 5.34
+  },
+  {
+    "text": "so this kind of looks like this so if we",
+    "start": 757.1,
+    "duration": 5.14
+  },
+  {
+    "text": "have a flat water plane which is in red",
+    "start": 760.14,
+    "duration": 3.96
+  },
+  {
+    "text": "in the scene and we have that white",
+    "start": 762.24,
+    "duration": 3.659
+  },
+  {
+    "text": "square overlapping with it if we're",
+    "start": 764.1,
+    "duration": 4.56
+  },
+  {
+    "text": "rendering this green pixel in the render",
+    "start": 765.899,
+    "duration": 4.801
+  },
+  {
+    "text": "Target we can sample the scene depth and",
+    "start": 768.66,
+    "duration": 5.34
+  },
+  {
+    "text": "we can see what the depth is of that",
+    "start": 770.7,
+    "duration": 5.879
+  },
+  {
+    "text": "object at that pixel and we compare it",
+    "start": 774.0,
+    "duration": 5.459
+  },
+  {
+    "text": "with the distance of the geometry from",
+    "start": 776.579,
+    "duration": 4.801
+  },
+  {
+    "text": "the camera and if those one those",
+    "start": 779.459,
+    "duration": 4.141
+  },
+  {
+    "text": "distances are close enough together we",
+    "start": 781.38,
+    "duration": 4.62
+  },
+  {
+    "text": "can render a value into the render",
+    "start": 783.6,
+    "duration": 4.44
+  },
+  {
+    "text": "Target which gives us an intersection",
+    "start": 786.0,
+    "duration": 4.399
+  },
+  {
+    "text": "map",
+    "start": 788.04,
+    "duration": 2.359
+  },
+  {
+    "text": "so what we get from that is something",
+    "start": 791.339,
+    "duration": 5.641
+  },
+  {
+    "text": "like this where we are then able to",
+    "start": 793.38,
+    "duration": 6.0
+  },
+  {
+    "text": "interact and blur that intersection map",
+    "start": 796.98,
+    "duration": 5.46
+  },
+  {
+    "text": "over time and you can get sort of",
+    "start": 799.38,
+    "duration": 5.399
+  },
+  {
+    "text": "flowing foam being generated by objects",
+    "start": 802.44,
+    "duration": 5.22
+  },
+  {
+    "text": "that are set with the water surface",
+    "start": 804.779,
+    "duration": 4.921
+  },
+  {
+    "text": "so what's happening here is we're",
+    "start": 807.66,
+    "duration": 4.26
+  },
+  {
+    "text": "additively blending the results with the",
+    "start": 809.7,
+    "duration": 3.54
+  },
+  {
+    "text": "previous frame",
+    "start": 811.92,
+    "duration": 3.78
+  },
+  {
+    "text": "we had vect it and we blur the texture",
+    "start": 813.24,
+    "duration": 4.5
+  },
+  {
+    "text": "same as we're doing with the foam so",
+    "start": 815.7,
+    "duration": 5.46
+  },
+  {
+    "text": "this is the sort of flow map we use",
+    "start": 817.74,
+    "duration": 5.52
+  },
+  {
+    "text": "you'll notice that only pixels that are",
+    "start": 821.16,
+    "duration": 4.02
+  },
+  {
+    "text": "marked on screen are updated so that's",
+    "start": 823.26,
+    "duration": 5.28
+  },
+  {
+    "text": "also a mass that we generate during that",
+    "start": 825.18,
+    "duration": 5.94
+  },
+  {
+    "text": "render Target pass and with the flow map",
+    "start": 828.54,
+    "duration": 4.739
+  },
+  {
+    "text": "is also scrolled",
+    "start": 831.12,
+    "duration": 4.86
+  },
+  {
+    "text": "and in the game we also use this for",
+    "start": 833.279,
+    "duration": 4.321
+  },
+  {
+    "text": "things like waterfalls in this case",
+    "start": 835.98,
+    "duration": 3.12
+  },
+  {
+    "text": "you'll see",
+    "start": 837.6,
+    "duration": 2.76
+  },
+  {
+    "text": "that the supports for the bridge",
+    "start": 839.1,
+    "duration": 3.419
+  },
+  {
+    "text": "actually occlude the water from the",
+    "start": 840.36,
+    "duration": 4.38
+  },
+  {
+    "text": "waterfall and this isn't done through",
+    "start": 842.519,
+    "duration": 4.62
+  },
+  {
+    "text": "geometry or a texture this is done with",
+    "start": 844.74,
+    "duration": 6.12
+  },
+  {
+    "text": "the real-time depth occlusion",
+    "start": 847.139,
+    "duration": 6.601
+  },
+  {
+    "text": "and then we also adapt this into a",
+    "start": 850.86,
+    "duration": 5.279
+  },
+  {
+    "text": "similar effect for the ocean surface",
+    "start": 853.74,
+    "duration": 4.62
+  },
+  {
+    "text": "that's how generator foam mask in this",
+    "start": 856.139,
+    "duration": 4.621
+  },
+  {
+    "text": "case we just have a traveling window for",
+    "start": 858.36,
+    "duration": 4.919
+  },
+  {
+    "text": "render Target around the player and",
+    "start": 860.76,
+    "duration": 5.4
+  },
+  {
+    "text": "again this is progressively blurred",
+    "start": 863.279,
+    "duration": 6.36
+  },
+  {
+    "text": "so you get this nice foam trail behind",
+    "start": 866.16,
+    "duration": 5.16
+  },
+  {
+    "text": "objects to move through the water but",
+    "start": 869.639,
+    "duration": 3.481
+  },
+  {
+    "text": "this is also how we generate the foam",
+    "start": 871.32,
+    "duration": 4.44
+  },
+  {
+    "text": "around static geometry like islands and",
+    "start": 873.12,
+    "duration": 4.32
+  },
+  {
+    "text": "then we blend this with the watercolor",
+    "start": 875.76,
+    "duration": 4.079
+  },
+  {
+    "text": "and with foam texture",
+    "start": 877.44,
+    "duration": 4.86
+  },
+  {
+    "text": "again this is super cheap this is less",
+    "start": 879.839,
+    "duration": 4.5
+  },
+  {
+    "text": "than 0.1 milliseconds for something like",
+    "start": 882.3,
+    "duration": 5.039
+  },
+  {
+    "text": "that waterfall example",
+    "start": 884.339,
+    "duration": 6.961
+  },
+  {
+    "text": "so next up let's look at clouds",
+    "start": 887.339,
+    "duration": 6.481
+  },
+  {
+    "text": "so this is the sort of concept art we",
+    "start": 891.3,
+    "duration": 4.56
+  },
+  {
+    "text": "saw back when we were first starting on",
+    "start": 893.82,
+    "duration": 3.78
+  },
+  {
+    "text": "sea of Thieves",
+    "start": 895.86,
+    "duration": 5.339
+  },
+  {
+    "text": "and in particular they wanted to do",
+    "start": 897.6,
+    "duration": 5.82
+  },
+  {
+    "text": "crazy things like storms that actually",
+    "start": 901.199,
+    "duration": 5.94
+  },
+  {
+    "text": "sit in the world and Pull A Reign of",
+    "start": 903.42,
+    "duration": 6.0
+  },
+  {
+    "text": "sheet around with them and they also",
+    "start": 907.139,
+    "duration": 4.081
+  },
+  {
+    "text": "decided they want to mark up points of",
+    "start": 909.42,
+    "duration": 3.9
+  },
+  {
+    "text": "interest with things like skull clouds",
+    "start": 911.22,
+    "duration": 5.52
+  },
+  {
+    "text": "and other differently shaped clouds so",
+    "start": 913.32,
+    "duration": 5.579
+  },
+  {
+    "text": "this was an interesting challenge for us",
+    "start": 916.74,
+    "duration": 4.56
+  },
+  {
+    "text": "to solve we had a whole bunch of kind of",
+    "start": 918.899,
+    "duration": 4.5
+  },
+  {
+    "text": "structural requirements and that had to",
+    "start": 921.3,
+    "duration": 4.14
+  },
+  {
+    "text": "maintain stabilization and the clouds",
+    "start": 923.399,
+    "duration": 5.041
+  },
+  {
+    "text": "have to be 3D and they're Dynamic and",
+    "start": 925.44,
+    "duration": 4.38
+  },
+  {
+    "text": "have been controlled by artists and they",
+    "start": 928.44,
+    "duration": 2.88
+  },
+  {
+    "text": "have to have a physical",
+    "start": 929.82,
+    "duration": 4.139
+  },
+  {
+    "text": "three-dimensional position in the world",
+    "start": 931.32,
+    "duration": 5.28
+  },
+  {
+    "text": "and they have to be cheap of course and",
+    "start": 933.959,
+    "duration": 4.38
+  },
+  {
+    "text": "there were also all the aesthetic",
+    "start": 936.6,
+    "duration": 3.96
+  },
+  {
+    "text": "requirements the clear readable shapes",
+    "start": 938.339,
+    "duration": 4.081
+  },
+  {
+    "text": "sometimes geometric designs sometimes",
+    "start": 940.56,
+    "duration": 4.92
+  },
+  {
+    "text": "sharp lines but sometimes fluffy edges",
+    "start": 942.42,
+    "duration": 5.94
+  },
+  {
+    "text": "uh we tried a few things at first before",
+    "start": 945.48,
+    "duration": 5.099
+  },
+  {
+    "text": "we even started working in unreal we",
+    "start": 948.36,
+    "duration": 3.9
+  },
+  {
+    "text": "experimented with Billboards and with",
+    "start": 950.579,
+    "duration": 4.5
+  },
+  {
+    "text": "Sky domes uh we tried out a few",
+    "start": 952.26,
+    "duration": 5.1
+  },
+  {
+    "text": "different approaches to Ray marching the",
+    "start": 955.079,
+    "duration": 4.38
+  },
+  {
+    "text": "clouds we found this was",
+    "start": 957.36,
+    "duration": 4.68
+  },
+  {
+    "text": "far too expensive both on the GPU and in",
+    "start": 959.459,
+    "duration": 5.041
+  },
+  {
+    "text": "terms of storing volumetric textures and",
+    "start": 962.04,
+    "duration": 4.979
+  },
+  {
+    "text": "memory uh",
+    "start": 964.5,
+    "duration": 4.199
+  },
+  {
+    "text": "especially if you're having things like",
+    "start": 967.019,
+    "duration": 3.601
+  },
+  {
+    "text": "skull clouds that just becomes quite",
+    "start": 968.699,
+    "duration": 4.981
+  },
+  {
+    "text": "hard to manage with Ray marched",
+    "start": 970.62,
+    "duration": 5.94
+  },
+  {
+    "text": "approaches so we decided to go a",
+    "start": 973.68,
+    "duration": 5.159
+  },
+  {
+    "text": "different way and we were initially",
+    "start": 976.56,
+    "duration": 4.38
+  },
+  {
+    "text": "inspired by the passive hate a short",
+    "start": 978.839,
+    "duration": 4.8
+  },
+  {
+    "text": "film which if you guys have seen what",
+    "start": 980.94,
+    "duration": 4.92
+  },
+  {
+    "text": "they do is they have a geometrical core",
+    "start": 983.639,
+    "duration": 3.421
+  },
+  {
+    "text": "to the clouds and they scatter",
+    "start": 985.86,
+    "duration": 4.74
+  },
+  {
+    "text": "Billboards on that core with uh painted",
+    "start": 987.06,
+    "duration": 5.719
+  },
+  {
+    "text": "on brush Strokes which give them a very",
+    "start": 990.6,
+    "duration": 4.979
+  },
+  {
+    "text": "stylized painterly appearance and we",
+    "start": 992.779,
+    "duration": 4.961
+  },
+  {
+    "text": "really like that and we tried that out",
+    "start": 995.579,
+    "duration": 5.161
+  },
+  {
+    "text": "in an early version of the game this is",
+    "start": 997.74,
+    "duration": 6.06
+  },
+  {
+    "text": "the odd diorama back in unreal 4.6",
+    "start": 1000.74,
+    "duration": 6.959
+  },
+  {
+    "text": "uh this look nice in some cases but for",
+    "start": 1003.8,
+    "duration": 5.82
+  },
+  {
+    "text": "a lot of them it didn't actually fulfill",
+    "start": 1007.699,
+    "duration": 4.26
+  },
+  {
+    "text": "the style requirements that well and",
+    "start": 1009.62,
+    "duration": 3.959
+  },
+  {
+    "text": "more importantly we found that although",
+    "start": 1011.959,
+    "duration": 3.06
+  },
+  {
+    "text": "that approach works well for offline",
+    "start": 1013.579,
+    "duration": 3.661
+  },
+  {
+    "text": "rendering in our case for real-time",
+    "start": 1015.019,
+    "duration": 4.801
+  },
+  {
+    "text": "rendering uh you have first of all the",
+    "start": 1017.24,
+    "duration": 5.219
+  },
+  {
+    "text": "issue of sorting of those Billboards and",
+    "start": 1019.82,
+    "duration": 5.4
+  },
+  {
+    "text": "secondly even though there's a core",
+    "start": 1022.459,
+    "duration": 5.46
+  },
+  {
+    "text": "geometry to the cloud on the edges what",
+    "start": 1025.22,
+    "duration": 4.56
+  },
+  {
+    "text": "you end up having a lot of overdraw so",
+    "start": 1027.919,
+    "duration": 4.801
+  },
+  {
+    "text": "it's actually still rather expensive",
+    "start": 1029.78,
+    "duration": 5.1
+  },
+  {
+    "text": "so how do you make solid geometry look",
+    "start": 1032.72,
+    "duration": 4.32
+  },
+  {
+    "text": "fluffy and more importantly how do you",
+    "start": 1034.88,
+    "duration": 3.62
+  },
+  {
+    "text": "do cheaply",
+    "start": 1037.04,
+    "duration": 3.779
+  },
+  {
+    "text": "we bent back and forth in this and",
+    "start": 1038.5,
+    "duration": 4.72
+  },
+  {
+    "text": "eventually came up with this approach so",
+    "start": 1040.819,
+    "duration": 4.201
+  },
+  {
+    "text": "we started out by rendering the clouds",
+    "start": 1043.22,
+    "duration": 4.4
+  },
+  {
+    "text": "into a separate off-screen render Target",
+    "start": 1045.02,
+    "duration": 5.22
+  },
+  {
+    "text": "and in this case it's a very simple",
+    "start": 1047.62,
+    "duration": 4.78
+  },
+  {
+    "text": "forward render and in fact we calculate",
+    "start": 1050.24,
+    "duration": 4.14
+  },
+  {
+    "text": "all the lighting per vertex it's",
+    "start": 1052.4,
+    "duration": 5.46
+  },
+  {
+    "text": "extremely quick and cheap then we down",
+    "start": 1054.38,
+    "duration": 5.88
+  },
+  {
+    "text": "sample this to quarter res and we run a",
+    "start": 1057.86,
+    "duration": 5.52
+  },
+  {
+    "text": "single pass compute Shader gaussian blur",
+    "start": 1060.26,
+    "duration": 5.7
+  },
+  {
+    "text": "and a neat trick we do here is we",
+    "start": 1063.38,
+    "duration": 3.9
+  },
+  {
+    "text": "actually change the standard deviation",
+    "start": 1065.96,
+    "duration": 3.66
+  },
+  {
+    "text": "of the gaussian blur based on the depth",
+    "start": 1067.28,
+    "duration": 4.58
+  },
+  {
+    "text": "of the scene",
+    "start": 1069.62,
+    "duration": 6.059
+  },
+  {
+    "text": "this is very rough implementation",
+    "start": 1071.86,
+    "duration": 5.98
+  },
+  {
+    "text": "because we want to make this Shader",
+    "start": 1075.679,
+    "duration": 4.74
+  },
+  {
+    "text": "really very cheap you might be able to",
+    "start": 1077.84,
+    "duration": 3.839
+  },
+  {
+    "text": "get better quality results by actually",
+    "start": 1080.419,
+    "duration": 2.941
+  },
+  {
+    "text": "using maybe some kind of depth of field",
+    "start": 1081.679,
+    "duration": 4.161
+  },
+  {
+    "text": "technique",
+    "start": 1083.36,
+    "duration": 5.28
+  },
+  {
+    "text": "we actually decide realized that we want",
+    "start": 1085.84,
+    "duration": 6.579
+  },
+  {
+    "text": "to create a texture Which packs both the",
+    "start": 1088.64,
+    "duration": 6.48
+  },
+  {
+    "text": "depth and the alpha which left us with",
+    "start": 1092.419,
+    "duration": 5.401
+  },
+  {
+    "text": "only two channels for color so the red",
+    "start": 1095.12,
+    "duration": 4.08
+  },
+  {
+    "text": "channel is the sunlight and the green",
+    "start": 1097.82,
+    "duration": 2.94
+  },
+  {
+    "text": "channels the Skylight which is why those",
+    "start": 1099.2,
+    "duration": 3.68
+  },
+  {
+    "text": "clouds had such a weird color",
+    "start": 1100.76,
+    "duration": 3.96
+  },
+  {
+    "text": "interestingly enough if any of you were",
+    "start": 1102.88,
+    "duration": 6.34
+  },
+  {
+    "text": "in The Potpourri talk Yesterday by Pixar",
+    "start": 1104.72,
+    "duration": 6.06
+  },
+  {
+    "text": "it's interesting to notice that they",
+    "start": 1109.22,
+    "duration": 3.78
+  },
+  {
+    "text": "export their clouds in a similar sort of",
+    "start": 1110.78,
+    "duration": 4.68
+  },
+  {
+    "text": "way when they're rendering billboards",
+    "start": 1113.0,
+    "duration": 5.76
+  },
+  {
+    "text": "uh so what we also do is we run a box",
+    "start": 1115.46,
+    "duration": 5.64
+  },
+  {
+    "text": "blur on the depth which has the nice",
+    "start": 1118.76,
+    "duration": 6.0
+  },
+  {
+    "text": "effect that we actually end up with a",
+    "start": 1121.1,
+    "duration": 5.64
+  },
+  {
+    "text": "flat depth kind of on the mid-level",
+    "start": 1124.76,
+    "duration": 3.84
+  },
+  {
+    "text": "clouds it doesn't",
+    "start": 1126.74,
+    "duration": 5.46
+  },
+  {
+    "text": "um it doesn't blend off at the edges",
+    "start": 1128.6,
+    "duration": 5.34
+  },
+  {
+    "text": "and you'll see why that's useful in a",
+    "start": 1132.2,
+    "duration": 6.599
+  },
+  {
+    "text": "second so then what we do is we draw a",
+    "start": 1133.94,
+    "duration": 6.78
+  },
+  {
+    "text": "quad which is pinned to the frustum of",
+    "start": 1138.799,
+    "duration": 4.081
+  },
+  {
+    "text": "the camera and we hold it at about 500",
+    "start": 1140.72,
+    "duration": 3.66
+  },
+  {
+    "text": "meters in front of the camera which is",
+    "start": 1142.88,
+    "duration": 3.539
+  },
+  {
+    "text": "what we reckon is the closest you'll",
+    "start": 1144.38,
+    "duration": 4.799
+  },
+  {
+    "text": "ever get to a cloud in the game",
+    "start": 1146.419,
+    "duration": 5.64
+  },
+  {
+    "text": "um essentially uh the pixel Shader then",
+    "start": 1149.179,
+    "duration": 4.441
+  },
+  {
+    "text": "which gets rendered onto the quad is the",
+    "start": 1152.059,
+    "duration": 3.24
+  },
+  {
+    "text": "most expensive part of this process so",
+    "start": 1153.62,
+    "duration": 3.36
+  },
+  {
+    "text": "we want to make sure that we have as few",
+    "start": 1155.299,
+    "duration": 4.161
+  },
+  {
+    "text": "pixels being rendered as possible",
+    "start": 1156.98,
+    "duration": 4.319
+  },
+  {
+    "text": "and",
+    "start": 1159.46,
+    "duration": 4.719
+  },
+  {
+    "text": "what we do the reason we do this is that",
+    "start": 1161.299,
+    "duration": 4.74
+  },
+  {
+    "text": "if you have any objects then that come",
+    "start": 1164.179,
+    "duration": 3.781
+  },
+  {
+    "text": "up in front of the Quad they will",
+    "start": 1166.039,
+    "duration": 3.361
+  },
+  {
+    "text": "occlude the pixels behind it they won't",
+    "start": 1167.96,
+    "duration": 4.56
+  },
+  {
+    "text": "get rendered and we also do an initial",
+    "start": 1169.4,
+    "duration": 5.22
+  },
+  {
+    "text": "sample of the depth map and we discard",
+    "start": 1172.52,
+    "duration": 4.26
+  },
+  {
+    "text": "any pixels that cannot possibly contain",
+    "start": 1174.62,
+    "duration": 3.96
+  },
+  {
+    "text": "clouds which is anything which is not",
+    "start": 1176.78,
+    "duration": 3.899
+  },
+  {
+    "text": "black on this picture",
+    "start": 1178.58,
+    "duration": 4.32
+  },
+  {
+    "text": "so then one of the things that we can do",
+    "start": 1180.679,
+    "duration": 4.021
+  },
+  {
+    "text": "is we can actually use that blur depth",
+    "start": 1182.9,
+    "duration": 4.74
+  },
+  {
+    "text": "to calculate an approximate blurred",
+    "start": 1184.7,
+    "duration": 4.979
+  },
+  {
+    "text": "World space position and that's kind of",
+    "start": 1187.64,
+    "duration": 4.14
+  },
+  {
+    "text": "what that looks like in this case so",
+    "start": 1189.679,
+    "duration": 4.261
+  },
+  {
+    "text": "you'll see it's not especially",
+    "start": 1191.78,
+    "duration": 3.779
+  },
+  {
+    "text": "temporally stable there's some Jitter",
+    "start": 1193.94,
+    "duration": 3.78
+  },
+  {
+    "text": "around the edges so we definitely",
+    "start": 1195.559,
+    "duration": 4.101
+  },
+  {
+    "text": "wouldn't want to use this for lighting",
+    "start": 1197.72,
+    "duration": 5.1
+  },
+  {
+    "text": "but we can use this essentially for",
+    "start": 1199.66,
+    "duration": 5.56
+  },
+  {
+    "text": "compositing we can do things like we can",
+    "start": 1202.82,
+    "duration": 4.739
+  },
+  {
+    "text": "blend fog in and out based on the",
+    "start": 1205.22,
+    "duration": 3.959
+  },
+  {
+    "text": "heights of the clouds and we can change",
+    "start": 1207.559,
+    "duration": 2.881
+  },
+  {
+    "text": "their Distortion which we're going to",
+    "start": 1209.179,
+    "duration": 3.141
+  },
+  {
+    "text": "apply in a second",
+    "start": 1210.44,
+    "duration": 7.2
+  },
+  {
+    "text": "so then we look up into a cube map of",
+    "start": 1212.32,
+    "duration": 7.12
+  },
+  {
+    "text": "distortion which has a low frequency",
+    "start": 1217.64,
+    "duration": 3.659
+  },
+  {
+    "text": "noise in the red and green channels and",
+    "start": 1219.44,
+    "duration": 3.54
+  },
+  {
+    "text": "this high frequency noise in the blue",
+    "start": 1221.299,
+    "duration": 4.081
+  },
+  {
+    "text": "and Alpha channels and using the depth",
+    "start": 1222.98,
+    "duration": 4.62
+  },
+  {
+    "text": "we can blend between these noises and as",
+    "start": 1225.38,
+    "duration": 3.6
+  },
+  {
+    "text": "you'll notice the clouds in the distance",
+    "start": 1227.6,
+    "duration": 3.72
+  },
+  {
+    "text": "they actually fall off towards the",
+    "start": 1228.98,
+    "duration": 3.6
+  },
+  {
+    "text": "horizon to give the impression of a",
+    "start": 1231.32,
+    "duration": 3.9
+  },
+  {
+    "text": "cloud Dome and you can see that the",
+    "start": 1232.58,
+    "duration": 5.36
+  },
+  {
+    "text": "noise Fades off to Black this is because",
+    "start": 1235.22,
+    "duration": 5.6
+  },
+  {
+    "text": "we Kill The Noise below a certain height",
+    "start": 1237.94,
+    "duration": 5.8
+  },
+  {
+    "text": "where where you have features like skull",
+    "start": 1240.82,
+    "duration": 5.02
+  },
+  {
+    "text": "clouds being rendered slightly below the",
+    "start": 1243.74,
+    "duration": 4.559
+  },
+  {
+    "text": "cloud line we want to not noise them out",
+    "start": 1245.84,
+    "duration": 4.44
+  },
+  {
+    "text": "too much so as to preserve the feature",
+    "start": 1248.299,
+    "duration": 4.081
+  },
+  {
+    "text": "details",
+    "start": 1250.28,
+    "duration": 5.82
+  },
+  {
+    "text": "and then if we apply this noise to the",
+    "start": 1252.38,
+    "duration": 5.82
+  },
+  {
+    "text": "output we get this kind of result we",
+    "start": 1256.1,
+    "duration": 4.56
+  },
+  {
+    "text": "also threshold the alpha again with",
+    "start": 1258.2,
+    "duration": 3.96
+  },
+  {
+    "text": "distance so that clouds and distance",
+    "start": 1260.66,
+    "duration": 4.8
+  },
+  {
+    "text": "appear sharper and look like they're",
+    "start": 1262.16,
+    "duration": 4.74
+  },
+  {
+    "text": "further away whereas clouds overhead",
+    "start": 1265.46,
+    "duration": 3.66
+  },
+  {
+    "text": "remain soft and fuzzy",
+    "start": 1266.9,
+    "duration": 6.24
+  },
+  {
+    "text": "and then we do this with the red and",
+    "start": 1269.12,
+    "duration": 5.7
+  },
+  {
+    "text": "green channels which we multiply out by",
+    "start": 1273.14,
+    "duration": 3.96
+  },
+  {
+    "text": "the sunlight and the Skylight and we get",
+    "start": 1274.82,
+    "duration": 4.26
+  },
+  {
+    "text": "this kind of effect and finally we just",
+    "start": 1277.1,
+    "duration": 5.28
+  },
+  {
+    "text": "need to apply some fogging which we can",
+    "start": 1279.08,
+    "duration": 6.14
+  },
+  {
+    "text": "control based on the wall space position",
+    "start": 1282.38,
+    "duration": 5.7
+  },
+  {
+    "text": "and that's essentially how we render",
+    "start": 1285.22,
+    "duration": 6.1
+  },
+  {
+    "text": "clouds halfway through production we",
+    "start": 1288.08,
+    "duration": 5.16
+  },
+  {
+    "text": "decided to add a spyglass that brought",
+    "start": 1291.32,
+    "duration": 3.839
+  },
+  {
+    "text": "up the question of what happens if you",
+    "start": 1293.24,
+    "duration": 3.9
+  },
+  {
+    "text": "zoom in and out and it turns out holds",
+    "start": 1295.159,
+    "duration": 3.181
+  },
+  {
+    "text": "up quite well",
+    "start": 1297.14,
+    "duration": 3.3
+  },
+  {
+    "text": "what we don't do is we don't change the",
+    "start": 1298.34,
+    "duration": 3.959
+  },
+  {
+    "text": "diameter of the gaussian blur based on",
+    "start": 1300.44,
+    "duration": 3.84
+  },
+  {
+    "text": "the fov because that would be expensive",
+    "start": 1302.299,
+    "duration": 4.5
+  },
+  {
+    "text": "but the Distortion actually remains",
+    "start": 1304.28,
+    "duration": 4.879
+  },
+  {
+    "text": "constant and you get this nice feature",
+    "start": 1306.799,
+    "duration": 5.821
+  },
+  {
+    "text": "preserving property on it so it doesn't",
+    "start": 1309.159,
+    "duration": 5.621
+  },
+  {
+    "text": "look too bad",
+    "start": 1312.62,
+    "duration": 3.9
+  },
+  {
+    "text": "this is",
+    "start": 1314.78,
+    "duration": 3.66
+  },
+  {
+    "text": "not especially expensive so for this",
+    "start": 1316.52,
+    "duration": 3.24
+  },
+  {
+    "text": "scene this is kind of what the breakdown",
+    "start": 1318.44,
+    "duration": 4.38
+  },
+  {
+    "text": "looks like and again the most expensive",
+    "start": 1319.76,
+    "duration": 5.46
+  },
+  {
+    "text": "bit is the pixel Shader at the end and",
+    "start": 1322.82,
+    "duration": 3.839
+  },
+  {
+    "text": "generally speaking you're only paying",
+    "start": 1325.22,
+    "duration": 3.12
+  },
+  {
+    "text": "for the pixels you see so it's quite",
+    "start": 1326.659,
+    "duration": 3.9
+  },
+  {
+    "text": "affordable in total that scenes about",
+    "start": 1328.34,
+    "duration": 4.98
+  },
+  {
+    "text": "1.3 milliseconds to render",
+    "start": 1330.559,
+    "duration": 6.541
+  },
+  {
+    "text": "uh we experimented a little bit with the",
+    "start": 1333.32,
+    "duration": 6.239
+  },
+  {
+    "text": "lighting model essentially what we'll do",
+    "start": 1337.1,
+    "duration": 4.98
+  },
+  {
+    "text": "is we bake out some data into every",
+    "start": 1339.559,
+    "duration": 5.641
+  },
+  {
+    "text": "vertex about where the bulk of the mass",
+    "start": 1342.08,
+    "duration": 6.12
+  },
+  {
+    "text": "of the rest of the mesh is a side effect",
+    "start": 1345.2,
+    "duration": 5.16
+  },
+  {
+    "text": "of this is they have intersecting meshes",
+    "start": 1348.2,
+    "duration": 4.56
+  },
+  {
+    "text": "they don't know that they're",
+    "start": 1350.36,
+    "duration": 3.84
+  },
+  {
+    "text": "intersecting measures so you can get",
+    "start": 1352.76,
+    "duration": 4.2
+  },
+  {
+    "text": "scenes unlike you know if you were doing",
+    "start": 1354.2,
+    "duration": 5.099
+  },
+  {
+    "text": "rematching in which case you just step",
+    "start": 1356.96,
+    "duration": 4.099
+  },
+  {
+    "text": "through the whole thing",
+    "start": 1359.299,
+    "duration": 5.341
+  },
+  {
+    "text": "but the advantage of it is that it's",
+    "start": 1361.059,
+    "duration": 5.201
+  },
+  {
+    "text": "very cheap",
+    "start": 1364.64,
+    "duration": 3.539
+  },
+  {
+    "text": "and in this case we actually ended up",
+    "start": 1366.26,
+    "duration": 6.0
+  },
+  {
+    "text": "using this point light test to do the",
+    "start": 1368.179,
+    "duration": 6.301
+  },
+  {
+    "text": "lightning inside of storm clouds so the",
+    "start": 1372.26,
+    "duration": 3.98
+  },
+  {
+    "text": "lightning is just a point light that's",
+    "start": 1374.48,
+    "duration": 4.74
+  },
+  {
+    "text": "whizzing around and lighting up the",
+    "start": 1376.24,
+    "duration": 4.78
+  },
+  {
+    "text": "surface of the cloud when it gets close",
+    "start": 1379.22,
+    "duration": 3.3
+  },
+  {
+    "text": "enough",
+    "start": 1381.02,
+    "duration": 4.56
+  },
+  {
+    "text": "this lighting rendering is not",
+    "start": 1382.52,
+    "duration": 4.98
+  },
+  {
+    "text": "particularly physically based so there's",
+    "start": 1385.58,
+    "duration": 3.54
+  },
+  {
+    "text": "definitely room for improvement there",
+    "start": 1387.5,
+    "duration": 4.62
+  },
+  {
+    "text": "but it's proven to be a fairly robust",
+    "start": 1389.12,
+    "duration": 5.4
+  },
+  {
+    "text": "approach",
+    "start": 1392.12,
+    "duration": 5.16
+  },
+  {
+    "text": "and then finally we have a couple of",
+    "start": 1394.52,
+    "duration": 4.8
+  },
+  {
+    "text": "cylinders of range sheets underneath the",
+    "start": 1397.28,
+    "duration": 5.82
+  },
+  {
+    "text": "storm which we blend in with a rain post",
+    "start": 1399.32,
+    "duration": 6.239
+  },
+  {
+    "text": "process when you go into them and one",
+    "start": 1403.1,
+    "duration": 3.6
+  },
+  {
+    "text": "neat trick we're actually able to do",
+    "start": 1405.559,
+    "duration": 3.901
+  },
+  {
+    "text": "here is if you look out of the sun we",
+    "start": 1406.7,
+    "duration": 4.74
+  },
+  {
+    "text": "artificially punch a hole through the",
+    "start": 1409.46,
+    "duration": 4.92
+  },
+  {
+    "text": "rain sheets at every time in the",
+    "start": 1411.44,
+    "duration": 4.859
+  },
+  {
+    "text": "direction of the sun which gives it a",
+    "start": 1414.38,
+    "duration": 6.14
+  },
+  {
+    "text": "quite a nice screenshotable moment",
+    "start": 1416.299,
+    "duration": 4.221
+  },
+  {
+    "text": "so uh the keto equipment is from this uh",
+    "start": 1421.059,
+    "duration": 4.661
+  },
+  {
+    "text": "which I think might be useful to you",
+    "start": 1424.52,
+    "duration": 3.36
+  },
+  {
+    "text": "guys is this is basically the main",
+    "start": 1425.72,
+    "duration": 5.64
+  },
+  {
+    "text": "specific method of upscaling and I we",
+    "start": 1427.88,
+    "duration": 5.22
+  },
+  {
+    "text": "reckon that this could be use on a few",
+    "start": 1431.36,
+    "duration": 3.679
+  },
+  {
+    "text": "different types of source rendering",
+    "start": 1433.1,
+    "duration": 5.16
+  },
+  {
+    "text": "we're using for poly meshes but it might",
+    "start": 1435.039,
+    "duration": 5.741
+  },
+  {
+    "text": "also be as applicable to particles or",
+    "start": 1438.26,
+    "duration": 5.46
+  },
+  {
+    "text": "even as a way of upscaling low-res Ray",
+    "start": 1440.78,
+    "duration": 5.279
+  },
+  {
+    "text": "marching it could be useful for the",
+    "start": 1443.72,
+    "duration": 4.98
+  },
+  {
+    "text": "effects you could potentially blend it",
+    "start": 1446.059,
+    "duration": 4.681
+  },
+  {
+    "text": "with other translucent particles and",
+    "start": 1448.7,
+    "duration": 4.2
+  },
+  {
+    "text": "geometry by having them read the cloud",
+    "start": 1450.74,
+    "duration": 4.02
+  },
+  {
+    "text": "depth and fade themselves out",
+    "start": 1452.9,
+    "duration": 3.06
+  },
+  {
+    "text": "accordingly",
+    "start": 1454.76,
+    "duration": 3.48
+  },
+  {
+    "text": "and what we'd also like to do is add",
+    "start": 1455.96,
+    "duration": 4.62
+  },
+  {
+    "text": "some temporal blending which might also",
+    "start": 1458.24,
+    "duration": 5.16
+  },
+  {
+    "text": "allow us to support the translucency",
+    "start": 1460.58,
+    "duration": 5.04
+  },
+  {
+    "text": "uh interestingly there's a similar",
+    "start": 1463.4,
+    "duration": 4.5
+  },
+  {
+    "text": "technique in Shader X5 by benassia",
+    "start": 1465.62,
+    "duration": 3.9
+  },
+  {
+    "text": "minasi it's a slightly different",
+    "start": 1467.9,
+    "duration": 3.54
+  },
+  {
+    "text": "implementation but very similar concept",
+    "start": 1469.52,
+    "duration": 5.7
+  },
+  {
+    "text": "so I recommend checking that out as well",
+    "start": 1471.44,
+    "duration": 6.18
+  },
+  {
+    "text": "interestingly if you decide to use this",
+    "start": 1475.22,
+    "duration": 4.38
+  },
+  {
+    "text": "for kind of near ground objects this is",
+    "start": 1477.62,
+    "duration": 4.38
+  },
+  {
+    "text": "what that might look like so because we",
+    "start": 1479.6,
+    "duration": 5.16
+  },
+  {
+    "text": "have the blur depth uh you can actually",
+    "start": 1482.0,
+    "duration": 5.039
+  },
+  {
+    "text": "get very nice intersections with the",
+    "start": 1484.76,
+    "duration": 4.799
+  },
+  {
+    "text": "world it's in this case not physically",
+    "start": 1487.039,
+    "duration": 5.101
+  },
+  {
+    "text": "correct because we don't step through to",
+    "start": 1489.559,
+    "duration": 4.381
+  },
+  {
+    "text": "kind of figure out the thickness of the",
+    "start": 1492.14,
+    "duration": 4.68
+  },
+  {
+    "text": "object everything uh Blends fairly",
+    "start": 1493.94,
+    "duration": 4.739
+  },
+  {
+    "text": "uniformly but you still get pretty nice",
+    "start": 1496.82,
+    "duration": 4.08
+  },
+  {
+    "text": "effects and when we were first setting",
+    "start": 1498.679,
+    "duration": 3.48
+  },
+  {
+    "text": "up we were thinking like oh you could",
+    "start": 1500.9,
+    "duration": 2.58
+  },
+  {
+    "text": "have you know giant Cliffs that",
+    "start": 1502.159,
+    "duration": 2.76
+  },
+  {
+    "text": "intersect through the clouds and that",
+    "start": 1503.48,
+    "duration": 3.12
+  },
+  {
+    "text": "would look very cool we didn't actually",
+    "start": 1504.919,
+    "duration": 3.24
+  },
+  {
+    "text": "end up using that in the game because we",
+    "start": 1506.6,
+    "duration": 3.059
+  },
+  {
+    "text": "don't have any Cliffs high enough but",
+    "start": 1508.159,
+    "duration": 4.621
+  },
+  {
+    "text": "it's an interesting application",
+    "start": 1509.659,
+    "duration": 6.661
+  },
+  {
+    "text": "uh the limitations is that at the moment",
+    "start": 1512.78,
+    "duration": 5.519
+  },
+  {
+    "text": "because of the cube map Distortion we're",
+    "start": 1516.32,
+    "duration": 4.14
+  },
+  {
+    "text": "using that works very well for the",
+    "start": 1518.299,
+    "duration": 3.661
+  },
+  {
+    "text": "specific use case where you generally",
+    "start": 1520.46,
+    "duration": 3.959
+  },
+  {
+    "text": "have clouds moving relative to the",
+    "start": 1521.96,
+    "duration": 4.14
+  },
+  {
+    "text": "player but you never have the player",
+    "start": 1524.419,
+    "duration": 3.661
+  },
+  {
+    "text": "moving that quickly relative to the",
+    "start": 1526.1,
+    "duration": 4.26
+  },
+  {
+    "text": "clouds if you end up moving very quickly",
+    "start": 1528.08,
+    "duration": 4.74
+  },
+  {
+    "text": "then you have the Distortion kind of",
+    "start": 1530.36,
+    "duration": 3.9
+  },
+  {
+    "text": "Rippling through the clouds based on",
+    "start": 1532.82,
+    "duration": 3.54
+  },
+  {
+    "text": "player movement which you don't want if",
+    "start": 1534.26,
+    "duration": 3.659
+  },
+  {
+    "text": "the clouds move very fast it looks like",
+    "start": 1536.36,
+    "duration": 4.199
+  },
+  {
+    "text": "the cloud Rippling so that's that looks",
+    "start": 1537.919,
+    "duration": 4.5
+  },
+  {
+    "text": "correct but not the other way around but",
+    "start": 1540.559,
+    "duration": 3.48
+  },
+  {
+    "text": "you can generate the Distortion in other",
+    "start": 1542.419,
+    "duration": 3.541
+  },
+  {
+    "text": "ways it doesn't have to be a cube map",
+    "start": 1544.039,
+    "duration": 4.02
+  },
+  {
+    "text": "and you can also get artifacts because",
+    "start": 1545.96,
+    "duration": 3.44
+  },
+  {
+    "text": "of that",
+    "start": 1548.059,
+    "duration": 4.261
+  },
+  {
+    "text": "depth blur fall off if you have things",
+    "start": 1549.4,
+    "duration": 4.779
+  },
+  {
+    "text": "are very different depths stacked",
+    "start": 1552.32,
+    "duration": 2.76
+  },
+  {
+    "text": "together",
+    "start": 1554.179,
+    "duration": 2.461
+  },
+  {
+    "text": "especially if you have like a solid",
+    "start": 1555.08,
+    "duration": 3.959
+  },
+  {
+    "text": "geometry in between you can get slight",
+    "start": 1556.64,
+    "duration": 3.96
+  },
+  {
+    "text": "artifacting we've never found it to be",
+    "start": 1559.039,
+    "duration": 3.781
+  },
+  {
+    "text": "particularly bad and it's mostly due to",
+    "start": 1560.6,
+    "duration": 3.42
+  },
+  {
+    "text": "the blur hack",
+    "start": 1562.82,
+    "duration": 2.94
+  },
+  {
+    "text": "and you can also get jittering in those",
+    "start": 1564.02,
+    "duration": 4.62
+  },
+  {
+    "text": "cases which could be uh cleared up with",
+    "start": 1565.76,
+    "duration": 6.2
+  },
+  {
+    "text": "some temporal dithering",
+    "start": 1568.64,
+    "duration": 3.32
+  },
+  {
+    "text": "uh finally uh let's do some vertex",
+    "start": 1573.02,
+    "duration": 6.18
+  },
+  {
+    "text": "Dynamics",
+    "start": 1576.74,
+    "duration": 5.58
+  },
+  {
+    "text": "so first of all we wanted to figure out",
+    "start": 1579.2,
+    "duration": 6.66
+  },
+  {
+    "text": "how to do ropes because in our game uh",
+    "start": 1582.32,
+    "duration": 6.18
+  },
+  {
+    "text": "players directly interact with ship",
+    "start": 1585.86,
+    "duration": 4.559
+  },
+  {
+    "text": "rigging they can adjust the height of",
+    "start": 1588.5,
+    "duration": 4.159
+  },
+  {
+    "text": "the sails the rotation of the sales",
+    "start": 1590.419,
+    "duration": 4.921
+  },
+  {
+    "text": "we also have the wonderful idea that",
+    "start": 1592.659,
+    "duration": 4.721
+  },
+  {
+    "text": "masts need to fall over when they're hit",
+    "start": 1595.34,
+    "duration": 4.079
+  },
+  {
+    "text": "by cannonballs",
+    "start": 1597.38,
+    "duration": 5.039
+  },
+  {
+    "text": "essentially we realized we had to do a",
+    "start": 1599.419,
+    "duration": 4.74
+  },
+  {
+    "text": "lot of ropes and we wanted them to be",
+    "start": 1602.419,
+    "duration": 4.321
+  },
+  {
+    "text": "very Dynamic ropes because again like",
+    "start": 1604.159,
+    "duration": 5.301
+  },
+  {
+    "text": "that art pillar it's a world of motion",
+    "start": 1606.74,
+    "duration": 5.22
+  },
+  {
+    "text": "we didn't want to just have you know",
+    "start": 1609.46,
+    "duration": 5.56
+  },
+  {
+    "text": "straight lines going everywhere",
+    "start": 1611.96,
+    "duration": 5.599
+  },
+  {
+    "text": "simulating Road physics is expensive",
+    "start": 1615.02,
+    "duration": 4.68
+  },
+  {
+    "text": "especially when you have hundreds of row",
+    "start": 1617.559,
+    "duration": 4.12
+  },
+  {
+    "text": "segments on the screen at the same time",
+    "start": 1619.7,
+    "duration": 3.18
+  },
+  {
+    "text": "so",
+    "start": 1621.679,
+    "duration": 2.941
+  },
+  {
+    "text": "I had the crazy idea like you know can",
+    "start": 1622.88,
+    "duration": 4.08
+  },
+  {
+    "text": "we solve ropes as an equation uh",
+    "start": 1624.62,
+    "duration": 4.679
+  },
+  {
+    "text": "especially like what if we take the",
+    "start": 1626.96,
+    "duration": 4.38
+  },
+  {
+    "text": "start point and the end point and the",
+    "start": 1629.299,
+    "duration": 5.641
+  },
+  {
+    "text": "Rope length can we like get a curve out",
+    "start": 1631.34,
+    "duration": 5.339
+  },
+  {
+    "text": "of that because ropes are parabolas",
+    "start": 1634.94,
+    "duration": 3.3
+  },
+  {
+    "text": "right",
+    "start": 1636.679,
+    "duration": 4.74
+  },
+  {
+    "text": "uh so uh after some research turns out",
+    "start": 1638.24,
+    "duration": 5.34
+  },
+  {
+    "text": "that ropes are hyperbolism but there's",
+    "start": 1641.419,
+    "duration": 3.24
+  },
+  {
+    "text": "actually really needs and simple",
+    "start": 1643.58,
+    "duration": 3.9
+  },
+  {
+    "text": "equation for solving precisely that",
+    "start": 1644.659,
+    "duration": 4.38
+  },
+  {
+    "text": "problem where you have start point and",
+    "start": 1647.48,
+    "duration": 3.9
+  },
+  {
+    "text": "endpoint and you have the length of the",
+    "start": 1649.039,
+    "duration": 5.281
+  },
+  {
+    "text": "rope and you want to figure out what the",
+    "start": 1651.38,
+    "duration": 5.34
+  },
+  {
+    "text": "curve is",
+    "start": 1654.32,
+    "duration": 4.32
+  },
+  {
+    "text": "but that's actually transcendental",
+    "start": 1656.72,
+    "duration": 3.48
+  },
+  {
+    "text": "equations so there's now analytic",
+    "start": 1658.64,
+    "duration": 4.019
+  },
+  {
+    "text": "solution to it",
+    "start": 1660.2,
+    "duration": 5.459
+  },
+  {
+    "text": "well hlsl happens to have hyperbolic",
+    "start": 1662.659,
+    "duration": 5.301
+  },
+  {
+    "text": "intrinsics I always wondered why",
+    "start": 1665.659,
+    "duration": 6.301
+  },
+  {
+    "text": "they're pretty slow but we're dealing",
+    "start": 1667.96,
+    "duration": 6.16
+  },
+  {
+    "text": "with mesh deformation so we only really",
+    "start": 1671.96,
+    "duration": 5.48
+  },
+  {
+    "text": "need to compute this per vertex",
+    "start": 1674.12,
+    "duration": 6.96
+  },
+  {
+    "text": "and that horrible equation we really",
+    "start": 1677.44,
+    "duration": 5.8
+  },
+  {
+    "text": "actually need so once per rope segment",
+    "start": 1681.08,
+    "duration": 3.66
+  },
+  {
+    "text": "because that gives us the parameter for",
+    "start": 1683.24,
+    "duration": 3.36
+  },
+  {
+    "text": "the hyperbola curve and then we can just",
+    "start": 1684.74,
+    "duration": 4.439
+  },
+  {
+    "text": "plug that into the hyperbolic equation",
+    "start": 1686.6,
+    "duration": 6.24
+  },
+  {
+    "text": "so let's try a numerical approximation",
+    "start": 1689.179,
+    "duration": 7.141
+  },
+  {
+    "text": "so we're trying to solve a function",
+    "start": 1692.84,
+    "duration": 5.76
+  },
+  {
+    "text": "which essentially looks like this where",
+    "start": 1696.32,
+    "duration": 4.32
+  },
+  {
+    "text": "you're plugging in the X which is the",
+    "start": 1698.6,
+    "duration": 4.319
+  },
+  {
+    "text": "zero to one length traveled around along",
+    "start": 1700.64,
+    "duration": 5.22
+  },
+  {
+    "text": "the Rope segment horizontally and you're",
+    "start": 1702.919,
+    "duration": 5.461
+  },
+  {
+    "text": "plugging in the height between the two",
+    "start": 1705.86,
+    "duration": 4.74
+  },
+  {
+    "text": "points and the length which needs to be",
+    "start": 1708.38,
+    "duration": 4.74
+  },
+  {
+    "text": "normalized to that",
+    "start": 1710.6,
+    "duration": 4.8
+  },
+  {
+    "text": "to that rope segment to the horizontal",
+    "start": 1713.12,
+    "duration": 5.48
+  },
+  {
+    "text": "distance between the two points",
+    "start": 1715.4,
+    "duration": 3.2
+  },
+  {
+    "text": "and this is essentially the Shader code",
+    "start": 1719.539,
+    "duration": 5.041
+  },
+  {
+    "text": "to solve that so in our case we use 20",
+    "start": 1722.12,
+    "duration": 3.96
+  },
+  {
+    "text": "iterations",
+    "start": 1724.58,
+    "duration": 5.28
+  },
+  {
+    "text": "and that gives it u a which is the",
+    "start": 1726.08,
+    "duration": 5.219
+  },
+  {
+    "text": "parameter you want to plug into your",
+    "start": 1729.86,
+    "duration": 3.419
+  },
+  {
+    "text": "Cosh function",
+    "start": 1731.299,
+    "duration": 4.62
+  },
+  {
+    "text": "and at the end you get the Y which is",
+    "start": 1733.279,
+    "duration": 5.101
+  },
+  {
+    "text": "the vertical displacement down from the",
+    "start": 1735.919,
+    "duration": 6.481
+  },
+  {
+    "text": "horizontal representation of the Rope",
+    "start": 1738.38,
+    "duration": 7.26
+  },
+  {
+    "text": "and you can then plug this into vertex",
+    "start": 1742.4,
+    "duration": 5.04
+  },
+  {
+    "text": "deformation in this case we're deforming",
+    "start": 1745.64,
+    "duration": 3.5
+  },
+  {
+    "text": "a ribbon and we're not doing anything",
+    "start": 1747.44,
+    "duration": 5.219
+  },
+  {
+    "text": "crazy in terms of shading but you get",
+    "start": 1749.14,
+    "duration": 5.26
+  },
+  {
+    "text": "this kind of behavior where essentially",
+    "start": 1752.659,
+    "duration": 4.14
+  },
+  {
+    "text": "you can move the points around but the",
+    "start": 1754.4,
+    "duration": 4.2
+  },
+  {
+    "text": "length of the Rope remains constant so",
+    "start": 1756.799,
+    "duration": 4.201
+  },
+  {
+    "text": "you get this very nice physical Behavior",
+    "start": 1758.6,
+    "duration": 4.799
+  },
+  {
+    "text": "if you move into far apart we obviously",
+    "start": 1761.0,
+    "duration": 5.22
+  },
+  {
+    "text": "just clamp the length",
+    "start": 1763.399,
+    "duration": 4.921
+  },
+  {
+    "text": "um because of the approximation what",
+    "start": 1766.22,
+    "duration": 3.959
+  },
+  {
+    "text": "happens if you move them too close you",
+    "start": 1768.32,
+    "duration": 3.26
+  },
+  {
+    "text": "get that",
+    "start": 1770.179,
+    "duration": 4.98
+  },
+  {
+    "text": "but that's fine because if we look close",
+    "start": 1771.58,
+    "duration": 5.02
+  },
+  {
+    "text": "you realize that it's actually a very",
+    "start": 1775.159,
+    "duration": 4.62
+  },
+  {
+    "text": "predictable case it happens when you",
+    "start": 1776.6,
+    "duration": 6.299
+  },
+  {
+    "text": "have a specific ratio between the length",
+    "start": 1779.779,
+    "duration": 4.561
+  },
+  {
+    "text": "of the rope and the horizontal distance",
+    "start": 1782.899,
+    "duration": 4.441
+  },
+  {
+    "text": "between the two points so we're going to",
+    "start": 1784.34,
+    "duration": 6.059
+  },
+  {
+    "text": "tackle that in a second first up uh",
+    "start": 1787.34,
+    "duration": 4.439
+  },
+  {
+    "text": "we're obviously not happy with ribbons",
+    "start": 1790.399,
+    "duration": 3.301
+  },
+  {
+    "text": "we want to have proper geometric ropes",
+    "start": 1791.779,
+    "duration": 4.801
+  },
+  {
+    "text": "we want to have normals and we want to",
+    "start": 1793.7,
+    "duration": 6.599
+  },
+  {
+    "text": "have you know volume to them so to do",
+    "start": 1796.58,
+    "duration": 6.24
+  },
+  {
+    "text": "that we're going to need to grab the",
+    "start": 1800.299,
+    "duration": 4.141
+  },
+  {
+    "text": "hyperbolic derivative and that gives you",
+    "start": 1802.82,
+    "duration": 3.0
+  },
+  {
+    "text": "the gradient and from that you can",
+    "start": 1804.44,
+    "duration": 3.839
+  },
+  {
+    "text": "derive the normal and therefore you can",
+    "start": 1805.82,
+    "duration": 6.2
+  },
+  {
+    "text": "push out the other vertices in whatever",
+    "start": 1808.279,
+    "duration": 5.941
+  },
+  {
+    "text": "correct shape you need",
+    "start": 1812.02,
+    "duration": 6.519
+  },
+  {
+    "text": "next up we also want UVS realized at the",
+    "start": 1814.22,
+    "duration": 7.319
+  },
+  {
+    "text": "very end of this because otherwise if",
+    "start": 1818.539,
+    "duration": 4.561
+  },
+  {
+    "text": "you just you know have the naive",
+    "start": 1821.539,
+    "duration": 3.24
+  },
+  {
+    "text": "parameterization of the UVS you get",
+    "start": 1823.1,
+    "duration": 3.12
+  },
+  {
+    "text": "texture stretching",
+    "start": 1824.779,
+    "duration": 3.541
+  },
+  {
+    "text": "we want the correct distance traveled",
+    "start": 1826.22,
+    "duration": 3.78
+  },
+  {
+    "text": "along the curve which will give us",
+    "start": 1828.32,
+    "duration": 4.979
+  },
+  {
+    "text": "correct tiling unfortunately the arc",
+    "start": 1830.0,
+    "duration": 6.12
+  },
+  {
+    "text": "length is not a pretty function",
+    "start": 1833.299,
+    "duration": 7.201
+  },
+  {
+    "text": "and we have to evaluate this twice once",
+    "start": 1836.12,
+    "duration": 8.939
+  },
+  {
+    "text": "for x0 and once for each x uh every",
+    "start": 1840.5,
+    "duration": 6.179
+  },
+  {
+    "text": "vertex along the point",
+    "start": 1845.059,
+    "duration": 4.521
+  },
+  {
+    "text": "but that gives us length traveled and",
+    "start": 1846.679,
+    "duration": 5.461
+  },
+  {
+    "text": "now that we have the normals we have the",
+    "start": 1849.58,
+    "duration": 4.719
+  },
+  {
+    "text": "correct tangent space for the surface of",
+    "start": 1852.14,
+    "duration": 4.759
+  },
+  {
+    "text": "the curve so you get actually these nice",
+    "start": 1854.299,
+    "duration": 5.1
+  },
+  {
+    "text": "perfectly correctly normal mapped ropes",
+    "start": 1856.899,
+    "duration": 4.481
+  },
+  {
+    "text": "which you can",
+    "start": 1859.399,
+    "duration": 4.801
+  },
+  {
+    "text": "deform and move around and they they",
+    "start": 1861.38,
+    "duration": 6.6
+  },
+  {
+    "text": "preserve the length of the Rope",
+    "start": 1864.2,
+    "duration": 7.5
+  },
+  {
+    "text": "so next up now that we have this we can",
+    "start": 1867.98,
+    "duration": 5.4
+  },
+  {
+    "text": "chain these rope segments together and",
+    "start": 1871.7,
+    "duration": 4.32
+  },
+  {
+    "text": "can create rope systems essentially in",
+    "start": 1873.38,
+    "duration": 4.679
+  },
+  {
+    "text": "this case what we want is for the length",
+    "start": 1876.02,
+    "duration": 4.32
+  },
+  {
+    "text": "of the Rope to be the product of the",
+    "start": 1878.059,
+    "duration": 4.801
+  },
+  {
+    "text": "distance between the two points",
+    "start": 1880.34,
+    "duration": 5.64
+  },
+  {
+    "text": "and when the position between the points",
+    "start": 1882.86,
+    "duration": 6.12
+  },
+  {
+    "text": "changes we can just propagate the length",
+    "start": 1885.98,
+    "duration": 5.64
+  },
+  {
+    "text": "offset through the system so we can get",
+    "start": 1888.98,
+    "duration": 4.74
+  },
+  {
+    "text": "essentially systems of pulleys where the",
+    "start": 1891.62,
+    "duration": 4.559
+  },
+  {
+    "text": "Rope runs through the pulleys and",
+    "start": 1893.72,
+    "duration": 4.92
+  },
+  {
+    "text": "everything kind of looks correct and to",
+    "start": 1896.179,
+    "duration": 6.0
+  },
+  {
+    "text": "solve that horrible case of",
+    "start": 1898.64,
+    "duration": 6.899
+  },
+  {
+    "text": "the Precision breaking down we just",
+    "start": 1902.179,
+    "duration": 5.461
+  },
+  {
+    "text": "cheat and we tighten the Rope to a",
+    "start": 1905.539,
+    "duration": 3.481
+  },
+  {
+    "text": "straight line when we realize it's",
+    "start": 1907.64,
+    "duration": 4.2
+  },
+  {
+    "text": "approaching a problem case which is fine",
+    "start": 1909.02,
+    "duration": 6.0
+  },
+  {
+    "text": "because we just propagate the offset and",
+    "start": 1911.84,
+    "duration": 6.36
+  },
+  {
+    "text": "it looks like the Rope is spooling up",
+    "start": 1915.02,
+    "duration": 6.3
+  },
+  {
+    "text": "uh so here's an example of a roping",
+    "start": 1918.2,
+    "duration": 6.599
+  },
+  {
+    "text": "police system if you guys can see when",
+    "start": 1921.32,
+    "duration": 5.04
+  },
+  {
+    "text": "the block at the bottom moves which is",
+    "start": 1924.799,
+    "duration": 4.62
+  },
+  {
+    "text": "the anchor the Rope ends up reeling",
+    "start": 1926.36,
+    "duration": 4.5
+  },
+  {
+    "text": "through all of the pulleys and",
+    "start": 1929.419,
+    "duration": 3.541
+  },
+  {
+    "text": "everything's being updated kind of",
+    "start": 1930.86,
+    "duration": 4.86
+  },
+  {
+    "text": "correctly so you always have one end of",
+    "start": 1932.96,
+    "duration": 4.14
+  },
+  {
+    "text": "the rib system which is kind of an",
+    "start": 1935.72,
+    "duration": 4.079
+  },
+  {
+    "text": "infinite reel which reels the rope in",
+    "start": 1937.1,
+    "duration": 5.16
+  },
+  {
+    "text": "and out as necessary and the other is",
+    "start": 1939.799,
+    "duration": 6.561
+  },
+  {
+    "text": "the anchor which moves everything around",
+    "start": 1942.26,
+    "duration": 4.1
+  },
+  {
+    "text": "so as you as you do this uh we've also",
+    "start": 1946.64,
+    "duration": 6.96
+  },
+  {
+    "text": "added like a little bit of wind sway you",
+    "start": 1951.38,
+    "duration": 3.48
+  },
+  {
+    "text": "could do this probably quite correctly",
+    "start": 1953.6,
+    "duration": 4.459
+  },
+  {
+    "text": "by rotating the entire Arc around the",
+    "start": 1954.86,
+    "duration": 6.72
+  },
+  {
+    "text": "axis between the two points we're not",
+    "start": 1958.059,
+    "duration": 5.081
+  },
+  {
+    "text": "doing that we're just adding a bit of a",
+    "start": 1961.58,
+    "duration": 3.66
+  },
+  {
+    "text": "sine wave as you can see here that what",
+    "start": 1963.14,
+    "duration": 4.5
+  },
+  {
+    "text": "that rope at the top is doing is it just",
+    "start": 1965.24,
+    "duration": 5.1
+  },
+  {
+    "text": "it's turning into a straight line as",
+    "start": 1967.64,
+    "duration": 4.08
+  },
+  {
+    "text": "soon as uh",
+    "start": 1970.34,
+    "duration": 2.939
+  },
+  {
+    "text": "as soon as we know that there's going to",
+    "start": 1971.72,
+    "duration": 4.4
+  },
+  {
+    "text": "be an issue there",
+    "start": 1973.279,
+    "duration": 2.841
+  },
+  {
+    "text": "for in the distance we switch to much",
+    "start": 1977.38,
+    "duration": 4.12
+  },
+  {
+    "text": "simpler rendering the ropes because we",
+    "start": 1980.179,
+    "duration": 3.48
+  },
+  {
+    "text": "don't need to calculate proper normals",
+    "start": 1981.5,
+    "duration": 5.82
+  },
+  {
+    "text": "and we use the fenwire AA from",
+    "start": 1983.659,
+    "duration": 6.181
+  },
+  {
+    "text": "experiences from Avalanche studio in",
+    "start": 1987.32,
+    "duration": 5.82
+  },
+  {
+    "text": "2012 so we change the thickness of the",
+    "start": 1989.84,
+    "duration": 5.579
+  },
+  {
+    "text": "ropes and we change the translucency so",
+    "start": 1993.14,
+    "duration": 5.279
+  },
+  {
+    "text": "you get this naturally anti-alias",
+    "start": 1995.419,
+    "duration": 5.88
+  },
+  {
+    "text": "looking representation",
+    "start": 1998.419,
+    "duration": 5.281
+  },
+  {
+    "text": "and this is what the final result looks",
+    "start": 2001.299,
+    "duration": 3.961
+  },
+  {
+    "text": "like when you're on the deck of the ship",
+    "start": 2003.7,
+    "duration": 4.38
+  },
+  {
+    "text": "and you move changing the rotation of",
+    "start": 2005.26,
+    "duration": 5.82
+  },
+  {
+    "text": "the sails you get all the ropes kind of",
+    "start": 2008.08,
+    "duration": 4.56
+  },
+  {
+    "text": "correctly rolling through the pulleys",
+    "start": 2011.08,
+    "duration": 3.479
+  },
+  {
+    "text": "and adjusting themselves based on the",
+    "start": 2012.64,
+    "duration": 5.36
+  },
+  {
+    "text": "shape and the angle of the sails",
+    "start": 2014.559,
+    "duration": 3.441
+  },
+  {
+    "text": "uh so on the Xbox One if we do a naive",
+    "start": 2018.279,
+    "duration": 4.74
+  },
+  {
+    "text": "implementation kind of according to the",
+    "start": 2021.22,
+    "duration": 4.86
+  },
+  {
+    "text": "Shader code I showed earlier you get",
+    "start": 2023.019,
+    "duration": 6.481
+  },
+  {
+    "text": "about 0.035 milliseconds per a rope",
+    "start": 2026.08,
+    "duration": 7.62
+  },
+  {
+    "text": "of 65 Hertz we mostly use Square cross",
+    "start": 2029.5,
+    "duration": 6.96
+  },
+  {
+    "text": "sections for the ropes that's tends to",
+    "start": 2033.7,
+    "duration": 3.78
+  },
+  {
+    "text": "be good enough",
+    "start": 2036.46,
+    "duration": 3.66
+  },
+  {
+    "text": "although we do actually tessellate them",
+    "start": 2037.48,
+    "duration": 4.439
+  },
+  {
+    "text": "when we get very close which is scary",
+    "start": 2040.12,
+    "duration": 3.86
+  },
+  {
+    "text": "but it works",
+    "start": 2041.919,
+    "duration": 5.341
+  },
+  {
+    "text": "in practice we've actually moved a lot",
+    "start": 2043.98,
+    "duration": 5.199
+  },
+  {
+    "text": "of that precalculation of the",
+    "start": 2047.26,
+    "duration": 3.599
+  },
+  {
+    "text": "transcendental doing the iterations onto",
+    "start": 2049.179,
+    "duration": 5.101
+  },
+  {
+    "text": "the CPU and then we render a bunch of",
+    "start": 2050.859,
+    "duration": 5.641
+  },
+  {
+    "text": "the Rope segments in parallel as instant",
+    "start": 2054.28,
+    "duration": 3.599
+  },
+  {
+    "text": "static meshes",
+    "start": 2056.5,
+    "duration": 4.74
+  },
+  {
+    "text": "and it's a bit hard to actually get a",
+    "start": 2057.879,
+    "duration": 5.46
+  },
+  {
+    "text": "good cost estimate of what it is per",
+    "start": 2061.24,
+    "duration": 6.179
+  },
+  {
+    "text": "segment of row but it is very very cheap",
+    "start": 2063.339,
+    "duration": 7.08
+  },
+  {
+    "text": "and next up tentacles",
+    "start": 2067.419,
+    "duration": 7.2
+  },
+  {
+    "text": "so this was work we did quite late",
+    "start": 2070.419,
+    "duration": 6.121
+  },
+  {
+    "text": "um kind of pretty much just in the rush",
+    "start": 2074.619,
+    "duration": 5.04
+  },
+  {
+    "text": "to release and we had a design that",
+    "start": 2076.54,
+    "duration": 4.619
+  },
+  {
+    "text": "required cracking tentacles to wrap",
+    "start": 2079.659,
+    "duration": 3.841
+  },
+  {
+    "text": "around ships the animation graph is slow",
+    "start": 2081.159,
+    "duration": 5.101
+  },
+  {
+    "text": "to valuate on the CPU and we wanted lots",
+    "start": 2083.5,
+    "duration": 4.139
+  },
+  {
+    "text": "of wrap variants",
+    "start": 2086.26,
+    "duration": 3.24
+  },
+  {
+    "text": "and we wanted to make sure the tentacles",
+    "start": 2087.639,
+    "duration": 4.74
+  },
+  {
+    "text": "then clipped through ship geometry so we",
+    "start": 2089.5,
+    "duration": 4.859
+  },
+  {
+    "text": "decided to take approach from the",
+    "start": 2092.379,
+    "duration": 4.761
+  },
+  {
+    "text": "Finding Dory 2 talk",
+    "start": 2094.359,
+    "duration": 6.541
+  },
+  {
+    "text": "on finding Hank and how the pixel guy",
+    "start": 2097.14,
+    "duration": 8.74
+  },
+  {
+    "text": "simulated uh squishy octopus and had a",
+    "start": 2100.9,
+    "duration": 7.86
+  },
+  {
+    "text": "animator driven uh defamation coupled",
+    "start": 2105.88,
+    "duration": 5.16
+  },
+  {
+    "text": "with simulation so we decided to try a",
+    "start": 2108.76,
+    "duration": 4.2
+  },
+  {
+    "text": "similar thing and have Houdini drive an",
+    "start": 2111.04,
+    "duration": 3.299
+  },
+  {
+    "text": "fem Sim",
+    "start": 2112.96,
+    "duration": 4.02
+  },
+  {
+    "text": "and then we export this to per vertex",
+    "start": 2114.339,
+    "duration": 4.621
+  },
+  {
+    "text": "texture animation you could potentially",
+    "start": 2116.98,
+    "duration": 6.42
+  },
+  {
+    "text": "also do some kind of scanning solution",
+    "start": 2118.96,
+    "duration": 6.18
+  },
+  {
+    "text": "kind of like the Uncharted guys do where",
+    "start": 2123.4,
+    "duration": 4.14
+  },
+  {
+    "text": "you convert vertex animation to an",
+    "start": 2125.14,
+    "duration": 5.0
+  },
+  {
+    "text": "arbitrary skinned mesh that would be",
+    "start": 2127.54,
+    "duration": 4.98
+  },
+  {
+    "text": "uh more efficient in terms of memory",
+    "start": 2130.14,
+    "duration": 4.42
+  },
+  {
+    "text": "usage but it wasn't really useful for us",
+    "start": 2132.52,
+    "duration": 4.26
+  },
+  {
+    "text": "because of the CPU constraints",
+    "start": 2134.56,
+    "duration": 4.019
+  },
+  {
+    "text": "the texture Shader reads texture",
+    "start": 2136.78,
+    "duration": 4.079
+  },
+  {
+    "text": "animation for normals and positions so",
+    "start": 2138.579,
+    "duration": 4.681
+  },
+  {
+    "text": "you thanks to the fem Sim we get this",
+    "start": 2140.859,
+    "duration": 5.461
+  },
+  {
+    "text": "kind of displacement of the tentacle out",
+    "start": 2143.26,
+    "duration": 5.16
+  },
+  {
+    "text": "from the ship hole and there's 19 rap",
+    "start": 2146.32,
+    "duration": 4.32
+  },
+  {
+    "text": "animations so this saved our animators a",
+    "start": 2148.42,
+    "duration": 4.08
+  },
+  {
+    "text": "lot of time because they essentially",
+    "start": 2150.64,
+    "duration": 3.6
+  },
+  {
+    "text": "could reuse the same animation for the",
+    "start": 2152.5,
+    "duration": 3.42
+  },
+  {
+    "text": "different tentacle placements which were",
+    "start": 2154.24,
+    "duration": 4.26
+  },
+  {
+    "text": "design driven and we've just run the",
+    "start": 2155.92,
+    "duration": 3.84
+  },
+  {
+    "text": "simulation we get the correct",
+    "start": 2158.5,
+    "duration": 4.26
+  },
+  {
+    "text": "penetration uh for every animation we",
+    "start": 2159.76,
+    "duration": 5.04
+  },
+  {
+    "text": "actually save out several different",
+    "start": 2162.76,
+    "duration": 5.579
+  },
+  {
+    "text": "stapes states and we have essentially",
+    "start": 2164.8,
+    "duration": 5.16
+  },
+  {
+    "text": "keyframes which you can use to",
+    "start": 2168.339,
+    "duration": 3.541
+  },
+  {
+    "text": "transition between the uh between these",
+    "start": 2169.96,
+    "duration": 3.899
+  },
+  {
+    "text": "states which are sort of identical so",
+    "start": 2171.88,
+    "duration": 4.26
+  },
+  {
+    "text": "there's a wrap again wrap loop as the",
+    "start": 2173.859,
+    "duration": 4.081
+  },
+  {
+    "text": "tentacle sits around the ship there's",
+    "start": 2176.14,
+    "duration": 3.6
+  },
+  {
+    "text": "also a Wrangle when it's pushing the",
+    "start": 2177.94,
+    "duration": 3.419
+  },
+  {
+    "text": "ship about and it's kind of moving",
+    "start": 2179.74,
+    "duration": 3.119
+  },
+  {
+    "text": "around a little bit more so we want to",
+    "start": 2181.359,
+    "duration": 2.821
+  },
+  {
+    "text": "be able to blend between all of these",
+    "start": 2182.859,
+    "duration": 2.941
+  },
+  {
+    "text": "things",
+    "start": 2184.18,
+    "duration": 3.84
+  },
+  {
+    "text": "we export two textures we have a 16-bit",
+    "start": 2185.8,
+    "duration": 4.5
+  },
+  {
+    "text": "position date and a bit normal data and",
+    "start": 2188.02,
+    "duration": 4.8
+  },
+  {
+    "text": "then we also actually pack some tangent",
+    "start": 2190.3,
+    "duration": 5.16
+  },
+  {
+    "text": "information to the alpha Channel",
+    "start": 2192.82,
+    "duration": 4.92
+  },
+  {
+    "text": "we also have a lot of version with fewer",
+    "start": 2195.46,
+    "duration": 4.68
+  },
+  {
+    "text": "vertices and fewer frames for when",
+    "start": 2197.74,
+    "duration": 3.72
+  },
+  {
+    "text": "you're looking at the tentacles wrapping",
+    "start": 2200.14,
+    "duration": 3.0
+  },
+  {
+    "text": "around the ship from a distance",
+    "start": 2201.46,
+    "duration": 3.72
+  },
+  {
+    "text": "and because we're interpolating The",
+    "start": 2203.14,
+    "duration": 4.14
+  },
+  {
+    "text": "Frame data we actually export only 117",
+    "start": 2205.18,
+    "duration": 3.84
+  },
+  {
+    "text": "frames of the original 900 frame",
+    "start": 2207.28,
+    "duration": 5.88
+  },
+  {
+    "text": "animation and this is the first several",
+    "start": 2209.02,
+    "duration": 6.059
+  },
+  {
+    "text": "Pentacle wraps we ship the game with now",
+    "start": 2213.16,
+    "duration": 4.38
+  },
+  {
+    "text": "we actually have another seven because",
+    "start": 2215.079,
+    "duration": 4.741
+  },
+  {
+    "text": "we've added a new ship type",
+    "start": 2217.54,
+    "duration": 4.559
+  },
+  {
+    "text": "and that was a very simple process of",
+    "start": 2219.82,
+    "duration": 5.519
+  },
+  {
+    "text": "re-exporting re-baking more wraps for a",
+    "start": 2222.099,
+    "duration": 4.141
+  },
+  {
+    "text": "new ship",
+    "start": 2225.339,
+    "duration": 3.361
+  },
+  {
+    "text": "uh and one new trick we found along the",
+    "start": 2226.24,
+    "duration": 4.92
+  },
+  {
+    "text": "way is we can actually blend bake blend",
+    "start": 2228.7,
+    "duration": 5.159
+  },
+  {
+    "text": "shaped data into tangent space uh often",
+    "start": 2231.16,
+    "duration": 4.5
+  },
+  {
+    "text": "if you want to have state changes for a",
+    "start": 2233.859,
+    "duration": 3.901
+  },
+  {
+    "text": "mesh and you want to do cheaply what you",
+    "start": 2235.66,
+    "duration": 4.02
+  },
+  {
+    "text": "can do is you can bake a blend shape",
+    "start": 2237.76,
+    "duration": 4.02
+  },
+  {
+    "text": "into the UVS off the mesh and in the",
+    "start": 2239.68,
+    "duration": 5.04
+  },
+  {
+    "text": "Shader switch the local position between",
+    "start": 2241.78,
+    "duration": 6.36
+  },
+  {
+    "text": "the baked position data and the UVS and",
+    "start": 2244.72,
+    "duration": 5.46
+  },
+  {
+    "text": "you can get a simple blend shape",
+    "start": 2248.14,
+    "duration": 3.6
+  },
+  {
+    "text": "transition but you can't normally do",
+    "start": 2250.18,
+    "duration": 3.78
+  },
+  {
+    "text": "this if an object is skinned and",
+    "start": 2251.74,
+    "duration": 3.66
+  },
+  {
+    "text": "sometimes you don't want to play castle",
+    "start": 2253.96,
+    "duration": 3.0
+  },
+  {
+    "text": "blend shapes in the animation pipeline",
+    "start": 2255.4,
+    "duration": 2.82
+  },
+  {
+    "text": "we certainly didn't",
+    "start": 2256.96,
+    "duration": 3.96
+  },
+  {
+    "text": "so what we found is you can actually",
+    "start": 2258.22,
+    "duration": 4.56
+  },
+  {
+    "text": "save out the displacement for every",
+    "start": 2260.92,
+    "duration": 4.62
+  },
+  {
+    "text": "vertex and tangent coordinate frame and",
+    "start": 2262.78,
+    "duration": 4.5
+  },
+  {
+    "text": "that gets updated by the skinning for",
+    "start": 2265.54,
+    "duration": 5.46
+  },
+  {
+    "text": "free so for example this is actually a",
+    "start": 2267.28,
+    "duration": 7.68
+  },
+  {
+    "text": "skinned version of the tentacle and this",
+    "start": 2271.0,
+    "duration": 6.78
+  },
+  {
+    "text": "is an exaggerated version of the suckers",
+    "start": 2274.96,
+    "duration": 5.46
+  },
+  {
+    "text": "puckering in and out and we also use the",
+    "start": 2277.78,
+    "duration": 5.28
+  },
+  {
+    "text": "vertex colors to displace the blend",
+    "start": 2280.42,
+    "duration": 5.52
+  },
+  {
+    "text": "shape so they don't all do it in sync",
+    "start": 2283.06,
+    "duration": 5.16
+  },
+  {
+    "text": "and we also ended up using the same",
+    "start": 2285.94,
+    "duration": 3.899
+  },
+  {
+    "text": "effect to animate the gills on the",
+    "start": 2288.22,
+    "duration": 3.359
+  },
+  {
+    "text": "Megalodon",
+    "start": 2289.839,
+    "duration": 5.041
+  },
+  {
+    "text": "and finally we realized we want to do",
+    "start": 2291.579,
+    "duration": 4.981
+  },
+  {
+    "text": "something fun with lightning I'll go",
+    "start": 2294.88,
+    "duration": 3.02
+  },
+  {
+    "text": "through this one pretty quickly",
+    "start": 2296.56,
+    "duration": 3.48
+  },
+  {
+    "text": "essentially we have an L system we",
+    "start": 2297.9,
+    "duration": 4.66
+  },
+  {
+    "text": "generate in Houdini I mean generally",
+    "start": 2300.04,
+    "duration": 4.62
+  },
+  {
+    "text": "several versions of the L system so that",
+    "start": 2302.56,
+    "duration": 5.1
+  },
+  {
+    "text": "per vertex would bake out data on how",
+    "start": 2304.66,
+    "duration": 5.4
+  },
+  {
+    "text": "far you have traveled along the length",
+    "start": 2307.66,
+    "duration": 3.959
+  },
+  {
+    "text": "of the L system and we also back out",
+    "start": 2310.06,
+    "duration": 4.26
+  },
+  {
+    "text": "data which tells us which branch is the",
+    "start": 2311.619,
+    "duration": 5.281
+  },
+  {
+    "text": "main branch and the result of this if we",
+    "start": 2314.32,
+    "duration": 5.759
+  },
+  {
+    "text": "slow the lightning effect down is it",
+    "start": 2316.9,
+    "duration": 4.14
+  },
+  {
+    "text": "looks",
+    "start": 2320.079,
+    "duration": 3.78
+  },
+  {
+    "text": "quite close to the slow motion videos of",
+    "start": 2321.04,
+    "duration": 5.6
+  },
+  {
+    "text": "actual lightning strikes in that we",
+    "start": 2323.859,
+    "duration": 5.461
+  },
+  {
+    "text": "basically thresholds through the",
+    "start": 2326.64,
+    "duration": 5.62
+  },
+  {
+    "text": "traversal values on the geometry and",
+    "start": 2329.32,
+    "duration": 6.539
+  },
+  {
+    "text": "then once we get to the end we make the",
+    "start": 2332.26,
+    "duration": 6.18
+  },
+  {
+    "text": "main branch very thick and bright and",
+    "start": 2335.859,
+    "duration": 4.321
+  },
+  {
+    "text": "that gives the effect of that lightning",
+    "start": 2338.44,
+    "duration": 6.32
+  },
+  {
+    "text": "bolt as it finds a grounding point",
+    "start": 2340.18,
+    "duration": 4.58
+  },
+  {
+    "text": "[Music]",
+    "start": 2346.26,
+    "duration": 3.089
+  },
+  {
+    "text": "actually completely unplanned the video",
+    "start": 2353.52,
+    "duration": 5.8
+  },
+  {
+    "text": "guys had been doing about several",
+    "start": 2356.859,
+    "duration": 4.801
+  },
+  {
+    "text": "hundred takes and they just happen to",
+    "start": 2359.32,
+    "duration": 4.14
+  },
+  {
+    "text": "have one where the lightning",
+    "start": 2361.66,
+    "duration": 3.9
+  },
+  {
+    "text": "accidentally struck the ship at exactly",
+    "start": 2363.46,
+    "duration": 3.6
+  },
+  {
+    "text": "the right time",
+    "start": 2365.56,
+    "duration": 5.16
+  },
+  {
+    "text": "so in conclusion uh basically our",
+    "start": 2367.06,
+    "duration": 5.22
+  },
+  {
+    "text": "approach has been that stylized art",
+    "start": 2370.72,
+    "duration": 3.84
+  },
+  {
+    "text": "essentially has a physical basis",
+    "start": 2372.28,
+    "duration": 4.38
+  },
+  {
+    "text": "um stylization for us is taking physical",
+    "start": 2374.56,
+    "duration": 5.16
+  },
+  {
+    "text": "phenomenon and adding a stylistic",
+    "start": 2376.66,
+    "duration": 5.959
+  },
+  {
+    "text": "interpretation uh we have tried to",
+    "start": 2379.72,
+    "duration": 5.16
+  },
+  {
+    "text": "maintain a physical grounding for all",
+    "start": 2382.619,
+    "duration": 3.941
+  },
+  {
+    "text": "the workflow improvements that gives us",
+    "start": 2384.88,
+    "duration": 5.459
+  },
+  {
+    "text": "and the simulation allows us to iterate",
+    "start": 2386.56,
+    "duration": 6.96
+  },
+  {
+    "text": "and to create have more versions of all",
+    "start": 2390.339,
+    "duration": 5.641
+  },
+  {
+    "text": "this excellent stuff and an excellent",
+    "start": 2393.52,
+    "duration": 5.16
+  },
+  {
+    "text": "demonstration for that is the vomit that",
+    "start": 2395.98,
+    "duration": 5.4
+  },
+  {
+    "text": "we developed for when your pirate gets",
+    "start": 2398.68,
+    "duration": 4.98
+  },
+  {
+    "text": "very very drunk and so we ran several",
+    "start": 2401.38,
+    "duration": 4.08
+  },
+  {
+    "text": "simulations in Houdini",
+    "start": 2403.66,
+    "duration": 4.8
+  },
+  {
+    "text": "and what we did then is we baked out",
+    "start": 2405.46,
+    "duration": 5.159
+  },
+  {
+    "text": "these simulations to Athos which we can",
+    "start": 2408.46,
+    "duration": 4.8
+  },
+  {
+    "text": "threshold through and you get this",
+    "start": 2410.619,
+    "duration": 5.041
+  },
+  {
+    "text": "wonderful result where you have",
+    "start": 2413.26,
+    "duration": 6.859
+  },
+  {
+    "text": "physically accurate vomit splatter",
+    "start": 2415.66,
+    "duration": 4.459
+  },
+  {
+    "text": "I'm going to skip through the future",
+    "start": 2423.339,
+    "duration": 3.361
+  },
+  {
+    "text": "work but essentially we just want to do",
+    "start": 2424.78,
+    "duration": 4.559
+  },
+  {
+    "text": "more simulationy stuff and also give",
+    "start": 2426.7,
+    "duration": 5.76
+  },
+  {
+    "text": "more artists control for this because",
+    "start": 2429.339,
+    "duration": 4.201
+  },
+  {
+    "text": "the",
+    "start": 2432.46,
+    "duration": 3.96
+  },
+  {
+    "text": "in the way we've done this on sea of",
+    "start": 2433.54,
+    "duration": 4.68
+  },
+  {
+    "text": "Thieves is this has mostly been stuff",
+    "start": 2436.42,
+    "duration": 3.6
+  },
+  {
+    "text": "developed just within the tech art team",
+    "start": 2438.22,
+    "duration": 5.58
+  },
+  {
+    "text": "as kind of feature key moments we want",
+    "start": 2440.02,
+    "duration": 6.059
+  },
+  {
+    "text": "to give artists more control some",
+    "start": 2443.8,
+    "duration": 4.92
+  },
+  {
+    "text": "acknowledgments and also we're hiring in",
+    "start": 2446.079,
+    "duration": 5.341
+  },
+  {
+    "text": "our absolutely gorgeous Countryside",
+    "start": 2448.72,
+    "duration": 5.28
+  },
+  {
+    "text": "studio in the middle of rural green",
+    "start": 2451.42,
+    "duration": 4.86
+  },
+  {
+    "text": "England it is absolutely beautiful that",
+    "start": 2454.0,
+    "duration": 3.66
+  },
+  {
+    "text": "it's looking a bit scorched at the",
+    "start": 2456.28,
+    "duration": 2.7
+  },
+  {
+    "text": "moment",
+    "start": 2457.66,
+    "duration": 3.12
+  },
+  {
+    "text": "and",
+    "start": 2458.98,
+    "duration": 3.3
+  },
+  {
+    "text": "feel free to contact us if you have any",
+    "start": 2460.78,
+    "duration": 3.12
+  },
+  {
+    "text": "questions and there's some references at",
+    "start": 2462.28,
+    "duration": 2.7
+  },
+  {
+    "text": "the end",
+    "start": 2463.9,
+    "duration": 3.679
+  },
+  {
+    "text": "thanks guys",
+    "start": 2464.98,
+    "duration": 2.599
+  }
+]

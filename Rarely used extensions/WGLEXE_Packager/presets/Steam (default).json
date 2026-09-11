@@ -1,0 +1,40 @@
+{
+  "name": "Steam (default)",
+  "description": "The safe Steam build. Overlay on, SharedArrayBuffer via flag, no stability trades.",
+  "settings": {
+    "appName": "GDevelopGame",
+    "version": "1.0.0",
+    "executableName": "Game.exe",
+    "icon": "",
+    "window": {
+      "title": "",
+      "width": 1280,
+      "height": 720,
+      "minWidth": 640,
+      "minHeight": 480,
+      "resizable": true,
+      "fullscreen": false,
+      "borderless": false,
+      "backgroundThrottling": false
+    },
+    "gpu": {
+      "angleBackend": "default",
+      "ignoreGpuBlocklist": false,
+      "disableVsync": false,
+      "enableDraftExtensions": false
+    },
+    "security": {
+      "sharedArrayBuffer": "flag",
+      "nativeBridge": false
+    },
+    "steam": {
+      "enabled": true,
+      "appId": "",
+      "overlayCompat": true,
+      "disableDirectComposition": false,
+      "stripSteamAppIdTxt": true
+    },
+    "native": { "addon": "" },
+    "build": { "asar": false, "verify": true }
+  }
+}

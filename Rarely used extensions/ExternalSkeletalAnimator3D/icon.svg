@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- External Skeletal Animator 3D: external clips feeding a rig -->
+  <rect x="0" y="0" width="256" height="256" rx="48" fill="#111111"/>
+
+  <!-- three external animation clips, stacked -->
+  <g stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.55">
+    <line x1="26" y1="92"  x2="66" y2="92"/>
+    <line x1="26" y1="128" x2="66" y2="128"/>
+    <line x1="26" y1="164" x2="66" y2="164"/>
+  </g>
+
+  <!-- arrow: the clips drive the rig -->
+  <g stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="80" y1="128" x2="112" y2="128"/>
+    <polyline points="100,116 112,128 100,140"/>
+  </g>
+
+  <!-- the rig: bones in a mid-stride pose, joints called out -->
+  <g stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- spine -->
+    <line x1="180" y1="86" x2="180" y2="146"/>
+    <!-- arms -->
+    <line x1="180" y1="102" x2="146" y2="130"/>
+    <line x1="180" y1="102" x2="216" y2="126"/>
+    <!-- legs -->
+    <line x1="180" y1="146" x2="156" y2="188"/>
+    <line x1="156" y1="188" x2="150" y2="224"/>
+    <line x1="180" y1="146" x2="210" y2="184"/>
+    <line x1="210" y1="184" x2="218" y2="222"/>
+  </g>
+
+  <!-- head -->
+  <circle cx="180" cy="62" r="17" fill="#ffffff"/>
+
+  <!-- joints -->
+  <g fill="#111111" stroke="#ffffff" stroke-width="7">
+    <circle cx="180" cy="102" r="8"/>
+    <circle cx="180" cy="146" r="9"/>
+    <circle cx="156" cy="188" r="8"/>
+    <circle cx="210" cy="184" r="8"/>
+  </g>
+</svg>

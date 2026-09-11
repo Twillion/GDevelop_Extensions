@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="wpGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe" />
+      <stop offset="100%" stop-color="#00f2fe" />
+    </linearGradient>
+    <linearGradient id="clipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#43e97b" />
+      <stop offset="100%" stop-color="#38f9d7" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#0f172a" />
+  <!-- Grid Matrix Cells -->
+  <rect x="8" y="8" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  <rect x="25" y="8" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  <rect x="42" y="8" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  
+  <rect x="8" y="25" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  <!-- Active Player Center Sector -->
+  <rect x="25" y="25" width="14" height="14" rx="3" fill="url(#wpGrad)" stroke="#00f2fe" stroke-width="2" filter="drop-shadow(0 0 6px rgba(0, 242, 254, 0.6))" />
+  <rect x="42" y="25" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  
+  <rect x="8" y="42" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  <rect x="25" y="42" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+  <rect x="42" y="42" width="14" height="14" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5" />
+
+  <!-- Concentric Clipmap Terrain Waves -->
+  <path d="M 12 52 Q 22 46 32 50 T 52 48" fill="none" stroke="url(#clipGrad)" stroke-width="2" stroke-linecap="round" />
+  <!-- Center Player Beacon -->
+  <circle cx="32" cy="32" r="3" fill="#ffffff" />
+</svg>

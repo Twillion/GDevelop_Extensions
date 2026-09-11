@@ -1,0 +1,70 @@
+{
+  "id": "gdevelop-5-electron-main",
+  "description": "Patches the main.js emitted by GDevelop 5's 'Electron Build' export.",
+  "testedAgainst": "GDevelop 5.x (GDJS Runtime/Electron/main.js, electron 32.3.3)",
+  "targetFile": "main.js",
+  "requires": [
+    {
+      "contains": "require('electron')",
+      "message": "main.js does not require('electron') — this does not look like a GDevelop Electron export."
+    },
+    {
+      "contains": "mainWindow = new BrowserWindow({",
+      "message": "main.js does not create a BrowserWindow the way GDevelop's template does."
+    },
+    {
+      "contains": "webPreferences: {",
+      "message": "main.js has no webPreferences block to anchor window overrides to."
+    },
+    {
+      "contains": "mainWindow.loadFile('app/index.html');",
+      "message": "main.js does not load app/index.html the way GDevelop's template does."
+    }
+  ],
+  "refuseIfPresent": [
+    {
+      "contains": "wglexe:switches",
+      "message": "main.js is already patched. Re-export from GDevelop and package the clean export."
+    }
+  ],
+  "operations": [
+    {
+      "name": "switches",
+      "type": "insertBefore",
+      "anchor": "require('@electron/remote/main').initialize();",
+      "templateFile": "switches.js.tpl"
+    },
+    {
+      "name": "window-options",
+      "type": "insertBefore",
+      "anchor": "    webPreferences: {",
+      "text": "    ...(global.__wglexeWindowOptions || {}),\n"
+    },
+    {
+      "name": "post-create",
+      "type": "insertAfter",
+      "anchor": "  mainWindow.loadFile('app/index.html');",
+      "text": "\n  __wglexeAfterCreate(mainWindow);"
+    },
+    {
+      "name": "isolation-loadurl",
+      "type": "replace",
+      "when": {
+        "path": "security.sharedArrayBuffer",
+        "equals": "isolation"
+      },
+      "find": "  mainWindow.loadFile('app/index.html');",
+      "text": "  mainWindow.loadURL('game://app/index.html');"
+    },
+    {
+      "name": "isolation-scheme",
+      "type": "insertBefore",
+      "when": {
+        "path": "security.sharedArrayBuffer",
+        "equals": "isolation"
+      },
+      "anchor": "require('@electron/remote/main').initialize();",
+      "templateFile": "isolation.js.tpl"
+    }
+  ]
+}

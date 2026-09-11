@@ -1,0 +1,875 @@
+{
+  "name": "Portal3D",
+  "fullName": "Portal 3D (Valve-style Visual & Physical Portals)",
+  "version": "1.0.0",
+  "description": "Real-time perspective-matched visual portals and seamless physical/momentum teleportation inspired by Valve's Portal series.",
+  "shortDescription": "Valve-style visual and physical portals in 3D.",
+  "author": "Twillion",
+  "category": "General",
+  "extensionNamespace": "",
+  "tags": [
+    "3d",
+    "portal",
+    "camera",
+    "teleport",
+    "physics",
+    "render-to-texture"
+  ],
+  "behaviors": [
+    {
+      "name": "Portal3D",
+      "fullName": "Portal (3D)",
+      "description": "Turns a 3D Box face or surface into an interactive visual portal linked to another portal.",
+      "objectType": "",
+      "propertyDescriptors": [
+        {
+          "name": "Tag",
+          "type": "string",
+          "value": "Blue",
+          "label": "Portal tag (ID)",
+          "description": "Unique tag identifying this portal (e.g. Blue, Orange, PortalA)"
+        },
+        {
+          "name": "LinkedTag",
+          "type": "string",
+          "value": "Orange",
+          "label": "Linked portal tag",
+          "description": "Tag of the destination portal this portal connects to"
+        },
+        {
+          "name": "Face",
+          "type": "choice",
+          "value": "Front",
+          "label": "Face",
+          "description": "Face of the 3D Box used as the portal opening",
+          "extraInformation": [
+            "Front",
+            "Back",
+            "Left",
+            "Right",
+            "Top",
+            "Bottom"
+          ]
+        },
+        {
+          "name": "Shape",
+          "type": "choice",
+          "value": "Oval",
+          "label": "Portal frame shape",
+          "description": "Visual frame style: Oval aperture ring or Rectangular box frame",
+          "extraInformation": [
+            "Oval",
+            "Rectangle"
+          ]
+        },
+        {
+          "name": "BorderColor",
+          "type": "color",
+          "value": "#00a2ff",
+          "label": "Border ring color",
+          "description": "Color of the energetic portal rim glow (e.g. #00a2ff for Blue, #ff7700 for Orange)"
+        },
+        {
+          "name": "BorderWidth",
+          "type": "number",
+          "value": "0.08",
+          "label": "Border ring thickness",
+          "description": "Relative thickness of the border ring (0.01 to 0.3)"
+        },
+        {
+          "name": "Resolution",
+          "type": "choice",
+          "value": "Standard",
+          "label": "Resolution",
+          "description": "Resolution preset for the offscreen portal render target",
+          "extraInformation": [
+            "Tiny",
+            "Low",
+            "Standard",
+            "SD",
+            "HD",
+            "MatchScreen",
+            "Custom"
+          ]
+        },
+        {
+          "name": "CustomWidth",
+          "type": "number",
+          "value": "512",
+          "label": "Custom width",
+          "description": "Target texture width when Resolution is Custom"
+        },
+        {
+          "name": "CustomHeight",
+          "type": "number",
+          "value": "512",
+          "label": "Custom height",
+          "description": "Target texture height when Resolution is Custom"
+        },
+        {
+          "name": "ObliqueClipping",
+          "type": "boolean",
+          "value": "true",
+          "label": "Oblique near-plane clipping",
+          "description": "When enabled, modifies projection matrix near plane to cull geometry behind the exit portal"
+        },
+        {
+          "name": "ForwardAxis",
+          "type": "choice",
+          "value": "+Z",
+          "label": "Forward axis (outward normal)",
+          "description": "Local axis perpendicular to the portal face pointing outward into the room",
+          "extraInformation": [
+            "+Z",
+            "-Z",
+            "+X",
+            "-X",
+            "+Y",
+            "-Y"
+          ]
+        },
+        {
+          "name": "IsOpen",
+          "type": "boolean",
+          "value": "true",
+          "label": "Is open / active",
+          "description": "Whether the portal is currently open and rendering its destination feed"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * Portal3D — Valve Portal-style visual and physical portals for GDevelop 5.\n *\n * Implements:\n *   1. Perspective-matched virtual cameras: Looking into Portal A renders the scene\n *      from Portal B with the exact relative eye-perspective of the player camera.\n *   2. Screen-space projective texture mapping: Portal surfaces sample the offscreen\n *      target in screen coordinates, turning the portal face into a seamless optical window.\n *   3. Oblique near-plane clipping (Lengyel's matrix): Geometry behind the exit portal's\n *      wall is cleanly clipped from the portal view frustum.\n *   4. Seamless physical traversal & momentum redirection: Entities crossing the portal\n *      plane are instantly teleported, redirecting velocity and look vectors while\n *      preserving kinetic energy.\n *   5. Robust WebGL lifecycle & state restoration following InGameCamera3D (C1, C3, C5, C10).\n */\n(function () {\n  if (typeof gdjs === 'undefined') return;\n  if (gdjs.__portal3D) return; // install once\n\n  var THREE_OK = typeof THREE !== 'undefined';\n\n  /* ------------------------------------------------------------ constants */\n\n  var PRESETS = {\n    Tiny: [160, 120],\n    Low: [320, 240],\n    Standard: [512, 512],\n    SD: [640, 480],\n    HD: [1280, 720],\n    MatchScreen: [0, 0]\n  };\n\n  // Cube3D face order: [Front, Back, Left, Right, Top, Bottom].\n  var FACE_INDEX = { Front: 0, Back: 1, Left: 2, Right: 3, Top: 4, Bottom: 5 };\n  var FACE_SLOT = { 0: 4, 1: 5, 2: 1, 3: 0, 4: 3, 5: 2 };\n\n  var FORWARD_AXIS = {\n    '+Z': [0, 0, 1], '-Z': [0, 0, -1],\n    '+X': [1, 0, 0], '-X': [-1, 0, 0],\n    '+Y': [0, 1, 0], '-Y': [0, -1, 0]\n  };\n\n  var warned = {};\n  function warnOnce(key, message) {\n    if (warned[key]) return;\n    warned[key] = true;\n    console.warn('[Portal3D] ' + message);\n  }\n\n  function isDead(object) {\n    return !object || object._livingOnScene === false;\n  }\n\n  /* --------------------------------------------------------- scene state */\n\n  var scenes = new Map();\n\n  function stateOf(runtimeScene) {\n    var s = scenes.get(runtimeScene);\n    if (!s) {\n      s = {\n        portals: new Set(),         // active Portal3D behavior records\n        traversables: new Set(),    // active PortalTraversable3D behavior records\n        bindings: new Set(),        // mesh material bindings\n        hiddenMeshes: []            // scratch for recursion guard during render\n      };\n      scenes.set(runtimeScene, s);\n    }\n    return s;\n  }\n\n  function threeRendererOf(runtimeScene) {\n    var gameRenderer = runtimeScene.getGame().getRenderer();\n    return gameRenderer && gameRenderer.getThreeRenderer\n      ? gameRenderer.getThreeRenderer()\n      : null;\n  }\n\n  function layerSceneOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeScene ? lr.getThreeScene() : null;\n  }\n\n  function layerCameraOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeCamera ? lr.getThreeCamera() : null;\n  }\n\n  /* -------------------------------------------------------------- targets */\n\n  function resolveSize(preset, customW, customH, renderer, runtimeScene) {\n    var w, h;\n    if (preset === 'MatchScreen' && runtimeScene) {\n      var game = runtimeScene.getGame();\n      w = game.getGameResolutionWidth() || 512;\n      h = game.getGameResolutionHeight() || 512;\n    } else if (PRESETS[preset] && PRESETS[preset][0] > 0) {\n      w = PRESETS[preset][0];\n      h = PRESETS[preset][1];\n    } else {\n      w = Math.floor(customW) || 512;\n      h = Math.floor(customH) || 512;\n    }\n    w = Math.max(1, w);\n    h = Math.max(1, h);\n\n    var max = renderer && renderer.capabilities ? renderer.capabilities.maxTextureSize : 0;\n    if (max && (w > max || h > max)) {\n      w = Math.min(w, max);\n      h = Math.min(h, max);\n    }\n    return [w, h];\n  }\n\n  function makeTarget(w, h) {\n    var target = new THREE.WebGLRenderTarget(w, h, {\n      minFilter: THREE.LinearFilter,\n      magFilter: THREE.LinearFilter,\n      depthBuffer: true,\n      stencilBuffer: false,\n      samples: 0\n    });\n    if (THREE.SRGBColorSpace !== undefined) {\n      target.texture.colorSpace = THREE.SRGBColorSpace;\n    }\n    target.texture.generateMipmaps = false;\n    return target;\n  }\n\n  function disposeTarget(portal) {\n    if (portal.target) {\n      try { portal.target.dispose(); } catch (e) {}\n      portal.target = null;\n    }\n  }\n\n  function ensureTarget(portal, renderer, runtimeScene) {\n    var size = resolveSize(portal.preset, portal.customW, portal.customH, renderer, runtimeScene);\n    var w = size[0], h = size[1];\n\n    if (portal.target && portal.target.width === w && portal.target.height === h) {\n      return portal.target;\n    }\n\n    disposeTarget(portal);\n    portal.target = makeTarget(w, h);\n    portal.textureEpoch = (portal.textureEpoch || 0) + 1;\n    return portal.target;\n  }\n\n  /* ------------------------------------------------------------ math scratch */\n\n  var _mTransform = null, _m4A = null, _m4B = null, _m4Inv = null, _m4Rel = null, _m4Cam = null;\n  var _v3A = null, _v3B = null, _v3Pos = null, _v3Look = null, _v3Up = null;\n  var _qA = null, _qB = null, _qFlip = null, _euler = null;\n  var _plane = null, _vec4 = null, _qCorn = null;\n\n  function initScratch() {\n    if (_mTransform) return;\n    _mTransform = new THREE.Matrix4();\n    _m4A = new THREE.Matrix4();\n    _m4B = new THREE.Matrix4();\n    _m4Inv = new THREE.Matrix4();\n    _m4Rel = new THREE.Matrix4();\n    _m4Cam = new THREE.Matrix4();\n    _v3A = new THREE.Vector3();\n    _v3B = new THREE.Vector3();\n    _v3Pos = new THREE.Vector3();\n    _v3Look = new THREE.Vector3();\n    _v3Up = new THREE.Vector3();\n    _qA = new THREE.Quaternion();\n    _qB = new THREE.Quaternion();\n    _qFlip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);\n    _euler = new THREE.Euler();\n    _plane = new THREE.Plane();\n    _vec4 = new THREE.Vector4();\n    _qCorn = new THREE.Vector4();\n  }\n\n  /**\n   * Computes the world matrix of a portal in Three.js coordinates.\n   * In GDevelop: Y is inverted relative to Three.js world space.\n   */\n  function getPortalWorldTransform(portal, outMatrix, outNormal, outUp) {\n    initScratch();\n    var mat = outMatrix || _mTransform;\n    var obj = portal.object;\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    mat.makeRotationFromEuler(_euler);\n\n    // Position: negate Y for Three.js scene coordinates\n    mat.setPosition(cx, -cy, cz);\n\n    var fAxis = FORWARD_AXIS[portal.forwardAxis] || FORWARD_AXIS['+Z'];\n    if (outNormal) {\n      outNormal.set(fAxis[0], -fAxis[1], fAxis[2]).applyEuler(_euler).normalize();\n    }\n    if (outUp) {\n      outUp.set(0, 0, 1).applyEuler(_euler).normalize();\n    }\n    return mat;\n  }\n\n  /**\n   * Computes the relative transformation from Portal A to Portal B:\n   * M_rel = M_B * R_flip * (M_A)^(-1)\n   */\n  function computePortalMatrix(portalA, portalB, outRelMatrix) {\n    initScratch();\n    getPortalWorldTransform(portalA, _m4A);\n    getPortalWorldTransform(portalB, _m4B);\n\n    _m4Inv.copy(_m4A).invert();\n\n    // R_flip is a 180-degree rotation around local Y\n    var mFlip = new THREE.Matrix4().makeRotationY(Math.PI);\n\n    outRelMatrix.copy(_m4B).multiply(mFlip).multiply(_m4Inv);\n    return outRelMatrix;\n  }\n\n  /**\n   * Lengyel's Oblique View Frustum Projection:\n   * Adjusts the camera projection matrix's near plane to lie exactly on the clipping plane.\n   */\n  function applyObliqueClipping(projMatrix, clipPlaneCamera) {\n    var p = projMatrix.clone();\n    var cp = clipPlaneCamera;\n\n    // Corner opposite to clip plane\n    _qCorn.x = (Math.sign(cp.x) + p.elements[8]) / p.elements[0];\n    _qCorn.y = (Math.sign(cp.y) + p.elements[9]) / p.elements[5];\n    _qCorn.z = -1.0;\n    _qCorn.w = (1.0 + p.elements[10]) / p.elements[14];\n\n    var dot = cp.x * _qCorn.x + cp.y * _qCorn.y + cp.z * _qCorn.z + cp.w * _qCorn.w;\n    if (Math.abs(dot) < 1e-6) return projMatrix; // avoid degenerate division\n\n    var scale = 2.0 / dot;\n    var c = new THREE.Vector4(cp.x * scale, cp.y * scale, cp.z * scale, cp.w * scale);\n\n    // Replace 3rd row of column-major projection matrix\n    p.elements[2] = c.x;\n    p.elements[6] = c.y;\n    p.elements[10] = c.z + 1.0;\n    p.elements[14] = c.w;\n\n    return p;\n  }\n\n  /* ------------------------------------------------------------- bindings */\n\n  function cubeMeshOf(object) {\n    var renderer = object.getRenderer && object.getRenderer();\n    return renderer && renderer._boxMesh ? renderer._boxMesh : null;\n  }\n\n  function createPortalMaterial(portal, originalMat) {\n    var mat = new THREE.MeshBasicMaterial({\n      color: 0xffffff,\n      transparent: true,\n      toneMapped: false\n    });\n\n    mat.userData.portal = portal;\n    mat.userData.uBorderColor = new THREE.Color(portal.borderColor || '#00a2ff');\n    mat.userData.uBorderWidth = portal.borderWidth !== undefined ? portal.borderWidth : 0.08;\n    mat.userData.uShape = portal.shape === 'Rectangle' ? 1.0 : 0.0;\n\n    mat.onBeforeCompile = function (shader) {\n      shader.uniforms.uPortalMap = { value: portal.target ? portal.target.texture : null };\n      shader.uniforms.uBorderColor = { value: mat.userData.uBorderColor };\n      shader.uniforms.uBorderWidth = { value: mat.userData.uBorderWidth };\n      shader.uniforms.uShape = { value: mat.userData.uShape };\n      shader.uniforms.uIsOpen = { value: portal.isOpen ? 1.0 : 0.0 };\n\n      mat.userData.shader = shader;\n\n      // Vertex shader: pass clip-space position and UVs\n      shader.vertexShader = 'varying vec4 vScreenCoord;\\nvarying vec2 vPortalUv;\\n' + shader.vertexShader;\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <begin_vertex>',\n        [\n          '#include <begin_vertex>',\n          'vPortalUv = uv;'\n        ].join('\\n')\n      );\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <project_vertex>',\n        [\n          '#include <project_vertex>',\n          'vScreenCoord = gl_Position;'\n        ].join('\\n')\n      );\n\n      // Fragment shader: sample screen coordinates and generate portal rim\n      shader.fragmentShader = [\n        'uniform sampler2D uPortalMap;',\n        'uniform vec3 uBorderColor;',\n        'uniform float uBorderWidth;',\n        'uniform float uShape;',\n        'uniform float uIsOpen;',\n        'varying vec4 vScreenCoord;',\n        'varying vec2 vPortalUv;',\n        shader.fragmentShader\n      ].join('\\n');\n\n      shader.fragmentShader = shader.fragmentShader.replace(\n        '#include <dithering_fragment>',\n        [\n          '#include <dithering_fragment>',\n          'if (uIsOpen < 0.5) {',\n          '  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',\n          '} else {',\n          '  vec2 screenUv = (vScreenCoord.xy / vScreenCoord.w) * 0.5 + 0.5;',\n          '  vec4 portalColor = texture2D(uPortalMap, screenUv);',\n          '  float ring = 0.0;',\n          '  float alpha = 1.0;',\n          '  if (uShape < 0.5) {',\n          '    // Oval Portal Ring',\n          '    vec2 p = vPortalUv * 2.0 - 1.0;',\n          '    float d = length(p);',\n          '    float inner = 0.90 - uBorderWidth;',\n          '    ring = smoothstep(inner, inner + 0.06, d) * (1.0 - smoothstep(0.96, 1.0, d));',\n          '    alpha = 1.0 - smoothstep(0.98, 1.02, d);',\n          '  } else {',\n          '    // Rectangular Portal Frame',\n          '    vec2 edge = min(vPortalUv, 1.0 - vPortalUv);',\n          '    float minEdge = min(edge.x, edge.y);',\n          '    ring = (1.0 - smoothstep(0.0, uBorderWidth, minEdge));',\n          '    alpha = 1.0;',\n          '  }',\n          '  vec3 rgb = mix(portalColor.rgb, uBorderColor, ring);',\n          '  gl_FragColor = vec4(rgb, alpha);',\n          '}'\n        ].join('\\n')\n      );\n    };\n\n    return mat;\n  }\n\n  function bindPortalMesh(portal) {\n    var mesh = cubeMeshOf(portal.object);\n    if (!mesh || !Array.isArray(mesh.material)) return false;\n\n    var faceIndex = FACE_INDEX[portal.face] !== undefined ? FACE_INDEX[portal.face] : 0;\n    var slot = FACE_SLOT[faceIndex];\n    if (slot === undefined) return false;\n\n    var original = mesh.material[slot];\n    var clone = createPortalMaterial(portal, original);\n    mesh.material[slot] = clone;\n\n    portal.binding = {\n      mesh: mesh,\n      slot: slot,\n      original: original,\n      clone: clone\n    };\n    return true;\n  }\n\n  function restorePortalMesh(portal) {\n    if (!portal.binding) return;\n    var b = portal.binding;\n    try {\n      if (b.mesh && Array.isArray(b.mesh.material) && b.mesh.material[b.slot] === b.clone) {\n        b.mesh.material[b.slot] = b.original;\n      }\n      if (b.clone) b.clone.dispose();\n    } catch (e) {}\n    portal.binding = null;\n  }\n\n  /* -------------------------------------------------------- portal finders */\n\n  function findPortalByTag(state, tag) {\n    if (!tag) return null;\n    var found = null;\n    state.portals.forEach(function (p) {\n      if (p.tag === tag && !isDead(p.object)) found = p;\n    });\n    return found;\n  }\n\n  function getLinkedPortal(state, portal) {\n    if (portal.linkedPortalRecord && !isDead(portal.linkedPortalRecord.object)) {\n      return portal.linkedPortalRecord;\n    }\n    if (portal.linkedTag) {\n      var found = findPortalByTag(state, portal.linkedTag);\n      if (found && found !== portal) {\n        portal.linkedPortalRecord = found;\n        return found;\n      }\n    }\n    return null;\n  }\n\n  /* ------------------------------------------------------------- rendering */\n\n  var _prevClearColor = null;\n\n  function renderPortalView(renderer, runtimeScene, entryPortal, exitPortal, playerCam, state) {\n    var scene = layerSceneOf(runtimeScene, exitPortal.layerName);\n    if (!scene || !playerCam) return;\n\n    ensureTarget(entryPortal, renderer, runtimeScene);\n    if (!entryPortal.target) return;\n\n    initScratch();\n\n    // 1. Create or ensure secondary portal camera\n    if (!entryPortal.virtualCamera) {\n      entryPortal.virtualCamera = new THREE.PerspectiveCamera();\n      entryPortal.virtualCamera.rotation.order = 'ZYX';\n    }\n    var vCam = entryPortal.virtualCamera;\n\n    // 2. Compute relative camera transform: M_cam = M_rel * M_playerCam\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n    playerCam.updateMatrixWorld();\n    _m4Cam.copy(_m4Rel).multiply(playerCam.matrixWorld);\n\n    _m4Cam.decompose(_v3Pos, _qA, _v3B);\n    vCam.position.copy(_v3Pos);\n    vCam.quaternion.copy(_qA);\n    vCam.fov = playerCam.fov || 60;\n    vCam.near = playerCam.near || 1;\n    vCam.far = playerCam.far || 2000;\n    vCam.aspect = playerCam.aspect || (entryPortal.target.width / entryPortal.target.height);\n    vCam.updateMatrixWorld(true);\n    vCam.updateProjectionMatrix();\n\n    // 3. Oblique Near Plane Clipping (culls geometry behind exit portal)\n    if (entryPortal.obliqueClipping) {\n      getPortalWorldTransform(exitPortal, _m4B, _v3Look); // _v3Look gets exit normal\n      var exitPos = new THREE.Vector3().setFromMatrixPosition(_m4B);\n      // Plane in world space: normal pointing out of exit portal\n      _plane.setFromNormalAndCoplanarPoint(_v3Look, exitPos);\n      // Transform plane into virtual camera space\n      var clipPlaneCam = _plane.clone().applyMatrix4(vCam.matrixWorldInverse);\n      vCam.projectionMatrix = applyObliqueClipping(vCam.projectionMatrix, clipPlaneCam);\n    }\n\n    // 4. Hide entry portal mesh to avoid recursive self-sampling feedback\n    state.hiddenMeshes.length = 0;\n    if (entryPortal.binding && entryPortal.binding.mesh) {\n      state.hiddenMeshes.push(entryPortal.binding.mesh);\n      entryPortal.binding.mesh.visible = false;\n    }\n\n    // 5. Render destination world into entry portal's target\n    if (!_prevClearColor) _prevClearColor = new THREE.Color();\n    renderer.getClearColor(_prevClearColor);\n    var prevAlpha = renderer.getClearAlpha();\n\n    var bg = scene.background;\n    if (bg && bg.isColor) {\n      renderer.setClearColor(bg, 1);\n    } else {\n      renderer.setClearColor(runtimeScene.getBackgroundColor(), 1);\n    }\n\n    try {\n      renderer.setRenderTarget(entryPortal.target);\n      renderer.clear(true, true, true);\n      renderer.render(scene, vCam);\n    } finally {\n      // Unhide meshes\n      for (var i = 0; i < state.hiddenMeshes.length; i++) {\n        state.hiddenMeshes[i].visible = true;\n      }\n      state.hiddenMeshes.length = 0;\n      renderer.setClearColor(_prevClearColor, prevAlpha);\n    }\n\n    // 6. Update shader uniform with fresh render target\n    if (entryPortal.binding && entryPortal.binding.clone) {\n      var shader = entryPortal.binding.clone.userData.shader;\n      if (shader && shader.uniforms && shader.uniforms.uPortalMap) {\n        shader.uniforms.uPortalMap.value = entryPortal.target.texture;\n        shader.uniforms.uIsOpen.value = entryPortal.isOpen ? 1.0 : 0.0;\n        shader.uniforms.uBorderColor.value.set(entryPortal.borderColor || '#00a2ff');\n      }\n    }\n  }\n\n  /* -------------------------------------------------- physical traversal */\n\n  function updateTraversables(state, runtimeScene, dt) {\n    if (!state.portals.size || !state.traversables.size) return;\n\n    initScratch();\n\n    state.traversables.forEach(function (trav) {\n      if (isDead(trav.object)) return;\n\n      // Reset single-frame flags\n      trav.justTeleported = false;\n\n      if (trav.cooldown > 0) {\n        trav.cooldown -= dt;\n        return;\n      }\n\n      var obj = trav.object;\n      var currX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      var currY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      var currZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n      var prevX = trav.prevX !== undefined ? trav.prevX : currX;\n      var prevY = trav.prevY !== undefined ? trav.prevY : currY;\n      var prevZ = trav.prevZ !== undefined ? trav.prevZ : currZ;\n\n      // Test against each active linked portal\n      state.portals.forEach(function (entryPortal) {\n        if (!entryPortal.isOpen || isDead(entryPortal.object)) return;\n        var exitPortal = getLinkedPortal(state, entryPortal);\n        if (!exitPortal || !exitPortal.isOpen || isDead(exitPortal.object)) return;\n\n        getPortalWorldTransform(entryPortal, _m4A, _v3Look); // _v3Look = normal\n        var portalPos = new THREE.Vector3().setFromMatrixPosition(_m4A);\n\n        // Convert GDevelop pos to Three coords: negate Y\n        var pPrev = new THREE.Vector3(prevX, -prevY, prevZ);\n        var pCurr = new THREE.Vector3(currX, -currY, currZ);\n\n        // Signed distance from previous and current position to portal plane\n        var dPrev = (pPrev.x - portalPos.x) * _v3Look.x +\n                    (pPrev.y - portalPos.y) * _v3Look.y +\n                    (pPrev.z - portalPos.z) * _v3Look.z;\n        var dCurr = (pCurr.x - portalPos.x) * _v3Look.x +\n                    (pCurr.y - portalPos.y) * _v3Look.y +\n                    (pCurr.z - portalPos.z) * _v3Look.z;\n\n        // Check plane crossing: moving from front (dPrev >= 0) to back (dCurr <= 0)\n        if (dPrev >= -5 && dCurr <= 5 && (dPrev >= 0 || dCurr <= 0)) {\n          // Check portal bounding dimensions\n          var pw = (entryPortal.object.getWidth ? entryPortal.object.getWidth() : 64) * 0.7;\n          var ph = (entryPortal.object.getHeight ? entryPortal.object.getHeight() : 64) * 0.7;\n          var pz = (entryPortal.object.getDepth ? entryPortal.object.getDepth() : 64) * 0.7;\n          var maxR = Math.max(pw, ph, pz);\n\n          var distCenter = pCurr.distanceTo(portalPos);\n          if (distCenter <= maxR) {\n            // TELEPORT!\n            teleportEntity(trav, entryPortal, exitPortal);\n          }\n        }\n      });\n\n      // Cache position for next frame plane crossing test\n      trav.prevX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      trav.prevY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      trav.prevZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n    });\n  }\n\n  function teleportEntity(trav, entryPortal, exitPortal) {\n    initScratch();\n    var obj = trav.object;\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    // Three space coords: (x, -y, z)\n    var pThree = new THREE.Vector3(cx, -cy, cz).applyMatrix4(_m4Rel);\n\n    // Get exit portal forward normal to nudge entity outward\n    getPortalWorldTransform(exitPortal, _m4B, _v3Look);\n    var exitOffset = trav.exitOffset !== undefined ? trav.exitOffset : 20.0;\n    pThree.addScaledVector(_v3Look, exitOffset);\n\n    // Convert back to GDevelop: (x, -y, z)\n    var newX = pThree.x;\n    var newY = -pThree.y;\n    var newZ = pThree.z;\n\n    if (obj.setX) obj.setX(newX);\n    if (obj.setY) obj.setY(newY);\n    if (obj.setZ) obj.setZ(newZ);\n\n    // Rotate orientation\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    _m4Cam.makeRotationFromEuler(_euler);\n    _m4Cam.premultiply(_m4Rel);\n    _euler.setFromRotationMatrix(_m4Cam, 'ZYX');\n\n    if (obj.setAngle) obj.setAngle(gdjs.toDegrees(_euler.z));\n    if (obj.setRotationX) obj.setRotationX(gdjs.toDegrees(_euler.x));\n    if (obj.setRotationY) obj.setRotationY(gdjs.toDegrees(_euler.y));\n\n    // Redirect Physics Velocity if present\n    if (trav.redirectVelocity) {\n      redirectObjectVelocity(obj, _m4Rel);\n    }\n\n    trav.cooldown = trav.teleportCooldown || 0.15;\n    trav.justTeleported = true;\n    trav.lastPortalTag = entryPortal.tag;\n    trav.prevX = newX;\n    trav.prevY = newY;\n    trav.prevZ = newZ;\n  }\n\n  function redirectObjectVelocity(obj, mRel) {\n    var rotMatrix = new THREE.Matrix3().setFromMatrix4(mRel);\n    // Check for physics behaviors with getLinearVelocity\n    if (obj._behaviors) {\n      for (var i = 0; i < obj._behaviors.length; i++) {\n        var b = obj._behaviors[i];\n        if (b && typeof b.getLinearVelocityX === 'function') {\n          var vx = b.getLinearVelocityX();\n          var vy = b.getLinearVelocityY();\n          var vz = b.getLinearVelocityZ ? b.getLinearVelocityZ() : 0;\n          // Three coords: (vx, -vy, vz)\n          var v3 = new THREE.Vector3(vx, -vy, vz).applyMatrix3(rotMatrix);\n          if (b.setLinearVelocity) b.setLinearVelocity(v3.x, -v3.y, v3.z);\n        }\n      }\n    }\n  }\n\n  /* ------------------------------------------------------------- main loop */\n\n  function tick(runtimeScene) {\n    if (!THREE_OK) return;\n    var state = scenes.get(runtimeScene);\n    if (!state || !state.portals.size) return;\n\n    var dt = (runtimeScene.getElapsedTime ? runtimeScene.getElapsedTime() : 16.6) / 1000.0;\n\n    // 1. Run physical traversal checks before rendering\n    updateTraversables(state, runtimeScene, dt);\n\n    var renderer = threeRendererOf(runtimeScene);\n    if (!renderer) return;\n\n    // 2. Determine active portals that need rendering\n    var renderPairs = [];\n    state.portals.forEach(function (portalA) {\n      if (isDead(portalA.object) || !portalA.isOpen) return;\n\n      // Revalidate mesh binding\n      if (!portalA.binding) bindPortalMesh(portalA);\n\n      var portalB = getLinkedPortal(state, portalA);\n      if (portalB && !isDead(portalB.object) && portalB.isOpen) {\n        renderPairs.push({ entry: portalA, exit: portalB });\n      }\n    });\n\n    if (!renderPairs.length) return;\n\n    // Find main player camera on layer\n    var playerCam = layerCameraOf(runtimeScene, renderPairs[0].entry.layerName);\n    if (!playerCam) return;\n\n    // WebGL state protection\n    renderer.resetState();\n    var prevAutoUpdate = renderer.shadowMap.autoUpdate;\n    renderer.shadowMap.autoUpdate = false;\n    var prevTarget = renderer.getRenderTarget();\n\n    try {\n      for (var k = 0; k < renderPairs.length; k++) {\n        renderPortalView(renderer, runtimeScene, renderPairs[k].entry, renderPairs[k].exit, playerCam, state);\n      }\n    } catch (e) {\n      warnOnce('renderFail', 'Portal render pass error: ' + (e && e.message ? e.message : e));\n    } finally {\n      renderer.setRenderTarget(prevTarget || null);\n      renderer.shadowMap.autoUpdate = prevAutoUpdate;\n      renderer.resetState();\n      var gr = runtimeScene.getGame().getRenderer();\n      var pixi = gr && gr.getPIXIRenderer ? gr.getPIXIRenderer() : null;\n      if (pixi && pixi.reset) { try { pixi.reset(); } catch (e2) {} }\n    }\n  }\n\n  /* ------------------------------------------------------------ public API */\n\n  var NS = {\n    PRESETS: PRESETS,\n    FACE_INDEX: FACE_INDEX,\n    FACE_SLOT: FACE_SLOT,\n\n    registerPortal: function (runtimeScene, object, behavior, options) {\n      if (!THREE_OK) return null;\n      var state = stateOf(runtimeScene);\n      var portal = behavior.__portal3DRecord;\n      if (!portal) {\n        portal = behavior.__portal3DRecord = {\n          object: object,\n          behavior: behavior,\n          layerName: object.getLayer(),\n          binding: null,\n          virtualCamera: null,\n          target: null,\n          textureEpoch: 0,\n          linkedPortalRecord: null\n        };\n        state.portals.add(portal);\n        bindPortalMesh(portal);\n      }\n      NS.configurePortal(portal, options);\n      portal.layerName = object.getLayer();\n      return portal;\n    },\n\n    configurePortal: function (portal, o) {\n      if (!portal || !o) return;\n      portal.tag = o.tag !== undefined ? o.tag : (portal.tag || 'Blue');\n      portal.linkedTag = o.linkedTag !== undefined ? o.linkedTag : (portal.linkedTag || '');\n      portal.face = o.face || portal.face || 'Front';\n      portal.shape = o.shape || portal.shape || 'Oval';\n      portal.borderColor = o.borderColor || portal.borderColor || '#00a2ff';\n      portal.borderWidth = o.borderWidth !== undefined ? o.borderWidth : (portal.borderWidth || 0.08);\n      portal.preset = o.preset || portal.preset || 'Standard';\n      portal.customW = o.customW || portal.customW || 512;\n      portal.customH = o.customH || portal.customH || 512;\n      portal.obliqueClipping = o.obliqueClipping !== undefined ? !!o.obliqueClipping : true;\n      portal.forwardAxis = o.forwardAxis || portal.forwardAxis || '+Z';\n      portal.isOpen = o.isOpen !== undefined ? !!o.isOpen : true;\n    },\n\n    disposePortal: function (runtimeScene, behavior) {\n      var portal = behavior && behavior.__portal3DRecord;\n      if (!portal) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.portals.delete(portal);\n      restorePortalMesh(portal);\n      disposeTarget(portal);\n      portal.virtualCamera = null;\n      behavior.__portal3DRecord = null;\n    },\n\n    portalOf: function (behavior) {\n      return behavior ? behavior.__portal3DRecord : null;\n    },\n\n    registerTraversable: function (runtimeScene, object, behavior, options) {\n      var state = stateOf(runtimeScene);\n      var trav = behavior.__portalTraversableRecord;\n      if (!trav) {\n        trav = behavior.__portalTraversableRecord = {\n          object: object,\n          behavior: behavior,\n          cooldown: 0,\n          justTeleported: false,\n          lastPortalTag: ''\n        };\n        state.traversables.add(trav);\n      }\n      trav.enabled = options.enabled !== undefined ? !!options.enabled : true;\n      trav.teleportCooldown = options.teleportCooldown !== undefined ? options.teleportCooldown : 0.15;\n      trav.redirectVelocity = options.redirectVelocity !== undefined ? !!options.redirectVelocity : true;\n      trav.redirectCamera = options.redirectCamera !== undefined ? !!options.redirectCamera : true;\n      trav.exitOffset = options.exitOffset !== undefined ? options.exitOffset : 20.0;\n      return trav;\n    },\n\n    disposeTraversable: function (runtimeScene, behavior) {\n      var trav = behavior && behavior.__portalTraversableRecord;\n      if (!trav) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.traversables.delete(trav);\n      behavior.__portalTraversableRecord = null;\n    },\n\n    traversableOf: function (behavior) {\n      return behavior ? behavior.__portalTraversableRecord : null;\n    },\n\n    linkPortals: function (runtimeScene, portalAObject, portalBObject) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === portalAObject) pA = p;\n        if (p.object === portalBObject) pB = p;\n      });\n      if (pA && pB) {\n        pA.linkedPortalRecord = pB;\n        pB.linkedPortalRecord = pA;\n        pA.linkedTag = pB.tag;\n        pB.linkedTag = pA.tag;\n        return true;\n      }\n      return false;\n    },\n\n    teleportObjectManual: function (runtimeScene, object, entryObj, exitObj, redirectVel) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === entryObj) pA = p;\n        if (p.object === exitObj) pB = p;\n      });\n      if (!pA || !pB) return false;\n      var mockTrav = {\n        object: object,\n        redirectVelocity: !!redirectVel,\n        exitOffset: 20.0,\n        cooldown: 0.15\n      };\n      teleportEntity(mockTrav, pA, pB);\n      return true;\n    },\n\n    computePortalMatrix: computePortalMatrix,\n    applyObliqueClipping: applyObliqueClipping,\n    tick: tick,\n\n    disposeScene: function (runtimeScene) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return;\n      state.portals.forEach(function (p) {\n        restorePortalMesh(p);\n        disposeTarget(p);\n      });\n      state.portals.clear();\n      state.traversables.clear();\n      scenes.delete(runtimeScene);\n    }\n  };\n\n  gdjs.__portal3D = NS;\n\n  /* --------------------------------------------------------- engine hooks */\n\n  if (gdjs.registerRuntimeScenePostEventsCallback) {\n    gdjs.registerRuntimeScenePostEventsCallback(function (runtimeScene) {\n      try { tick(runtimeScene); } catch (e) {\n        warnOnce('tick', 'Portal tick failed: ' + (e && e.message ? e.message : e));\n      }\n    });\n  }\n\n  if (gdjs.registerRuntimeSceneUnloadedCallback) {\n    gdjs.registerRuntimeSceneUnloadedCallback(function (runtimeScene) {\n      try { NS.disposeScene(runtimeScene); } catch (e) {}\n    });\n  }\n})();\n\nconst __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nPORTAL.registerPortal(runtimeScene, object, behavior, {\n  tag: behavior._getTag ? behavior._getTag() : 'Blue',\n  linkedTag: behavior._getLinkedTag ? behavior._getLinkedTag() : 'Orange',\n  face: behavior._getFace ? behavior._getFace() : 'Front',\n  shape: behavior._getShape ? behavior._getShape() : 'Oval',\n  borderColor: behavior._getBorderColor ? behavior._getBorderColor() : '#00a2ff',\n  borderWidth: behavior._getBorderWidth ? behavior._getBorderWidth() : 0.08,\n  preset: behavior._getResolution ? behavior._getResolution() : 'Standard',\n  customW: behavior._getCustomWidth ? behavior._getCustomWidth() : 512,\n  customH: behavior._getCustomHeight ? behavior._getCustomHeight() : 512,\n  obliqueClipping: behavior._getObliqueClipping ? behavior._getObliqueClipping() : true,\n  forwardAxis: behavior._getForwardAxis ? behavior._getForwardAxis() : '+Z',\n  isOpen: behavior._getIsOpen ? behavior._getIsOpen() : true\n});\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPreEvents",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * Portal3D — Valve Portal-style visual and physical portals for GDevelop 5.\n *\n * Implements:\n *   1. Perspective-matched virtual cameras: Looking into Portal A renders the scene\n *      from Portal B with the exact relative eye-perspective of the player camera.\n *   2. Screen-space projective texture mapping: Portal surfaces sample the offscreen\n *      target in screen coordinates, turning the portal face into a seamless optical window.\n *   3. Oblique near-plane clipping (Lengyel's matrix): Geometry behind the exit portal's\n *      wall is cleanly clipped from the portal view frustum.\n *   4. Seamless physical traversal & momentum redirection: Entities crossing the portal\n *      plane are instantly teleported, redirecting velocity and look vectors while\n *      preserving kinetic energy.\n *   5. Robust WebGL lifecycle & state restoration following InGameCamera3D (C1, C3, C5, C10).\n */\n(function () {\n  if (typeof gdjs === 'undefined') return;\n  if (gdjs.__portal3D) return; // install once\n\n  var THREE_OK = typeof THREE !== 'undefined';\n\n  /* ------------------------------------------------------------ constants */\n\n  var PRESETS = {\n    Tiny: [160, 120],\n    Low: [320, 240],\n    Standard: [512, 512],\n    SD: [640, 480],\n    HD: [1280, 720],\n    MatchScreen: [0, 0]\n  };\n\n  // Cube3D face order: [Front, Back, Left, Right, Top, Bottom].\n  var FACE_INDEX = { Front: 0, Back: 1, Left: 2, Right: 3, Top: 4, Bottom: 5 };\n  var FACE_SLOT = { 0: 4, 1: 5, 2: 1, 3: 0, 4: 3, 5: 2 };\n\n  var FORWARD_AXIS = {\n    '+Z': [0, 0, 1], '-Z': [0, 0, -1],\n    '+X': [1, 0, 0], '-X': [-1, 0, 0],\n    '+Y': [0, 1, 0], '-Y': [0, -1, 0]\n  };\n\n  var warned = {};\n  function warnOnce(key, message) {\n    if (warned[key]) return;\n    warned[key] = true;\n    console.warn('[Portal3D] ' + message);\n  }\n\n  function isDead(object) {\n    return !object || object._livingOnScene === false;\n  }\n\n  /* --------------------------------------------------------- scene state */\n\n  var scenes = new Map();\n\n  function stateOf(runtimeScene) {\n    var s = scenes.get(runtimeScene);\n    if (!s) {\n      s = {\n        portals: new Set(),         // active Portal3D behavior records\n        traversables: new Set(),    // active PortalTraversable3D behavior records\n        bindings: new Set(),        // mesh material bindings\n        hiddenMeshes: []            // scratch for recursion guard during render\n      };\n      scenes.set(runtimeScene, s);\n    }\n    return s;\n  }\n\n  function threeRendererOf(runtimeScene) {\n    var gameRenderer = runtimeScene.getGame().getRenderer();\n    return gameRenderer && gameRenderer.getThreeRenderer\n      ? gameRenderer.getThreeRenderer()\n      : null;\n  }\n\n  function layerSceneOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeScene ? lr.getThreeScene() : null;\n  }\n\n  function layerCameraOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeCamera ? lr.getThreeCamera() : null;\n  }\n\n  /* -------------------------------------------------------------- targets */\n\n  function resolveSize(preset, customW, customH, renderer, runtimeScene) {\n    var w, h;\n    if (preset === 'MatchScreen' && runtimeScene) {\n      var game = runtimeScene.getGame();\n      w = game.getGameResolutionWidth() || 512;\n      h = game.getGameResolutionHeight() || 512;\n    } else if (PRESETS[preset] && PRESETS[preset][0] > 0) {\n      w = PRESETS[preset][0];\n      h = PRESETS[preset][1];\n    } else {\n      w = Math.floor(customW) || 512;\n      h = Math.floor(customH) || 512;\n    }\n    w = Math.max(1, w);\n    h = Math.max(1, h);\n\n    var max = renderer && renderer.capabilities ? renderer.capabilities.maxTextureSize : 0;\n    if (max && (w > max || h > max)) {\n      w = Math.min(w, max);\n      h = Math.min(h, max);\n    }\n    return [w, h];\n  }\n\n  function makeTarget(w, h) {\n    var target = new THREE.WebGLRenderTarget(w, h, {\n      minFilter: THREE.LinearFilter,\n      magFilter: THREE.LinearFilter,\n      depthBuffer: true,\n      stencilBuffer: false,\n      samples: 0\n    });\n    if (THREE.SRGBColorSpace !== undefined) {\n      target.texture.colorSpace = THREE.SRGBColorSpace;\n    }\n    target.texture.generateMipmaps = false;\n    return target;\n  }\n\n  function disposeTarget(portal) {\n    if (portal.target) {\n      try { portal.target.dispose(); } catch (e) {}\n      portal.target = null;\n    }\n  }\n\n  function ensureTarget(portal, renderer, runtimeScene) {\n    var size = resolveSize(portal.preset, portal.customW, portal.customH, renderer, runtimeScene);\n    var w = size[0], h = size[1];\n\n    if (portal.target && portal.target.width === w && portal.target.height === h) {\n      return portal.target;\n    }\n\n    disposeTarget(portal);\n    portal.target = makeTarget(w, h);\n    portal.textureEpoch = (portal.textureEpoch || 0) + 1;\n    return portal.target;\n  }\n\n  /* ------------------------------------------------------------ math scratch */\n\n  var _mTransform = null, _m4A = null, _m4B = null, _m4Inv = null, _m4Rel = null, _m4Cam = null;\n  var _v3A = null, _v3B = null, _v3Pos = null, _v3Look = null, _v3Up = null;\n  var _qA = null, _qB = null, _qFlip = null, _euler = null;\n  var _plane = null, _vec4 = null, _qCorn = null;\n\n  function initScratch() {\n    if (_mTransform) return;\n    _mTransform = new THREE.Matrix4();\n    _m4A = new THREE.Matrix4();\n    _m4B = new THREE.Matrix4();\n    _m4Inv = new THREE.Matrix4();\n    _m4Rel = new THREE.Matrix4();\n    _m4Cam = new THREE.Matrix4();\n    _v3A = new THREE.Vector3();\n    _v3B = new THREE.Vector3();\n    _v3Pos = new THREE.Vector3();\n    _v3Look = new THREE.Vector3();\n    _v3Up = new THREE.Vector3();\n    _qA = new THREE.Quaternion();\n    _qB = new THREE.Quaternion();\n    _qFlip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);\n    _euler = new THREE.Euler();\n    _plane = new THREE.Plane();\n    _vec4 = new THREE.Vector4();\n    _qCorn = new THREE.Vector4();\n  }\n\n  /**\n   * Computes the world matrix of a portal in Three.js coordinates.\n   * In GDevelop: Y is inverted relative to Three.js world space.\n   */\n  function getPortalWorldTransform(portal, outMatrix, outNormal, outUp) {\n    initScratch();\n    var mat = outMatrix || _mTransform;\n    var obj = portal.object;\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    mat.makeRotationFromEuler(_euler);\n\n    // Position: negate Y for Three.js scene coordinates\n    mat.setPosition(cx, -cy, cz);\n\n    var fAxis = FORWARD_AXIS[portal.forwardAxis] || FORWARD_AXIS['+Z'];\n    if (outNormal) {\n      outNormal.set(fAxis[0], -fAxis[1], fAxis[2]).applyEuler(_euler).normalize();\n    }\n    if (outUp) {\n      outUp.set(0, 0, 1).applyEuler(_euler).normalize();\n    }\n    return mat;\n  }\n\n  /**\n   * Computes the relative transformation from Portal A to Portal B:\n   * M_rel = M_B * R_flip * (M_A)^(-1)\n   */\n  function computePortalMatrix(portalA, portalB, outRelMatrix) {\n    initScratch();\n    getPortalWorldTransform(portalA, _m4A);\n    getPortalWorldTransform(portalB, _m4B);\n\n    _m4Inv.copy(_m4A).invert();\n\n    // R_flip is a 180-degree rotation around local Y\n    var mFlip = new THREE.Matrix4().makeRotationY(Math.PI);\n\n    outRelMatrix.copy(_m4B).multiply(mFlip).multiply(_m4Inv);\n    return outRelMatrix;\n  }\n\n  /**\n   * Lengyel's Oblique View Frustum Projection:\n   * Adjusts the camera projection matrix's near plane to lie exactly on the clipping plane.\n   */\n  function applyObliqueClipping(projMatrix, clipPlaneCamera) {\n    var p = projMatrix.clone();\n    var cp = clipPlaneCamera;\n\n    // Corner opposite to clip plane\n    _qCorn.x = (Math.sign(cp.x) + p.elements[8]) / p.elements[0];\n    _qCorn.y = (Math.sign(cp.y) + p.elements[9]) / p.elements[5];\n    _qCorn.z = -1.0;\n    _qCorn.w = (1.0 + p.elements[10]) / p.elements[14];\n\n    var dot = cp.x * _qCorn.x + cp.y * _qCorn.y + cp.z * _qCorn.z + cp.w * _qCorn.w;\n    if (Math.abs(dot) < 1e-6) return projMatrix; // avoid degenerate division\n\n    var scale = 2.0 / dot;\n    var c = new THREE.Vector4(cp.x * scale, cp.y * scale, cp.z * scale, cp.w * scale);\n\n    // Replace 3rd row of column-major projection matrix\n    p.elements[2] = c.x;\n    p.elements[6] = c.y;\n    p.elements[10] = c.z + 1.0;\n    p.elements[14] = c.w;\n\n    return p;\n  }\n\n  /* ------------------------------------------------------------- bindings */\n\n  function cubeMeshOf(object) {\n    var renderer = object.getRenderer && object.getRenderer();\n    return renderer && renderer._boxMesh ? renderer._boxMesh : null;\n  }\n\n  function createPortalMaterial(portal, originalMat) {\n    var mat = new THREE.MeshBasicMaterial({\n      color: 0xffffff,\n      transparent: true,\n      toneMapped: false\n    });\n\n    mat.userData.portal = portal;\n    mat.userData.uBorderColor = new THREE.Color(portal.borderColor || '#00a2ff');\n    mat.userData.uBorderWidth = portal.borderWidth !== undefined ? portal.borderWidth : 0.08;\n    mat.userData.uShape = portal.shape === 'Rectangle' ? 1.0 : 0.0;\n\n    mat.onBeforeCompile = function (shader) {\n      shader.uniforms.uPortalMap = { value: portal.target ? portal.target.texture : null };\n      shader.uniforms.uBorderColor = { value: mat.userData.uBorderColor };\n      shader.uniforms.uBorderWidth = { value: mat.userData.uBorderWidth };\n      shader.uniforms.uShape = { value: mat.userData.uShape };\n      shader.uniforms.uIsOpen = { value: portal.isOpen ? 1.0 : 0.0 };\n\n      mat.userData.shader = shader;\n\n      // Vertex shader: pass clip-space position and UVs\n      shader.vertexShader = 'varying vec4 vScreenCoord;\\nvarying vec2 vPortalUv;\\n' + shader.vertexShader;\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <begin_vertex>',\n        [\n          '#include <begin_vertex>',\n          'vPortalUv = uv;'\n        ].join('\\n')\n      );\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <project_vertex>',\n        [\n          '#include <project_vertex>',\n          'vScreenCoord = gl_Position;'\n        ].join('\\n')\n      );\n\n      // Fragment shader: sample screen coordinates and generate portal rim\n      shader.fragmentShader = [\n        'uniform sampler2D uPortalMap;',\n        'uniform vec3 uBorderColor;',\n        'uniform float uBorderWidth;',\n        'uniform float uShape;',\n        'uniform float uIsOpen;',\n        'varying vec4 vScreenCoord;',\n        'varying vec2 vPortalUv;',\n        shader.fragmentShader\n      ].join('\\n');\n\n      shader.fragmentShader = shader.fragmentShader.replace(\n        '#include <dithering_fragment>',\n        [\n          '#include <dithering_fragment>',\n          'if (uIsOpen < 0.5) {',\n          '  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',\n          '} else {',\n          '  vec2 screenUv = (vScreenCoord.xy / vScreenCoord.w) * 0.5 + 0.5;',\n          '  vec4 portalColor = texture2D(uPortalMap, screenUv);',\n          '  float ring = 0.0;',\n          '  float alpha = 1.0;',\n          '  if (uShape < 0.5) {',\n          '    // Oval Portal Ring',\n          '    vec2 p = vPortalUv * 2.0 - 1.0;',\n          '    float d = length(p);',\n          '    float inner = 0.90 - uBorderWidth;',\n          '    ring = smoothstep(inner, inner + 0.06, d) * (1.0 - smoothstep(0.96, 1.0, d));',\n          '    alpha = 1.0 - smoothstep(0.98, 1.02, d);',\n          '  } else {',\n          '    // Rectangular Portal Frame',\n          '    vec2 edge = min(vPortalUv, 1.0 - vPortalUv);',\n          '    float minEdge = min(edge.x, edge.y);',\n          '    ring = (1.0 - smoothstep(0.0, uBorderWidth, minEdge));',\n          '    alpha = 1.0;',\n          '  }',\n          '  vec3 rgb = mix(portalColor.rgb, uBorderColor, ring);',\n          '  gl_FragColor = vec4(rgb, alpha);',\n          '}'\n        ].join('\\n')\n      );\n    };\n\n    return mat;\n  }\n\n  function bindPortalMesh(portal) {\n    var mesh = cubeMeshOf(portal.object);\n    if (!mesh || !Array.isArray(mesh.material)) return false;\n\n    var faceIndex = FACE_INDEX[portal.face] !== undefined ? FACE_INDEX[portal.face] : 0;\n    var slot = FACE_SLOT[faceIndex];\n    if (slot === undefined) return false;\n\n    var original = mesh.material[slot];\n    var clone = createPortalMaterial(portal, original);\n    mesh.material[slot] = clone;\n\n    portal.binding = {\n      mesh: mesh,\n      slot: slot,\n      original: original,\n      clone: clone\n    };\n    return true;\n  }\n\n  function restorePortalMesh(portal) {\n    if (!portal.binding) return;\n    var b = portal.binding;\n    try {\n      if (b.mesh && Array.isArray(b.mesh.material) && b.mesh.material[b.slot] === b.clone) {\n        b.mesh.material[b.slot] = b.original;\n      }\n      if (b.clone) b.clone.dispose();\n    } catch (e) {}\n    portal.binding = null;\n  }\n\n  /* -------------------------------------------------------- portal finders */\n\n  function findPortalByTag(state, tag) {\n    if (!tag) return null;\n    var found = null;\n    state.portals.forEach(function (p) {\n      if (p.tag === tag && !isDead(p.object)) found = p;\n    });\n    return found;\n  }\n\n  function getLinkedPortal(state, portal) {\n    if (portal.linkedPortalRecord && !isDead(portal.linkedPortalRecord.object)) {\n      return portal.linkedPortalRecord;\n    }\n    if (portal.linkedTag) {\n      var found = findPortalByTag(state, portal.linkedTag);\n      if (found && found !== portal) {\n        portal.linkedPortalRecord = found;\n        return found;\n      }\n    }\n    return null;\n  }\n\n  /* ------------------------------------------------------------- rendering */\n\n  var _prevClearColor = null;\n\n  function renderPortalView(renderer, runtimeScene, entryPortal, exitPortal, playerCam, state) {\n    var scene = layerSceneOf(runtimeScene, exitPortal.layerName);\n    if (!scene || !playerCam) return;\n\n    ensureTarget(entryPortal, renderer, runtimeScene);\n    if (!entryPortal.target) return;\n\n    initScratch();\n\n    // 1. Create or ensure secondary portal camera\n    if (!entryPortal.virtualCamera) {\n      entryPortal.virtualCamera = new THREE.PerspectiveCamera();\n      entryPortal.virtualCamera.rotation.order = 'ZYX';\n    }\n    var vCam = entryPortal.virtualCamera;\n\n    // 2. Compute relative camera transform: M_cam = M_rel * M_playerCam\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n    playerCam.updateMatrixWorld();\n    _m4Cam.copy(_m4Rel).multiply(playerCam.matrixWorld);\n\n    _m4Cam.decompose(_v3Pos, _qA, _v3B);\n    vCam.position.copy(_v3Pos);\n    vCam.quaternion.copy(_qA);\n    vCam.fov = playerCam.fov || 60;\n    vCam.near = playerCam.near || 1;\n    vCam.far = playerCam.far || 2000;\n    vCam.aspect = playerCam.aspect || (entryPortal.target.width / entryPortal.target.height);\n    vCam.updateMatrixWorld(true);\n    vCam.updateProjectionMatrix();\n\n    // 3. Oblique Near Plane Clipping (culls geometry behind exit portal)\n    if (entryPortal.obliqueClipping) {\n      getPortalWorldTransform(exitPortal, _m4B, _v3Look); // _v3Look gets exit normal\n      var exitPos = new THREE.Vector3().setFromMatrixPosition(_m4B);\n      // Plane in world space: normal pointing out of exit portal\n      _plane.setFromNormalAndCoplanarPoint(_v3Look, exitPos);\n      // Transform plane into virtual camera space\n      var clipPlaneCam = _plane.clone().applyMatrix4(vCam.matrixWorldInverse);\n      vCam.projectionMatrix = applyObliqueClipping(vCam.projectionMatrix, clipPlaneCam);\n    }\n\n    // 4. Hide entry portal mesh to avoid recursive self-sampling feedback\n    state.hiddenMeshes.length = 0;\n    if (entryPortal.binding && entryPortal.binding.mesh) {\n      state.hiddenMeshes.push(entryPortal.binding.mesh);\n      entryPortal.binding.mesh.visible = false;\n    }\n\n    // 5. Render destination world into entry portal's target\n    if (!_prevClearColor) _prevClearColor = new THREE.Color();\n    renderer.getClearColor(_prevClearColor);\n    var prevAlpha = renderer.getClearAlpha();\n\n    var bg = scene.background;\n    if (bg && bg.isColor) {\n      renderer.setClearColor(bg, 1);\n    } else {\n      renderer.setClearColor(runtimeScene.getBackgroundColor(), 1);\n    }\n\n    try {\n      renderer.setRenderTarget(entryPortal.target);\n      renderer.clear(true, true, true);\n      renderer.render(scene, vCam);\n    } finally {\n      // Unhide meshes\n      for (var i = 0; i < state.hiddenMeshes.length; i++) {\n        state.hiddenMeshes[i].visible = true;\n      }\n      state.hiddenMeshes.length = 0;\n      renderer.setClearColor(_prevClearColor, prevAlpha);\n    }\n\n    // 6. Update shader uniform with fresh render target\n    if (entryPortal.binding && entryPortal.binding.clone) {\n      var shader = entryPortal.binding.clone.userData.shader;\n      if (shader && shader.uniforms && shader.uniforms.uPortalMap) {\n        shader.uniforms.uPortalMap.value = entryPortal.target.texture;\n        shader.uniforms.uIsOpen.value = entryPortal.isOpen ? 1.0 : 0.0;\n        shader.uniforms.uBorderColor.value.set(entryPortal.borderColor || '#00a2ff');\n      }\n    }\n  }\n\n  /* -------------------------------------------------- physical traversal */\n\n  function updateTraversables(state, runtimeScene, dt) {\n    if (!state.portals.size || !state.traversables.size) return;\n\n    initScratch();\n\n    state.traversables.forEach(function (trav) {\n      if (isDead(trav.object)) return;\n\n      // Reset single-frame flags\n      trav.justTeleported = false;\n\n      if (trav.cooldown > 0) {\n        trav.cooldown -= dt;\n        return;\n      }\n\n      var obj = trav.object;\n      var currX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      var currY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      var currZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n      var prevX = trav.prevX !== undefined ? trav.prevX : currX;\n      var prevY = trav.prevY !== undefined ? trav.prevY : currY;\n      var prevZ = trav.prevZ !== undefined ? trav.prevZ : currZ;\n\n      // Test against each active linked portal\n      state.portals.forEach(function (entryPortal) {\n        if (!entryPortal.isOpen || isDead(entryPortal.object)) return;\n        var exitPortal = getLinkedPortal(state, entryPortal);\n        if (!exitPortal || !exitPortal.isOpen || isDead(exitPortal.object)) return;\n\n        getPortalWorldTransform(entryPortal, _m4A, _v3Look); // _v3Look = normal\n        var portalPos = new THREE.Vector3().setFromMatrixPosition(_m4A);\n\n        // Convert GDevelop pos to Three coords: negate Y\n        var pPrev = new THREE.Vector3(prevX, -prevY, prevZ);\n        var pCurr = new THREE.Vector3(currX, -currY, currZ);\n\n        // Signed distance from previous and current position to portal plane\n        var dPrev = (pPrev.x - portalPos.x) * _v3Look.x +\n                    (pPrev.y - portalPos.y) * _v3Look.y +\n                    (pPrev.z - portalPos.z) * _v3Look.z;\n        var dCurr = (pCurr.x - portalPos.x) * _v3Look.x +\n                    (pCurr.y - portalPos.y) * _v3Look.y +\n                    (pCurr.z - portalPos.z) * _v3Look.z;\n\n        // Check plane crossing: moving from front (dPrev >= 0) to back (dCurr <= 0)\n        if (dPrev >= -5 && dCurr <= 5 && (dPrev >= 0 || dCurr <= 0)) {\n          // Check portal bounding dimensions\n          var pw = (entryPortal.object.getWidth ? entryPortal.object.getWidth() : 64) * 0.7;\n          var ph = (entryPortal.object.getHeight ? entryPortal.object.getHeight() : 64) * 0.7;\n          var pz = (entryPortal.object.getDepth ? entryPortal.object.getDepth() : 64) * 0.7;\n          var maxR = Math.max(pw, ph, pz);\n\n          var distCenter = pCurr.distanceTo(portalPos);\n          if (distCenter <= maxR) {\n            // TELEPORT!\n            teleportEntity(trav, entryPortal, exitPortal);\n          }\n        }\n      });\n\n      // Cache position for next frame plane crossing test\n      trav.prevX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      trav.prevY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      trav.prevZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n    });\n  }\n\n  function teleportEntity(trav, entryPortal, exitPortal) {\n    initScratch();\n    var obj = trav.object;\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    // Three space coords: (x, -y, z)\n    var pThree = new THREE.Vector3(cx, -cy, cz).applyMatrix4(_m4Rel);\n\n    // Get exit portal forward normal to nudge entity outward\n    getPortalWorldTransform(exitPortal, _m4B, _v3Look);\n    var exitOffset = trav.exitOffset !== undefined ? trav.exitOffset : 20.0;\n    pThree.addScaledVector(_v3Look, exitOffset);\n\n    // Convert back to GDevelop: (x, -y, z)\n    var newX = pThree.x;\n    var newY = -pThree.y;\n    var newZ = pThree.z;\n\n    if (obj.setX) obj.setX(newX);\n    if (obj.setY) obj.setY(newY);\n    if (obj.setZ) obj.setZ(newZ);\n\n    // Rotate orientation\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    _m4Cam.makeRotationFromEuler(_euler);\n    _m4Cam.premultiply(_m4Rel);\n    _euler.setFromRotationMatrix(_m4Cam, 'ZYX');\n\n    if (obj.setAngle) obj.setAngle(gdjs.toDegrees(_euler.z));\n    if (obj.setRotationX) obj.setRotationX(gdjs.toDegrees(_euler.x));\n    if (obj.setRotationY) obj.setRotationY(gdjs.toDegrees(_euler.y));\n\n    // Redirect Physics Velocity if present\n    if (trav.redirectVelocity) {\n      redirectObjectVelocity(obj, _m4Rel);\n    }\n\n    trav.cooldown = trav.teleportCooldown || 0.15;\n    trav.justTeleported = true;\n    trav.lastPortalTag = entryPortal.tag;\n    trav.prevX = newX;\n    trav.prevY = newY;\n    trav.prevZ = newZ;\n  }\n\n  function redirectObjectVelocity(obj, mRel) {\n    var rotMatrix = new THREE.Matrix3().setFromMatrix4(mRel);\n    // Check for physics behaviors with getLinearVelocity\n    if (obj._behaviors) {\n      for (var i = 0; i < obj._behaviors.length; i++) {\n        var b = obj._behaviors[i];\n        if (b && typeof b.getLinearVelocityX === 'function') {\n          var vx = b.getLinearVelocityX();\n          var vy = b.getLinearVelocityY();\n          var vz = b.getLinearVelocityZ ? b.getLinearVelocityZ() : 0;\n          // Three coords: (vx, -vy, vz)\n          var v3 = new THREE.Vector3(vx, -vy, vz).applyMatrix3(rotMatrix);\n          if (b.setLinearVelocity) b.setLinearVelocity(v3.x, -v3.y, v3.z);\n        }\n      }\n    }\n  }\n\n  /* ------------------------------------------------------------- main loop */\n\n  function tick(runtimeScene) {\n    if (!THREE_OK) return;\n    var state = scenes.get(runtimeScene);\n    if (!state || !state.portals.size) return;\n\n    var dt = (runtimeScene.getElapsedTime ? runtimeScene.getElapsedTime() : 16.6) / 1000.0;\n\n    // 1. Run physical traversal checks before rendering\n    updateTraversables(state, runtimeScene, dt);\n\n    var renderer = threeRendererOf(runtimeScene);\n    if (!renderer) return;\n\n    // 2. Determine active portals that need rendering\n    var renderPairs = [];\n    state.portals.forEach(function (portalA) {\n      if (isDead(portalA.object) || !portalA.isOpen) return;\n\n      // Revalidate mesh binding\n      if (!portalA.binding) bindPortalMesh(portalA);\n\n      var portalB = getLinkedPortal(state, portalA);\n      if (portalB && !isDead(portalB.object) && portalB.isOpen) {\n        renderPairs.push({ entry: portalA, exit: portalB });\n      }\n    });\n\n    if (!renderPairs.length) return;\n\n    // Find main player camera on layer\n    var playerCam = layerCameraOf(runtimeScene, renderPairs[0].entry.layerName);\n    if (!playerCam) return;\n\n    // WebGL state protection\n    renderer.resetState();\n    var prevAutoUpdate = renderer.shadowMap.autoUpdate;\n    renderer.shadowMap.autoUpdate = false;\n    var prevTarget = renderer.getRenderTarget();\n\n    try {\n      for (var k = 0; k < renderPairs.length; k++) {\n        renderPortalView(renderer, runtimeScene, renderPairs[k].entry, renderPairs[k].exit, playerCam, state);\n      }\n    } catch (e) {\n      warnOnce('renderFail', 'Portal render pass error: ' + (e && e.message ? e.message : e));\n    } finally {\n      renderer.setRenderTarget(prevTarget || null);\n      renderer.shadowMap.autoUpdate = prevAutoUpdate;\n      renderer.resetState();\n      var gr = runtimeScene.getGame().getRenderer();\n      var pixi = gr && gr.getPIXIRenderer ? gr.getPIXIRenderer() : null;\n      if (pixi && pixi.reset) { try { pixi.reset(); } catch (e2) {} }\n    }\n  }\n\n  /* ------------------------------------------------------------ public API */\n\n  var NS = {\n    PRESETS: PRESETS,\n    FACE_INDEX: FACE_INDEX,\n    FACE_SLOT: FACE_SLOT,\n\n    registerPortal: function (runtimeScene, object, behavior, options) {\n      if (!THREE_OK) return null;\n      var state = stateOf(runtimeScene);\n      var portal = behavior.__portal3DRecord;\n      if (!portal) {\n        portal = behavior.__portal3DRecord = {\n          object: object,\n          behavior: behavior,\n          layerName: object.getLayer(),\n          binding: null,\n          virtualCamera: null,\n          target: null,\n          textureEpoch: 0,\n          linkedPortalRecord: null\n        };\n        state.portals.add(portal);\n        bindPortalMesh(portal);\n      }\n      NS.configurePortal(portal, options);\n      portal.layerName = object.getLayer();\n      return portal;\n    },\n\n    configurePortal: function (portal, o) {\n      if (!portal || !o) return;\n      portal.tag = o.tag !== undefined ? o.tag : (portal.tag || 'Blue');\n      portal.linkedTag = o.linkedTag !== undefined ? o.linkedTag : (portal.linkedTag || '');\n      portal.face = o.face || portal.face || 'Front';\n      portal.shape = o.shape || portal.shape || 'Oval';\n      portal.borderColor = o.borderColor || portal.borderColor || '#00a2ff';\n      portal.borderWidth = o.borderWidth !== undefined ? o.borderWidth : (portal.borderWidth || 0.08);\n      portal.preset = o.preset || portal.preset || 'Standard';\n      portal.customW = o.customW || portal.customW || 512;\n      portal.customH = o.customH || portal.customH || 512;\n      portal.obliqueClipping = o.obliqueClipping !== undefined ? !!o.obliqueClipping : true;\n      portal.forwardAxis = o.forwardAxis || portal.forwardAxis || '+Z';\n      portal.isOpen = o.isOpen !== undefined ? !!o.isOpen : true;\n    },\n\n    disposePortal: function (runtimeScene, behavior) {\n      var portal = behavior && behavior.__portal3DRecord;\n      if (!portal) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.portals.delete(portal);\n      restorePortalMesh(portal);\n      disposeTarget(portal);\n      portal.virtualCamera = null;\n      behavior.__portal3DRecord = null;\n    },\n\n    portalOf: function (behavior) {\n      return behavior ? behavior.__portal3DRecord : null;\n    },\n\n    registerTraversable: function (runtimeScene, object, behavior, options) {\n      var state = stateOf(runtimeScene);\n      var trav = behavior.__portalTraversableRecord;\n      if (!trav) {\n        trav = behavior.__portalTraversableRecord = {\n          object: object,\n          behavior: behavior,\n          cooldown: 0,\n          justTeleported: false,\n          lastPortalTag: ''\n        };\n        state.traversables.add(trav);\n      }\n      trav.enabled = options.enabled !== undefined ? !!options.enabled : true;\n      trav.teleportCooldown = options.teleportCooldown !== undefined ? options.teleportCooldown : 0.15;\n      trav.redirectVelocity = options.redirectVelocity !== undefined ? !!options.redirectVelocity : true;\n      trav.redirectCamera = options.redirectCamera !== undefined ? !!options.redirectCamera : true;\n      trav.exitOffset = options.exitOffset !== undefined ? options.exitOffset : 20.0;\n      return trav;\n    },\n\n    disposeTraversable: function (runtimeScene, behavior) {\n      var trav = behavior && behavior.__portalTraversableRecord;\n      if (!trav) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.traversables.delete(trav);\n      behavior.__portalTraversableRecord = null;\n    },\n\n    traversableOf: function (behavior) {\n      return behavior ? behavior.__portalTraversableRecord : null;\n    },\n\n    linkPortals: function (runtimeScene, portalAObject, portalBObject) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === portalAObject) pA = p;\n        if (p.object === portalBObject) pB = p;\n      });\n      if (pA && pB) {\n        pA.linkedPortalRecord = pB;\n        pB.linkedPortalRecord = pA;\n        pA.linkedTag = pB.tag;\n        pB.linkedTag = pA.tag;\n        return true;\n      }\n      return false;\n    },\n\n    teleportObjectManual: function (runtimeScene, object, entryObj, exitObj, redirectVel) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === entryObj) pA = p;\n        if (p.object === exitObj) pB = p;\n      });\n      if (!pA || !pB) return false;\n      var mockTrav = {\n        object: object,\n        redirectVelocity: !!redirectVel,\n        exitOffset: 20.0,\n        cooldown: 0.15\n      };\n      teleportEntity(mockTrav, pA, pB);\n      return true;\n    },\n\n    computePortalMatrix: computePortalMatrix,\n    applyObliqueClipping: applyObliqueClipping,\n    tick: tick,\n\n    disposeScene: function (runtimeScene) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return;\n      state.portals.forEach(function (p) {\n        restorePortalMesh(p);\n        disposeTarget(p);\n      });\n      state.portals.clear();\n      state.traversables.clear();\n      scenes.delete(runtimeScene);\n    }\n  };\n\n  gdjs.__portal3D = NS;\n\n  /* --------------------------------------------------------- engine hooks */\n\n  if (gdjs.registerRuntimeScenePostEventsCallback) {\n    gdjs.registerRuntimeScenePostEventsCallback(function (runtimeScene) {\n      try { tick(runtimeScene); } catch (e) {\n        warnOnce('tick', 'Portal tick failed: ' + (e && e.message ? e.message : e));\n      }\n    });\n  }\n\n  if (gdjs.registerRuntimeSceneUnloadedCallback) {\n    gdjs.registerRuntimeSceneUnloadedCallback(function (runtimeScene) {\n      try { NS.disposeScene(runtimeScene); } catch (e) {}\n    });\n  }\n})();\n\nconst __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nPORTAL.registerPortal(runtimeScene, object, behavior, {\n  tag: behavior._getTag ? behavior._getTag() : 'Blue',\n  linkedTag: behavior._getLinkedTag ? behavior._getLinkedTag() : 'Orange',\n  face: behavior._getFace ? behavior._getFace() : 'Front',\n  shape: behavior._getShape ? behavior._getShape() : 'Oval',\n  borderColor: behavior._getBorderColor ? behavior._getBorderColor() : '#00a2ff',\n  borderWidth: behavior._getBorderWidth ? behavior._getBorderWidth() : 0.08,\n  preset: behavior._getResolution ? behavior._getResolution() : 'Standard',\n  customW: behavior._getCustomWidth ? behavior._getCustomWidth() : 512,\n  customH: behavior._getCustomHeight ? behavior._getCustomHeight() : 512,\n  obliqueClipping: behavior._getObliqueClipping ? behavior._getObliqueClipping() : true,\n  forwardAxis: behavior._getForwardAxis ? behavior._getForwardAxis() : '+Z',\n  isOpen: behavior._getIsOpen ? behavior._getIsOpen() : true\n});\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nPORTAL.disposePortal(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetOpen",
+          "fullName": "Open or close the portal",
+          "description": "Set portal _PARAM0_ open: _PARAM2_",
+          "functionType": "Action",
+          "group": "Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Open",
+              "type": "yesorno",
+              "description": "Open"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst open = !!eventsFunctionContext.getArgument(\"Open\");\nif (behavior._setIsOpen) behavior._setIsOpen(open);\nconst p = PORTAL.portalOf(behavior);\nif (p) p.isOpen = open;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "LinkToPortal",
+          "fullName": "Link to another portal object",
+          "description": "Link portal _PARAM0_ to portal _PARAM2_",
+          "functionType": "Action",
+          "group": "Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "TargetPortal",
+              "type": "objectList",
+              "description": "Target portal object"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst targetList = eventsFunctionContext.getObjects(\"TargetPortal\");\nconst targetObj = targetList.length ? targetList[0] : null;\nif (!targetObj) return;\nPORTAL.linkPortals(runtimeScene, object, targetObj);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetBorderColor",
+          "fullName": "Set portal border color",
+          "description": "Set portal _PARAM0_ border color to _PARAM2_",
+          "functionType": "Action",
+          "group": "Setup",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Color",
+              "type": "color",
+              "description": "Hex color code",
+              "defaultValue": "#00a2ff"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst color = eventsFunctionContext.getArgument(\"Color\");\nif (behavior._setBorderColor) behavior._setBorderColor(color);\nconst p = PORTAL.portalOf(behavior);\nif (p) p.borderColor = color;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetBorderWidth",
+          "fullName": "Set portal border width",
+          "description": "Set portal _PARAM0_ border width to _PARAM2_",
+          "functionType": "Action",
+          "group": "Setup",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Width",
+              "type": "expression",
+              "description": "Border width ratio (0 to 0.5)",
+              "defaultValue": "0.08"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst w = eventsFunctionContext.getArgument(\"Width\");\nif (behavior._setBorderWidth) behavior._setBorderWidth(w);\nconst p = PORTAL.portalOf(behavior);\nif (p) p.borderWidth = w;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetResolution",
+          "fullName": "Set portal camera resolution preset",
+          "description": "Set portal _PARAM0_ resolution to _PARAM2_",
+          "functionType": "Action",
+          "group": "Setup",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Resolution",
+              "type": "stringWithSelector",
+              "description": "Resolution preset",
+              "supplementaryInformation": "[\"Tiny\",\"Low\",\"Standard\",\"SD\",\"HD\",\"MatchScreen\",\"Custom\"]"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst preset = eventsFunctionContext.getArgument(\"Resolution\");\nif (behavior._setResolution) behavior._setResolution(preset);\nconst p = PORTAL.portalOf(behavior);\nif (p) p.preset = preset;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetCustomResolution",
+          "fullName": "Set portal custom resolution",
+          "description": "Set portal _PARAM0_ resolution to _PARAM2_ x _PARAM3_ pixels",
+          "functionType": "Action",
+          "group": "Setup",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Width",
+              "type": "expression",
+              "description": "Width in pixels",
+              "defaultValue": "512"
+            },
+            {
+              "name": "Height",
+              "type": "expression",
+              "description": "Height in pixels",
+              "defaultValue": "512"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst w = eventsFunctionContext.getArgument(\"Width\");\nconst h = eventsFunctionContext.getArgument(\"Height\");\nif (behavior._setResolution) behavior._setResolution('Custom');\nif (behavior._setCustomWidth) behavior._setCustomWidth(w);\nif (behavior._setCustomHeight) behavior._setCustomHeight(h);\nconst p = PORTAL.portalOf(behavior);\nif (p) { p.preset = 'Custom'; p.customW = w; p.customH = h; }\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsOpen",
+          "fullName": "Check if portal is open",
+          "description": "Portal _PARAM0_ is open",
+          "functionType": "Condition",
+          "group": "Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst p = PORTAL.portalOf(behavior);\neventsFunctionContext.returnValue = p ? !!p.isOpen : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsLinked",
+          "fullName": "Check if portal is linked to another portal",
+          "description": "Portal _PARAM0_ is linked to a destination portal",
+          "functionType": "Condition",
+          "group": "Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst p = PORTAL.portalOf(behavior);\neventsFunctionContext.returnValue = p ? !!(p.linkedPortalRecord || p.linkedTag) : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "LinkedPortalTag",
+          "fullName": "Linked portal tag",
+          "description": "Linked portal tag",
+          "functionType": "Expression",
+          "group": "Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst p = PORTAL.portalOf(behavior);\neventsFunctionContext.returnValue = p ? (p.linkedTag || '') : '';\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "string"
+        },
+        {
+          "name": "BorderColor",
+          "fullName": "Border color",
+          "description": "Border color",
+          "functionType": "Expression",
+          "group": "Setup",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst p = PORTAL.portalOf(behavior);\neventsFunctionContext.returnValue = p ? (p.borderColor || '#00a2ff') : '#00a2ff';\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "string"
+        }
+      ]
+    },
+    {
+      "name": "PortalTraversable3D",
+      "fullName": "Portal Traversable (3D)",
+      "description": "Allows characters and physics objects to pass seamlessly through 3D portals with momentum redirection.",
+      "objectType": "",
+      "propertyDescriptors": [
+        {
+          "name": "Enabled",
+          "type": "boolean",
+          "value": "true",
+          "label": "Traversable enabled",
+          "description": "Whether this object can physically teleport through active portals"
+        },
+        {
+          "name": "TeleportCooldown",
+          "type": "number",
+          "value": "0.15",
+          "label": "Teleport cooldown (seconds)",
+          "description": "Minimum delay between consecutive teleports to prevent ping-pong oscillation"
+        },
+        {
+          "name": "RedirectVelocity",
+          "type": "boolean",
+          "value": "true",
+          "label": "Redirect velocity & momentum",
+          "description": "Rotates linear velocity vectors to match exit portal orientation while preserving speed"
+        },
+        {
+          "name": "RedirectCamera",
+          "type": "boolean",
+          "value": "true",
+          "label": "Redirect camera / object rotation",
+          "description": "Rotates object and camera yaw/pitch to face outwards from destination portal"
+        },
+        {
+          "name": "ExitOffset",
+          "type": "number",
+          "value": "20",
+          "label": "Exit normal offset distance",
+          "description": "Units to nudge object forward along destination portal normal upon emergence"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * Portal3D — Valve Portal-style visual and physical portals for GDevelop 5.\n *\n * Implements:\n *   1. Perspective-matched virtual cameras: Looking into Portal A renders the scene\n *      from Portal B with the exact relative eye-perspective of the player camera.\n *   2. Screen-space projective texture mapping: Portal surfaces sample the offscreen\n *      target in screen coordinates, turning the portal face into a seamless optical window.\n *   3. Oblique near-plane clipping (Lengyel's matrix): Geometry behind the exit portal's\n *      wall is cleanly clipped from the portal view frustum.\n *   4. Seamless physical traversal & momentum redirection: Entities crossing the portal\n *      plane are instantly teleported, redirecting velocity and look vectors while\n *      preserving kinetic energy.\n *   5. Robust WebGL lifecycle & state restoration following InGameCamera3D (C1, C3, C5, C10).\n */\n(function () {\n  if (typeof gdjs === 'undefined') return;\n  if (gdjs.__portal3D) return; // install once\n\n  var THREE_OK = typeof THREE !== 'undefined';\n\n  /* ------------------------------------------------------------ constants */\n\n  var PRESETS = {\n    Tiny: [160, 120],\n    Low: [320, 240],\n    Standard: [512, 512],\n    SD: [640, 480],\n    HD: [1280, 720],\n    MatchScreen: [0, 0]\n  };\n\n  // Cube3D face order: [Front, Back, Left, Right, Top, Bottom].\n  var FACE_INDEX = { Front: 0, Back: 1, Left: 2, Right: 3, Top: 4, Bottom: 5 };\n  var FACE_SLOT = { 0: 4, 1: 5, 2: 1, 3: 0, 4: 3, 5: 2 };\n\n  var FORWARD_AXIS = {\n    '+Z': [0, 0, 1], '-Z': [0, 0, -1],\n    '+X': [1, 0, 0], '-X': [-1, 0, 0],\n    '+Y': [0, 1, 0], '-Y': [0, -1, 0]\n  };\n\n  var warned = {};\n  function warnOnce(key, message) {\n    if (warned[key]) return;\n    warned[key] = true;\n    console.warn('[Portal3D] ' + message);\n  }\n\n  function isDead(object) {\n    return !object || object._livingOnScene === false;\n  }\n\n  /* --------------------------------------------------------- scene state */\n\n  var scenes = new Map();\n\n  function stateOf(runtimeScene) {\n    var s = scenes.get(runtimeScene);\n    if (!s) {\n      s = {\n        portals: new Set(),         // active Portal3D behavior records\n        traversables: new Set(),    // active PortalTraversable3D behavior records\n        bindings: new Set(),        // mesh material bindings\n        hiddenMeshes: []            // scratch for recursion guard during render\n      };\n      scenes.set(runtimeScene, s);\n    }\n    return s;\n  }\n\n  function threeRendererOf(runtimeScene) {\n    var gameRenderer = runtimeScene.getGame().getRenderer();\n    return gameRenderer && gameRenderer.getThreeRenderer\n      ? gameRenderer.getThreeRenderer()\n      : null;\n  }\n\n  function layerSceneOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeScene ? lr.getThreeScene() : null;\n  }\n\n  function layerCameraOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeCamera ? lr.getThreeCamera() : null;\n  }\n\n  /* -------------------------------------------------------------- targets */\n\n  function resolveSize(preset, customW, customH, renderer, runtimeScene) {\n    var w, h;\n    if (preset === 'MatchScreen' && runtimeScene) {\n      var game = runtimeScene.getGame();\n      w = game.getGameResolutionWidth() || 512;\n      h = game.getGameResolutionHeight() || 512;\n    } else if (PRESETS[preset] && PRESETS[preset][0] > 0) {\n      w = PRESETS[preset][0];\n      h = PRESETS[preset][1];\n    } else {\n      w = Math.floor(customW) || 512;\n      h = Math.floor(customH) || 512;\n    }\n    w = Math.max(1, w);\n    h = Math.max(1, h);\n\n    var max = renderer && renderer.capabilities ? renderer.capabilities.maxTextureSize : 0;\n    if (max && (w > max || h > max)) {\n      w = Math.min(w, max);\n      h = Math.min(h, max);\n    }\n    return [w, h];\n  }\n\n  function makeTarget(w, h) {\n    var target = new THREE.WebGLRenderTarget(w, h, {\n      minFilter: THREE.LinearFilter,\n      magFilter: THREE.LinearFilter,\n      depthBuffer: true,\n      stencilBuffer: false,\n      samples: 0\n    });\n    if (THREE.SRGBColorSpace !== undefined) {\n      target.texture.colorSpace = THREE.SRGBColorSpace;\n    }\n    target.texture.generateMipmaps = false;\n    return target;\n  }\n\n  function disposeTarget(portal) {\n    if (portal.target) {\n      try { portal.target.dispose(); } catch (e) {}\n      portal.target = null;\n    }\n  }\n\n  function ensureTarget(portal, renderer, runtimeScene) {\n    var size = resolveSize(portal.preset, portal.customW, portal.customH, renderer, runtimeScene);\n    var w = size[0], h = size[1];\n\n    if (portal.target && portal.target.width === w && portal.target.height === h) {\n      return portal.target;\n    }\n\n    disposeTarget(portal);\n    portal.target = makeTarget(w, h);\n    portal.textureEpoch = (portal.textureEpoch || 0) + 1;\n    return portal.target;\n  }\n\n  /* ------------------------------------------------------------ math scratch */\n\n  var _mTransform = null, _m4A = null, _m4B = null, _m4Inv = null, _m4Rel = null, _m4Cam = null;\n  var _v3A = null, _v3B = null, _v3Pos = null, _v3Look = null, _v3Up = null;\n  var _qA = null, _qB = null, _qFlip = null, _euler = null;\n  var _plane = null, _vec4 = null, _qCorn = null;\n\n  function initScratch() {\n    if (_mTransform) return;\n    _mTransform = new THREE.Matrix4();\n    _m4A = new THREE.Matrix4();\n    _m4B = new THREE.Matrix4();\n    _m4Inv = new THREE.Matrix4();\n    _m4Rel = new THREE.Matrix4();\n    _m4Cam = new THREE.Matrix4();\n    _v3A = new THREE.Vector3();\n    _v3B = new THREE.Vector3();\n    _v3Pos = new THREE.Vector3();\n    _v3Look = new THREE.Vector3();\n    _v3Up = new THREE.Vector3();\n    _qA = new THREE.Quaternion();\n    _qB = new THREE.Quaternion();\n    _qFlip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);\n    _euler = new THREE.Euler();\n    _plane = new THREE.Plane();\n    _vec4 = new THREE.Vector4();\n    _qCorn = new THREE.Vector4();\n  }\n\n  /**\n   * Computes the world matrix of a portal in Three.js coordinates.\n   * In GDevelop: Y is inverted relative to Three.js world space.\n   */\n  function getPortalWorldTransform(portal, outMatrix, outNormal, outUp) {\n    initScratch();\n    var mat = outMatrix || _mTransform;\n    var obj = portal.object;\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    mat.makeRotationFromEuler(_euler);\n\n    // Position: negate Y for Three.js scene coordinates\n    mat.setPosition(cx, -cy, cz);\n\n    var fAxis = FORWARD_AXIS[portal.forwardAxis] || FORWARD_AXIS['+Z'];\n    if (outNormal) {\n      outNormal.set(fAxis[0], -fAxis[1], fAxis[2]).applyEuler(_euler).normalize();\n    }\n    if (outUp) {\n      outUp.set(0, 0, 1).applyEuler(_euler).normalize();\n    }\n    return mat;\n  }\n\n  /**\n   * Computes the relative transformation from Portal A to Portal B:\n   * M_rel = M_B * R_flip * (M_A)^(-1)\n   */\n  function computePortalMatrix(portalA, portalB, outRelMatrix) {\n    initScratch();\n    getPortalWorldTransform(portalA, _m4A);\n    getPortalWorldTransform(portalB, _m4B);\n\n    _m4Inv.copy(_m4A).invert();\n\n    // R_flip is a 180-degree rotation around local Y\n    var mFlip = new THREE.Matrix4().makeRotationY(Math.PI);\n\n    outRelMatrix.copy(_m4B).multiply(mFlip).multiply(_m4Inv);\n    return outRelMatrix;\n  }\n\n  /**\n   * Lengyel's Oblique View Frustum Projection:\n   * Adjusts the camera projection matrix's near plane to lie exactly on the clipping plane.\n   */\n  function applyObliqueClipping(projMatrix, clipPlaneCamera) {\n    var p = projMatrix.clone();\n    var cp = clipPlaneCamera;\n\n    // Corner opposite to clip plane\n    _qCorn.x = (Math.sign(cp.x) + p.elements[8]) / p.elements[0];\n    _qCorn.y = (Math.sign(cp.y) + p.elements[9]) / p.elements[5];\n    _qCorn.z = -1.0;\n    _qCorn.w = (1.0 + p.elements[10]) / p.elements[14];\n\n    var dot = cp.x * _qCorn.x + cp.y * _qCorn.y + cp.z * _qCorn.z + cp.w * _qCorn.w;\n    if (Math.abs(dot) < 1e-6) return projMatrix; // avoid degenerate division\n\n    var scale = 2.0 / dot;\n    var c = new THREE.Vector4(cp.x * scale, cp.y * scale, cp.z * scale, cp.w * scale);\n\n    // Replace 3rd row of column-major projection matrix\n    p.elements[2] = c.x;\n    p.elements[6] = c.y;\n    p.elements[10] = c.z + 1.0;\n    p.elements[14] = c.w;\n\n    return p;\n  }\n\n  /* ------------------------------------------------------------- bindings */\n\n  function cubeMeshOf(object) {\n    var renderer = object.getRenderer && object.getRenderer();\n    return renderer && renderer._boxMesh ? renderer._boxMesh : null;\n  }\n\n  function createPortalMaterial(portal, originalMat) {\n    var mat = new THREE.MeshBasicMaterial({\n      color: 0xffffff,\n      transparent: true,\n      toneMapped: false\n    });\n\n    mat.userData.portal = portal;\n    mat.userData.uBorderColor = new THREE.Color(portal.borderColor || '#00a2ff');\n    mat.userData.uBorderWidth = portal.borderWidth !== undefined ? portal.borderWidth : 0.08;\n    mat.userData.uShape = portal.shape === 'Rectangle' ? 1.0 : 0.0;\n\n    mat.onBeforeCompile = function (shader) {\n      shader.uniforms.uPortalMap = { value: portal.target ? portal.target.texture : null };\n      shader.uniforms.uBorderColor = { value: mat.userData.uBorderColor };\n      shader.uniforms.uBorderWidth = { value: mat.userData.uBorderWidth };\n      shader.uniforms.uShape = { value: mat.userData.uShape };\n      shader.uniforms.uIsOpen = { value: portal.isOpen ? 1.0 : 0.0 };\n\n      mat.userData.shader = shader;\n\n      // Vertex shader: pass clip-space position and UVs\n      shader.vertexShader = 'varying vec4 vScreenCoord;\\nvarying vec2 vPortalUv;\\n' + shader.vertexShader;\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <begin_vertex>',\n        [\n          '#include <begin_vertex>',\n          'vPortalUv = uv;'\n        ].join('\\n')\n      );\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <project_vertex>',\n        [\n          '#include <project_vertex>',\n          'vScreenCoord = gl_Position;'\n        ].join('\\n')\n      );\n\n      // Fragment shader: sample screen coordinates and generate portal rim\n      shader.fragmentShader = [\n        'uniform sampler2D uPortalMap;',\n        'uniform vec3 uBorderColor;',\n        'uniform float uBorderWidth;',\n        'uniform float uShape;',\n        'uniform float uIsOpen;',\n        'varying vec4 vScreenCoord;',\n        'varying vec2 vPortalUv;',\n        shader.fragmentShader\n      ].join('\\n');\n\n      shader.fragmentShader = shader.fragmentShader.replace(\n        '#include <dithering_fragment>',\n        [\n          '#include <dithering_fragment>',\n          'if (uIsOpen < 0.5) {',\n          '  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',\n          '} else {',\n          '  vec2 screenUv = (vScreenCoord.xy / vScreenCoord.w) * 0.5 + 0.5;',\n          '  vec4 portalColor = texture2D(uPortalMap, screenUv);',\n          '  float ring = 0.0;',\n          '  float alpha = 1.0;',\n          '  if (uShape < 0.5) {',\n          '    // Oval Portal Ring',\n          '    vec2 p = vPortalUv * 2.0 - 1.0;',\n          '    float d = length(p);',\n          '    float inner = 0.90 - uBorderWidth;',\n          '    ring = smoothstep(inner, inner + 0.06, d) * (1.0 - smoothstep(0.96, 1.0, d));',\n          '    alpha = 1.0 - smoothstep(0.98, 1.02, d);',\n          '  } else {',\n          '    // Rectangular Portal Frame',\n          '    vec2 edge = min(vPortalUv, 1.0 - vPortalUv);',\n          '    float minEdge = min(edge.x, edge.y);',\n          '    ring = (1.0 - smoothstep(0.0, uBorderWidth, minEdge));',\n          '    alpha = 1.0;',\n          '  }',\n          '  vec3 rgb = mix(portalColor.rgb, uBorderColor, ring);',\n          '  gl_FragColor = vec4(rgb, alpha);',\n          '}'\n        ].join('\\n')\n      );\n    };\n\n    return mat;\n  }\n\n  function bindPortalMesh(portal) {\n    var mesh = cubeMeshOf(portal.object);\n    if (!mesh || !Array.isArray(mesh.material)) return false;\n\n    var faceIndex = FACE_INDEX[portal.face] !== undefined ? FACE_INDEX[portal.face] : 0;\n    var slot = FACE_SLOT[faceIndex];\n    if (slot === undefined) return false;\n\n    var original = mesh.material[slot];\n    var clone = createPortalMaterial(portal, original);\n    mesh.material[slot] = clone;\n\n    portal.binding = {\n      mesh: mesh,\n      slot: slot,\n      original: original,\n      clone: clone\n    };\n    return true;\n  }\n\n  function restorePortalMesh(portal) {\n    if (!portal.binding) return;\n    var b = portal.binding;\n    try {\n      if (b.mesh && Array.isArray(b.mesh.material) && b.mesh.material[b.slot] === b.clone) {\n        b.mesh.material[b.slot] = b.original;\n      }\n      if (b.clone) b.clone.dispose();\n    } catch (e) {}\n    portal.binding = null;\n  }\n\n  /* -------------------------------------------------------- portal finders */\n\n  function findPortalByTag(state, tag) {\n    if (!tag) return null;\n    var found = null;\n    state.portals.forEach(function (p) {\n      if (p.tag === tag && !isDead(p.object)) found = p;\n    });\n    return found;\n  }\n\n  function getLinkedPortal(state, portal) {\n    if (portal.linkedPortalRecord && !isDead(portal.linkedPortalRecord.object)) {\n      return portal.linkedPortalRecord;\n    }\n    if (portal.linkedTag) {\n      var found = findPortalByTag(state, portal.linkedTag);\n      if (found && found !== portal) {\n        portal.linkedPortalRecord = found;\n        return found;\n      }\n    }\n    return null;\n  }\n\n  /* ------------------------------------------------------------- rendering */\n\n  var _prevClearColor = null;\n\n  function renderPortalView(renderer, runtimeScene, entryPortal, exitPortal, playerCam, state) {\n    var scene = layerSceneOf(runtimeScene, exitPortal.layerName);\n    if (!scene || !playerCam) return;\n\n    ensureTarget(entryPortal, renderer, runtimeScene);\n    if (!entryPortal.target) return;\n\n    initScratch();\n\n    // 1. Create or ensure secondary portal camera\n    if (!entryPortal.virtualCamera) {\n      entryPortal.virtualCamera = new THREE.PerspectiveCamera();\n      entryPortal.virtualCamera.rotation.order = 'ZYX';\n    }\n    var vCam = entryPortal.virtualCamera;\n\n    // 2. Compute relative camera transform: M_cam = M_rel * M_playerCam\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n    playerCam.updateMatrixWorld();\n    _m4Cam.copy(_m4Rel).multiply(playerCam.matrixWorld);\n\n    _m4Cam.decompose(_v3Pos, _qA, _v3B);\n    vCam.position.copy(_v3Pos);\n    vCam.quaternion.copy(_qA);\n    vCam.fov = playerCam.fov || 60;\n    vCam.near = playerCam.near || 1;\n    vCam.far = playerCam.far || 2000;\n    vCam.aspect = playerCam.aspect || (entryPortal.target.width / entryPortal.target.height);\n    vCam.updateMatrixWorld(true);\n    vCam.updateProjectionMatrix();\n\n    // 3. Oblique Near Plane Clipping (culls geometry behind exit portal)\n    if (entryPortal.obliqueClipping) {\n      getPortalWorldTransform(exitPortal, _m4B, _v3Look); // _v3Look gets exit normal\n      var exitPos = new THREE.Vector3().setFromMatrixPosition(_m4B);\n      // Plane in world space: normal pointing out of exit portal\n      _plane.setFromNormalAndCoplanarPoint(_v3Look, exitPos);\n      // Transform plane into virtual camera space\n      var clipPlaneCam = _plane.clone().applyMatrix4(vCam.matrixWorldInverse);\n      vCam.projectionMatrix = applyObliqueClipping(vCam.projectionMatrix, clipPlaneCam);\n    }\n\n    // 4. Hide entry portal mesh to avoid recursive self-sampling feedback\n    state.hiddenMeshes.length = 0;\n    if (entryPortal.binding && entryPortal.binding.mesh) {\n      state.hiddenMeshes.push(entryPortal.binding.mesh);\n      entryPortal.binding.mesh.visible = false;\n    }\n\n    // 5. Render destination world into entry portal's target\n    if (!_prevClearColor) _prevClearColor = new THREE.Color();\n    renderer.getClearColor(_prevClearColor);\n    var prevAlpha = renderer.getClearAlpha();\n\n    var bg = scene.background;\n    if (bg && bg.isColor) {\n      renderer.setClearColor(bg, 1);\n    } else {\n      renderer.setClearColor(runtimeScene.getBackgroundColor(), 1);\n    }\n\n    try {\n      renderer.setRenderTarget(entryPortal.target);\n      renderer.clear(true, true, true);\n      renderer.render(scene, vCam);\n    } finally {\n      // Unhide meshes\n      for (var i = 0; i < state.hiddenMeshes.length; i++) {\n        state.hiddenMeshes[i].visible = true;\n      }\n      state.hiddenMeshes.length = 0;\n      renderer.setClearColor(_prevClearColor, prevAlpha);\n    }\n\n    // 6. Update shader uniform with fresh render target\n    if (entryPortal.binding && entryPortal.binding.clone) {\n      var shader = entryPortal.binding.clone.userData.shader;\n      if (shader && shader.uniforms && shader.uniforms.uPortalMap) {\n        shader.uniforms.uPortalMap.value = entryPortal.target.texture;\n        shader.uniforms.uIsOpen.value = entryPortal.isOpen ? 1.0 : 0.0;\n        shader.uniforms.uBorderColor.value.set(entryPortal.borderColor || '#00a2ff');\n      }\n    }\n  }\n\n  /* -------------------------------------------------- physical traversal */\n\n  function updateTraversables(state, runtimeScene, dt) {\n    if (!state.portals.size || !state.traversables.size) return;\n\n    initScratch();\n\n    state.traversables.forEach(function (trav) {\n      if (isDead(trav.object)) return;\n\n      // Reset single-frame flags\n      trav.justTeleported = false;\n\n      if (trav.cooldown > 0) {\n        trav.cooldown -= dt;\n        return;\n      }\n\n      var obj = trav.object;\n      var currX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      var currY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      var currZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n      var prevX = trav.prevX !== undefined ? trav.prevX : currX;\n      var prevY = trav.prevY !== undefined ? trav.prevY : currY;\n      var prevZ = trav.prevZ !== undefined ? trav.prevZ : currZ;\n\n      // Test against each active linked portal\n      state.portals.forEach(function (entryPortal) {\n        if (!entryPortal.isOpen || isDead(entryPortal.object)) return;\n        var exitPortal = getLinkedPortal(state, entryPortal);\n        if (!exitPortal || !exitPortal.isOpen || isDead(exitPortal.object)) return;\n\n        getPortalWorldTransform(entryPortal, _m4A, _v3Look); // _v3Look = normal\n        var portalPos = new THREE.Vector3().setFromMatrixPosition(_m4A);\n\n        // Convert GDevelop pos to Three coords: negate Y\n        var pPrev = new THREE.Vector3(prevX, -prevY, prevZ);\n        var pCurr = new THREE.Vector3(currX, -currY, currZ);\n\n        // Signed distance from previous and current position to portal plane\n        var dPrev = (pPrev.x - portalPos.x) * _v3Look.x +\n                    (pPrev.y - portalPos.y) * _v3Look.y +\n                    (pPrev.z - portalPos.z) * _v3Look.z;\n        var dCurr = (pCurr.x - portalPos.x) * _v3Look.x +\n                    (pCurr.y - portalPos.y) * _v3Look.y +\n                    (pCurr.z - portalPos.z) * _v3Look.z;\n\n        // Check plane crossing: moving from front (dPrev >= 0) to back (dCurr <= 0)\n        if (dPrev >= -5 && dCurr <= 5 && (dPrev >= 0 || dCurr <= 0)) {\n          // Check portal bounding dimensions\n          var pw = (entryPortal.object.getWidth ? entryPortal.object.getWidth() : 64) * 0.7;\n          var ph = (entryPortal.object.getHeight ? entryPortal.object.getHeight() : 64) * 0.7;\n          var pz = (entryPortal.object.getDepth ? entryPortal.object.getDepth() : 64) * 0.7;\n          var maxR = Math.max(pw, ph, pz);\n\n          var distCenter = pCurr.distanceTo(portalPos);\n          if (distCenter <= maxR) {\n            // TELEPORT!\n            teleportEntity(trav, entryPortal, exitPortal);\n          }\n        }\n      });\n\n      // Cache position for next frame plane crossing test\n      trav.prevX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      trav.prevY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      trav.prevZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n    });\n  }\n\n  function teleportEntity(trav, entryPortal, exitPortal) {\n    initScratch();\n    var obj = trav.object;\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    // Three space coords: (x, -y, z)\n    var pThree = new THREE.Vector3(cx, -cy, cz).applyMatrix4(_m4Rel);\n\n    // Get exit portal forward normal to nudge entity outward\n    getPortalWorldTransform(exitPortal, _m4B, _v3Look);\n    var exitOffset = trav.exitOffset !== undefined ? trav.exitOffset : 20.0;\n    pThree.addScaledVector(_v3Look, exitOffset);\n\n    // Convert back to GDevelop: (x, -y, z)\n    var newX = pThree.x;\n    var newY = -pThree.y;\n    var newZ = pThree.z;\n\n    if (obj.setX) obj.setX(newX);\n    if (obj.setY) obj.setY(newY);\n    if (obj.setZ) obj.setZ(newZ);\n\n    // Rotate orientation\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    _m4Cam.makeRotationFromEuler(_euler);\n    _m4Cam.premultiply(_m4Rel);\n    _euler.setFromRotationMatrix(_m4Cam, 'ZYX');\n\n    if (obj.setAngle) obj.setAngle(gdjs.toDegrees(_euler.z));\n    if (obj.setRotationX) obj.setRotationX(gdjs.toDegrees(_euler.x));\n    if (obj.setRotationY) obj.setRotationY(gdjs.toDegrees(_euler.y));\n\n    // Redirect Physics Velocity if present\n    if (trav.redirectVelocity) {\n      redirectObjectVelocity(obj, _m4Rel);\n    }\n\n    trav.cooldown = trav.teleportCooldown || 0.15;\n    trav.justTeleported = true;\n    trav.lastPortalTag = entryPortal.tag;\n    trav.prevX = newX;\n    trav.prevY = newY;\n    trav.prevZ = newZ;\n  }\n\n  function redirectObjectVelocity(obj, mRel) {\n    var rotMatrix = new THREE.Matrix3().setFromMatrix4(mRel);\n    // Check for physics behaviors with getLinearVelocity\n    if (obj._behaviors) {\n      for (var i = 0; i < obj._behaviors.length; i++) {\n        var b = obj._behaviors[i];\n        if (b && typeof b.getLinearVelocityX === 'function') {\n          var vx = b.getLinearVelocityX();\n          var vy = b.getLinearVelocityY();\n          var vz = b.getLinearVelocityZ ? b.getLinearVelocityZ() : 0;\n          // Three coords: (vx, -vy, vz)\n          var v3 = new THREE.Vector3(vx, -vy, vz).applyMatrix3(rotMatrix);\n          if (b.setLinearVelocity) b.setLinearVelocity(v3.x, -v3.y, v3.z);\n        }\n      }\n    }\n  }\n\n  /* ------------------------------------------------------------- main loop */\n\n  function tick(runtimeScene) {\n    if (!THREE_OK) return;\n    var state = scenes.get(runtimeScene);\n    if (!state || !state.portals.size) return;\n\n    var dt = (runtimeScene.getElapsedTime ? runtimeScene.getElapsedTime() : 16.6) / 1000.0;\n\n    // 1. Run physical traversal checks before rendering\n    updateTraversables(state, runtimeScene, dt);\n\n    var renderer = threeRendererOf(runtimeScene);\n    if (!renderer) return;\n\n    // 2. Determine active portals that need rendering\n    var renderPairs = [];\n    state.portals.forEach(function (portalA) {\n      if (isDead(portalA.object) || !portalA.isOpen) return;\n\n      // Revalidate mesh binding\n      if (!portalA.binding) bindPortalMesh(portalA);\n\n      var portalB = getLinkedPortal(state, portalA);\n      if (portalB && !isDead(portalB.object) && portalB.isOpen) {\n        renderPairs.push({ entry: portalA, exit: portalB });\n      }\n    });\n\n    if (!renderPairs.length) return;\n\n    // Find main player camera on layer\n    var playerCam = layerCameraOf(runtimeScene, renderPairs[0].entry.layerName);\n    if (!playerCam) return;\n\n    // WebGL state protection\n    renderer.resetState();\n    var prevAutoUpdate = renderer.shadowMap.autoUpdate;\n    renderer.shadowMap.autoUpdate = false;\n    var prevTarget = renderer.getRenderTarget();\n\n    try {\n      for (var k = 0; k < renderPairs.length; k++) {\n        renderPortalView(renderer, runtimeScene, renderPairs[k].entry, renderPairs[k].exit, playerCam, state);\n      }\n    } catch (e) {\n      warnOnce('renderFail', 'Portal render pass error: ' + (e && e.message ? e.message : e));\n    } finally {\n      renderer.setRenderTarget(prevTarget || null);\n      renderer.shadowMap.autoUpdate = prevAutoUpdate;\n      renderer.resetState();\n      var gr = runtimeScene.getGame().getRenderer();\n      var pixi = gr && gr.getPIXIRenderer ? gr.getPIXIRenderer() : null;\n      if (pixi && pixi.reset) { try { pixi.reset(); } catch (e2) {} }\n    }\n  }\n\n  /* ------------------------------------------------------------ public API */\n\n  var NS = {\n    PRESETS: PRESETS,\n    FACE_INDEX: FACE_INDEX,\n    FACE_SLOT: FACE_SLOT,\n\n    registerPortal: function (runtimeScene, object, behavior, options) {\n      if (!THREE_OK) return null;\n      var state = stateOf(runtimeScene);\n      var portal = behavior.__portal3DRecord;\n      if (!portal) {\n        portal = behavior.__portal3DRecord = {\n          object: object,\n          behavior: behavior,\n          layerName: object.getLayer(),\n          binding: null,\n          virtualCamera: null,\n          target: null,\n          textureEpoch: 0,\n          linkedPortalRecord: null\n        };\n        state.portals.add(portal);\n        bindPortalMesh(portal);\n      }\n      NS.configurePortal(portal, options);\n      portal.layerName = object.getLayer();\n      return portal;\n    },\n\n    configurePortal: function (portal, o) {\n      if (!portal || !o) return;\n      portal.tag = o.tag !== undefined ? o.tag : (portal.tag || 'Blue');\n      portal.linkedTag = o.linkedTag !== undefined ? o.linkedTag : (portal.linkedTag || '');\n      portal.face = o.face || portal.face || 'Front';\n      portal.shape = o.shape || portal.shape || 'Oval';\n      portal.borderColor = o.borderColor || portal.borderColor || '#00a2ff';\n      portal.borderWidth = o.borderWidth !== undefined ? o.borderWidth : (portal.borderWidth || 0.08);\n      portal.preset = o.preset || portal.preset || 'Standard';\n      portal.customW = o.customW || portal.customW || 512;\n      portal.customH = o.customH || portal.customH || 512;\n      portal.obliqueClipping = o.obliqueClipping !== undefined ? !!o.obliqueClipping : true;\n      portal.forwardAxis = o.forwardAxis || portal.forwardAxis || '+Z';\n      portal.isOpen = o.isOpen !== undefined ? !!o.isOpen : true;\n    },\n\n    disposePortal: function (runtimeScene, behavior) {\n      var portal = behavior && behavior.__portal3DRecord;\n      if (!portal) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.portals.delete(portal);\n      restorePortalMesh(portal);\n      disposeTarget(portal);\n      portal.virtualCamera = null;\n      behavior.__portal3DRecord = null;\n    },\n\n    portalOf: function (behavior) {\n      return behavior ? behavior.__portal3DRecord : null;\n    },\n\n    registerTraversable: function (runtimeScene, object, behavior, options) {\n      var state = stateOf(runtimeScene);\n      var trav = behavior.__portalTraversableRecord;\n      if (!trav) {\n        trav = behavior.__portalTraversableRecord = {\n          object: object,\n          behavior: behavior,\n          cooldown: 0,\n          justTeleported: false,\n          lastPortalTag: ''\n        };\n        state.traversables.add(trav);\n      }\n      trav.enabled = options.enabled !== undefined ? !!options.enabled : true;\n      trav.teleportCooldown = options.teleportCooldown !== undefined ? options.teleportCooldown : 0.15;\n      trav.redirectVelocity = options.redirectVelocity !== undefined ? !!options.redirectVelocity : true;\n      trav.redirectCamera = options.redirectCamera !== undefined ? !!options.redirectCamera : true;\n      trav.exitOffset = options.exitOffset !== undefined ? options.exitOffset : 20.0;\n      return trav;\n    },\n\n    disposeTraversable: function (runtimeScene, behavior) {\n      var trav = behavior && behavior.__portalTraversableRecord;\n      if (!trav) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.traversables.delete(trav);\n      behavior.__portalTraversableRecord = null;\n    },\n\n    traversableOf: function (behavior) {\n      return behavior ? behavior.__portalTraversableRecord : null;\n    },\n\n    linkPortals: function (runtimeScene, portalAObject, portalBObject) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === portalAObject) pA = p;\n        if (p.object === portalBObject) pB = p;\n      });\n      if (pA && pB) {\n        pA.linkedPortalRecord = pB;\n        pB.linkedPortalRecord = pA;\n        pA.linkedTag = pB.tag;\n        pB.linkedTag = pA.tag;\n        return true;\n      }\n      return false;\n    },\n\n    teleportObjectManual: function (runtimeScene, object, entryObj, exitObj, redirectVel) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === entryObj) pA = p;\n        if (p.object === exitObj) pB = p;\n      });\n      if (!pA || !pB) return false;\n      var mockTrav = {\n        object: object,\n        redirectVelocity: !!redirectVel,\n        exitOffset: 20.0,\n        cooldown: 0.15\n      };\n      teleportEntity(mockTrav, pA, pB);\n      return true;\n    },\n\n    computePortalMatrix: computePortalMatrix,\n    applyObliqueClipping: applyObliqueClipping,\n    tick: tick,\n\n    disposeScene: function (runtimeScene) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return;\n      state.portals.forEach(function (p) {\n        restorePortalMesh(p);\n        disposeTarget(p);\n      });\n      state.portals.clear();\n      state.traversables.clear();\n      scenes.delete(runtimeScene);\n    }\n  };\n\n  gdjs.__portal3D = NS;\n\n  /* --------------------------------------------------------- engine hooks */\n\n  if (gdjs.registerRuntimeScenePostEventsCallback) {\n    gdjs.registerRuntimeScenePostEventsCallback(function (runtimeScene) {\n      try { tick(runtimeScene); } catch (e) {\n        warnOnce('tick', 'Portal tick failed: ' + (e && e.message ? e.message : e));\n      }\n    });\n  }\n\n  if (gdjs.registerRuntimeSceneUnloadedCallback) {\n    gdjs.registerRuntimeSceneUnloadedCallback(function (runtimeScene) {\n      try { NS.disposeScene(runtimeScene); } catch (e) {}\n    });\n  }\n})();\n\nconst __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nPORTAL.registerTraversable(runtimeScene, object, behavior, {\n  enabled: behavior._getEnabled ? behavior._getEnabled() : true,\n  teleportCooldown: behavior._getTeleportCooldown ? behavior._getTeleportCooldown() : 0.15,\n  redirectVelocity: behavior._getRedirectVelocity ? behavior._getRedirectVelocity() : true,\n  redirectCamera: behavior._getRedirectCamera ? behavior._getRedirectCamera() : true,\n  exitOffset: behavior._getExitOffset ? behavior._getExitOffset() : 20.0\n});\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPreEvents",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * Portal3D — Valve Portal-style visual and physical portals for GDevelop 5.\n *\n * Implements:\n *   1. Perspective-matched virtual cameras: Looking into Portal A renders the scene\n *      from Portal B with the exact relative eye-perspective of the player camera.\n *   2. Screen-space projective texture mapping: Portal surfaces sample the offscreen\n *      target in screen coordinates, turning the portal face into a seamless optical window.\n *   3. Oblique near-plane clipping (Lengyel's matrix): Geometry behind the exit portal's\n *      wall is cleanly clipped from the portal view frustum.\n *   4. Seamless physical traversal & momentum redirection: Entities crossing the portal\n *      plane are instantly teleported, redirecting velocity and look vectors while\n *      preserving kinetic energy.\n *   5. Robust WebGL lifecycle & state restoration following InGameCamera3D (C1, C3, C5, C10).\n */\n(function () {\n  if (typeof gdjs === 'undefined') return;\n  if (gdjs.__portal3D) return; // install once\n\n  var THREE_OK = typeof THREE !== 'undefined';\n\n  /* ------------------------------------------------------------ constants */\n\n  var PRESETS = {\n    Tiny: [160, 120],\n    Low: [320, 240],\n    Standard: [512, 512],\n    SD: [640, 480],\n    HD: [1280, 720],\n    MatchScreen: [0, 0]\n  };\n\n  // Cube3D face order: [Front, Back, Left, Right, Top, Bottom].\n  var FACE_INDEX = { Front: 0, Back: 1, Left: 2, Right: 3, Top: 4, Bottom: 5 };\n  var FACE_SLOT = { 0: 4, 1: 5, 2: 1, 3: 0, 4: 3, 5: 2 };\n\n  var FORWARD_AXIS = {\n    '+Z': [0, 0, 1], '-Z': [0, 0, -1],\n    '+X': [1, 0, 0], '-X': [-1, 0, 0],\n    '+Y': [0, 1, 0], '-Y': [0, -1, 0]\n  };\n\n  var warned = {};\n  function warnOnce(key, message) {\n    if (warned[key]) return;\n    warned[key] = true;\n    console.warn('[Portal3D] ' + message);\n  }\n\n  function isDead(object) {\n    return !object || object._livingOnScene === false;\n  }\n\n  /* --------------------------------------------------------- scene state */\n\n  var scenes = new Map();\n\n  function stateOf(runtimeScene) {\n    var s = scenes.get(runtimeScene);\n    if (!s) {\n      s = {\n        portals: new Set(),         // active Portal3D behavior records\n        traversables: new Set(),    // active PortalTraversable3D behavior records\n        bindings: new Set(),        // mesh material bindings\n        hiddenMeshes: []            // scratch for recursion guard during render\n      };\n      scenes.set(runtimeScene, s);\n    }\n    return s;\n  }\n\n  function threeRendererOf(runtimeScene) {\n    var gameRenderer = runtimeScene.getGame().getRenderer();\n    return gameRenderer && gameRenderer.getThreeRenderer\n      ? gameRenderer.getThreeRenderer()\n      : null;\n  }\n\n  function layerSceneOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeScene ? lr.getThreeScene() : null;\n  }\n\n  function layerCameraOf(runtimeScene, layerName) {\n    var layer = runtimeScene.getLayer(layerName);\n    var lr = layer && layer.getRenderer && layer.getRenderer();\n    return lr && lr.getThreeCamera ? lr.getThreeCamera() : null;\n  }\n\n  /* -------------------------------------------------------------- targets */\n\n  function resolveSize(preset, customW, customH, renderer, runtimeScene) {\n    var w, h;\n    if (preset === 'MatchScreen' && runtimeScene) {\n      var game = runtimeScene.getGame();\n      w = game.getGameResolutionWidth() || 512;\n      h = game.getGameResolutionHeight() || 512;\n    } else if (PRESETS[preset] && PRESETS[preset][0] > 0) {\n      w = PRESETS[preset][0];\n      h = PRESETS[preset][1];\n    } else {\n      w = Math.floor(customW) || 512;\n      h = Math.floor(customH) || 512;\n    }\n    w = Math.max(1, w);\n    h = Math.max(1, h);\n\n    var max = renderer && renderer.capabilities ? renderer.capabilities.maxTextureSize : 0;\n    if (max && (w > max || h > max)) {\n      w = Math.min(w, max);\n      h = Math.min(h, max);\n    }\n    return [w, h];\n  }\n\n  function makeTarget(w, h) {\n    var target = new THREE.WebGLRenderTarget(w, h, {\n      minFilter: THREE.LinearFilter,\n      magFilter: THREE.LinearFilter,\n      depthBuffer: true,\n      stencilBuffer: false,\n      samples: 0\n    });\n    if (THREE.SRGBColorSpace !== undefined) {\n      target.texture.colorSpace = THREE.SRGBColorSpace;\n    }\n    target.texture.generateMipmaps = false;\n    return target;\n  }\n\n  function disposeTarget(portal) {\n    if (portal.target) {\n      try { portal.target.dispose(); } catch (e) {}\n      portal.target = null;\n    }\n  }\n\n  function ensureTarget(portal, renderer, runtimeScene) {\n    var size = resolveSize(portal.preset, portal.customW, portal.customH, renderer, runtimeScene);\n    var w = size[0], h = size[1];\n\n    if (portal.target && portal.target.width === w && portal.target.height === h) {\n      return portal.target;\n    }\n\n    disposeTarget(portal);\n    portal.target = makeTarget(w, h);\n    portal.textureEpoch = (portal.textureEpoch || 0) + 1;\n    return portal.target;\n  }\n\n  /* ------------------------------------------------------------ math scratch */\n\n  var _mTransform = null, _m4A = null, _m4B = null, _m4Inv = null, _m4Rel = null, _m4Cam = null;\n  var _v3A = null, _v3B = null, _v3Pos = null, _v3Look = null, _v3Up = null;\n  var _qA = null, _qB = null, _qFlip = null, _euler = null;\n  var _plane = null, _vec4 = null, _qCorn = null;\n\n  function initScratch() {\n    if (_mTransform) return;\n    _mTransform = new THREE.Matrix4();\n    _m4A = new THREE.Matrix4();\n    _m4B = new THREE.Matrix4();\n    _m4Inv = new THREE.Matrix4();\n    _m4Rel = new THREE.Matrix4();\n    _m4Cam = new THREE.Matrix4();\n    _v3A = new THREE.Vector3();\n    _v3B = new THREE.Vector3();\n    _v3Pos = new THREE.Vector3();\n    _v3Look = new THREE.Vector3();\n    _v3Up = new THREE.Vector3();\n    _qA = new THREE.Quaternion();\n    _qB = new THREE.Quaternion();\n    _qFlip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);\n    _euler = new THREE.Euler();\n    _plane = new THREE.Plane();\n    _vec4 = new THREE.Vector4();\n    _qCorn = new THREE.Vector4();\n  }\n\n  /**\n   * Computes the world matrix of a portal in Three.js coordinates.\n   * In GDevelop: Y is inverted relative to Three.js world space.\n   */\n  function getPortalWorldTransform(portal, outMatrix, outNormal, outUp) {\n    initScratch();\n    var mat = outMatrix || _mTransform;\n    var obj = portal.object;\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    mat.makeRotationFromEuler(_euler);\n\n    // Position: negate Y for Three.js scene coordinates\n    mat.setPosition(cx, -cy, cz);\n\n    var fAxis = FORWARD_AXIS[portal.forwardAxis] || FORWARD_AXIS['+Z'];\n    if (outNormal) {\n      outNormal.set(fAxis[0], -fAxis[1], fAxis[2]).applyEuler(_euler).normalize();\n    }\n    if (outUp) {\n      outUp.set(0, 0, 1).applyEuler(_euler).normalize();\n    }\n    return mat;\n  }\n\n  /**\n   * Computes the relative transformation from Portal A to Portal B:\n   * M_rel = M_B * R_flip * (M_A)^(-1)\n   */\n  function computePortalMatrix(portalA, portalB, outRelMatrix) {\n    initScratch();\n    getPortalWorldTransform(portalA, _m4A);\n    getPortalWorldTransform(portalB, _m4B);\n\n    _m4Inv.copy(_m4A).invert();\n\n    // R_flip is a 180-degree rotation around local Y\n    var mFlip = new THREE.Matrix4().makeRotationY(Math.PI);\n\n    outRelMatrix.copy(_m4B).multiply(mFlip).multiply(_m4Inv);\n    return outRelMatrix;\n  }\n\n  /**\n   * Lengyel's Oblique View Frustum Projection:\n   * Adjusts the camera projection matrix's near plane to lie exactly on the clipping plane.\n   */\n  function applyObliqueClipping(projMatrix, clipPlaneCamera) {\n    var p = projMatrix.clone();\n    var cp = clipPlaneCamera;\n\n    // Corner opposite to clip plane\n    _qCorn.x = (Math.sign(cp.x) + p.elements[8]) / p.elements[0];\n    _qCorn.y = (Math.sign(cp.y) + p.elements[9]) / p.elements[5];\n    _qCorn.z = -1.0;\n    _qCorn.w = (1.0 + p.elements[10]) / p.elements[14];\n\n    var dot = cp.x * _qCorn.x + cp.y * _qCorn.y + cp.z * _qCorn.z + cp.w * _qCorn.w;\n    if (Math.abs(dot) < 1e-6) return projMatrix; // avoid degenerate division\n\n    var scale = 2.0 / dot;\n    var c = new THREE.Vector4(cp.x * scale, cp.y * scale, cp.z * scale, cp.w * scale);\n\n    // Replace 3rd row of column-major projection matrix\n    p.elements[2] = c.x;\n    p.elements[6] = c.y;\n    p.elements[10] = c.z + 1.0;\n    p.elements[14] = c.w;\n\n    return p;\n  }\n\n  /* ------------------------------------------------------------- bindings */\n\n  function cubeMeshOf(object) {\n    var renderer = object.getRenderer && object.getRenderer();\n    return renderer && renderer._boxMesh ? renderer._boxMesh : null;\n  }\n\n  function createPortalMaterial(portal, originalMat) {\n    var mat = new THREE.MeshBasicMaterial({\n      color: 0xffffff,\n      transparent: true,\n      toneMapped: false\n    });\n\n    mat.userData.portal = portal;\n    mat.userData.uBorderColor = new THREE.Color(portal.borderColor || '#00a2ff');\n    mat.userData.uBorderWidth = portal.borderWidth !== undefined ? portal.borderWidth : 0.08;\n    mat.userData.uShape = portal.shape === 'Rectangle' ? 1.0 : 0.0;\n\n    mat.onBeforeCompile = function (shader) {\n      shader.uniforms.uPortalMap = { value: portal.target ? portal.target.texture : null };\n      shader.uniforms.uBorderColor = { value: mat.userData.uBorderColor };\n      shader.uniforms.uBorderWidth = { value: mat.userData.uBorderWidth };\n      shader.uniforms.uShape = { value: mat.userData.uShape };\n      shader.uniforms.uIsOpen = { value: portal.isOpen ? 1.0 : 0.0 };\n\n      mat.userData.shader = shader;\n\n      // Vertex shader: pass clip-space position and UVs\n      shader.vertexShader = 'varying vec4 vScreenCoord;\\nvarying vec2 vPortalUv;\\n' + shader.vertexShader;\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <begin_vertex>',\n        [\n          '#include <begin_vertex>',\n          'vPortalUv = uv;'\n        ].join('\\n')\n      );\n      shader.vertexShader = shader.vertexShader.replace(\n        '#include <project_vertex>',\n        [\n          '#include <project_vertex>',\n          'vScreenCoord = gl_Position;'\n        ].join('\\n')\n      );\n\n      // Fragment shader: sample screen coordinates and generate portal rim\n      shader.fragmentShader = [\n        'uniform sampler2D uPortalMap;',\n        'uniform vec3 uBorderColor;',\n        'uniform float uBorderWidth;',\n        'uniform float uShape;',\n        'uniform float uIsOpen;',\n        'varying vec4 vScreenCoord;',\n        'varying vec2 vPortalUv;',\n        shader.fragmentShader\n      ].join('\\n');\n\n      shader.fragmentShader = shader.fragmentShader.replace(\n        '#include <dithering_fragment>',\n        [\n          '#include <dithering_fragment>',\n          'if (uIsOpen < 0.5) {',\n          '  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',\n          '} else {',\n          '  vec2 screenUv = (vScreenCoord.xy / vScreenCoord.w) * 0.5 + 0.5;',\n          '  vec4 portalColor = texture2D(uPortalMap, screenUv);',\n          '  float ring = 0.0;',\n          '  float alpha = 1.0;',\n          '  if (uShape < 0.5) {',\n          '    // Oval Portal Ring',\n          '    vec2 p = vPortalUv * 2.0 - 1.0;',\n          '    float d = length(p);',\n          '    float inner = 0.90 - uBorderWidth;',\n          '    ring = smoothstep(inner, inner + 0.06, d) * (1.0 - smoothstep(0.96, 1.0, d));',\n          '    alpha = 1.0 - smoothstep(0.98, 1.02, d);',\n          '  } else {',\n          '    // Rectangular Portal Frame',\n          '    vec2 edge = min(vPortalUv, 1.0 - vPortalUv);',\n          '    float minEdge = min(edge.x, edge.y);',\n          '    ring = (1.0 - smoothstep(0.0, uBorderWidth, minEdge));',\n          '    alpha = 1.0;',\n          '  }',\n          '  vec3 rgb = mix(portalColor.rgb, uBorderColor, ring);',\n          '  gl_FragColor = vec4(rgb, alpha);',\n          '}'\n        ].join('\\n')\n      );\n    };\n\n    return mat;\n  }\n\n  function bindPortalMesh(portal) {\n    var mesh = cubeMeshOf(portal.object);\n    if (!mesh || !Array.isArray(mesh.material)) return false;\n\n    var faceIndex = FACE_INDEX[portal.face] !== undefined ? FACE_INDEX[portal.face] : 0;\n    var slot = FACE_SLOT[faceIndex];\n    if (slot === undefined) return false;\n\n    var original = mesh.material[slot];\n    var clone = createPortalMaterial(portal, original);\n    mesh.material[slot] = clone;\n\n    portal.binding = {\n      mesh: mesh,\n      slot: slot,\n      original: original,\n      clone: clone\n    };\n    return true;\n  }\n\n  function restorePortalMesh(portal) {\n    if (!portal.binding) return;\n    var b = portal.binding;\n    try {\n      if (b.mesh && Array.isArray(b.mesh.material) && b.mesh.material[b.slot] === b.clone) {\n        b.mesh.material[b.slot] = b.original;\n      }\n      if (b.clone) b.clone.dispose();\n    } catch (e) {}\n    portal.binding = null;\n  }\n\n  /* -------------------------------------------------------- portal finders */\n\n  function findPortalByTag(state, tag) {\n    if (!tag) return null;\n    var found = null;\n    state.portals.forEach(function (p) {\n      if (p.tag === tag && !isDead(p.object)) found = p;\n    });\n    return found;\n  }\n\n  function getLinkedPortal(state, portal) {\n    if (portal.linkedPortalRecord && !isDead(portal.linkedPortalRecord.object)) {\n      return portal.linkedPortalRecord;\n    }\n    if (portal.linkedTag) {\n      var found = findPortalByTag(state, portal.linkedTag);\n      if (found && found !== portal) {\n        portal.linkedPortalRecord = found;\n        return found;\n      }\n    }\n    return null;\n  }\n\n  /* ------------------------------------------------------------- rendering */\n\n  var _prevClearColor = null;\n\n  function renderPortalView(renderer, runtimeScene, entryPortal, exitPortal, playerCam, state) {\n    var scene = layerSceneOf(runtimeScene, exitPortal.layerName);\n    if (!scene || !playerCam) return;\n\n    ensureTarget(entryPortal, renderer, runtimeScene);\n    if (!entryPortal.target) return;\n\n    initScratch();\n\n    // 1. Create or ensure secondary portal camera\n    if (!entryPortal.virtualCamera) {\n      entryPortal.virtualCamera = new THREE.PerspectiveCamera();\n      entryPortal.virtualCamera.rotation.order = 'ZYX';\n    }\n    var vCam = entryPortal.virtualCamera;\n\n    // 2. Compute relative camera transform: M_cam = M_rel * M_playerCam\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n    playerCam.updateMatrixWorld();\n    _m4Cam.copy(_m4Rel).multiply(playerCam.matrixWorld);\n\n    _m4Cam.decompose(_v3Pos, _qA, _v3B);\n    vCam.position.copy(_v3Pos);\n    vCam.quaternion.copy(_qA);\n    vCam.fov = playerCam.fov || 60;\n    vCam.near = playerCam.near || 1;\n    vCam.far = playerCam.far || 2000;\n    vCam.aspect = playerCam.aspect || (entryPortal.target.width / entryPortal.target.height);\n    vCam.updateMatrixWorld(true);\n    vCam.updateProjectionMatrix();\n\n    // 3. Oblique Near Plane Clipping (culls geometry behind exit portal)\n    if (entryPortal.obliqueClipping) {\n      getPortalWorldTransform(exitPortal, _m4B, _v3Look); // _v3Look gets exit normal\n      var exitPos = new THREE.Vector3().setFromMatrixPosition(_m4B);\n      // Plane in world space: normal pointing out of exit portal\n      _plane.setFromNormalAndCoplanarPoint(_v3Look, exitPos);\n      // Transform plane into virtual camera space\n      var clipPlaneCam = _plane.clone().applyMatrix4(vCam.matrixWorldInverse);\n      vCam.projectionMatrix = applyObliqueClipping(vCam.projectionMatrix, clipPlaneCam);\n    }\n\n    // 4. Hide entry portal mesh to avoid recursive self-sampling feedback\n    state.hiddenMeshes.length = 0;\n    if (entryPortal.binding && entryPortal.binding.mesh) {\n      state.hiddenMeshes.push(entryPortal.binding.mesh);\n      entryPortal.binding.mesh.visible = false;\n    }\n\n    // 5. Render destination world into entry portal's target\n    if (!_prevClearColor) _prevClearColor = new THREE.Color();\n    renderer.getClearColor(_prevClearColor);\n    var prevAlpha = renderer.getClearAlpha();\n\n    var bg = scene.background;\n    if (bg && bg.isColor) {\n      renderer.setClearColor(bg, 1);\n    } else {\n      renderer.setClearColor(runtimeScene.getBackgroundColor(), 1);\n    }\n\n    try {\n      renderer.setRenderTarget(entryPortal.target);\n      renderer.clear(true, true, true);\n      renderer.render(scene, vCam);\n    } finally {\n      // Unhide meshes\n      for (var i = 0; i < state.hiddenMeshes.length; i++) {\n        state.hiddenMeshes[i].visible = true;\n      }\n      state.hiddenMeshes.length = 0;\n      renderer.setClearColor(_prevClearColor, prevAlpha);\n    }\n\n    // 6. Update shader uniform with fresh render target\n    if (entryPortal.binding && entryPortal.binding.clone) {\n      var shader = entryPortal.binding.clone.userData.shader;\n      if (shader && shader.uniforms && shader.uniforms.uPortalMap) {\n        shader.uniforms.uPortalMap.value = entryPortal.target.texture;\n        shader.uniforms.uIsOpen.value = entryPortal.isOpen ? 1.0 : 0.0;\n        shader.uniforms.uBorderColor.value.set(entryPortal.borderColor || '#00a2ff');\n      }\n    }\n  }\n\n  /* -------------------------------------------------- physical traversal */\n\n  function updateTraversables(state, runtimeScene, dt) {\n    if (!state.portals.size || !state.traversables.size) return;\n\n    initScratch();\n\n    state.traversables.forEach(function (trav) {\n      if (isDead(trav.object)) return;\n\n      // Reset single-frame flags\n      trav.justTeleported = false;\n\n      if (trav.cooldown > 0) {\n        trav.cooldown -= dt;\n        return;\n      }\n\n      var obj = trav.object;\n      var currX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      var currY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      var currZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n      var prevX = trav.prevX !== undefined ? trav.prevX : currX;\n      var prevY = trav.prevY !== undefined ? trav.prevY : currY;\n      var prevZ = trav.prevZ !== undefined ? trav.prevZ : currZ;\n\n      // Test against each active linked portal\n      state.portals.forEach(function (entryPortal) {\n        if (!entryPortal.isOpen || isDead(entryPortal.object)) return;\n        var exitPortal = getLinkedPortal(state, entryPortal);\n        if (!exitPortal || !exitPortal.isOpen || isDead(exitPortal.object)) return;\n\n        getPortalWorldTransform(entryPortal, _m4A, _v3Look); // _v3Look = normal\n        var portalPos = new THREE.Vector3().setFromMatrixPosition(_m4A);\n\n        // Convert GDevelop pos to Three coords: negate Y\n        var pPrev = new THREE.Vector3(prevX, -prevY, prevZ);\n        var pCurr = new THREE.Vector3(currX, -currY, currZ);\n\n        // Signed distance from previous and current position to portal plane\n        var dPrev = (pPrev.x - portalPos.x) * _v3Look.x +\n                    (pPrev.y - portalPos.y) * _v3Look.y +\n                    (pPrev.z - portalPos.z) * _v3Look.z;\n        var dCurr = (pCurr.x - portalPos.x) * _v3Look.x +\n                    (pCurr.y - portalPos.y) * _v3Look.y +\n                    (pCurr.z - portalPos.z) * _v3Look.z;\n\n        // Check plane crossing: moving from front (dPrev >= 0) to back (dCurr <= 0)\n        if (dPrev >= -5 && dCurr <= 5 && (dPrev >= 0 || dCurr <= 0)) {\n          // Check portal bounding dimensions\n          var pw = (entryPortal.object.getWidth ? entryPortal.object.getWidth() : 64) * 0.7;\n          var ph = (entryPortal.object.getHeight ? entryPortal.object.getHeight() : 64) * 0.7;\n          var pz = (entryPortal.object.getDepth ? entryPortal.object.getDepth() : 64) * 0.7;\n          var maxR = Math.max(pw, ph, pz);\n\n          var distCenter = pCurr.distanceTo(portalPos);\n          if (distCenter <= maxR) {\n            // TELEPORT!\n            teleportEntity(trav, entryPortal, exitPortal);\n          }\n        }\n      });\n\n      // Cache position for next frame plane crossing test\n      trav.prevX = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n      trav.prevY = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n      trav.prevZ = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n    });\n  }\n\n  function teleportEntity(trav, entryPortal, exitPortal) {\n    initScratch();\n    var obj = trav.object;\n    computePortalMatrix(entryPortal, exitPortal, _m4Rel);\n\n    var cx = obj.getCenterXInScene ? obj.getCenterXInScene() : obj.getX();\n    var cy = obj.getCenterYInScene ? obj.getCenterYInScene() : obj.getY();\n    var cz = obj.getCenterZInScene ? obj.getCenterZInScene() : (obj.getZ ? obj.getZ() : 0);\n\n    // Three space coords: (x, -y, z)\n    var pThree = new THREE.Vector3(cx, -cy, cz).applyMatrix4(_m4Rel);\n\n    // Get exit portal forward normal to nudge entity outward\n    getPortalWorldTransform(exitPortal, _m4B, _v3Look);\n    var exitOffset = trav.exitOffset !== undefined ? trav.exitOffset : 20.0;\n    pThree.addScaledVector(_v3Look, exitOffset);\n\n    // Convert back to GDevelop: (x, -y, z)\n    var newX = pThree.x;\n    var newY = -pThree.y;\n    var newZ = pThree.z;\n\n    if (obj.setX) obj.setX(newX);\n    if (obj.setY) obj.setY(newY);\n    if (obj.setZ) obj.setZ(newZ);\n\n    // Rotate orientation\n    var rx = obj.getRotationX ? obj.getRotationX() : 0;\n    var ry = obj.getRotationY ? obj.getRotationY() : 0;\n    var rz = obj.getAngle ? obj.getAngle() : 0;\n\n    _euler.set(gdjs.toRad(rx), gdjs.toRad(ry), gdjs.toRad(rz), 'ZYX');\n    _m4Cam.makeRotationFromEuler(_euler);\n    _m4Cam.premultiply(_m4Rel);\n    _euler.setFromRotationMatrix(_m4Cam, 'ZYX');\n\n    if (obj.setAngle) obj.setAngle(gdjs.toDegrees(_euler.z));\n    if (obj.setRotationX) obj.setRotationX(gdjs.toDegrees(_euler.x));\n    if (obj.setRotationY) obj.setRotationY(gdjs.toDegrees(_euler.y));\n\n    // Redirect Physics Velocity if present\n    if (trav.redirectVelocity) {\n      redirectObjectVelocity(obj, _m4Rel);\n    }\n\n    trav.cooldown = trav.teleportCooldown || 0.15;\n    trav.justTeleported = true;\n    trav.lastPortalTag = entryPortal.tag;\n    trav.prevX = newX;\n    trav.prevY = newY;\n    trav.prevZ = newZ;\n  }\n\n  function redirectObjectVelocity(obj, mRel) {\n    var rotMatrix = new THREE.Matrix3().setFromMatrix4(mRel);\n    // Check for physics behaviors with getLinearVelocity\n    if (obj._behaviors) {\n      for (var i = 0; i < obj._behaviors.length; i++) {\n        var b = obj._behaviors[i];\n        if (b && typeof b.getLinearVelocityX === 'function') {\n          var vx = b.getLinearVelocityX();\n          var vy = b.getLinearVelocityY();\n          var vz = b.getLinearVelocityZ ? b.getLinearVelocityZ() : 0;\n          // Three coords: (vx, -vy, vz)\n          var v3 = new THREE.Vector3(vx, -vy, vz).applyMatrix3(rotMatrix);\n          if (b.setLinearVelocity) b.setLinearVelocity(v3.x, -v3.y, v3.z);\n        }\n      }\n    }\n  }\n\n  /* ------------------------------------------------------------- main loop */\n\n  function tick(runtimeScene) {\n    if (!THREE_OK) return;\n    var state = scenes.get(runtimeScene);\n    if (!state || !state.portals.size) return;\n\n    var dt = (runtimeScene.getElapsedTime ? runtimeScene.getElapsedTime() : 16.6) / 1000.0;\n\n    // 1. Run physical traversal checks before rendering\n    updateTraversables(state, runtimeScene, dt);\n\n    var renderer = threeRendererOf(runtimeScene);\n    if (!renderer) return;\n\n    // 2. Determine active portals that need rendering\n    var renderPairs = [];\n    state.portals.forEach(function (portalA) {\n      if (isDead(portalA.object) || !portalA.isOpen) return;\n\n      // Revalidate mesh binding\n      if (!portalA.binding) bindPortalMesh(portalA);\n\n      var portalB = getLinkedPortal(state, portalA);\n      if (portalB && !isDead(portalB.object) && portalB.isOpen) {\n        renderPairs.push({ entry: portalA, exit: portalB });\n      }\n    });\n\n    if (!renderPairs.length) return;\n\n    // Find main player camera on layer\n    var playerCam = layerCameraOf(runtimeScene, renderPairs[0].entry.layerName);\n    if (!playerCam) return;\n\n    // WebGL state protection\n    renderer.resetState();\n    var prevAutoUpdate = renderer.shadowMap.autoUpdate;\n    renderer.shadowMap.autoUpdate = false;\n    var prevTarget = renderer.getRenderTarget();\n\n    try {\n      for (var k = 0; k < renderPairs.length; k++) {\n        renderPortalView(renderer, runtimeScene, renderPairs[k].entry, renderPairs[k].exit, playerCam, state);\n      }\n    } catch (e) {\n      warnOnce('renderFail', 'Portal render pass error: ' + (e && e.message ? e.message : e));\n    } finally {\n      renderer.setRenderTarget(prevTarget || null);\n      renderer.shadowMap.autoUpdate = prevAutoUpdate;\n      renderer.resetState();\n      var gr = runtimeScene.getGame().getRenderer();\n      var pixi = gr && gr.getPIXIRenderer ? gr.getPIXIRenderer() : null;\n      if (pixi && pixi.reset) { try { pixi.reset(); } catch (e2) {} }\n    }\n  }\n\n  /* ------------------------------------------------------------ public API */\n\n  var NS = {\n    PRESETS: PRESETS,\n    FACE_INDEX: FACE_INDEX,\n    FACE_SLOT: FACE_SLOT,\n\n    registerPortal: function (runtimeScene, object, behavior, options) {\n      if (!THREE_OK) return null;\n      var state = stateOf(runtimeScene);\n      var portal = behavior.__portal3DRecord;\n      if (!portal) {\n        portal = behavior.__portal3DRecord = {\n          object: object,\n          behavior: behavior,\n          layerName: object.getLayer(),\n          binding: null,\n          virtualCamera: null,\n          target: null,\n          textureEpoch: 0,\n          linkedPortalRecord: null\n        };\n        state.portals.add(portal);\n        bindPortalMesh(portal);\n      }\n      NS.configurePortal(portal, options);\n      portal.layerName = object.getLayer();\n      return portal;\n    },\n\n    configurePortal: function (portal, o) {\n      if (!portal || !o) return;\n      portal.tag = o.tag !== undefined ? o.tag : (portal.tag || 'Blue');\n      portal.linkedTag = o.linkedTag !== undefined ? o.linkedTag : (portal.linkedTag || '');\n      portal.face = o.face || portal.face || 'Front';\n      portal.shape = o.shape || portal.shape || 'Oval';\n      portal.borderColor = o.borderColor || portal.borderColor || '#00a2ff';\n      portal.borderWidth = o.borderWidth !== undefined ? o.borderWidth : (portal.borderWidth || 0.08);\n      portal.preset = o.preset || portal.preset || 'Standard';\n      portal.customW = o.customW || portal.customW || 512;\n      portal.customH = o.customH || portal.customH || 512;\n      portal.obliqueClipping = o.obliqueClipping !== undefined ? !!o.obliqueClipping : true;\n      portal.forwardAxis = o.forwardAxis || portal.forwardAxis || '+Z';\n      portal.isOpen = o.isOpen !== undefined ? !!o.isOpen : true;\n    },\n\n    disposePortal: function (runtimeScene, behavior) {\n      var portal = behavior && behavior.__portal3DRecord;\n      if (!portal) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.portals.delete(portal);\n      restorePortalMesh(portal);\n      disposeTarget(portal);\n      portal.virtualCamera = null;\n      behavior.__portal3DRecord = null;\n    },\n\n    portalOf: function (behavior) {\n      return behavior ? behavior.__portal3DRecord : null;\n    },\n\n    registerTraversable: function (runtimeScene, object, behavior, options) {\n      var state = stateOf(runtimeScene);\n      var trav = behavior.__portalTraversableRecord;\n      if (!trav) {\n        trav = behavior.__portalTraversableRecord = {\n          object: object,\n          behavior: behavior,\n          cooldown: 0,\n          justTeleported: false,\n          lastPortalTag: ''\n        };\n        state.traversables.add(trav);\n      }\n      trav.enabled = options.enabled !== undefined ? !!options.enabled : true;\n      trav.teleportCooldown = options.teleportCooldown !== undefined ? options.teleportCooldown : 0.15;\n      trav.redirectVelocity = options.redirectVelocity !== undefined ? !!options.redirectVelocity : true;\n      trav.redirectCamera = options.redirectCamera !== undefined ? !!options.redirectCamera : true;\n      trav.exitOffset = options.exitOffset !== undefined ? options.exitOffset : 20.0;\n      return trav;\n    },\n\n    disposeTraversable: function (runtimeScene, behavior) {\n      var trav = behavior && behavior.__portalTraversableRecord;\n      if (!trav) return;\n      var state = scenes.get(runtimeScene);\n      if (state) state.traversables.delete(trav);\n      behavior.__portalTraversableRecord = null;\n    },\n\n    traversableOf: function (behavior) {\n      return behavior ? behavior.__portalTraversableRecord : null;\n    },\n\n    linkPortals: function (runtimeScene, portalAObject, portalBObject) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === portalAObject) pA = p;\n        if (p.object === portalBObject) pB = p;\n      });\n      if (pA && pB) {\n        pA.linkedPortalRecord = pB;\n        pB.linkedPortalRecord = pA;\n        pA.linkedTag = pB.tag;\n        pB.linkedTag = pA.tag;\n        return true;\n      }\n      return false;\n    },\n\n    teleportObjectManual: function (runtimeScene, object, entryObj, exitObj, redirectVel) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return false;\n      var pA = null, pB = null;\n      state.portals.forEach(function (p) {\n        if (p.object === entryObj) pA = p;\n        if (p.object === exitObj) pB = p;\n      });\n      if (!pA || !pB) return false;\n      var mockTrav = {\n        object: object,\n        redirectVelocity: !!redirectVel,\n        exitOffset: 20.0,\n        cooldown: 0.15\n      };\n      teleportEntity(mockTrav, pA, pB);\n      return true;\n    },\n\n    computePortalMatrix: computePortalMatrix,\n    applyObliqueClipping: applyObliqueClipping,\n    tick: tick,\n\n    disposeScene: function (runtimeScene) {\n      var state = scenes.get(runtimeScene);\n      if (!state) return;\n      state.portals.forEach(function (p) {\n        restorePortalMesh(p);\n        disposeTarget(p);\n      });\n      state.portals.clear();\n      state.traversables.clear();\n      scenes.delete(runtimeScene);\n    }\n  };\n\n  gdjs.__portal3D = NS;\n\n  /* --------------------------------------------------------- engine hooks */\n\n  if (gdjs.registerRuntimeScenePostEventsCallback) {\n    gdjs.registerRuntimeScenePostEventsCallback(function (runtimeScene) {\n      try { tick(runtimeScene); } catch (e) {\n        warnOnce('tick', 'Portal tick failed: ' + (e && e.message ? e.message : e));\n      }\n    });\n  }\n\n  if (gdjs.registerRuntimeSceneUnloadedCallback) {\n    gdjs.registerRuntimeSceneUnloadedCallback(function (runtimeScene) {\n      try { NS.disposeScene(runtimeScene); } catch (e) {}\n    });\n  }\n})();\n\nconst __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nPORTAL.registerTraversable(runtimeScene, object, behavior, {\n  enabled: behavior._getEnabled ? behavior._getEnabled() : true,\n  teleportCooldown: behavior._getTeleportCooldown ? behavior._getTeleportCooldown() : 0.15,\n  redirectVelocity: behavior._getRedirectVelocity ? behavior._getRedirectVelocity() : true,\n  redirectCamera: behavior._getRedirectCamera ? behavior._getRedirectCamera() : true,\n  exitOffset: behavior._getExitOffset ? behavior._getExitOffset() : 20.0\n});\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nPORTAL.disposeTraversable(runtimeScene, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetEnabled",
+          "fullName": "Enable or disable portal traversal",
+          "description": "Set portal traversal for _PARAM0_: _PARAM2_",
+          "functionType": "Action",
+          "group": "Traversal",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Enabled",
+              "type": "yesorno",
+              "description": "Enabled"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst en = !!eventsFunctionContext.getArgument(\"Enabled\");\nif (behavior._setEnabled) behavior._setEnabled(en);\nconst t = PORTAL.traversableOf(behavior);\nif (t) t.enabled = en;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetTeleportCooldown",
+          "fullName": "Set teleport cooldown",
+          "description": "Set teleport cooldown for _PARAM0_ to _PARAM2_ seconds",
+          "functionType": "Action",
+          "group": "Traversal",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Seconds",
+              "type": "expression",
+              "description": "Cooldown in seconds",
+              "defaultValue": "0.15"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst s = eventsFunctionContext.getArgument(\"Seconds\");\nif (behavior._setTeleportCooldown) behavior._setTeleportCooldown(s);\nconst t = PORTAL.traversableOf(behavior);\nif (t) t.teleportCooldown = s;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetExitOffset",
+          "fullName": "Set exit nudge offset",
+          "description": "Set exit offset for _PARAM0_ to _PARAM2_",
+          "functionType": "Action",
+          "group": "Traversal",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Offset",
+              "type": "expression",
+              "description": "Distance to push entity along exit normal",
+              "defaultValue": "20"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst off = eventsFunctionContext.getArgument(\"Offset\");\nif (behavior._setExitOffset) behavior._setExitOffset(off);\nconst t = PORTAL.traversableOf(behavior);\nif (t) t.exitOffset = off;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "JustTeleported",
+          "fullName": "Check if entity just teleported this frame",
+          "description": "_PARAM0_ just passed through a portal",
+          "functionType": "Condition",
+          "group": "Traversal",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst t = PORTAL.traversableOf(behavior);\neventsFunctionContext.returnValue = t ? !!t.justTeleported : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsEnabled",
+          "fullName": "Check if portal traversal is enabled",
+          "description": "Portal traversal is enabled for _PARAM0_",
+          "functionType": "Condition",
+          "group": "Traversal",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst t = PORTAL.traversableOf(behavior);\neventsFunctionContext.returnValue = t ? !!t.enabled : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "LastPortalTag",
+          "fullName": "Last portal tag traversed",
+          "description": "Last portal tag traversed",
+          "functionType": "Expression",
+          "group": "Traversal",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __portalObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __portalObjects.length ? __portalObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__portal3D) return;\nconst PORTAL = gdjs.__portal3D;\nconst t = PORTAL.traversableOf(behavior);\neventsFunctionContext.returnValue = t ? (t.lastPortalTag || '') : '';\n",
+              "parameterObjects": "Object"
+            }
+          ],
+          "expressionType": "string"
+        }
+      ]
+    }
+  ],
+  "eventsFunctions": [
+    {
+      "name": "TeleportObjectThrough",
+      "fullName": "Manually teleport an object through portals",
+      "description": "Teleport _PARAM0_ from _PARAM1_ through portal _PARAM2_ (redirect velocity: _PARAM3_)",
+      "functionType": "Action",
+      "group": "Portal Utilities",
+      "private": false,
+      "parameters": [
+        {
+          "name": "Object",
+          "type": "objectList",
+          "description": "Object to teleport"
+        },
+        {
+          "name": "EntryPortal",
+          "type": "objectList",
+          "description": "Entry portal object"
+        },
+        {
+          "name": "ExitPortal",
+          "type": "objectList",
+          "description": "Exit portal object"
+        },
+        {
+          "name": "RedirectVelocity",
+          "type": "yesorno",
+          "description": "Redirect velocity",
+          "defaultValue": "true"
+        }
+      ],
+      "events": [
+        {
+          "type": "BuiltinCommonInstructions::JsCode",
+          "inlineCode": "if (!gdjs.__portal3D) return;\nconst objList = eventsFunctionContext.getObjects(\"Object\");\nconst entryList = eventsFunctionContext.getObjects(\"EntryPortal\");\nconst exitList = eventsFunctionContext.getObjects(\"ExitPortal\");\nif (!objList.length || !entryList.length || !exitList.length) return;\nconst redirectVel = !!eventsFunctionContext.getArgument(\"RedirectVelocity\");\ngdjs.__portal3D.teleportObjectManual(runtimeScene, objList[0], entryList[0], exitList[0], redirectVel);\n"
+        }
+      ]
+    }
+  ]
+}

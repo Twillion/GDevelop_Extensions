@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WGLEXE Packager — UI preview (dev only)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!--
+      Development harness. Opens the real renderer in a plain browser with a
+      stubbed window.wglexe, so the Settings screen and its warning interlocks
+      can be checked without building or running Electron.
+
+      This file is not loaded by the application. It is also the contract a
+      future C# shell has to satisfy: whatever the shell is, it must expose the
+      same window.wglexe surface that preview-stub.js fakes here.
+    -->
+    <nav class="tabs">
+      <button class="tab is-active" data-screen="package">Package</button>
+      <button class="tab" data-screen="settings">Settings</button>
+      <div class="spacer"></div>
+      <span id="preset-label" class="preset-label"></span>
+    </nav>
+
+    <section id="screen-package" class="screen is-active">
+      <div class="drop" id="drop-zone">
+        <label class="field-row">
+          <span class="field-label">Exported GDevelop project</span>
+          <span class="input-with-button">
+            <input type="text" id="source-dir" placeholder="Drop a folder here, or browse…" />
+            <button id="browse-source">Browse…</button>
+          </span>
+        </label>
+        <p id="source-status" class="status"></p>
+
+        <label class="field-row">
+          <span class="field-label">Output folder</span>
+          <span class="input-with-button">
+            <input type="text" id="output-dir" placeholder="Where the depot folder is written…" />
+            <button id="browse-output">Browse…</button>
+          </span>
+        </label>
+        <p id="runtime-status" class="status"></p>
+      </div>
+
+      <div class="actions">
+        <button id="package-button" class="primary" disabled>Package</button>
+        <button id="reveal-button" hidden>Show in folder</button>
+        <span id="package-status" class="status"></span>
+      </div>
+
+      <div id="warning-strip" class="warning-strip" hidden></div>
+
+      <h2 class="section-heading">Log</h2>
+      <div id="log" class="log" role="log" aria-live="polite"></div>
+
+      <h2 class="section-heading" id="checks-heading" hidden>Verification</h2>
+      <ul id="checks" class="checks" hidden></ul>
+    </section>
+
+    <section id="screen-settings" class="screen">
+      <div class="preset-bar">
+        <label>
+          Preset
+          <select id="preset-select"></select>
+        </label>
+        <button id="save-preset">Save as preset…</button>
+        <span class="hint">Defaults are safe. Ticking nothing gives a correct Steam build.</span>
+      </div>
+      <div id="settings-groups"></div>
+    </section>
+
+    <script src="preview-stub.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>

@@ -1,0 +1,387 @@
+{
+  "$schema": "https://raw.githubusercontent.com/4ian/GDevelop/master/newIDE/app/src/fixtures/extension-schema.json",
+  "name": "FloatingOrigin3D",
+  "version": "1.0.0",
+  "author": "Twillion",
+  "shortDescription": "64-bit double precision coordinates and atomic Jolt Physics / Three.js origin shifting for massive open worlds.",
+  "description": "Eliminates 32-bit floating-point vertex jitter on 50km+ open worlds by accumulating double-precision world coordinates and atomically re-centering the Three.js scene and Jolt 3D physics worlds every 1km without visual hitching.",
+  "category": "3D",
+  "tags": "3d,open-world,coordinates,physics,origin-shift,threejs,jolt,precision",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZm9HcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzRmYWNmZSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDBmMmZlIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmluZ0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjYTE4Y2QxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmYmMyZWIiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzEyMTgyNiIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmEzYjVjIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWRhc2hhcnJheT0iMywzIiAvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjcmluZ0dyYWQpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNyIgLz4KICA8bGluZSB4MT0iMzIiIHkxPSIxMCIgeDI9IjMyIiB5Mj0iNTQiIHN0cm9rZT0iIzRmYWNmZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIC8+CiAgPGxpbmUgeDE9IjEwIiB5MT0iMzIiIHgyPSI1NCIgeTI9IjMyIiBzdHJva2U9IiM0ZmFjZmUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDxsaW5lIHgxPSIxNiIgeTE9IjQ4IiB4Mj0iNDgiIHkyPSIxNiIgc3Ryb2tlPSIjMDBmMmZlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWRhc2hhcnJheT0iMiwyIiAvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjYiIGZpbGw9InVybCgjZm9HcmFkKSIgLz4KICA8Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjgiIC8+CiAgPHBhdGggZD0iTSA0NCAyNiBMIDUwIDMyIEwgNDQgMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwZjJmZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIC8+CiAgPHBhdGggZD0iTSAyMCAzOCBMIDE0IDMyIEwgMjAgMjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwZjJmZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIC8+Cjwvc3ZnPgo=",
+  "previewIconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZm9HcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzRmYWNmZSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDBmMmZlIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icmluZ0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjYTE4Y2QxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmYmMyZWIiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzEyMTgyNiIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmEzYjVjIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWRhc2hhcnJheT0iMywzIiAvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjcmluZ0dyYWQpIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNyIgLz4KICA8bGluZSB4MT0iMzIiIHkxPSIxMCIgeDI9IjMyIiB5Mj0iNTQiIHN0cm9rZT0iIzRmYWNmZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIC8+CiAgPGxpbmUgeDE9IjEwIiB5MT0iMzIiIHgyPSI1NCIgeTI9IjMyIiBzdHJva2U9IiM0ZmFjZmUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDxsaW5lIHgxPSIxNiIgeTE9IjQ4IiB4Mj0iNDgiIHkyPSIxNiIgc3Ryb2tlPSIjMDBmMmZlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWRhc2hhcnJheT0iMiwyIiAvPgogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjYiIGZpbGw9InVybCgjZm9HcmFkKSIgLz4KICA8Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjgiIC8+CiAgPHBhdGggZD0iTSA0NCAyNiBMIDUwIDMyIEwgNDQgMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwZjJmZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIC8+CiAgPHBhdGggZD0iTSAyMCAzOCBMIDE0IDMyIEwgMjAgMjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwZjJmZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIC8+Cjwvc3ZnPgo=",
+  "helpPath": "",
+  "eventsBasedBehaviors": [
+    {
+      "name": "FloatingOrigin3D",
+      "fullName": "Floating Origin 3D (Large World Coordinates)",
+      "description": "Coordinates 64-bit double precision tracking and atomic origin shifts for the player camera and physics world.",
+      "objectType": "",
+      "propertyDescriptors": [
+        {
+          "name": "ShiftThreshold",
+          "label": "Shift Threshold (Meters)",
+          "description": "Distance in meters from local origin before triggering a silent re-centering shift.",
+          "type": "Number",
+          "value": "1000.0",
+          "group": "Origin Shift Settings"
+        },
+        {
+          "name": "StepSize",
+          "label": "Quantized Step Size (Meters)",
+          "description": "Quantized snap distance in meters for origin shifts.",
+          "type": "Number",
+          "value": "1000.0",
+          "group": "Origin Shift Settings"
+        },
+        {
+          "name": "EnablePhysicsShift",
+          "label": "Enable Jolt Physics Shift",
+          "description": "Automatically shifts Jolt 3D Physics simulation bodies synchronously with the scene.",
+          "type": "Boolean",
+          "value": "true",
+          "group": "Origin Shift Settings"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "On Created",
+          "sentence": "",
+          "description": "Initializes the Floating Origin 3D tracker on the object.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * FloatingOrigin3D.runtime.js\n * \n * 64-bit Large World Coordinates & Atomic Jolt Physics / Three.js Origin Shifting.\n * GDevelop 5 3D WebGL2 Extension Runtime.\n */\n\n(function () {\n  'use strict';\n\n  if (typeof gdjs === 'undefined') return;\n\n  const NS = (gdjs.__floatingOrigin3D = gdjs.__floatingOrigin3D || {});\n\n  /**\n   * Internal State Map for Behaviors\n   */\n  const behaviorStates = new WeakMap();\n\n  class FloatingOriginState {\n    constructor(instance, behaviorData) {\n      this.instance = instance;\n      this.shiftThreshold = behaviorData.ShiftThreshold !== undefined ? Number(behaviorData.ShiftThreshold) : 1000.0;\n      this.stepSize = behaviorData.StepSize !== undefined ? Number(behaviorData.StepSize) : 1000.0;\n      this.enablePhysicsShift = behaviorData.EnablePhysicsShift !== undefined ? Boolean(behaviorData.EnablePhysicsShift) : true;\n\n      // 64-bit cumulative world origin offsets\n      this.originWorldX = 0.0;\n      this.originWorldY = 0.0;\n      this.originWorldZ = 0.0;\n\n      // Single-frame event flag\n      this.hasRecentlyShifted = false;\n      this._lastShiftFrame = -1;\n\n      // Reference to Three.js scene container\n      this._sceneContainer = null;\n      this._boundScene = null;\n    }\n\n    getTruePlayerWorldX(localX) {\n      return this.originWorldX + (Number(localX) || 0.0);\n    }\n\n    getTruePlayerWorldY(localY) {\n      return this.originWorldY + (Number(localY) || 0.0);\n    }\n\n    getTruePlayerWorldZ(localZ) {\n      return this.originWorldZ + (Number(localZ) || 0.0);\n    }\n\n    /**\n     * Trigger an origin shift with specified delta offsets.\n     */\n    applyOriginShift(runtimeScene, deltaX, deltaY, deltaZ) {\n      if (deltaX === 0 && deltaY === 0 && deltaZ === 0) return;\n\n      // 1. Accumulate true world origin in float64\n      this.originWorldX += deltaX;\n      this.originWorldY += deltaY;\n      this.originWorldZ += deltaZ;\n\n      const layer = runtimeScene.getLayer('');\n      const renderer = layer ? layer.getRenderer() : (runtimeScene.getRenderer ? runtimeScene.getRenderer() : null);\n      const threeScene = renderer && typeof renderer.getThreeScene === 'function' ? renderer.getThreeScene() : null;\n      const threeCamera = renderer && typeof renderer.getThreeCamera === 'function' ? renderer.getThreeCamera() : null;\n\n      // 2. Shift all runtime 3D instances in the scene\n      const allObjects = runtimeScene.getAdhocListOfAllInstances ? runtimeScene.getAdhocListOfAllInstances() : [];\n      for (let i = 0; i < allObjects.length; i++) {\n        const obj = allObjects[i];\n        if (!obj) continue;\n\n        // Shift standard GD coordinates\n        if (typeof obj.setX === 'function') obj.setX(obj.getX() - deltaX);\n        if (typeof obj.setY === 'function') obj.setY(obj.getY() - deltaY);\n        if (typeof obj.setZ === 'function') obj.setZ(obj.getZ() - deltaZ);\n\n        // If object has raw 3D renderer node, ensure position update\n        const objRenderer = typeof obj.getRenderer === 'function' ? obj.getRenderer() : null;\n        const threeObj = objRenderer && typeof objRenderer.getThreeObject === 'function' ? objRenderer.getThreeObject() : null;\n        if (threeObj) {\n          threeObj.position.x -= deltaX;\n          threeObj.position.y -= deltaY;\n          threeObj.position.z -= deltaZ;\n          threeObj.updateMatrixWorld(true);\n        }\n      }\n\n      // 3. Shift Three.js camera position\n      if (threeCamera) {\n        threeCamera.position.x -= deltaX;\n        threeCamera.position.y -= deltaY;\n        threeCamera.position.z -= deltaZ;\n        threeCamera.updateMatrixWorld(true);\n      }\n\n      // 4. Shift Jolt 3D Physics Rigid Bodies if physics extension exists\n      if (this.enablePhysicsShift) {\n        this.shiftJoltPhysicsWorld(runtimeScene, deltaX, deltaY, deltaZ);\n      }\n\n      // 5. Mark single-frame shifted flag\n      this.hasRecentlyShifted = true;\n      this._lastShiftFrame = typeof gdjs.runtimeScene !== 'undefined' && runtimeScene._frameCounter ? runtimeScene._frameCounter : 1;\n    }\n\n    /**\n     * Shifts all active Jolt Physics bodies in the scene.\n     */\n    shiftJoltPhysicsWorld(runtimeScene, deltaX, deltaY, deltaZ) {\n      try {\n        // Check for Jolt / 3D Physics Manager in gdjs namespace or scene\n        const physicsManager = gdjs.Physics3D || (runtimeScene && runtimeScene._physics3DWorld) || null;\n        if (!physicsManager) return;\n\n        // If direct Jolt interface is exposed\n        if (typeof physicsManager.shiftOrigin === 'function') {\n          physicsManager.shiftOrigin(-deltaX, -deltaY, -deltaZ);\n          return;\n        }\n\n        // Iterate bodies if container map exists\n        const bodies = physicsManager.bodies || physicsManager._bodies;\n        if (bodies) {\n          const bodyList = Array.isArray(bodies) ? bodies : Object.values(bodies);\n          for (let i = 0; i < bodyList.length; i++) {\n            const body = bodyList[i];\n            if (body && typeof body.GetPosition === 'function' && typeof body.SetPosition === 'function') {\n              const pos = body.GetPosition();\n              body.SetPosition({\n                x: pos.x - deltaX,\n                y: pos.y - deltaY,\n                z: pos.z - deltaZ,\n              });\n            }\n          }\n        }\n      } catch (err) {\n        // Gracefully ignore physics engine mismatches\n      }\n    }\n\n    /**\n     * Step check called each frame in doStepPostEvents\n     */\n    step(runtimeScene) {\n      if (this.hasRecentlyShifted) {\n        this.hasRecentlyShifted = false;\n      }\n\n      const obj = this.instance.owner;\n      if (!obj) return;\n\n      const posX = typeof obj.getX === 'function' ? obj.getX() : 0.0;\n      const posY = typeof obj.getY === 'function' ? obj.getY() : 0.0;\n      const posZ = typeof obj.getZ === 'function' ? obj.getZ() : 0.0;\n\n      const distSq = posX * posX + posY * posY + posZ * posZ;\n      const threshold = this.shiftThreshold;\n\n      if (distSq >= threshold * threshold) {\n        const step = this.stepSize > 0 ? this.stepSize : threshold;\n        const deltaX = Math.round(posX / step) * step;\n        const deltaY = Math.round(posY / step) * step;\n        const deltaZ = Math.round(posZ / step) * step;\n\n        if (deltaX !== 0 || deltaY !== 0 || deltaZ !== 0) {\n          this.applyOriginShift(runtimeScene, deltaX, deltaY, deltaZ);\n        }\n      }\n    }\n  }\n\n  NS.getState = function (behavior) {\n    if (!behavior) return null;\n    let state = behaviorStates.get(behavior);\n    if (!state) {\n      state = new FloatingOriginState(behavior, behavior._data || {});\n      behaviorStates.set(behavior, state);\n    }\n    return state;\n  };\n\n  NS.FloatingOriginState = FloatingOriginState;\n})();\n\nif (typeof gdjs.__floatingOrigin3D === 'undefined') return;\ngdjs.__floatingOrigin3D.getState(behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPostEvents",
+          "fullName": "Post-events step",
+          "sentence": "",
+          "description": "Checks distance threshold and applies silent origin recentering if exceeded.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (typeof gdjs.__floatingOrigin3D === 'undefined') return;\nconst state = gdjs.__floatingOrigin3D.getState(behavior);\nif (state) state.step(runtimeScene);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "On Destroyed",
+          "sentence": "",
+          "description": "Cleans up Floating Origin 3D tracking resources.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "// Clean up state\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ManualShiftOrigin",
+          "fullName": "Manually trigger origin shift",
+          "sentence": "Manually trigger origin shift on _PARAM0_",
+          "description": "Forces an immediate scene and physics origin re-centering based on the object position.",
+          "functionType": "Action",
+          "group": "Origin Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\nconst posX = typeof object.getX === 'function' ? object.getX() : 0.0;\nconst posY = typeof object.getY === 'function' ? object.getY() : 0.0;\nconst posZ = typeof object.getZ === 'function' ? object.getZ() : 0.0;\nstate.applyOriginShift(runtimeScene, posX, posY, posZ);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetShiftThreshold",
+          "fullName": "Set shift threshold distance",
+          "sentence": "Set origin shift threshold distance on _PARAM0_ to _PARAM1_ meters",
+          "description": "Updates the threshold distance in meters before origin shifting occurs.",
+          "functionType": "Action",
+          "group": "Origin Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Threshold",
+              "type": "expression",
+              "description": "Shift threshold in meters (e.g. 1000.0)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\nconst val = eventsFunctionContext.getArgument(\"Threshold\");\nstate.shiftThreshold = Number(val) > 0 ? Number(val) : 1000.0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "HasOriginShifted",
+          "fullName": "Has origin recently shifted",
+          "sentence": "Has origin recently shifted on _PARAM0_",
+          "description": "Returns true during the single frame when a Floating Origin shift occurs.",
+          "functionType": "Condition",
+          "group": "Origin Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\neventsFunctionContext.returnValue = state ? state.hasRecentlyShifted : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "OriginWorldX",
+          "fullName": "Origin World X",
+          "sentence": "Get true 64-bit world origin X coordinate on _PARAM0_",
+          "description": "Returns the true cumulative 64-bit world origin X coordinate in meters.",
+          "functionType": "Expression",
+          "group": "Coordinates",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\neventsFunctionContext.returnValue = state ? state.originWorldX : 0.0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "OriginWorldY",
+          "fullName": "Origin World Y",
+          "sentence": "Get true 64-bit world origin Y coordinate on _PARAM0_",
+          "description": "Returns the true cumulative 64-bit world origin Y coordinate in meters.",
+          "functionType": "Expression",
+          "group": "Coordinates",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\neventsFunctionContext.returnValue = state ? state.originWorldY : 0.0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "OriginWorldZ",
+          "fullName": "Origin World Z",
+          "sentence": "Get true 64-bit world origin Z coordinate on _PARAM0_",
+          "description": "Returns the true cumulative 64-bit world origin Z coordinate in meters.",
+          "functionType": "Expression",
+          "group": "Coordinates",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\neventsFunctionContext.returnValue = state ? state.originWorldZ : 0.0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "TruePlayerWorldX",
+          "fullName": "True Player World X",
+          "sentence": "Get full double-precision Player X coordinate on _PARAM0_",
+          "description": "Returns the full double-precision Player X coordinate (OriginWorldX + LocalX).",
+          "functionType": "Expression",
+          "group": "Coordinates",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\nconst posX = typeof object.getX === 'function' ? object.getX() : 0.0;\neventsFunctionContext.returnValue = state ? state.getTruePlayerWorldX(posX) : posX;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "TruePlayerWorldY",
+          "fullName": "True Player World Y",
+          "sentence": "Get full double-precision Player Y coordinate on _PARAM0_",
+          "description": "Returns the full double-precision Player Y coordinate (OriginWorldY + LocalY).",
+          "functionType": "Expression",
+          "group": "Coordinates",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\nconst posY = typeof object.getY === 'function' ? object.getY() : 0.0;\neventsFunctionContext.returnValue = state ? state.getTruePlayerWorldY(posY) : posY;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "TruePlayerWorldZ",
+          "fullName": "True Player World Z",
+          "sentence": "Get full double-precision Player Z coordinate on _PARAM0_",
+          "description": "Returns the full double-precision Player Z coordinate (OriginWorldZ + LocalZ).",
+          "functionType": "Expression",
+          "group": "Coordinates",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __foObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __foObjects.length ? __foObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__floatingOrigin3D) return;\nconst FO = gdjs.__floatingOrigin3D;\nconst state = FO.getState(behavior);\nconst posZ = typeof object.getZ === 'function' ? object.getZ() : 0.0;\neventsFunctionContext.returnValue = state ? state.getTruePlayerWorldZ(posZ) : posZ;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "eventsFunctions": [],
+  "globalVariables": [],
+  "sceneVariables": []
+}

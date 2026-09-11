@@ -1,0 +1,216 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GDJS 3D Extension Test Harness</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0e1117; color: #e6edf3; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  #toolbar { background: #161b22; border-bottom: 1px solid #30363d; padding: 8px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #toolbar label { font-weight: 600; color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  select, button, input { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-radius: 4px; padding: 4px 8px; font-size: 12px; outline: none; }
+  select:focus, button:focus, input:focus { border-color: #58a6ff; }
+  button { cursor: pointer; background: #238636; color: #fff; border: none; font-weight: 500; transition: background 0.15s; }
+  button:hover { background: #2ea043; }
+  button.secondary { background: #30363d; color: #c9d1d9; }
+  button.secondary:hover { background: #3c444d; }
+  #main { display: flex; flex: 1; min-height: 0; }
+  #panel { width: 380px; min-width: 300px; max-width: 500px; background: #0d1117; border-right: 1px solid #30363d; padding: 12px; overflow-y: auto; font-family: ui-monospace, "SF Mono", monospace; font-size: 11.5px; }
+  #canvasArea { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  #canvasArea canvas { width: 100% !important; height: 100% !important; display: block; object-fit: contain; }
+  .ok { color: #3fb950; }
+  .bad { color: #f85149; }
+  .warn { color: #d29922; }
+  .dim { color: #8b949e; }
+  h2 { color: #58a6ff; font-size: 12px; margin: 10px 0 4px; border-bottom: 1px solid #21262d; padding-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  pre { white-space: pre-wrap; background: #161b22; border: 1px solid #30363d; padding: 6px; border-radius: 4px; margin: 4px 0; font-size: 11px; }
+  .badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; background: #1f6feb; color: #fff; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <label for="scenarioSelect">Scenario:</label>
+  <select id="scenarioSelect">
+    <option value="waveworks_presets">🌊 OceanWaveWorks3D (preset sweep + shader link)</option>
+    <option value="gerstner">🌊 WaterBody3D (Gerstner Octaves)</option>
+    <option value="buoyancy">🚤 Buoyancy3D (4-Probe Floating Boat)</option>
+    <option value="sph">🧪 PourableLiquid3D (SPH Droplets & Cauldron)</option>
+    <option value="lighting">💡 AdvancedLighting3D (Clustered & GI)</option>
+    <option value="postfx">🎬 CinematicPostFX3D (Bokeh & Bloom)</option>
+    <option value="material">✨ Material3D (BRDF & Physical Shaders)</option>
+    <option value="shore">🏖️ WaterEdge3D (Shore Foam)</option>
+    <option value="deformable_ingot">🔨 DeformableIngot3D (Raycast Hammer & Remesh)</option>
+  </select>
+
+  <button id="reloadBtn" class="secondary">🔄 Reload</button>
+  <button id="toggleWireframeBtn" class="secondary">Toggle Wireframe</button>
+  <button id="pauseBtn" class="secondary">⏸️ Pause</button>
+
+  <span id="engineBadge" class="badge">GDJS 3D</span>
+</div>
+
+<div id="main">
+  <div id="panel"></div>
+  <div id="canvasArea"></div>
+</div>
+
+<script src="./project.js"></script>
+<script>
+// ------------------------------------------------------------------ reporting & UI setup
+var panel = document.getElementById('panel');
+function log(msg, cls) {
+  var d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = msg;
+  panel.appendChild(d);
+  panel.scrollTop = panel.scrollHeight;
+}
+function h2(t) { var h = document.createElement('h2'); h.textContent = t; panel.appendChild(h); }
+function pre(t) { var p = document.createElement('pre'); p.textContent = t; panel.appendChild(p); }
+window.__harness = { log: log, h2: h2, pre: pre, config: HARNESS_CONFIG };
+
+// Sync UI dropdown
+var select = document.getElementById('scenarioSelect');
+select.value = HARNESS_CONFIG.scenario;
+select.addEventListener('change', function () {
+  var url = new URL(window.location.href);
+  url.searchParams.set('scenario', select.value);
+  window.location.href = url.toString();
+});
+
+document.getElementById('reloadBtn').addEventListener('click', function () {
+  window.location.reload();
+});
+
+// Everything the engine or an extension writes to the console is mirrored into the panel
+['log', 'info', 'warn', 'error'].forEach(function (level) {
+  var orig = console[level].bind(console);
+  console[level] = function () {
+    var text = Array.prototype.map.call(arguments, function (a) {
+      return (a && a.stack) ? a.stack : (typeof a === 'object' ? JSON.stringify(a) : String(a));
+    }).join(' ');
+    if (text.indexOf('[FluidAndWater3D]') === 0 ||
+        text.indexOf('[AdvancedLighting3D]') === 0 ||
+        text.indexOf('[CinematicPostFX3D]') === 0 ||
+        text.indexOf('[Material3D]') === 0 ||
+        level === 'warn' || level === 'error') {
+      pre((level === 'error' ? 'ERROR ' : level === 'warn' ? 'WARN  ' : '') + text);
+    }
+    orig.apply(null, arguments);
+  };
+});
+window.addEventListener('error', function (e) {
+  log('UNCAUGHT: ' + e.message + '  @' + e.filename + ':' + e.lineno, 'bad');
+});
+</script>
+
+<!-- The real GDJS runtime, in the order an export uses. -->
+<script src="./runtime/load.js"></script>
+
+<!-- Extension runtimes -->
+<script src="/ext/FluidAndWater3D/FluidAndWater3D.runtime.js"></script>
+<script src="/ext/AdvancedLighting3D/AdvancedLighting3D.runtime.js"></script>
+<script src="/ext/CinematicPostFX3D/CinematicPostFX3D.runtime.js"></script>
+<script src="/ext/MaterialMaster/ShaderChain.runtime.js"></script>
+<script src="/ext/MaterialMaster/BRDFMaterial.runtime.js"></script>
+<script src="/ext/MaterialMaster/MaterialMaster.runtime.js"></script>
+<script src="/ext/DeformableIngot3D/DeformableIngot3D.runtime.js"></script>
+
+<script>
+h2('Engine & Runtimes');
+log('gdjs: ' + (typeof gdjs !== 'undefined') + '   PIXI: ' + (typeof PIXI !== 'undefined' ? PIXI.VERSION : 'MISSING') +
+    '   THREE: ' + (typeof THREE !== 'undefined' ? 'r' + THREE.REVISION : 'MISSING'),
+    (typeof gdjs !== 'undefined' && typeof PIXI !== 'undefined' && typeof THREE !== 'undefined') ? 'ok' : 'bad');
+
+log('Runtimes: FluidAndWater3D=' + (!!gdjs.__fluidAndWater3D) +
+    '  AdvancedLighting=' + (!!gdjs.__advancedLighting3D) +
+    '  CinematicPostFX=' + (!!gdjs.__cinematicPostFX3D) +
+    '  Material3D=' + (!!gdjs.__material3D) +
+    '  DeformableIngot3D=' + (!!gdjs.__deformableIngot3D), 'ok');
+
+var game, scene;
+try {
+  game = new gdjs.RuntimeGame(gdjs.projectData, {});
+  game.getRenderer().createStandardCanvas(document.getElementById('canvasArea'));
+  h2('Boot');
+  log('RuntimeGame created, canvas attached', 'ok');
+} catch (e) {
+  log('RuntimeGame FAILED: ' + e.message, 'bad');
+  pre(e.stack);
+}
+
+if (game) {
+  game.loadAllAssets(function () {
+    try {
+      game.startGameLoop();
+      log('game loop started', 'ok');
+    } catch (e) {
+      log('startGameLoop FAILED: ' + e.message, 'bad');
+      pre(e.stack);
+    }
+
+    // The scene is live now: hand it to the scenario.
+    setTimeout(function () {
+      scene = game.getSceneStack().getCurrentScene();
+      if (!scene) { log('no current scene', 'bad'); return; }
+      window.__harness.game = game;
+      window.__harness.scene = scene;
+
+      h2('Scene');
+      var objs = scene.getObjects('Ocean') || [];
+      log('objects named "Ocean": ' + objs.length, objs.length ? 'ok' : 'bad');
+      if (objs.length) {
+        var o = objs[0];
+        log('instance size from engine: ' + o.getWidth() + ' x ' + o.getHeight() + ' x ' + o.getDepth());
+        log('instance position: ' + o.getX() + ', ' + o.getY() + ', ' + o.getZ());
+        var layer = scene.getLayer('');
+        var lr = layer.getRenderer();
+        log('three scene: ' + (lr.getThreeScene() ? 'yes, scale.y=' + lr.getThreeScene().scale.y : 'NONE'),
+            lr.getThreeScene() ? 'ok' : 'bad');
+        log('three group: ' + (lr.getThreeGroup() ? 'yes' : 'NONE'), lr.getThreeGroup() ? 'ok' : 'bad');
+        log('shared GL context with PIXI: ' +
+            (game.getRenderer().getThreeRenderer() &&
+             game.getRenderer().getThreeRenderer().getContext() ===
+             game.getRenderer().getPIXIRenderer().gl ? 'YES' : 'separate'), 'dim');
+      }
+
+      // Wireframe toggle helper
+      var isWireframe = false;
+      document.getElementById('toggleWireframeBtn').addEventListener('click', function () {
+        isWireframe = !isWireframe;
+        var layer = scene.getLayer('');
+        if (layer && layer.getRenderer().getThreeGroup()) {
+          layer.getRenderer().getThreeGroup().traverse(function (child) {
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(function (m) { m.wireframe = isWireframe; });
+              } else {
+                child.material.wireframe = isWireframe;
+              }
+            }
+          });
+          log('Wireframe: ' + (isWireframe ? 'ON' : 'OFF'), 'dim');
+        }
+      });
+
+      // Pause / Resume toggle
+      var isPaused = false;
+      document.getElementById('pauseBtn').addEventListener('click', function () {
+        isPaused = !isPaused;
+        this.textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+        if (game.pauseGameLoop && game.resumeGameLoop) {
+          if (isPaused) game.pauseGameLoop(); else game.resumeGameLoop();
+        }
+      });
+
+      var s = document.createElement('script');
+      s.src = './scenarios/' + HARNESS_CONFIG.scenario + '.js?v=' + Date.now();
+      s.onerror = function () { log('scenario "' + HARNESS_CONFIG.scenario + '" not found', 'bad'); };
+      document.body.appendChild(s);
+    }, 120);
+  });
+}
+</script>
+</body>
+</html>

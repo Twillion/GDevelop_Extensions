@@ -1,0 +1,40 @@
+{
+  "name": "Browser build",
+  "description": "No Steam. Cross-origin isolation instead of the flag, since a browser build cannot rely on shipping its own Chromium. Costs GDevelop player authentication.",
+  "settings": {
+    "appName": "GDevelopGame",
+    "version": "1.0.0",
+    "executableName": "Game.exe",
+    "icon": "",
+    "window": {
+      "title": "",
+      "width": 1280,
+      "height": 720,
+      "minWidth": 640,
+      "minHeight": 480,
+      "resizable": true,
+      "fullscreen": false,
+      "borderless": false,
+      "backgroundThrottling": false
+    },
+    "gpu": {
+      "angleBackend": "default",
+      "ignoreGpuBlocklist": false,
+      "disableVsync": false,
+      "enableDraftExtensions": false
+    },
+    "security": {
+      "sharedArrayBuffer": "isolation",
+      "nativeBridge": false
+    },
+    "steam": {
+      "enabled": false,
+      "appId": "",
+      "overlayCompat": false,
+      "disableDirectComposition": false,
+      "stripSteamAppIdTxt": true
+    },
+    "native": { "addon": "" },
+    "build": { "asar": true, "verify": true }
+  }
+}

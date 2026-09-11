@@ -1,0 +1,400 @@
+{
+  "$schema": "https://raw.githubusercontent.com/4ian/GDevelop/master/newIDE/app/src/fixtures/extension-schema.json",
+  "name": "AutoMeshLOD3D",
+  "version": "2.0.0",
+  "author": "Twillion",
+  "shortDescription": "Background Web Worker QEM mesh decimation, zero-cost index swapping, and HLOD sector cluster baking.",
+  "description": "Automatically generates high-fidelity LOD1 and LOD2 triangle reduction levels in background Web Workers without frame drops, swaps index buffers in 0ms on the GPU, and bakes sector prop clusters into unified single-draw-call proxy meshes for WorldPartition3D.",
+  "category": "3D",
+  "tags": "3d,lod,qem,mesh,decimation,hlod,performance,optimization,webworker",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9kR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZjk5MDAiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmNTUwMCIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBvbHlHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzM4ZWY3ZCIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMTE5OThlIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNDFhMjQiIC8+CiAgPCEtLSBCYWNrZ3JvdW5kIFdpcmVmcmFtZSBUcmlhbmdsZXMgLS0+CiAgPHBvbHlnb24gcG9pbnRzPSIzMiw4IDU0LDQ4IDEwLDQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiMyYzNiNTIiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIDxsaW5lIHgxPSIzMiIgeTE9IjgiIHgyPSIzMiIgeTI9IjQ4IiBzdHJva2U9IiMyYzNiNTIiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWRhc2hhcnJheT0iMiwyIiAvPgogIDxsaW5lIHgxPSIxMCIgeTE9IjQ4IiB4Mj0iNDMiIHkyPSIyOCIgc3Ryb2tlPSIjMmMzYjUyIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1kYXNoYXJyYXk9IjIsMiIgLz4KICA8bGluZSB4MT0iNTQiIHkxPSI0OCIgeDI9IjIxIiB5Mj0iMjgiIHN0cm9rZT0iIzJjM2I1MiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtZGFzaGFycmF5PSIyLDIiIC8+CiAgPCEtLSBGb3JlL01pZCBQb2x5IE1lc2ggLS0+CiAgPHBvbHlnb24gcG9pbnRzPSIzMiwxNiA0OCw0NCAxNiw0NCIgZmlsbD0idXJsKCNwb2x5R3JhZCkiIG9wYWNpdHk9IjAuMzUiIC8+CiAgPHBvbHlnb24gcG9pbnRzPSIzMiwxNiA0OCw0NCAxNiw0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzhlZjdkIiBzdHJva2Utd2lkdGg9IjIiIC8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMTYiIHgyPSIzMiIgeTI9IjQ0IiBzdHJva2U9IiMzOGVmN2QiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIDwhLS0gTE9EIExldmVsIEJhZGdlcyAtLT4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjQ0IiByPSIzIiBmaWxsPSIjZmY5OTAwIiAvPgogIDxjaXJjbGUgY3g9IjQ4IiBjeT0iNDQiIHI9IjMiIGZpbGw9IiNmZjk5MDAiIC8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIxNiIgcj0iMyIgZmlsbD0iI2ZmOTkwMCIgLz4KICA8IS0tIExPRCBTdGVwcGVyIEJhcnMgLS0+CiAgPHJlY3QgeD0iMTgiIHk9IjUyIiB3aWR0aD0iNiIgaGVpZ2h0PSI0IiByeD0iMSIgZmlsbD0iIzM4ZWY3ZCIgLz4KICA8cmVjdCB4PSIyOSIgeT0iNTIiIHdpZHRoPSI2IiBoZWlnaHQ9IjQiIHJ4PSIxIiBmaWxsPSIjZmZhYTAwIiAvPgogIDxyZWN0IHg9IjQwIiB5PSI1MiIgd2lkdGg9IjYiIGhlaWdodD0iNCIgcng9IjEiIGZpbGw9IiNmZjU1MDAiIC8+Cjwvc3ZnPgo=",
+  "previewIconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9kR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZjk5MDAiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmNTUwMCIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBvbHlHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzM4ZWY3ZCIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMTE5OThlIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNDFhMjQiIC8+CiAgPCEtLSBCYWNrZ3JvdW5kIFdpcmVmcmFtZSBUcmlhbmdsZXMgLS0+CiAgPHBvbHlnb24gcG9pbnRzPSIzMiw4IDU0LDQ4IDEwLDQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiMyYzNiNTIiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIDxsaW5lIHgxPSIzMiIgeTE9IjgiIHgyPSIzMiIgeTI9IjQ4IiBzdHJva2U9IiMyYzNiNTIiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWRhc2hhcnJheT0iMiwyIiAvPgogIDxsaW5lIHgxPSIxMCIgeTE9IjQ4IiB4Mj0iNDMiIHkyPSIyOCIgc3Ryb2tlPSIjMmMzYjUyIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1kYXNoYXJyYXk9IjIsMiIgLz4KICA8bGluZSB4MT0iNTQiIHkxPSI0OCIgeDI9IjIxIiB5Mj0iMjgiIHN0cm9rZT0iIzJjM2I1MiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtZGFzaGFycmF5PSIyLDIiIC8+CiAgPCEtLSBGb3JlL01pZCBQb2x5IE1lc2ggLS0+CiAgPHBvbHlnb24gcG9pbnRzPSIzMiwxNiA0OCw0NCAxNiw0NCIgZmlsbD0idXJsKCNwb2x5R3JhZCkiIG9wYWNpdHk9IjAuMzUiIC8+CiAgPHBvbHlnb24gcG9pbnRzPSIzMiwxNiA0OCw0NCAxNiw0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzhlZjdkIiBzdHJva2Utd2lkdGg9IjIiIC8+CiAgPGxpbmUgeDE9IjMyIiB5MT0iMTYiIHgyPSIzMiIgeTI9IjQ0IiBzdHJva2U9IiMzOGVmN2QiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIDwhLS0gTE9EIExldmVsIEJhZGdlcyAtLT4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjQ0IiByPSIzIiBmaWxsPSIjZmY5OTAwIiAvPgogIDxjaXJjbGUgY3g9IjQ4IiBjeT0iNDQiIHI9IjMiIGZpbGw9IiNmZjk5MDAiIC8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIxNiIgcj0iMyIgZmlsbD0iI2ZmOTkwMCIgLz4KICA8IS0tIExPRCBTdGVwcGVyIEJhcnMgLS0+CiAgPHJlY3QgeD0iMTgiIHk9IjUyIiB3aWR0aD0iNiIgaGVpZ2h0PSI0IiByeD0iMSIgZmlsbD0iIzM4ZWY3ZCIgLz4KICA8cmVjdCB4PSIyOSIgeT0iNTIiIHdpZHRoPSI2IiBoZWlnaHQ9IjQiIHJ4PSIxIiBmaWxsPSIjZmZhYTAwIiAvPgogIDxyZWN0IHg9IjQwIiB5PSI1MiIgd2lkdGg9IjYiIGhlaWdodD0iNCIgcng9IjEiIGZpbGw9IiNmZjU1MDAiIC8+Cjwvc3ZnPgo=",
+  "helpPath": "",
+  "eventsBasedBehaviors": [
+    {
+      "name": "AutoMeshLOD3D",
+      "fullName": "Auto Mesh LOD 3D (QEM Decimation & HLOD)",
+      "description": "Generates asynchronous LOD index buffers in Web Workers and manages distance-based LOD swapping.",
+      "objectType": "",
+      "propertyDescriptors": [
+        {
+          "name": "LOD1Distance",
+          "label": "LOD1 Distance (Meters)",
+          "description": "Distance in meters where model swaps to LOD1.",
+          "type": "Number",
+          "value": "25.0",
+          "group": "LOD Distances"
+        },
+        {
+          "name": "LOD1Reduction",
+          "label": "LOD1 Reduction (%)",
+          "description": "Triangle reduction percentage for LOD1 (10% to 90%).",
+          "type": "Number",
+          "value": "50.0",
+          "group": "LOD Reductions"
+        },
+        {
+          "name": "LOD2Distance",
+          "label": "LOD2 Distance (Meters)",
+          "description": "Distance in meters where model swaps to LOD2.",
+          "type": "Number",
+          "value": "60.0",
+          "group": "LOD Distances"
+        },
+        {
+          "name": "LOD2Reduction",
+          "label": "LOD2 Reduction (%)",
+          "description": "Triangle reduction percentage for LOD2 (10% to 95%).",
+          "type": "Number",
+          "value": "80.0",
+          "group": "LOD Reductions"
+        },
+        {
+          "name": "ShadowCutoff",
+          "label": "Shadow Cutoff Distance (Meters)",
+          "description": "Distance in meters beyond which shadow casting is disabled.",
+          "type": "Number",
+          "value": "40.0",
+          "group": "Optimization"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "On Created",
+          "sentence": "",
+          "description": "Initializes the AutoMeshLOD3D background decimation engine.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * AutoMeshLOD3D.worker.js\n * High-performance Quadric Error Metric (QEM) Half-Edge Decimator\n * Designed for asynchronous Web Worker and main-thread fallback execution.\n */\n\n(function (root, factory) {\n  const exports = factory();\n  if (typeof module === 'object' && module.exports) {\n    module.exports = exports;\n  } else if (typeof define === 'function' && define.amd) {\n    define([], () => exports);\n  }\n  if (typeof root !== 'undefined') {\n    root.AutoMeshDecimator = exports;\n  }\n  if (typeof globalThis !== 'undefined') {\n    globalThis.AutoMeshDecimator = exports;\n  }\n  if (typeof self !== 'undefined') {\n    self.AutoMeshDecimator = exports;\n  }\n})(typeof globalThis !== 'undefined' ? globalThis : this, function () {\n  'use strict';\n\n  /**\n   * Priority Queue (Min-Heap) implementation for fast edge collapse selection.\n   */\n  class MinHeap {\n    constructor() {\n      this.heap = [];\n    }\n\n    push(item) {\n      this.heap.push(item);\n      this._up(this.heap.length - 1);\n    }\n\n    pop() {\n      const heap = this.heap;\n      if (heap.length === 0) return null;\n      const top = heap[0];\n      const bottom = heap.pop();\n      if (heap.length > 0) {\n        heap[0] = bottom;\n        this._down(0);\n      }\n      return top;\n    }\n\n    get size() {\n      return this.heap.length;\n    }\n\n    _up(i) {\n      const heap = this.heap;\n      while (i > 0) {\n        const p = (i - 1) >> 1;\n        if (heap[i].cost < heap[p].cost) {\n          const tmp = heap[i];\n          heap[i] = heap[p];\n          heap[p] = tmp;\n          i = p;\n        } else {\n          break;\n        }\n      }\n    }\n\n    _down(i) {\n      const heap = this.heap;\n      const len = heap.length;\n      while ((i << 1) + 1 < len) {\n        let left = (i << 1) + 1;\n        let right = left + 1;\n        let best = i;\n\n        if (heap[left].cost < heap[best].cost) best = left;\n        if (right < len && heap[right].cost < heap[best].cost) best = right;\n\n        if (best !== i) {\n          const tmp = heap[i];\n          heap[i] = heap[best];\n          heap[best] = tmp;\n          i = best;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n\n  /**\n   * Quadric Matrix operations (Symmetric 4x4 stored as 10 doubles):\n   * [ 0  1  2  3 ]\n   * [ .  4  5  6 ]\n   * [ .  .  7  8 ]\n   * [ .  .  .  9 ]\n   */\n  function createQuadric() {\n    return new Float64Array(10);\n  }\n\n  function addQuadric(out, a, b) {\n    for (let i = 0; i < 10; i++) {\n      out[i] = a[i] + b[i];\n    }\n    return out;\n  }\n\n  function addPlaneQuadric(q, a, b, c, d, weight) {\n    const w = weight || 1.0;\n    q[0] += a * a * w;\n    q[1] += a * b * w;\n    q[2] += a * c * w;\n    q[3] += a * d * w;\n    q[4] += b * b * w;\n    q[5] += b * c * w;\n    q[6] += b * d * w;\n    q[7] += c * c * w;\n    q[8] += c * d * w;\n    q[9] += d * d * w;\n  }\n\n  function evaluateQuadric(q, x, y, z) {\n    return (\n      q[0] * x * x +\n      2 * q[1] * x * y +\n      2 * q[2] * x * z +\n      2 * q[3] * x +\n      q[4] * y * y +\n      2 * q[5] * y * z +\n      2 * q[6] * y +\n      q[7] * z * z +\n      2 * q[8] * z +\n      q[9]\n    );\n  }\n\n  /**\n   * Core QEM Decimation Function\n   *\n   * @param {Object} options\n   * @param {Float32Array} options.positions - Vertex positions (XYZ)\n   * @param {Uint32Array|Uint16Array} options.indices - Triangle indices\n   * @param {Float32Array} [options.uvs] - Vertex texture coordinates (UV)\n   * @param {Float32Array} [options.normals] - Vertex normals (XYZ)\n   * @param {number[]} options.ratios - Sorted reduction ratios, e.g. [0.5, 0.2]\n   * @param {boolean} [options.preserveSeams=true] - Preserve borders and UV seams\n   * @returns {Object.<number, Uint32Array>} Map of ratio -> simplified index buffer\n   */\n  function decimate({ positions, indices, uvs, normals, ratios, preserveSeams = true }) {\n    if (!positions || !indices || indices.length < 3) {\n      return {};\n    }\n\n    const pos = positions instanceof Float32Array ? positions : new Float32Array(positions);\n    const vertexCount = pos.length / 3;\n    const initialTriangleCount = indices.length / 3;\n\n    if (initialTriangleCount <= 4) {\n      const same = new Uint32Array(indices);\n      const out = {};\n      for (const r of ratios) out[r] = same;\n      return out;\n    }\n\n    // 0. Weld duplicate positions\n    const weldRemap = new Uint32Array(vertexCount);\n    const isSeamVertex = new Uint8Array(vertexCount);\n    {\n      const buckets = new Map();\n      const bits = new Int32Array(pos.buffer, pos.byteOffset, pos.length);\n      const bitAt = (k) => (pos[k] === 0 ? 0 : bits[k]);\n      const hasUVs = !!uvs && uvs.length >= vertexCount * 2;\n\n      for (let i = 0; i < vertexCount; i++) {\n        const k = i * 3;\n        const h = (\n          Math.imul(bitAt(k), 73856093) ^\n          Math.imul(bitAt(k + 1), 19349663) ^\n          Math.imul(bitAt(k + 2), 83492791)\n        ) | 0;\n\n        const slot = buckets.get(h);\n        let rep = -1;\n\n        if (slot === undefined) {\n          buckets.set(h, i);\n        } else if (typeof slot === 'number') {\n          const c = slot * 3;\n          if (pos[c] === pos[k] && pos[c + 1] === pos[k + 1] && pos[c + 2] === pos[k + 2]) rep = slot;\n          else buckets.set(h, [slot, i]);\n        } else {\n          for (let s = 0; s < slot.length; s++) {\n            const c = slot[s] * 3;\n            if (pos[c] === pos[k] && pos[c + 1] === pos[k + 1] && pos[c + 2] === pos[k + 2]) {\n              rep = slot[s];\n              break;\n            }\n          }\n          if (rep < 0) slot.push(i);\n        }\n\n        if (rep < 0) {\n          weldRemap[i] = i;\n          continue;\n        }\n        weldRemap[i] = rep;\n\n        if (!hasUVs || uvs[i * 2] !== uvs[rep * 2] || uvs[i * 2 + 1] !== uvs[rep * 2 + 1]) {\n          isSeamVertex[rep] = 1;\n        }\n      }\n    }\n\n    // 1. Vertex state setup\n    const remap = new Uint32Array(vertexCount);\n    const vertexVersions = new Uint32Array(vertexCount);\n    for (let i = 0; i < vertexCount; i++) {\n      remap[i] = i;\n    }\n\n    function findRoot(v) {\n      let root = v;\n      while (root !== remap[root]) {\n        root = remap[root];\n      }\n      let curr = v;\n      while (curr !== root) {\n        const next = remap[curr];\n        remap[curr] = root;\n        curr = next;\n      }\n      return root;\n    }\n\n    // 2. Triangle data setup\n    const triangles = [];\n    const vertexTriangles = Array.from({ length: vertexCount }, () => []);\n    const quadrics = Array.from({ length: vertexCount }, () => createQuadric());\n\n    for (let i = 0; i < indices.length; i += 3) {\n      const o0 = indices[i];\n      const o1 = indices[i + 1];\n      const o2 = indices[i + 2];\n\n      const v0 = weldRemap[o0];\n      const v1 = weldRemap[o1];\n      const v2 = weldRemap[o2];\n      if (v0 === v1 || v1 === v2 || v0 === v2) continue;\n\n      const triIdx = triangles.length;\n\n      const p0x = pos[v0 * 3], p0y = pos[v0 * 3 + 1], p0z = pos[v0 * 3 + 2];\n      const p1x = pos[v1 * 3], p1y = pos[v1 * 3 + 1], p1z = pos[v1 * 3 + 2];\n      const p2x = pos[v2 * 3], p2y = pos[v2 * 3 + 1], p2z = pos[v2 * 3 + 2];\n\n      const e1x = p1x - p0x, e1y = p1y - p0y, e1z = p1z - p0z;\n      const e2x = p2x - p0x, e2y = p2y - p0y, e2z = p2z - p0z;\n\n      let nx = e1y * e2z - e1z * e2y;\n      let ny = e1z * e2x - e1x * e2z;\n      let nz = e1x * e2y - e1y * e2x;\n      const len = Math.sqrt(nx * nx + ny * ny + nz * nz);\n\n      let area = 0.5 * len;\n      if (len > 1e-12) {\n        nx /= len;\n        ny /= len;\n        nz /= len;\n      } else {\n        nx = 0; ny = 1; nz = 0;\n        area = 1e-6;\n      }\n\n      const d = -(nx * p0x + ny * p0y + nz * p0z);\n\n      const tri = {\n        id: triIdx,\n        v: [v0, v1, v2],\n        ov: [o0, o1, o2],\n        nx, ny, nz, d,\n        area,\n        deleted: false,\n      };\n\n      triangles.push(tri);\n      vertexTriangles[v0].push(triIdx);\n      vertexTriangles[v1].push(triIdx);\n      vertexTriangles[v2].push(triIdx);\n\n      addPlaneQuadric(quadrics[v0], nx, ny, nz, d, area);\n      addPlaneQuadric(quadrics[v1], nx, ny, nz, d, area);\n      addPlaneQuadric(quadrics[v2], nx, ny, nz, d, area);\n    }\n\n    // 3. Boundary Edge Detection\n    const edgeFaceCount = new Map();\n    for (let i = 0; i < triangles.length; i++) {\n      const tri = triangles[i];\n      for (let j = 0; j < 3; j++) {\n        const u = tri.v[j];\n        const v = tri.v[(j + 1) % 3];\n        const key = u < v ? `${u}_${v}` : `${v}_${u}`;\n        edgeFaceCount.set(key, (edgeFaceCount.get(key) || 0) + 1);\n      }\n    }\n\n    const isBoundaryVertex = new Uint8Array(vertexCount);\n    for (const [key, count] of edgeFaceCount.entries()) {\n      if (count === 1) {\n        const [u, v] = key.split('_').map(Number);\n        isBoundaryVertex[u] = 1;\n        isBoundaryVertex[v] = 1;\n\n        if (preserveSeams) {\n          const p0x = pos[u * 3], p0y = pos[u * 3 + 1], p0z = pos[u * 3 + 2];\n          const p1x = pos[v * 3], p1y = pos[v * 3 + 1], p1z = pos[v * 3 + 2];\n          const edx = p1x - p0x, edy = p1y - p0y, edz = p1z - p0z;\n          const edLen = Math.sqrt(edx * edx + edy * edy + edz * edz);\n          if (edLen > 1e-8) {\n            const tris = vertexTriangles[u];\n            for (let t = 0; t < tris.length; t++) {\n              const tr = triangles[tris[t]];\n              if (tr.v.includes(v)) {\n                let px = edy * tr.nz - edz * tr.ny;\n                let py = edz * tr.nx - edx * tr.nz;\n                let pz = edx * tr.ny - edy * tr.nx;\n                const pLen = Math.sqrt(px * px + py * py + pz * pz);\n                if (pLen > 1e-8) {\n                  px /= pLen; py /= pLen; pz /= pLen;\n                  const pd = -(px * p0x + py * p0y + pz * p0z);\n                  const boundaryWeight = 1000.0 * edLen;\n                  addPlaneQuadric(quadrics[u], px, py, pz, pd, boundaryWeight);\n                  addPlaneQuadric(quadrics[v], px, py, pz, pd, boundaryWeight);\n                }\n                break;\n              }\n            }\n          }\n        }\n      }\n    }\n\n    // 4. Half-Edge Collapse Cost Evaluation\n    const combinedQ = createQuadric();\n\n    function calculateHalfEdgeCost(u, v) {\n      if (preserveSeams) {\n        const uPinned = isBoundaryVertex[u] || isSeamVertex[u];\n        const vPinned = isBoundaryVertex[v] || isSeamVertex[v];\n        if (uPinned && !vPinned) return Infinity;\n      }\n\n      addQuadric(combinedQ, quadrics[u], quadrics[v]);\n      const vx = pos[v * 3], vy = pos[v * 3 + 1], vz = pos[v * 3 + 2];\n\n      let error = evaluateQuadric(combinedQ, vx, vy, vz);\n      if (error < 0) error = 0;\n\n      const tris = vertexTriangles[u];\n      for (let i = 0; i < tris.length; i++) {\n        const tri = triangles[tris[i]];\n        if (tri.deleted) continue;\n        if (tri.v.includes(v)) continue;\n\n        const i0 = tri.v[0] === u ? v : tri.v[0];\n        const i1 = tri.v[1] === u ? v : tri.v[1];\n        const i2 = tri.v[2] === u ? v : tri.v[2];\n\n        const p0x = pos[i0 * 3], p0y = pos[i0 * 3 + 1], p0z = pos[i0 * 3 + 2];\n        const p1x = pos[i1 * 3], p1y = pos[i1 * 3 + 1], p1z = pos[i1 * 3 + 2];\n        const p2x = pos[i2 * 3], p2y = pos[i2 * 3 + 1], p2z = pos[i2 * 3 + 2];\n\n        const e1x = p1x - p0x, e1y = p1y - p0y, e1z = p1z - p0z;\n        const e2x = p2x - p0x, e2y = p2y - p0y, e2z = p2z - p0z;\n\n        const nx = e1y * e2z - e1z * e2y;\n        const ny = e1z * e2x - e1x * e2z;\n        const nz = e1x * e2y - e1y * e2x;\n        const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);\n\n        if (nLen < 1e-12) return Infinity;\n\n        const dot = (nx * tri.nx + ny * tri.ny + nz * tri.nz) / nLen;\n        if (dot < 0.2) {\n          return Infinity;\n        }\n      }\n\n      return error;\n    }\n\n    // 5. Build Initial Edge Heap\n    const heap = new MinHeap();\n    const evaluatedEdges = new Set();\n\n    function pushEdgeCandidates(u, v) {\n      const key = `${u}_${v}`;\n      if (evaluatedEdges.has(key)) return;\n      evaluatedEdges.add(key);\n\n      const costUV = calculateHalfEdgeCost(u, v);\n      if (Number.isFinite(costUV)) {\n        heap.push({\n          u, v, cost: costUV,\n          uVer: vertexVersions[u],\n          vVer: vertexVersions[v],\n        });\n      }\n\n      const costVU = calculateHalfEdgeCost(v, u);\n      if (Number.isFinite(costVU)) {\n        heap.push({\n          u: v, v: u, cost: costVU,\n          uVer: vertexVersions[v],\n          vVer: vertexVersions[u],\n        });\n      }\n    }\n\n    for (let i = 0; i < triangles.length; i++) {\n      const tri = triangles[i];\n      pushEdgeCandidates(tri.v[0], tri.v[1]);\n      pushEdgeCandidates(tri.v[1], tri.v[2]);\n      pushEdgeCandidates(tri.v[2], tri.v[0]);\n    }\n\n    // 6. Decimation Loop\n    const sortedRatios = [...ratios].sort((a, b) => b - a);\n    const targetTriCounts = sortedRatios.map(r => ({\n      ratio: r,\n      target: Math.max(1, Math.floor(initialTriangleCount * r)),\n    }));\n\n    const results = {};\n    let activeTriCount = triangles.length;\n    let targetIdx = 0;\n\n    function snapshotIndexBuffer(ratio) {\n      const validIndices = [];\n      for (let i = 0; i < triangles.length; i++) {\n        const tri = triangles[i];\n        if (tri.deleted) continue;\n        for (let k = 0; k < 3; k++) {\n          const finalRep = findRoot(tri.v[k]);\n          const original = tri.ov[k];\n          validIndices.push(weldRemap[original] === finalRep ? original : finalRep);\n        }\n      }\n      results[ratio] = new Uint32Array(validIndices);\n    }\n\n    while (targetIdx < targetTriCounts.length && activeTriCount <= targetTriCounts[targetIdx].target) {\n      snapshotIndexBuffer(targetTriCounts[targetIdx].ratio);\n      targetIdx++;\n    }\n\n    while (heap.size > 0 && targetIdx < targetTriCounts.length) {\n      const edge = heap.pop();\n      const u = edge.u;\n      const v = edge.v;\n\n      if (vertexVersions[u] !== edge.uVer || vertexVersions[v] !== edge.vVer) continue;\n      if (findRoot(u) === findRoot(v)) continue;\n\n      const cost = calculateHalfEdgeCost(u, v);\n      if (!Number.isFinite(cost)) continue;\n\n      remap[u] = v;\n      vertexVersions[u]++;\n      vertexVersions[v]++;\n      addQuadric(quadrics[v], quadrics[v], quadrics[u]);\n      if (isBoundaryVertex[u]) isBoundaryVertex[v] = 1;\n      if (isSeamVertex[u]) isSeamVertex[v] = 1;\n\n      const uTris = vertexTriangles[u];\n      const vTris = vertexTriangles[v];\n\n      for (let i = 0; i < uTris.length; i++) {\n        const tri = triangles[uTris[i]];\n        if (tri.deleted) continue;\n\n        if (tri.v.includes(v)) {\n          tri.deleted = true;\n          activeTriCount--;\n        } else {\n          if (tri.v[0] === u) tri.v[0] = v;\n          if (tri.v[1] === u) tri.v[1] = v;\n          if (tri.v[2] === u) tri.v[2] = v;\n          vTris.push(tri.id);\n        }\n      }\n\n      while (targetIdx < targetTriCounts.length && activeTriCount <= targetTriCounts[targetIdx].target) {\n        snapshotIndexBuffer(targetTriCounts[targetIdx].ratio);\n        targetIdx++;\n      }\n\n      for (let i = 0; i < vTris.length; i++) {\n        const tri = triangles[vTris[i]];\n        if (tri.deleted) continue;\n        const v0 = tri.v[0], v1 = tri.v[1], v2 = tri.v[2];\n        if (v0 === v) {\n          pushEdgeCandidates(v, v1);\n          pushEdgeCandidates(v, v2);\n        } else if (v1 === v) {\n          pushEdgeCandidates(v, v0);\n          pushEdgeCandidates(v, v2);\n        } else if (v2 === v) {\n          pushEdgeCandidates(v, v0);\n          pushEdgeCandidates(v, v1);\n        }\n      }\n    }\n\n    while (targetIdx < targetTriCounts.length) {\n      snapshotIndexBuffer(targetTriCounts[targetIdx].ratio);\n      targetIdx++;\n    }\n\n    return results;\n  }\n\n  if (typeof self !== 'undefined' && typeof self.postMessage === 'function') {\n    self.onmessage = function (e) {\n      const msg = e.data;\n      if (!msg || msg.type !== 'DECIMATE_REQUEST') return;\n\n      const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();\n      const { jobId, geometry, ratios, preserveSeams } = msg;\n\n      try {\n        const lodResults = decimate({\n          positions: geometry.positions,\n          indices: geometry.indices,\n          uvs: geometry.uvs,\n          normals: geometry.normals,\n          ratios: ratios || [0.5, 0.2],\n          preserveSeams: preserveSeams !== false,\n        });\n\n        const executionTimeMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;\n        const transferable = [];\n        const lodIndices = {};\n\n        for (const [ratio, uintArray] of Object.entries(lodResults)) {\n          lodIndices[ratio] = uintArray;\n          if (uintArray && uintArray.buffer) {\n            transferable.push(uintArray.buffer);\n          }\n        }\n\n        self.postMessage({\n          type: 'DECIMATE_COMPLETE',\n          jobId,\n          executionTimeMs,\n          lodIndices,\n          originalTriangles: geometry.indices.length / 3,\n        }, transferable);\n      } catch (err) {\n        self.postMessage({\n          type: 'DECIMATE_ERROR',\n          jobId,\n          error: err.message || String(err),\n        });\n      }\n    };\n  }\n\n  return {\n    decimate,\n  };\n});\n\nconst __AUTOMESH_WORKER_CODE__ = \"/**\\n * AutoMeshLOD3D.worker.js\\n * High-performance Quadric Error Metric (QEM) Half-Edge Decimator\\n * Designed for asynchronous Web Worker and main-thread fallback execution.\\n */\\n\\n(function (root, factory) {\\n  const exports = factory();\\n  if (typeof module === 'object' && module.exports) {\\n    module.exports = exports;\\n  } else if (typeof define === 'function' && define.amd) {\\n    define([], () => exports);\\n  }\\n  if (typeof root !== 'undefined') {\\n    root.AutoMeshDecimator = exports;\\n  }\\n  if (typeof globalThis !== 'undefined') {\\n    globalThis.AutoMeshDecimator = exports;\\n  }\\n  if (typeof self !== 'undefined') {\\n    self.AutoMeshDecimator = exports;\\n  }\\n})(typeof globalThis !== 'undefined' ? globalThis : this, function () {\\n  'use strict';\\n\\n  /**\\n   * Priority Queue (Min-Heap) implementation for fast edge collapse selection.\\n   */\\n  class MinHeap {\\n    constructor() {\\n      this.heap = [];\\n    }\\n\\n    push(item) {\\n      this.heap.push(item);\\n      this._up(this.heap.length - 1);\\n    }\\n\\n    pop() {\\n      const heap = this.heap;\\n      if (heap.length === 0) return null;\\n      const top = heap[0];\\n      const bottom = heap.pop();\\n      if (heap.length > 0) {\\n        heap[0] = bottom;\\n        this._down(0);\\n      }\\n      return top;\\n    }\\n\\n    get size() {\\n      return this.heap.length;\\n    }\\n\\n    _up(i) {\\n      const heap = this.heap;\\n      while (i > 0) {\\n        const p = (i - 1) >> 1;\\n        if (heap[i].cost < heap[p].cost) {\\n          const tmp = heap[i];\\n          heap[i] = heap[p];\\n          heap[p] = tmp;\\n          i = p;\\n        } else {\\n          break;\\n        }\\n      }\\n    }\\n\\n    _down(i) {\\n      const heap = this.heap;\\n      const len = heap.length;\\n      while ((i << 1) + 1 < len) {\\n        let left = (i << 1) + 1;\\n        let right = left + 1;\\n        let best = i;\\n\\n        if (heap[left].cost < heap[best].cost) best = left;\\n        if (right < len && heap[right].cost < heap[best].cost) best = right;\\n\\n        if (best !== i) {\\n          const tmp = heap[i];\\n          heap[i] = heap[best];\\n          heap[best] = tmp;\\n          i = best;\\n        } else {\\n          break;\\n        }\\n      }\\n    }\\n  }\\n\\n  /**\\n   * Quadric Matrix operations (Symmetric 4x4 stored as 10 doubles):\\n   * [ 0  1  2  3 ]\\n   * [ .  4  5  6 ]\\n   * [ .  .  7  8 ]\\n   * [ .  .  .  9 ]\\n   */\\n  function createQuadric() {\\n    return new Float64Array(10);\\n  }\\n\\n  function addQuadric(out, a, b) {\\n    for (let i = 0; i < 10; i++) {\\n      out[i] = a[i] + b[i];\\n    }\\n    return out;\\n  }\\n\\n  function addPlaneQuadric(q, a, b, c, d, weight) {\\n    const w = weight || 1.0;\\n    q[0] += a * a * w;\\n    q[1] += a * b * w;\\n    q[2] += a * c * w;\\n    q[3] += a * d * w;\\n    q[4] += b * b * w;\\n    q[5] += b * c * w;\\n    q[6] += b * d * w;\\n    q[7] += c * c * w;\\n    q[8] += c * d * w;\\n    q[9] += d * d * w;\\n  }\\n\\n  function evaluateQuadric(q, x, y, z) {\\n    return (\\n      q[0] * x * x +\\n      2 * q[1] * x * y +\\n      2 * q[2] * x * z +\\n      2 * q[3] * x +\\n      q[4] * y * y +\\n      2 * q[5] * y * z +\\n      2 * q[6] * y +\\n      q[7] * z * z +\\n      2 * q[8] * z +\\n      q[9]\\n    );\\n  }\\n\\n  /**\\n   * Core QEM Decimation Function\\n   *\\n   * @param {Object} options\\n   * @param {Float32Array} options.positions - Vertex positions (XYZ)\\n   * @param {Uint32Array|Uint16Array} options.indices - Triangle indices\\n   * @param {Float32Array} [options.uvs] - Vertex texture coordinates (UV)\\n   * @param {Float32Array} [options.normals] - Vertex normals (XYZ)\\n   * @param {number[]} options.ratios - Sorted reduction ratios, e.g. [0.5, 0.2]\\n   * @param {boolean} [options.preserveSeams=true] - Preserve borders and UV seams\\n   * @returns {Object.<number, Uint32Array>} Map of ratio -> simplified index buffer\\n   */\\n  function decimate({ positions, indices, uvs, normals, ratios, preserveSeams = true }) {\\n    if (!positions || !indices || indices.length < 3) {\\n      return {};\\n    }\\n\\n    const pos = positions instanceof Float32Array ? positions : new Float32Array(positions);\\n    const vertexCount = pos.length / 3;\\n    const initialTriangleCount = indices.length / 3;\\n\\n    if (initialTriangleCount <= 4) {\\n      const same = new Uint32Array(indices);\\n      const out = {};\\n      for (const r of ratios) out[r] = same;\\n      return out;\\n    }\\n\\n    // 0. Weld duplicate positions\\n    const weldRemap = new Uint32Array(vertexCount);\\n    const isSeamVertex = new Uint8Array(vertexCount);\\n    {\\n      const buckets = new Map();\\n      const bits = new Int32Array(pos.buffer, pos.byteOffset, pos.length);\\n      const bitAt = (k) => (pos[k] === 0 ? 0 : bits[k]);\\n      const hasUVs = !!uvs && uvs.length >= vertexCount * 2;\\n\\n      for (let i = 0; i < vertexCount; i++) {\\n        const k = i * 3;\\n        const h = (\\n          Math.imul(bitAt(k), 73856093) ^\\n          Math.imul(bitAt(k + 1), 19349663) ^\\n          Math.imul(bitAt(k + 2), 83492791)\\n        ) | 0;\\n\\n        const slot = buckets.get(h);\\n        let rep = -1;\\n\\n        if (slot === undefined) {\\n          buckets.set(h, i);\\n        } else if (typeof slot === 'number') {\\n          const c = slot * 3;\\n          if (pos[c] === pos[k] && pos[c + 1] === pos[k + 1] && pos[c + 2] === pos[k + 2]) rep = slot;\\n          else buckets.set(h, [slot, i]);\\n        } else {\\n          for (let s = 0; s < slot.length; s++) {\\n            const c = slot[s] * 3;\\n            if (pos[c] === pos[k] && pos[c + 1] === pos[k + 1] && pos[c + 2] === pos[k + 2]) {\\n              rep = slot[s];\\n              break;\\n            }\\n          }\\n          if (rep < 0) slot.push(i);\\n        }\\n\\n        if (rep < 0) {\\n          weldRemap[i] = i;\\n          continue;\\n        }\\n        weldRemap[i] = rep;\\n\\n        if (!hasUVs || uvs[i * 2] !== uvs[rep * 2] || uvs[i * 2 + 1] !== uvs[rep * 2 + 1]) {\\n          isSeamVertex[rep] = 1;\\n        }\\n      }\\n    }\\n\\n    // 1. Vertex state setup\\n    const remap = new Uint32Array(vertexCount);\\n    const vertexVersions = new Uint32Array(vertexCount);\\n    for (let i = 0; i < vertexCount; i++) {\\n      remap[i] = i;\\n    }\\n\\n    function findRoot(v) {\\n      let root = v;\\n      while (root !== remap[root]) {\\n        root = remap[root];\\n      }\\n      let curr = v;\\n      while (curr !== root) {\\n        const next = remap[curr];\\n        remap[curr] = root;\\n        curr = next;\\n      }\\n      return root;\\n    }\\n\\n    // 2. Triangle data setup\\n    const triangles = [];\\n    const vertexTriangles = Array.from({ length: vertexCount }, () => []);\\n    const quadrics = Array.from({ length: vertexCount }, () => createQuadric());\\n\\n    for (let i = 0; i < indices.length; i += 3) {\\n      const o0 = indices[i];\\n      const o1 = indices[i + 1];\\n      const o2 = indices[i + 2];\\n\\n      const v0 = weldRemap[o0];\\n      const v1 = weldRemap[o1];\\n      const v2 = weldRemap[o2];\\n      if (v0 === v1 || v1 === v2 || v0 === v2) continue;\\n\\n      const triIdx = triangles.length;\\n\\n      const p0x = pos[v0 * 3], p0y = pos[v0 * 3 + 1], p0z = pos[v0 * 3 + 2];\\n      const p1x = pos[v1 * 3], p1y = pos[v1 * 3 + 1], p1z = pos[v1 * 3 + 2];\\n      const p2x = pos[v2 * 3], p2y = pos[v2 * 3 + 1], p2z = pos[v2 * 3 + 2];\\n\\n      const e1x = p1x - p0x, e1y = p1y - p0y, e1z = p1z - p0z;\\n      const e2x = p2x - p0x, e2y = p2y - p0y, e2z = p2z - p0z;\\n\\n      let nx = e1y * e2z - e1z * e2y;\\n      let ny = e1z * e2x - e1x * e2z;\\n      let nz = e1x * e2y - e1y * e2x;\\n      const len = Math.sqrt(nx * nx + ny * ny + nz * nz);\\n\\n      let area = 0.5 * len;\\n      if (len > 1e-12) {\\n        nx /= len;\\n        ny /= len;\\n        nz /= len;\\n      } else {\\n        nx = 0; ny = 1; nz = 0;\\n        area = 1e-6;\\n      }\\n\\n      const d = -(nx * p0x + ny * p0y + nz * p0z);\\n\\n      const tri = {\\n        id: triIdx,\\n        v: [v0, v1, v2],\\n        ov: [o0, o1, o2],\\n        nx, ny, nz, d,\\n        area,\\n        deleted: false,\\n      };\\n\\n      triangles.push(tri);\\n      vertexTriangles[v0].push(triIdx);\\n      vertexTriangles[v1].push(triIdx);\\n      vertexTriangles[v2].push(triIdx);\\n\\n      addPlaneQuadric(quadrics[v0], nx, ny, nz, d, area);\\n      addPlaneQuadric(quadrics[v1], nx, ny, nz, d, area);\\n      addPlaneQuadric(quadrics[v2], nx, ny, nz, d, area);\\n    }\\n\\n    // 3. Boundary Edge Detection\\n    const edgeFaceCount = new Map();\\n    for (let i = 0; i < triangles.length; i++) {\\n      const tri = triangles[i];\\n      for (let j = 0; j < 3; j++) {\\n        const u = tri.v[j];\\n        const v = tri.v[(j + 1) % 3];\\n        const key = u < v ? `${u}_${v}` : `${v}_${u}`;\\n        edgeFaceCount.set(key, (edgeFaceCount.get(key) || 0) + 1);\\n      }\\n    }\\n\\n    const isBoundaryVertex = new Uint8Array(vertexCount);\\n    for (const [key, count] of edgeFaceCount.entries()) {\\n      if (count === 1) {\\n        const [u, v] = key.split('_').map(Number);\\n        isBoundaryVertex[u] = 1;\\n        isBoundaryVertex[v] = 1;\\n\\n        if (preserveSeams) {\\n          const p0x = pos[u * 3], p0y = pos[u * 3 + 1], p0z = pos[u * 3 + 2];\\n          const p1x = pos[v * 3], p1y = pos[v * 3 + 1], p1z = pos[v * 3 + 2];\\n          const edx = p1x - p0x, edy = p1y - p0y, edz = p1z - p0z;\\n          const edLen = Math.sqrt(edx * edx + edy * edy + edz * edz);\\n          if (edLen > 1e-8) {\\n            const tris = vertexTriangles[u];\\n            for (let t = 0; t < tris.length; t++) {\\n              const tr = triangles[tris[t]];\\n              if (tr.v.includes(v)) {\\n                let px = edy * tr.nz - edz * tr.ny;\\n                let py = edz * tr.nx - edx * tr.nz;\\n                let pz = edx * tr.ny - edy * tr.nx;\\n                const pLen = Math.sqrt(px * px + py * py + pz * pz);\\n                if (pLen > 1e-8) {\\n                  px /= pLen; py /= pLen; pz /= pLen;\\n                  const pd = -(px * p0x + py * p0y + pz * p0z);\\n                  const boundaryWeight = 1000.0 * edLen;\\n                  addPlaneQuadric(quadrics[u], px, py, pz, pd, boundaryWeight);\\n                  addPlaneQuadric(quadrics[v], px, py, pz, pd, boundaryWeight);\\n                }\\n                break;\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n\\n    // 4. Half-Edge Collapse Cost Evaluation\\n    const combinedQ = createQuadric();\\n\\n    function calculateHalfEdgeCost(u, v) {\\n      if (preserveSeams) {\\n        const uPinned = isBoundaryVertex[u] || isSeamVertex[u];\\n        const vPinned = isBoundaryVertex[v] || isSeamVertex[v];\\n        if (uPinned && !vPinned) return Infinity;\\n      }\\n\\n      addQuadric(combinedQ, quadrics[u], quadrics[v]);\\n      const vx = pos[v * 3], vy = pos[v * 3 + 1], vz = pos[v * 3 + 2];\\n\\n      let error = evaluateQuadric(combinedQ, vx, vy, vz);\\n      if (error < 0) error = 0;\\n\\n      const tris = vertexTriangles[u];\\n      for (let i = 0; i < tris.length; i++) {\\n        const tri = triangles[tris[i]];\\n        if (tri.deleted) continue;\\n        if (tri.v.includes(v)) continue;\\n\\n        const i0 = tri.v[0] === u ? v : tri.v[0];\\n        const i1 = tri.v[1] === u ? v : tri.v[1];\\n        const i2 = tri.v[2] === u ? v : tri.v[2];\\n\\n        const p0x = pos[i0 * 3], p0y = pos[i0 * 3 + 1], p0z = pos[i0 * 3 + 2];\\n        const p1x = pos[i1 * 3], p1y = pos[i1 * 3 + 1], p1z = pos[i1 * 3 + 2];\\n        const p2x = pos[i2 * 3], p2y = pos[i2 * 3 + 1], p2z = pos[i2 * 3 + 2];\\n\\n        const e1x = p1x - p0x, e1y = p1y - p0y, e1z = p1z - p0z;\\n        const e2x = p2x - p0x, e2y = p2y - p0y, e2z = p2z - p0z;\\n\\n        const nx = e1y * e2z - e1z * e2y;\\n        const ny = e1z * e2x - e1x * e2z;\\n        const nz = e1x * e2y - e1y * e2x;\\n        const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);\\n\\n        if (nLen < 1e-12) return Infinity;\\n\\n        const dot = (nx * tri.nx + ny * tri.ny + nz * tri.nz) / nLen;\\n        if (dot < 0.2) {\\n          return Infinity;\\n        }\\n      }\\n\\n      return error;\\n    }\\n\\n    // 5. Build Initial Edge Heap\\n    const heap = new MinHeap();\\n    const evaluatedEdges = new Set();\\n\\n    function pushEdgeCandidates(u, v) {\\n      const key = `${u}_${v}`;\\n      if (evaluatedEdges.has(key)) return;\\n      evaluatedEdges.add(key);\\n\\n      const costUV = calculateHalfEdgeCost(u, v);\\n      if (Number.isFinite(costUV)) {\\n        heap.push({\\n          u, v, cost: costUV,\\n          uVer: vertexVersions[u],\\n          vVer: vertexVersions[v],\\n        });\\n      }\\n\\n      const costVU = calculateHalfEdgeCost(v, u);\\n      if (Number.isFinite(costVU)) {\\n        heap.push({\\n          u: v, v: u, cost: costVU,\\n          uVer: vertexVersions[v],\\n          vVer: vertexVersions[u],\\n        });\\n      }\\n    }\\n\\n    for (let i = 0; i < triangles.length; i++) {\\n      const tri = triangles[i];\\n      pushEdgeCandidates(tri.v[0], tri.v[1]);\\n      pushEdgeCandidates(tri.v[1], tri.v[2]);\\n      pushEdgeCandidates(tri.v[2], tri.v[0]);\\n    }\\n\\n    // 6. Decimation Loop\\n    const sortedRatios = [...ratios].sort((a, b) => b - a);\\n    const targetTriCounts = sortedRatios.map(r => ({\\n      ratio: r,\\n      target: Math.max(1, Math.floor(initialTriangleCount * r)),\\n    }));\\n\\n    const results = {};\\n    let activeTriCount = triangles.length;\\n    let targetIdx = 0;\\n\\n    function snapshotIndexBuffer(ratio) {\\n      const validIndices = [];\\n      for (let i = 0; i < triangles.length; i++) {\\n        const tri = triangles[i];\\n        if (tri.deleted) continue;\\n        for (let k = 0; k < 3; k++) {\\n          const finalRep = findRoot(tri.v[k]);\\n          const original = tri.ov[k];\\n          validIndices.push(weldRemap[original] === finalRep ? original : finalRep);\\n        }\\n      }\\n      results[ratio] = new Uint32Array(validIndices);\\n    }\\n\\n    while (targetIdx < targetTriCounts.length && activeTriCount <= targetTriCounts[targetIdx].target) {\\n      snapshotIndexBuffer(targetTriCounts[targetIdx].ratio);\\n      targetIdx++;\\n    }\\n\\n    while (heap.size > 0 && targetIdx < targetTriCounts.length) {\\n      const edge = heap.pop();\\n      const u = edge.u;\\n      const v = edge.v;\\n\\n      if (vertexVersions[u] !== edge.uVer || vertexVersions[v] !== edge.vVer) continue;\\n      if (findRoot(u) === findRoot(v)) continue;\\n\\n      const cost = calculateHalfEdgeCost(u, v);\\n      if (!Number.isFinite(cost)) continue;\\n\\n      remap[u] = v;\\n      vertexVersions[u]++;\\n      vertexVersions[v]++;\\n      addQuadric(quadrics[v], quadrics[v], quadrics[u]);\\n      if (isBoundaryVertex[u]) isBoundaryVertex[v] = 1;\\n      if (isSeamVertex[u]) isSeamVertex[v] = 1;\\n\\n      const uTris = vertexTriangles[u];\\n      const vTris = vertexTriangles[v];\\n\\n      for (let i = 0; i < uTris.length; i++) {\\n        const tri = triangles[uTris[i]];\\n        if (tri.deleted) continue;\\n\\n        if (tri.v.includes(v)) {\\n          tri.deleted = true;\\n          activeTriCount--;\\n        } else {\\n          if (tri.v[0] === u) tri.v[0] = v;\\n          if (tri.v[1] === u) tri.v[1] = v;\\n          if (tri.v[2] === u) tri.v[2] = v;\\n          vTris.push(tri.id);\\n        }\\n      }\\n\\n      while (targetIdx < targetTriCounts.length && activeTriCount <= targetTriCounts[targetIdx].target) {\\n        snapshotIndexBuffer(targetTriCounts[targetIdx].ratio);\\n        targetIdx++;\\n      }\\n\\n      for (let i = 0; i < vTris.length; i++) {\\n        const tri = triangles[vTris[i]];\\n        if (tri.deleted) continue;\\n        const v0 = tri.v[0], v1 = tri.v[1], v2 = tri.v[2];\\n        if (v0 === v) {\\n          pushEdgeCandidates(v, v1);\\n          pushEdgeCandidates(v, v2);\\n        } else if (v1 === v) {\\n          pushEdgeCandidates(v, v0);\\n          pushEdgeCandidates(v, v2);\\n        } else if (v2 === v) {\\n          pushEdgeCandidates(v, v0);\\n          pushEdgeCandidates(v, v1);\\n        }\\n      }\\n    }\\n\\n    while (targetIdx < targetTriCounts.length) {\\n      snapshotIndexBuffer(targetTriCounts[targetIdx].ratio);\\n      targetIdx++;\\n    }\\n\\n    return results;\\n  }\\n\\n  if (typeof self !== 'undefined' && typeof self.postMessage === 'function') {\\n    self.onmessage = function (e) {\\n      const msg = e.data;\\n      if (!msg || msg.type !== 'DECIMATE_REQUEST') return;\\n\\n      const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();\\n      const { jobId, geometry, ratios, preserveSeams } = msg;\\n\\n      try {\\n        const lodResults = decimate({\\n          positions: geometry.positions,\\n          indices: geometry.indices,\\n          uvs: geometry.uvs,\\n          normals: geometry.normals,\\n          ratios: ratios || [0.5, 0.2],\\n          preserveSeams: preserveSeams !== false,\\n        });\\n\\n        const executionTimeMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;\\n        const transferable = [];\\n        const lodIndices = {};\\n\\n        for (const [ratio, uintArray] of Object.entries(lodResults)) {\\n          lodIndices[ratio] = uintArray;\\n          if (uintArray && uintArray.buffer) {\\n            transferable.push(uintArray.buffer);\\n          }\\n        }\\n\\n        self.postMessage({\\n          type: 'DECIMATE_COMPLETE',\\n          jobId,\\n          executionTimeMs,\\n          lodIndices,\\n          originalTriangles: geometry.indices.length / 3,\\n        }, transferable);\\n      } catch (err) {\\n        self.postMessage({\\n          type: 'DECIMATE_ERROR',\\n          jobId,\\n          error: err.message || String(err),\\n        });\\n      }\\n    };\\n  }\\n\\n  return {\\n    decimate,\\n  };\\n});\\n\";\n/**\n * AutoMeshLOD3D.runtime.js\n * \n * Background Web Worker QEM Decimator, Zero-Cost Index Swapping, and HLOD Cluster Baker.\n * GDevelop 5 3D WebGL2 Extension Runtime.\n */\n\n(function () {\n  'use strict';\n\n  if (typeof gdjs === 'undefined') return;\n\n  const NS = (gdjs.__autoMeshLOD3D = gdjs.__autoMeshLOD3D || {});\n\n  /**\n   * Worker Pool & Async Job Management\n   */\n  let workerInstance = null;\n  let workerBlobUrl = null;\n  let nextJobId = 1;\n  const pendingJobs = new Map();\n\n  function getOrCreateWorker() {\n    if (typeof Worker === 'undefined') return null;\n    if (workerInstance) return workerInstance;\n\n    try {\n      if (typeof __AUTOMESH_WORKER_CODE__ === 'string') {\n        const blob = new Blob([__AUTOMESH_WORKER_CODE__], { type: 'application/javascript' });\n        workerBlobUrl = URL.createObjectURL(blob);\n        workerInstance = new Worker(workerBlobUrl);\n\n        workerInstance.onmessage = function (e) {\n          const msg = e.data;\n          if (!msg || !msg.jobId) return;\n          const handler = pendingJobs.get(msg.jobId);\n          if (handler) {\n            pendingJobs.delete(msg.jobId);\n            if (msg.type === 'DECIMATE_COMPLETE') {\n              handler.resolve(msg);\n            } else {\n              handler.reject(new Error(msg.error || 'Decimation failed'));\n            }\n          }\n        };\n\n        workerInstance.onerror = function (err) {\n          console.error('[AutoMeshLOD3D] Worker error:', err);\n        };\n      }\n    } catch (e) {\n      console.warn('[AutoMeshLOD3D] Could not initialize Web Worker, falling back to sync:', e);\n      workerInstance = null;\n    }\n\n    return workerInstance;\n  }\n\n  function requestDecimation(geometryData, ratios, preserveSeams = true) {\n    return new Promise((resolve, reject) => {\n      const worker = getOrCreateWorker();\n      const jobId = nextJobId++;\n\n      if (worker) {\n        pendingJobs.set(jobId, { resolve, reject });\n\n        const transferable = [];\n        if (geometryData.positions && geometryData.positions.buffer) transferable.push(geometryData.positions.buffer);\n        if (geometryData.indices && geometryData.indices.buffer) transferable.push(geometryData.indices.buffer);\n        if (geometryData.uvs && geometryData.uvs.buffer) transferable.push(geometryData.uvs.buffer);\n        if (geometryData.normals && geometryData.normals.buffer) transferable.push(geometryData.normals.buffer);\n\n        worker.postMessage({\n          type: 'DECIMATE_REQUEST',\n          jobId,\n          geometry: geometryData,\n          ratios,\n          preserveSeams,\n        }, transferable);\n      } else {\n        // Synchronous fallback via local AutoMeshDecimator\n        try {\n          const decimator = typeof self !== 'undefined' && self.AutoMeshDecimator\n            ? self.AutoMeshDecimator\n            : (typeof globalThis !== 'undefined' && globalThis.AutoMeshDecimator ? globalThis.AutoMeshDecimator : null);\n\n          if (!decimator) {\n            return reject(new Error('No decimator engine available.'));\n          }\n\n          const lodResults = decimator.decimate({\n            positions: geometryData.positions,\n            indices: geometryData.indices,\n            uvs: geometryData.uvs,\n            normals: geometryData.normals,\n            ratios,\n            preserveSeams,\n          });\n\n          resolve({\n            jobId,\n            lodIndices: lodResults,\n            originalTriangles: geometryData.indices.length / 3,\n            executionTimeMs: 0,\n          });\n        } catch (err) {\n          reject(err);\n        }\n      }\n    });\n  }\n\n  /**\n   * Behavior State per 3D Object Instance\n   */\n  const behaviorStates = new WeakMap();\n\n  class AutoMeshLODState {\n    constructor(instance, behaviorData) {\n      this.instance = instance;\n      this.lod1Distance = behaviorData.LOD1Distance !== undefined ? Number(behaviorData.LOD1Distance) : 25.0;\n      this.lod1Reduction = behaviorData.LOD1Reduction !== undefined ? Number(behaviorData.LOD1Reduction) : 50.0;\n      this.lod2Distance = behaviorData.LOD2Distance !== undefined ? Number(behaviorData.LOD2Distance) : 60.0;\n      this.lod2Reduction = behaviorData.LOD2Reduction !== undefined ? Number(behaviorData.LOD2Reduction) : 80.0;\n      this.shadowCutoff = behaviorData.ShadowCutoff !== undefined ? Number(behaviorData.ShadowCutoff) : 40.0;\n\n      // Forced LOD Override (-1 = auto, 0 = base, 1 = LOD1, 2 = LOD2)\n      this.forcedLOD = -1;\n      this.currentLOD = 0;\n      this.isDecimationComplete = false;\n      this.isDecimating = false;\n\n      // Triangle Counts\n      this.originalTriangles = 0;\n      this.currentTriangles = 0;\n\n      // Stored Three.js BufferAttributes for rapid zero-cost swapping\n      this.lodAttributes = {\n        0: null,\n        1: null,\n        2: null,\n      };\n\n      this._targetMesh = null;\n      this._initialized = false;\n    }\n\n    findThreeMesh(threeObject) {\n      if (!threeObject) return null;\n      if (threeObject.isMesh && threeObject.geometry) return threeObject;\n\n      let found = null;\n      threeObject.traverse((child) => {\n        if (!found && child.isMesh && child.geometry) {\n          found = child;\n        }\n      });\n      return found;\n    }\n\n    initMesh(runtimeScene) {\n      if (this._initialized || this.isDecimating) return;\n\n      const obj = this.instance.owner;\n      if (!obj) return;\n\n      const renderer = typeof obj.getRenderer === 'function' ? obj.getRenderer() : null;\n      const threeObj = renderer && typeof renderer.getThreeObject === 'function' ? renderer.getThreeObject() : null;\n      const mesh = this.findThreeMesh(threeObj);\n      if (!mesh || !mesh.geometry) return;\n\n      this._targetMesh = mesh;\n      const geo = mesh.geometry;\n\n      const posAttr = geo.getAttribute('position');\n      const indexAttr = geo.getIndex();\n      if (!posAttr || !indexAttr) return;\n\n      this.originalTriangles = indexAttr.count / 3;\n      this.currentTriangles = this.originalTriangles;\n      this.lodAttributes[0] = indexAttr;\n\n      const ratio1 = Math.max(0.05, 1.0 - (this.lod1Reduction / 100.0));\n      const ratio2 = Math.max(0.02, 1.0 - (this.lod2Reduction / 100.0));\n\n      const geometryData = {\n        positions: new Float32Array(posAttr.array),\n        indices: new Uint32Array(indexAttr.array),\n        uvs: geo.getAttribute('uv') ? new Float32Array(geo.getAttribute('uv').array) : undefined,\n        normals: geo.getAttribute('normal') ? new Float32Array(geo.getAttribute('normal').array) : undefined,\n      };\n\n      this.isDecimating = true;\n      this._initialized = true;\n\n      requestDecimation(geometryData, [ratio1, ratio2], true)\n        .then((result) => {\n          this.isDecimating = false;\n          this.isDecimationComplete = true;\n\n          const lod1Arr = result.lodIndices[ratio1];\n          const lod2Arr = result.lodIndices[ratio2];\n\n          // Check if THREE is globally available\n          const THREE = typeof globalThis.THREE !== 'undefined' ? globalThis.THREE : (typeof window !== 'undefined' ? window.THREE : null);\n          if (THREE && THREE.BufferAttribute) {\n            if (lod1Arr) this.lodAttributes[1] = new THREE.BufferAttribute(lod1Arr, 1);\n            if (lod2Arr) this.lodAttributes[2] = new THREE.BufferAttribute(lod2Arr, 1);\n          } else {\n            // Fallback lightweight attribute wrapper\n            if (lod1Arr) this.lodAttributes[1] = { array: lod1Arr, count: lod1Arr.length };\n            if (lod2Arr) this.lodAttributes[2] = { array: lod2Arr, count: lod2Arr.length };\n          }\n        })\n        .catch((err) => {\n          this.isDecimating = false;\n          console.warn('[AutoMeshLOD3D] Decimation error:', err);\n        });\n    }\n\n    setLODLevel(level) {\n      this.currentLOD = level;\n      const mesh = this._targetMesh;\n      if (!mesh || !mesh.geometry) return;\n\n      const targetAttr = this.lodAttributes[level] || this.lodAttributes[0];\n      if (targetAttr) {\n        if (typeof mesh.geometry.setIndex === 'function') {\n          mesh.geometry.setIndex(targetAttr);\n        } else {\n          mesh.geometry.index = targetAttr;\n        }\n        this.currentTriangles = targetAttr.count ? targetAttr.count / 3 : (targetAttr.array ? targetAttr.array.length / 3 : this.originalTriangles);\n      }\n    }\n\n    step(runtimeScene) {\n      if (!this._initialized) {\n        this.initMesh(runtimeScene);\n      }\n\n      if (this.forcedLOD >= 0) {\n        this.setLODLevel(this.forcedLOD);\n        return;\n      }\n\n      const obj = this.instance.owner;\n      if (!obj) return;\n\n      const layer = runtimeScene.getLayer('');\n      const renderer = layer ? layer.getRenderer() : (runtimeScene.getRenderer ? runtimeScene.getRenderer() : null);\n      const threeCamera = renderer && typeof renderer.getThreeCamera === 'function' ? renderer.getThreeCamera() : null;\n      if (!threeCamera) return;\n\n      const posX = typeof obj.getX === 'function' ? obj.getX() : 0;\n      const posY = typeof obj.getY === 'function' ? obj.getY() : 0;\n      const posZ = typeof obj.getZ === 'function' ? obj.getZ() : 0;\n\n      const dx = posX - threeCamera.position.x;\n      const dy = posY - threeCamera.position.y;\n      const dz = posZ - threeCamera.position.z;\n      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);\n\n      // Evaluate Shadow Cutoff\n      if (this._targetMesh) {\n        this._targetMesh.castShadow = dist <= this.shadowCutoff;\n      }\n\n      // Evaluate LOD Distance with 10% Hysteresis\n      const h1 = this.lod1Distance * 1.1;\n      const h2 = this.lod2Distance * 1.1;\n\n      if (dist >= this.lod2Distance) {\n        this.setLODLevel(2);\n      } else if (dist >= this.lod1Distance && (this.currentLOD !== 2 || dist < h2)) {\n        this.setLODLevel(1);\n      } else if (dist < this.lod1Distance && (this.currentLOD !== 1 || dist < h1)) {\n        this.setLODLevel(0);\n      }\n    }\n  }\n\n  /**\n   * HLOD Cluster Baker Module for WorldPartition3D\n   */\n  NS.bakeHLODCluster = async function (objectList, targetTriangleBudget = 1000) {\n    if (!objectList || objectList.length === 0) return null;\n\n    const mergedPositions = [];\n    const mergedNormals = [];\n    const mergedUvs = [];\n    const mergedIndices = [];\n    let vertexOffset = 0;\n\n    for (let i = 0; i < objectList.length; i++) {\n      const obj = objectList[i];\n      if (!obj) continue;\n\n      const renderer = typeof obj.getRenderer === 'function' ? obj.getRenderer() : null;\n      const threeObj = renderer && typeof renderer.getThreeObject === 'function' ? renderer.getThreeObject() : null;\n      if (!threeObj) continue;\n\n      threeObj.updateMatrixWorld(true);\n\n      threeObj.traverse((child) => {\n        if (child.isMesh && child.geometry) {\n          const geo = child.geometry;\n          const posAttr = geo.getAttribute('position');\n          const normAttr = geo.getAttribute('normal');\n          const uvAttr = geo.getAttribute('uv');\n          const indexAttr = geo.getIndex();\n\n          if (!posAttr || !indexAttr) return;\n\n          const matrix = child.matrixWorld;\n\n          for (let v = 0; v < posAttr.count; v++) {\n            const x = posAttr.getX(v);\n            const y = posAttr.getY(v);\n            const z = posAttr.getZ(v);\n\n            // Transform to world space\n            if (matrix && matrix.elements) {\n              const e = matrix.elements;\n              const tx = e[0] * x + e[4] * y + e[8] * z + e[12];\n              const ty = e[1] * x + e[5] * y + e[9] * z + e[13];\n              const tz = e[2] * x + e[6] * y + e[10] * z + e[14];\n              mergedPositions.push(tx, ty, tz);\n            } else {\n              mergedPositions.push(x, y, z);\n            }\n\n            if (normAttr) {\n              mergedNormals.push(normAttr.getX(v), normAttr.getY(v), normAttr.getZ(v));\n            } else {\n              mergedNormals.push(0, 1, 0);\n            }\n\n            if (uvAttr) {\n              mergedUvs.push(uvAttr.getX(v), uvAttr.getY(v));\n            } else {\n              mergedUvs.push(0, 0);\n            }\n          }\n\n          for (let idx = 0; idx < indexAttr.count; idx++) {\n            mergedIndices.push(indexAttr.getX(idx) + vertexOffset);\n          }\n\n          vertexOffset += posAttr.count;\n        }\n      });\n    }\n\n    if (mergedIndices.length === 0) return null;\n\n    const totalTris = mergedIndices.length / 3;\n    const targetRatio = Math.min(1.0, Math.max(0.01, targetTriangleBudget / totalTris));\n\n    const geometryData = {\n      positions: new Float32Array(mergedPositions),\n      indices: new Uint32Array(mergedIndices),\n      uvs: new Float32Array(mergedUvs),\n      normals: new Float32Array(mergedNormals),\n    };\n\n    const decimation = await requestDecimation(geometryData, [targetRatio], true);\n    return {\n      positions: geometryData.positions,\n      normals: geometryData.normals,\n      uvs: geometryData.uvs,\n      indices: decimation.lodIndices[targetRatio],\n      originalTriangles: totalTris,\n      decimatedTriangles: decimation.lodIndices[targetRatio].length / 3,\n    };\n  };\n\n  NS.getState = function (behavior) {\n    if (!behavior) return null;\n    let state = behaviorStates.get(behavior);\n    if (!state) {\n      state = new AutoMeshLODState(behavior, behavior._data || {});\n      behaviorStates.set(behavior, state);\n    }\n    return state;\n  };\n\n  NS.AutoMeshLODState = AutoMeshLODState;\n})();\n\nif (typeof gdjs.__autoMeshLOD3D === 'undefined') return;\ngdjs.__autoMeshLOD3D.getState(behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPostEvents",
+          "fullName": "Post-events step",
+          "sentence": "",
+          "description": "Evaluates camera distance and applies zero-cost shared index buffer LOD swapping.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (typeof gdjs.__autoMeshLOD3D === 'undefined') return;\nconst state = gdjs.__autoMeshLOD3D.getState(behavior);\nif (state) state.step(runtimeScene);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "On Destroyed",
+          "sentence": "",
+          "description": "Cleans up LOD buffer attributes.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "// Clean up state\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetLODDistance",
+          "fullName": "Set LOD distance",
+          "sentence": "Set LOD distance on _PARAM0_ (Level: _PARAM1_, Distance: _PARAM2_)",
+          "description": "Dynamically updates the transition distance in meters for a specific LOD tier (1 or 2).",
+          "functionType": "Action",
+          "group": "LOD Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Level",
+              "type": "expression",
+              "description": "LOD Level (1 or 2)",
+              "defaultValue": "1"
+            },
+            {
+              "name": "Distance",
+              "type": "expression",
+              "description": "Transition distance in meters (e.g. 35.0)",
+              "defaultValue": "35.0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\nconst lvl = Number(eventsFunctionContext.getArgument(\"Level\"));\nconst dist = Number(eventsFunctionContext.getArgument(\"Distance\"));\nif (lvl === 1) state.lod1Distance = dist;\nelse if (lvl === 2) state.lod2Distance = dist;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ForceLODLevel",
+          "fullName": "Force LOD level override",
+          "sentence": "Force LOD level on _PARAM0_ to _PARAM1_",
+          "description": "Manually overrides the active LOD level (-1 = Auto, 0 = Base/Full, 1 = LOD1, 2 = LOD2).",
+          "functionType": "Action",
+          "group": "LOD Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Level",
+              "type": "expression",
+              "description": "LOD tier (-1 for Auto, 0 for Base, 1 for LOD1, 2 for LOD2)",
+              "defaultValue": "-1"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\nconst lvl = Number(eventsFunctionContext.getArgument(\"Level\"));\nstate.forcedLOD = lvl;\nif (lvl >= 0) state.setLODLevel(lvl);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "BakeHLODCluster",
+          "fullName": "Bake HLOD cluster from objects",
+          "sentence": "Bake HLOD cluster from objects into proxy on _PARAM0_",
+          "description": "Merges and decimates multiple static prop meshes into a unified single-mesh proxy for WorldPartition3D.",
+          "functionType": "Action",
+          "group": "HLOD Tools",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "TriangleBudget",
+              "type": "expression",
+              "description": "Target triangle count budget for cluster (e.g. 1000)",
+              "defaultValue": "1000"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\nconst budget = Number(eventsFunctionContext.getArgument(\"TriangleBudget\")) || 1000;\nconst sceneObjects = runtimeScene.getAdhocListOfAllInstances ? runtimeScene.getAdhocListOfAllInstances() : [];\nAML.bakeHLODCluster(sceneObjects, budget);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsLODLevel",
+          "fullName": "Is LOD level active",
+          "sentence": "Is LOD level active on _PARAM0_ (Level: _PARAM1_)",
+          "description": "Checks if the object is currently rendering at the specified LOD level (0, 1, or 2).",
+          "functionType": "Condition",
+          "group": "LOD Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Level",
+              "type": "expression",
+              "description": "LOD level to check (0, 1, or 2)",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\nconst lvl = Number(eventsFunctionContext.getArgument(\"Level\"));\neventsFunctionContext.returnValue = state ? state.currentLOD === lvl : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsDecimationComplete",
+          "fullName": "Is background decimation complete",
+          "sentence": "Is background decimation complete on _PARAM0_",
+          "description": "Returns true once the background Web Worker finishes generating index buffers.",
+          "functionType": "Condition",
+          "group": "LOD Control",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\neventsFunctionContext.returnValue = state ? state.isDecimationComplete : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentLODLevel",
+          "fullName": "Current LOD level",
+          "sentence": "Get current LOD level on _PARAM0_",
+          "description": "Returns the active LOD level index (0 = Base, 1 = LOD1, 2 = LOD2).",
+          "functionType": "Expression",
+          "group": "LOD Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\neventsFunctionContext.returnValue = state ? state.currentLOD : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentTriangleCount",
+          "fullName": "Current triangle count",
+          "sentence": "Get live rendered triangle count on _PARAM0_",
+          "description": "Returns the number of triangles currently being rendered for this model.",
+          "functionType": "Expression",
+          "group": "LOD Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\neventsFunctionContext.returnValue = state ? state.currentTriangles : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "OriginalTriangleCount",
+          "fullName": "Original triangle count",
+          "sentence": "Get original baseline triangle count on _PARAM0_",
+          "description": "Returns the un-decimated baseline triangle count of the base 3D model.",
+          "functionType": "Expression",
+          "group": "LOD Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __amlObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __amlObjects.length ? __amlObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__autoMeshLOD3D) return;\nconst AML = gdjs.__autoMeshLOD3D;\nconst state = AML.getState(behavior);\neventsFunctionContext.returnValue = state ? state.originalTriangles : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "eventsFunctions": [],
+  "globalVariables": [],
+  "sceneVariables": []
+}

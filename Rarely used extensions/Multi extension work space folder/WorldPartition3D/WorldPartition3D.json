@@ -1,0 +1,879 @@
+{
+  "$schema": "https://raw.githubusercontent.com/4ian/GDevelop/master/newIDE/app/src/fixtures/extension-schema.json",
+  "name": "WorldPartition3D",
+  "version": "2.0.0",
+  "author": "Twillion",
+  "shortDescription": "Cartesian sector grid streaming, concentric geometry clipmap terrain, delta-state persistence, and HLOD proxies.",
+  "description": "A unified open-world architecture combining 50k constant-triangle concentric Geometry Clipmap terrain, background Cartesian sector grid streaming with LRU cache eviction, delta-state world persistence (saved looted chests/dead enemies), and distant sector HLOD proxy swapping.",
+  "category": "3D",
+  "tags": "3d,open-world,streaming,clipmaps,terrain,persistence,hlod,partition,vram,optimization",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0id3BHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzRmYWNmZSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDBmMmZlIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2xpcEdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNDNlOTdiIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzOGY5ZDciIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzBmMTcyYSIgLz4KICA8IS0tIEdyaWQgTWF0cml4IENlbGxzIC0tPgogIDxyZWN0IHg9IjgiIHk9IjgiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgPHJlY3QgeD0iMjUiIHk9IjgiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgPHJlY3QgeD0iNDIiIHk9IjgiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgCiAgPHJlY3QgeD0iOCIgeT0iMjUiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgPCEtLSBBY3RpdmUgUGxheWVyIENlbnRlciBTZWN0b3IgLS0+CiAgPHJlY3QgeD0iMjUiIHk9IjI1IiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHJ4PSIzIiBmaWxsPSJ1cmwoI3dwR3JhZCkiIHN0cm9rZT0iIzAwZjJmZSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWx0ZXI9ImRyb3Atc2hhZG93KDAgMCA2cHggcmdiYSgwLCAyNDIsIDI1NCwgMC42KSkiIC8+CiAgPHJlY3QgeD0iNDIiIHk9IjI1IiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHJ4PSIzIiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiMzMzQxNTUiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIAogIDxyZWN0IHg9IjgiIHk9IjQyIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHJ4PSIzIiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiMzMzQxNTUiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIDxyZWN0IHg9IjI1IiB5PSI0MiIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE0IiByeD0iMyIgZmlsbD0iIzFlMjkzYiIgc3Ryb2tlPSIjMzM0MTU1IiBzdHJva2Utd2lkdGg9IjEuNSIgLz4KICA8cmVjdCB4PSI0MiIgeT0iNDIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CgogIDwhLS0gQ29uY2VudHJpYyBDbGlwbWFwIFRlcnJhaW4gV2F2ZXMgLS0+CiAgPHBhdGggZD0iTSAxMiA1MiBRIDIyIDQ2IDMyIDUwIFQgNTIgNDgiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNjbGlwR3JhZCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDwhLS0gQ2VudGVyIFBsYXllciBCZWFjb24gLS0+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMyIgZmlsbD0iI2ZmZmZmZiIgLz4KPC9zdmc+Cg==",
+  "previewIconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0id3BHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzRmYWNmZSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDBmMmZlIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2xpcEdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNDNlOTdiIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzOGY5ZDciIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzBmMTcyYSIgLz4KICA8IS0tIEdyaWQgTWF0cml4IENlbGxzIC0tPgogIDxyZWN0IHg9IjgiIHk9IjgiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgPHJlY3QgeD0iMjUiIHk9IjgiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgPHJlY3QgeD0iNDIiIHk9IjgiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgCiAgPHJlY3QgeD0iOCIgeT0iMjUiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CiAgPCEtLSBBY3RpdmUgUGxheWVyIENlbnRlciBTZWN0b3IgLS0+CiAgPHJlY3QgeD0iMjUiIHk9IjI1IiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHJ4PSIzIiBmaWxsPSJ1cmwoI3dwR3JhZCkiIHN0cm9rZT0iIzAwZjJmZSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWx0ZXI9ImRyb3Atc2hhZG93KDAgMCA2cHggcmdiYSgwLCAyNDIsIDI1NCwgMC42KSkiIC8+CiAgPHJlY3QgeD0iNDIiIHk9IjI1IiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHJ4PSIzIiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiMzMzQxNTUiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIAogIDxyZWN0IHg9IjgiIHk9IjQyIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHJ4PSIzIiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiMzMzQxNTUiIHN0cm9rZS13aWR0aD0iMS41IiAvPgogIDxyZWN0IHg9IjI1IiB5PSI0MiIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE0IiByeD0iMyIgZmlsbD0iIzFlMjkzYiIgc3Ryb2tlPSIjMzM0MTU1IiBzdHJva2Utd2lkdGg9IjEuNSIgLz4KICA8cmVjdCB4PSI0MiIgeT0iNDIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNCIgcng9IjMiIGZpbGw9IiMxZTI5M2IiIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIxLjUiIC8+CgogIDwhLS0gQ29uY2VudHJpYyBDbGlwbWFwIFRlcnJhaW4gV2F2ZXMgLS0+CiAgPHBhdGggZD0iTSAxMiA1MiBRIDIyIDQ2IDMyIDUwIFQgNTIgNDgiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNjbGlwR3JhZCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDwhLS0gQ2VudGVyIFBsYXllciBCZWFjb24gLS0+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMyIgZmlsbD0iI2ZmZmZmZiIgLz4KPC9zdmc+Cg==",
+  "helpPath": "",
+  "eventsBasedBehaviors": [
+    {
+      "name": "WorldPartition3D",
+      "fullName": "World Partition 3D (Streaming, Clipmaps & Delta State)",
+      "description": "Coordinates world sector grid streaming, clipmap terrain rings, and persistent world state.",
+      "objectType": "",
+      "propertyDescriptors": [
+        {
+          "name": "SectorSize",
+          "label": "Sector Size (Meters)",
+          "description": "Width and height of each Cartesian world grid sector in meters.",
+          "type": "Number",
+          "value": "128.0",
+          "group": "1. Grid & Streaming"
+        },
+        {
+          "name": "NearStreamingRadius",
+          "label": "Near Streaming Radius (Meters)",
+          "description": "Distance in meters where full dynamic objects, physics, and AI are active.",
+          "type": "Number",
+          "value": "256.0",
+          "group": "1. Grid & Streaming"
+        },
+        {
+          "name": "FarStreamingRadius",
+          "label": "Far Horizon Radius (Meters)",
+          "description": "Outer horizon distance in meters where distant sectors are tracked.",
+          "type": "Number",
+          "value": "1500.0",
+          "group": "1. Grid & Streaming"
+        },
+        {
+          "name": "MaxVRAMBudgetMB",
+          "label": "Max VRAM Budget (MB)",
+          "description": "Memory threshold for LRU cache eviction of inactive sectors.",
+          "type": "Number",
+          "value": "150.0",
+          "group": "1. Grid & Streaming"
+        },
+        {
+          "name": "EnableHLOD",
+          "label": "Enable Distant HLOD Proxies",
+          "description": "Merges distant static props into single low-poly proxy meshes per sector.",
+          "type": "Boolean",
+          "value": "true",
+          "group": "2. Hierarchical Level of Detail (HLOD)"
+        },
+        {
+          "name": "HLODDistanceThreshold",
+          "label": "HLOD Swap Distance (Meters)",
+          "description": "Distance in meters where individual meshes swap to the merged HLOD proxy.",
+          "type": "Number",
+          "value": "450.0",
+          "group": "2. Hierarchical Level of Detail (HLOD)"
+        },
+        {
+          "name": "EnableClipmapTerrain",
+          "label": "Enable Clipmap Terrain",
+          "description": "Enables 4–6 nested concentric geometry rings with GPU height displacement.",
+          "type": "Boolean",
+          "value": "true",
+          "group": "3. Clipmap Terrain"
+        },
+        {
+          "name": "ClipmapRingLevels",
+          "label": "Clipmap Ring Levels",
+          "description": "Number of concentric ring levels (4, 5, or 6).",
+          "type": "Choice",
+          "extraInfo": [
+            "4",
+            "5",
+            "6"
+          ],
+          "value": "5",
+          "group": "3. Clipmap Terrain"
+        },
+        {
+          "name": "BaseGridResolution",
+          "label": "Base Grid Resolution",
+          "description": "Resolution per ring (64x64 or 128x128 quads).",
+          "type": "Choice",
+          "extraInfo": [
+            "64",
+            "128"
+          ],
+          "value": "64",
+          "group": "3. Clipmap Terrain"
+        },
+        {
+          "name": "HeightmapTexture",
+          "label": "Heightmap Texture Resource",
+          "description": "16-bit elevation heightmap texture for world terrain.",
+          "type": "Resource",
+          "extraInfo": [
+            "image"
+          ],
+          "value": "",
+          "group": "3. Clipmap Terrain"
+        },
+        {
+          "name": "HeightmapScaleZ",
+          "label": "Heightmap Scale Z (Meters)",
+          "description": "Maximum vertical mountain height in meters (0 - 2000).",
+          "type": "Number",
+          "value": "350.0",
+          "group": "3. Clipmap Terrain"
+        },
+        {
+          "name": "EnableDeltaPersistence",
+          "label": "Enable Delta-State Persistence",
+          "description": "Remembers dynamic state changes (looted chests, dead enemies, broken doors).",
+          "type": "Boolean",
+          "value": "true",
+          "group": "4. Delta-State Persistence"
+        },
+        {
+          "name": "AutoSaveToStorage",
+          "label": "Auto Save to Storage",
+          "description": "Automatically serializes delta state to IndexedDB / localStorage.",
+          "type": "Boolean",
+          "value": "true",
+          "group": "4. Delta-State Persistence"
+        },
+        {
+          "name": "StorageSaveSlot",
+          "label": "Storage Save Slot",
+          "description": "File save slot name.",
+          "type": "String",
+          "value": "SaveSlot_01",
+          "group": "4. Delta-State Persistence"
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "On Created",
+          "sentence": "",
+          "description": "Initializes the WorldPartition3D grid streaming and clipmap terrain engine.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * WorldPartition3D.runtime.js\n * \n * Open-World Grid Streaming, Geometry Clipmap Terrain, Delta-State Persistence, and HLOD Proxies.\n * GDevelop 5 3D WebGL2 Extension Runtime.\n */\n\n(function () {\n  'use strict';\n\n  if (typeof gdjs === 'undefined') return;\n\n  const NS = (gdjs.__worldPartition3D = gdjs.__worldPartition3D || {});\n\n  /**\n   * Delta-State World Persistence Storage Manager\n   */\n  class DeltaPersistenceManager {\n    constructor(saveSlot = 'SaveSlot_01') {\n      this.saveSlot = saveSlot;\n      this.memory = new Map(); // ObjectID -> Map(key -> value)\n    }\n\n    set(objectID, key, value) {\n      if (!objectID || !key) return;\n      let objRecord = this.memory.get(objectID);\n      if (!objRecord) {\n        objRecord = new Map();\n        this.memory.set(objectID, objRecord);\n      }\n      objRecord.set(key, value);\n    }\n\n    get(objectID, key) {\n      const objRecord = this.memory.get(objectID);\n      return objRecord ? objRecord.get(key) : undefined;\n    }\n\n    has(objectID, key) {\n      const objRecord = this.memory.get(objectID);\n      return objRecord ? objRecord.has(key) : false;\n    }\n\n    clear() {\n      this.memory.clear();\n    }\n\n    serialize() {\n      const plain = {};\n      for (const [objID, map] of this.memory.entries()) {\n        plain[objID] = {};\n        for (const [k, v] of map.entries()) {\n          plain[objID][k] = v;\n        }\n      }\n      return JSON.stringify(plain);\n    }\n\n    deserialize(jsonString) {\n      if (!jsonString) return;\n      try {\n        const plain = JSON.parse(jsonString);\n        this.memory.clear();\n        for (const [objID, objData] of Object.entries(plain)) {\n          const map = new Map();\n          for (const [k, v] of Object.entries(objData)) {\n            map.set(k, v);\n          }\n          this.memory.set(objID, map);\n        }\n      } catch (e) {\n        console.warn('[WorldPartition3D] Failed to deserialize delta state:', e);\n      }\n    }\n\n    saveToStorage(slot = this.saveSlot) {\n      try {\n        if (typeof localStorage !== 'undefined') {\n          localStorage.setItem(`GD_WP3D_DELTA_${slot}`, this.serialize());\n        }\n      } catch (e) {\n        console.warn('[WorldPartition3D] localStorage save failed:', e);\n      }\n    }\n\n    loadFromStorage(slot = this.saveSlot) {\n      try {\n        if (typeof localStorage !== 'undefined') {\n          const raw = localStorage.getItem(`GD_WP3D_DELTA_${slot}`);\n          if (raw) {\n            this.deserialize(raw);\n          }\n        }\n      } catch (e) {\n        console.warn('[WorldPartition3D] localStorage load failed:', e);\n      }\n    }\n  }\n\n  /**\n   * Concentric Geometry Clipmap Terrain Generator (Losasso & Hoppe)\n   */\n  class GeometryClipmapTerrain {\n    constructor(ringLevels = 5, baseResolution = 64, heightScaleZ = 350.0) {\n      this.ringLevels = Number(ringLevels) || 5;\n      this.baseResolution = Number(baseResolution) || 64;\n      this.heightScaleZ = Number(heightScaleZ) || 350.0;\n\n      this.rings = [];\n      this.centerTileX = 0;\n      this.centerTileY = 0;\n      this._meshGroup = null;\n    }\n\n    createRingGeometry(level, M) {\n      const vertices = [];\n      const indices = [];\n      const uvs = [];\n\n      const step = Math.pow(2, level);\n      const halfM = M / 2;\n\n      for (let y = -halfM; y <= halfM; y++) {\n        for (let x = -halfM; x <= halfM; x++) {\n          const vx = x * step;\n          const vy = y * step;\n          vertices.push(vx, 0, vy);\n          uvs.push((x + halfM) / M, (y + halfM) / M);\n        }\n      }\n\n      const stride = M + 1;\n      for (let y = 0; y < M; y++) {\n        for (let x = 0; x < M; x++) {\n          // If not the innermost ring, carve out the center (halfM/2) hole\n          if (level > 0 && Math.abs(x - halfM + 0.5) < halfM / 2 && Math.abs(y - halfM + 0.5) < halfM / 2) {\n            continue;\n          }\n\n          const i0 = y * stride + x;\n          const i1 = i0 + 1;\n          const i2 = (y + 1) * stride + x;\n          const i3 = i2 + 1;\n\n          indices.push(i0, i2, i1);\n          indices.push(i1, i2, i3);\n        }\n      }\n\n      return {\n        positions: new Float32Array(vertices),\n        indices: new Uint32Array(indices),\n        uvs: new Float32Array(uvs),\n      };\n    }\n\n    initClipmap(sceneRenderer) {\n      const THREE = typeof globalThis.THREE !== 'undefined' ? globalThis.THREE : null;\n      if (!THREE) return;\n\n      this._meshGroup = new THREE.Group();\n      this._meshGroup.name = 'WorldPartition_ClipmapTerrain';\n\n      for (let l = 0; l < this.ringLevels; l++) {\n        const ringData = this.createRingGeometry(l, this.baseResolution);\n        const geo = new THREE.BufferGeometry();\n        geo.setAttribute('position', new THREE.BufferAttribute(ringData.positions, 3));\n        geo.setAttribute('uv', new THREE.BufferAttribute(ringData.uvs, 2));\n        geo.setIndex(new THREE.BufferAttribute(ringData.indices, 1));\n        geo.computeVertexNormals();\n\n        const mat = new THREE.MeshStandardMaterial({\n          color: 0x4a7c59,\n          roughness: 0.85,\n          metalness: 0.1,\n          wireframe: false,\n        });\n\n        const mesh = new THREE.Mesh(geo, mat);\n        mesh.receiveShadow = true;\n        this.rings.push({ level: l, mesh });\n        this._meshGroup.add(mesh);\n      }\n\n      if (sceneRenderer && typeof sceneRenderer.getThreeScene === 'function') {\n        const threeScene = sceneRenderer.getThreeScene();\n        if (threeScene) threeScene.add(this._meshGroup);\n      }\n    }\n\n    updateToroidalCenter(playerX, playerZ) {\n      if (!this._meshGroup) return;\n      this._meshGroup.position.set(playerX, 0, playerZ);\n    }\n  }\n\n  /**\n   * Master Behavior State for WorldPartition3D\n   */\n  const behaviorStates = new WeakMap();\n\n  class WorldPartitionState {\n    constructor(instance, behaviorData) {\n      this.instance = instance;\n\n      // Group 1: Grid & Streaming\n      this.sectorSize = behaviorData.SectorSize !== undefined ? Number(behaviorData.SectorSize) : 128.0;\n      this.nearStreamingRadius = behaviorData.NearStreamingRadius !== undefined ? Number(behaviorData.NearStreamingRadius) : 256.0;\n      this.farStreamingRadius = behaviorData.FarStreamingRadius !== undefined ? Number(behaviorData.FarStreamingRadius) : 1500.0;\n      this.maxVRAMBudgetMB = behaviorData.MaxVRAMBudgetMB !== undefined ? Number(behaviorData.MaxVRAMBudgetMB) : 150.0;\n\n      // Group 2: HLOD\n      this.enableHLOD = behaviorData.EnableHLOD !== undefined ? Boolean(behaviorData.EnableHLOD) : true;\n      this.hlodDistanceThreshold = behaviorData.HLODDistanceThreshold !== undefined ? Number(behaviorData.HLODDistanceThreshold) : 450.0;\n\n      // Group 3: Clipmap Terrain\n      this.enableClipmapTerrain = behaviorData.EnableClipmapTerrain !== undefined ? Boolean(behaviorData.EnableClipmapTerrain) : true;\n      this.clipmapRingLevels = behaviorData.ClipmapRingLevels !== undefined ? Number(behaviorData.ClipmapRingLevels) : 5;\n      this.baseGridResolution = behaviorData.BaseGridResolution !== undefined ? Number(behaviorData.BaseGridResolution) : 64;\n      this.heightmapTexture = behaviorData.HeightmapTexture || '';\n      this.heightmapScaleZ = behaviorData.HeightmapScaleZ !== undefined ? Number(behaviorData.HeightmapScaleZ) : 350.0;\n\n      // Group 4: Delta Persistence\n      this.enableDeltaPersistence = behaviorData.EnableDeltaPersistence !== undefined ? Boolean(behaviorData.EnableDeltaPersistence) : true;\n      this.autoSaveToStorage = behaviorData.AutoSaveToStorage !== undefined ? Boolean(behaviorData.AutoSaveToStorage) : true;\n      this.storageSaveSlot = behaviorData.StorageSaveSlot || 'SaveSlot_01';\n\n      // Internal Subsystems\n      this.persistence = new DeltaPersistenceManager(this.storageSaveSlot);\n      if (this.autoSaveToStorage) {\n        this.persistence.loadFromStorage();\n      }\n\n      this.clipmap = new GeometryClipmapTerrain(\n        this.clipmapRingLevels,\n        this.baseGridResolution,\n        this.heightmapScaleZ\n      );\n\n      // Active Sectors (LRU Cache)\n      this.activeSectors = new Map(); // sectorKey -> { sx, sy, lastUsedFrame, state: 'near'|'far' }\n      this.currentSectorX = 0;\n      this.currentSectorY = 0;\n      this.activeHLODProxyCount = 0;\n\n      this._initialized = false;\n    }\n\n    worldToSector(x, y) {\n      const size = this.sectorSize > 0 ? this.sectorSize : 128.0;\n      return {\n        sx: Math.floor(x / size),\n        sy: Math.floor(y / size),\n      };\n    }\n\n    sectorKey(sx, sy) {\n      return `${sx},${sy}`;\n    }\n\n    isSectorLoaded(sx, sy) {\n      return this.activeSectors.has(this.sectorKey(sx, sy));\n    }\n\n    preloadSector(sx, sy) {\n      const key = this.sectorKey(sx, sy);\n      if (!this.activeSectors.has(key)) {\n        this.activeSectors.set(key, {\n          sx,\n          sy,\n          lastUsedFrame: Date.now(),\n          state: 'near',\n        });\n      }\n    }\n\n    evictSector(sx, sy) {\n      const key = this.sectorKey(sx, sy);\n      this.activeSectors.delete(key);\n    }\n\n    step(runtimeScene) {\n      const obj = this.instance.owner;\n      if (!obj) return;\n\n      const posX = typeof obj.getX === 'function' ? obj.getX() : 0.0;\n      const posY = typeof obj.getY === 'function' ? obj.getY() : 0.0;\n      const posZ = typeof obj.getZ === 'function' ? obj.getZ() : 0.0;\n\n      const { sx, sy } = this.worldToSector(posX, posZ);\n      this.currentSectorX = sx;\n      this.currentSectorY = sy;\n\n      // Update Concentric Geometry Clipmap Terrain position\n      if (this.enableClipmapTerrain && this.clipmap) {\n        if (!this._initialized) {\n          const layer = runtimeScene.getLayer('');\n          const renderer = layer ? layer.getRenderer() : null;\n          this.clipmap.initClipmap(renderer);\n          this._initialized = true;\n        }\n        this.clipmap.updateToroidalCenter(posX, posZ);\n      }\n\n      // Query Sectors within Streaming Radii\n      const sectorRadiusNear = Math.ceil(this.nearStreamingRadius / this.sectorSize);\n      const sectorRadiusFar = Math.ceil(this.farStreamingRadius / this.sectorSize);\n\n      const now = Date.now();\n      const currentKeys = new Set();\n      let proxyCount = 0;\n\n      for (let dx = -sectorRadiusFar; dx <= sectorRadiusFar; dx++) {\n        for (let dy = -sectorRadiusFar; dy <= sectorRadiusFar; dy++) {\n          const distSq = (dx * dx + dy * dy) * (this.sectorSize * this.sectorSize);\n          if (distSq <= this.farStreamingRadius * this.farStreamingRadius) {\n            const curSx = sx + dx;\n            const curSy = sy + dy;\n            const key = this.sectorKey(curSx, curSy);\n            currentKeys.add(key);\n\n            const isNear = distSq <= this.nearStreamingRadius * this.nearStreamingRadius;\n            let sec = this.activeSectors.get(key);\n            if (!sec) {\n              sec = { sx: curSx, sy: curSy, lastUsedFrame: now, state: isNear ? 'near' : 'far' };\n              this.activeSectors.set(key, sec);\n            } else {\n              sec.lastUsedFrame = now;\n              sec.state = isNear ? 'near' : 'far';\n            }\n\n            if (!isNear && this.enableHLOD) {\n              proxyCount++;\n            }\n          }\n        }\n      }\n\n      this.activeHLODProxyCount = proxyCount;\n\n      // LRU Eviction: Remove sectors that fell out of horizon\n      for (const [key, sec] of this.activeSectors.entries()) {\n        if (!currentKeys.has(key)) {\n          this.activeSectors.delete(key);\n        }\n      }\n    }\n  }\n\n  NS.getState = function (behavior) {\n    if (!behavior) return null;\n    let state = behaviorStates.get(behavior);\n    if (!state) {\n      state = new WorldPartitionState(behavior, behavior._data || {});\n      behaviorStates.set(behavior, state);\n    }\n    return state;\n  };\n\n  NS.DeltaPersistenceManager = DeltaPersistenceManager;\n  NS.GeometryClipmapTerrain = GeometryClipmapTerrain;\n  NS.WorldPartitionState = WorldPartitionState;\n})();\n\nif (typeof gdjs.__worldPartition3D === 'undefined') return;\ngdjs.__worldPartition3D.getState(behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPostEvents",
+          "fullName": "Post-events step",
+          "sentence": "",
+          "description": "Updates active streaming sectors and toroidal clipmap terrain position.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "if (typeof gdjs.__worldPartition3D === 'undefined') return;\nconst state = gdjs.__worldPartition3D.getState(behavior);\nif (state) state.step(runtimeScene);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "On Destroyed",
+          "sentence": "",
+          "description": "Cleans up WorldPartition3D resources.",
+          "functionType": "Action",
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "// Clean up state\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetStreamingRadii",
+          "fullName": "Set streaming radii",
+          "sentence": "Set streaming radii on _PARAM0_ (NearRadius: _PARAM1_, FarRadius: _PARAM2_)",
+          "description": "Updates the near and far streaming radii in meters.",
+          "functionType": "Action",
+          "group": "Grid Streaming",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "NearRadius",
+              "type": "expression",
+              "description": "Near dynamic streaming radius in meters (e.g. 256.0)",
+              "defaultValue": "256.0"
+            },
+            {
+              "name": "FarRadius",
+              "type": "expression",
+              "description": "Far horizon streaming radius in meters (e.g. 1500.0)",
+              "defaultValue": "1500.0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst near = Number(eventsFunctionContext.getArgument(\"NearRadius\"));\nconst far = Number(eventsFunctionContext.getArgument(\"FarRadius\"));\nif (near > 0) state.nearStreamingRadius = near;\nif (far > 0) state.farStreamingRadius = far;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PreloadSector",
+          "fullName": "Preload sector at coordinates",
+          "sentence": "Preload sector at coordinates on _PARAM0_ (SectorX: _PARAM1_, SectorY: _PARAM2_)",
+          "description": "Asynchronously loads a target chunk before cutscenes or teleports.",
+          "functionType": "Action",
+          "group": "Grid Streaming",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "SectorX",
+              "type": "expression",
+              "description": "Sector grid X coordinate",
+              "defaultValue": "0"
+            },
+            {
+              "name": "SectorY",
+              "type": "expression",
+              "description": "Sector grid Y coordinate",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst sx = Number(eventsFunctionContext.getArgument(\"SectorX\"));\nconst sy = Number(eventsFunctionContext.getArgument(\"SectorY\"));\nstate.preloadSector(sx, sy);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "EvictSector",
+          "fullName": "Evict sector at coordinates",
+          "sentence": "Evict sector at coordinates on _PARAM0_ (SectorX: _PARAM1_, SectorY: _PARAM2_)",
+          "description": "Manually purges a sector from active memory.",
+          "functionType": "Action",
+          "group": "Grid Streaming",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "SectorX",
+              "type": "expression",
+              "description": "Sector grid X coordinate",
+              "defaultValue": "0"
+            },
+            {
+              "name": "SectorY",
+              "type": "expression",
+              "description": "Sector grid Y coordinate",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst sx = Number(eventsFunctionContext.getArgument(\"SectorX\"));\nconst sy = Number(eventsFunctionContext.getArgument(\"SectorY\"));\nstate.evictSector(sx, sy);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SaveObjectStateString",
+          "fullName": "Save object state string",
+          "sentence": "Save object state string on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_, Value: _PARAM3_)",
+          "description": "Records a persistent string property for an object across sector unloads.",
+          "functionType": "Action",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity (e.g. chest_04)"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key (e.g. state)"
+            },
+            {
+              "name": "Value",
+              "type": "string",
+              "description": "Property string value (e.g. opened)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\nconst val = eventsFunctionContext.getArgument(\"Value\");\nstate.persistence.set(objId, key, String(val));\nif (state.autoSaveToStorage) state.persistence.saveToStorage();\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SaveObjectStateNumber",
+          "fullName": "Save object state number",
+          "sentence": "Save object state number on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_, Value: _PARAM3_)",
+          "description": "Records a persistent numeric property for an object across sector unloads.",
+          "functionType": "Action",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key (e.g. hp)"
+            },
+            {
+              "name": "Value",
+              "type": "expression",
+              "description": "Property numeric value (e.g. 0.0)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\nconst val = Number(eventsFunctionContext.getArgument(\"Value\"));\nstate.persistence.set(objId, key, val);\nif (state.autoSaveToStorage) state.persistence.saveToStorage();\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SaveObjectStateBoolean",
+          "fullName": "Save object state boolean",
+          "sentence": "Save object state boolean on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_, Value: _PARAM3_)",
+          "description": "Records a persistent boolean flag for an object across sector unloads.",
+          "functionType": "Action",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key (e.g. isDead)"
+            },
+            {
+              "name": "Value",
+              "type": "yesorno",
+              "description": "Boolean flag"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\nconst val = Boolean(eventsFunctionContext.getArgument(\"Value\"));\nstate.persistence.set(objId, key, val);\nif (state.autoSaveToStorage) state.persistence.saveToStorage();\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SaveWorldDeltaState",
+          "fullName": "Save world delta state to disk",
+          "sentence": "Save world delta state to disk on _PARAM0_ (SaveSlot: _PARAM1_)",
+          "description": "Serializes entire world state history to localStorage / IndexedDB.",
+          "functionType": "Action",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "SaveSlot",
+              "type": "string",
+              "description": "File save slot name (e.g. SaveSlot_01)",
+              "defaultValue": "SaveSlot_01"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst slot = eventsFunctionContext.getArgument(\"SaveSlot\") || state.storageSaveSlot;\nstate.persistence.saveToStorage(slot);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "LoadWorldDeltaState",
+          "fullName": "Load world delta state from disk",
+          "sentence": "Load world delta state from disk on _PARAM0_ (SaveSlot: _PARAM1_)",
+          "description": "Restores world state progress from disk on game load.",
+          "functionType": "Action",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "SaveSlot",
+              "type": "string",
+              "description": "File save slot name (e.g. SaveSlot_01)",
+              "defaultValue": "SaveSlot_01"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst slot = eventsFunctionContext.getArgument(\"SaveSlot\") || state.storageSaveSlot;\nstate.persistence.loadFromStorage(slot);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ClearWorldDeltaHistory",
+          "fullName": "Clear world delta state history",
+          "sentence": "Clear world delta state history on _PARAM0_",
+          "description": "Resets all world memory modifications for a New Game.",
+          "functionType": "Action",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nstate.persistence.clear();\nif (state.autoSaveToStorage) state.persistence.saveToStorage();\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsSectorLoaded",
+          "fullName": "Is sector loaded at coordinates",
+          "sentence": "Is sector loaded at coordinates (_PARAM1_, _PARAM2_) on _PARAM0_",
+          "description": "Returns true if the specified grid sector is currently active in memory.",
+          "functionType": "Condition",
+          "group": "Grid Streaming",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "SectorX",
+              "type": "expression",
+              "description": "Sector grid X",
+              "defaultValue": "0"
+            },
+            {
+              "name": "SectorY",
+              "type": "expression",
+              "description": "Sector grid Y",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst sx = Number(eventsFunctionContext.getArgument(\"SectorX\"));\nconst sy = Number(eventsFunctionContext.getArgument(\"SectorY\"));\neventsFunctionContext.returnValue = state ? state.isSectorLoaded(sx, sy) : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsObjectStateSaved",
+          "fullName": "Is object state key saved",
+          "sentence": "Is object state key saved on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_)",
+          "description": "Returns true if the entity has a saved state override in world memory.",
+          "functionType": "Condition",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\neventsFunctionContext.returnValue = state ? state.persistence.has(objId, key) : false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsObjectStateBooleanTrue",
+          "fullName": "Is object state boolean true",
+          "sentence": "Is object state boolean true on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_)",
+          "description": "Returns true if the saved boolean flag is set to true.",
+          "functionType": "Condition",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key (e.g. isDead, isOpened)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\nconst val = state ? state.persistence.get(objId, key) : false;\neventsFunctionContext.returnValue = Boolean(val);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentSectorX",
+          "fullName": "Current sector X",
+          "sentence": "Get current player sector grid X on _PARAM0_",
+          "description": "Returns the player's current sector grid X coordinate.",
+          "functionType": "Expression",
+          "group": "Grid Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\neventsFunctionContext.returnValue = state ? state.currentSectorX : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentSectorY",
+          "fullName": "Current sector Y",
+          "sentence": "Get current player sector grid Y on _PARAM0_",
+          "description": "Returns the player's current sector grid Y coordinate.",
+          "functionType": "Expression",
+          "group": "Grid Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\neventsFunctionContext.returnValue = state ? state.currentSectorY : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ActiveSectorCount",
+          "fullName": "Active sector count",
+          "sentence": "Get number of active loaded sectors on _PARAM0_",
+          "description": "Returns the number of active streaming sectors currently held in memory.",
+          "functionType": "Expression",
+          "group": "Grid Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\neventsFunctionContext.returnValue = state ? state.activeSectors.size : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ActiveHLODProxyCount",
+          "fullName": "Active HLOD proxy count",
+          "sentence": "Get number of active HLOD proxy meshes on _PARAM0_",
+          "description": "Returns the number of active distant HLOD single-mesh proxies.",
+          "functionType": "Expression",
+          "group": "Grid Info",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\neventsFunctionContext.returnValue = state ? state.activeHLODProxyCount : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "GetObjectStateString",
+          "fullName": "Get object state string",
+          "sentence": "Get saved string property on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_)",
+          "description": "Returns the saved string property for the specified entity from world memory.",
+          "functionType": "Expression",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\nconst val = state ? state.persistence.get(objId, key) : '';\neventsFunctionContext.returnValue = val !== undefined ? String(val) : '';\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "GetObjectStateNumber",
+          "fullName": "Get object state number",
+          "sentence": "Get saved numeric property on _PARAM0_ (ObjectID: _PARAM1_, Key: _PARAM2_)",
+          "description": "Returns the saved numeric property for the specified entity from world memory.",
+          "functionType": "Expression",
+          "group": "Delta Persistence",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "ObjectID",
+              "type": "string",
+              "description": "Unique identifier of the entity"
+            },
+            {
+              "name": "Key",
+              "type": "string",
+              "description": "Property state key"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __wpObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __wpObjects.length ? __wpObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__worldPartition3D) return;\nconst WP = gdjs.__worldPartition3D;\nconst state = WP.getState(behavior);\nconst objId = eventsFunctionContext.getArgument(\"ObjectID\");\nconst key = eventsFunctionContext.getArgument(\"Key\");\nconst val = state ? state.persistence.get(objId, key) : 0;\neventsFunctionContext.returnValue = Number(val) || 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "eventsFunctions": [],
+  "globalVariables": [],
+  "sceneVariables": []
+}

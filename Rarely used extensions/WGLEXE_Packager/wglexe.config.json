@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "appName": "GDevelopGame",
+  "version": "1.0.0",
+  "executableName": "Game.exe",
+  "icon": "res/app.ico",
+  "window": {
+    "title": "GDevelop Game (WGLEXE)",
+    "width": 1280,
+    "height": 720,
+    "minWidth": 640,
+    "minHeight": 480,
+    "resizable": true,
+    "fullscreen": false,
+    "borderless": false,
+    "backgroundThrottling": false
+  },
+  "gpu": {
+    "angleBackend": "default",
+    "ignoreGpuBlocklist": false,
+    "disableVsync": false,
+    "enableDraftExtensions": false
+  },
+  "security": {
+    "sharedArrayBuffer": "flag",
+    "nativeBridge": false
+  },
+  "steam": {
+    "enabled": true,
+    "appId": null,
+    "overlayCompat": true,
+    "disableDirectComposition": false,
+    "stripSteamAppIdTxt": true
+  },
+  "native": {
+    "addon": null
+  },
+  "build": {
+    "target": "dir",
+    "runBuilder": true
+  }
+}

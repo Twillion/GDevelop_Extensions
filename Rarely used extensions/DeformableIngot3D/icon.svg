@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="ingotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+  </defs>
+  <!-- Anvil Base -->
+  <path d="M10 52 L54 52 L50 46 L42 44 L44 36 L20 36 L22 44 L14 46 Z" fill="url(#metalGrad)" stroke="#334155" stroke-width="1.5" />
+  <!-- Glowing Ingot on Anvil -->
+  <polygon points="18,34 46,34 50,30 22,30" fill="#fbbf24" />
+  <polygon points="18,34 22,30 22,38 18,42" fill="#d97706" />
+  <polygon points="18,34 46,34 46,42 18,42" fill="url(#ingotGrad)" stroke="#b45309" stroke-width="1" />
+  <!-- Hammer Head & Handle -->
+  <g transform="rotate(-30 42 18)">
+    <rect x="40" y="8" width="16" height="10" rx="1.5" fill="#e2e8f0" stroke="#475569" stroke-width="1.5" />
+    <rect x="46" y="18" width="4" height="24" rx="1" fill="#78350f" />
+  </g>
+  <!-- Spark Particles -->
+  <circle cx="34" cy="24" r="1.5" fill="#fef08a" />
+  <circle cx="28" cy="22" r="1" fill="#f97316" />
+  <circle cx="40" cy="26" r="1.2" fill="#fde047" />
+</svg>

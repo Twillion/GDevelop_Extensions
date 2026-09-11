@@ -1,0 +1,1393 @@
+{
+  "author": "Twillion",
+  "category": "3D",
+  "extensionNamespace": "",
+  "fullName": "External Skeletal Animator 3D",
+  "name": "ExternalSkeletalAnimator3D",
+  "version": "0.3.0",
+  "shortDescription": "Play skeletal animations from separate .glb files on any rigged 3D Model, so one animation library can drive many different characters.",
+  "description": "Animate a rigged 3D Model with clips that live in OTHER .glb files, instead of baking every animation into every character.\n\nBuild one animation library and point every character at it. Clips are matched onto each model's own skeleton by bone name, ignoring rig namespaces such as \"mixamorig:\" and the per-export numbering Mixamo adds, so characters rigged separately still share animations.\n\nCharacters keep their own proportions. A clip authored for a taller character does not stretch a shorter one: bone lengths stay the target's, root motion is rescaled to its height, and only the rotations - the part that is actually the animation - are transferred.\n\nOne .glb can hold many clips; pick one by name or index. Split the skeleton into layers to run with the legs while swinging with the arms. Pin objects to bones, with orientation, for weapons and effects. Match animation speed to how fast the character is really moving so the feet stay planted.\n\nRuns on the animation mixer the engine already owns, so it crossfades with - and takes over from - the object's built-in animations at no extra cost.",
+  "helpPath": "",
+  "iconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+CiAgPCEtLSBFeHRlcm5hbCBTa2VsZXRhbCBBbmltYXRvciAzRDogZXh0ZXJuYWwgY2xpcHMgZmVlZGluZyBhIHJpZyAtLT4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjQ4IiBmaWxsPSIjMTExMTExIi8+CgogIDwhLS0gdGhyZWUgZXh0ZXJuYWwgYW5pbWF0aW9uIGNsaXBzLCBzdGFja2VkIC0tPgogIDxnIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjU1Ij4KICAgIDxsaW5lIHgxPSIyNiIgeTE9IjkyIiAgeDI9IjY2IiB5Mj0iOTIiLz4KICAgIDxsaW5lIHgxPSIyNiIgeTE9IjEyOCIgeDI9IjY2IiB5Mj0iMTI4Ii8+CiAgICA8bGluZSB4MT0iMjYiIHkxPSIxNjQiIHgyPSI2NiIgeTI9IjE2NCIvPgogIDwvZz4KCiAgPCEtLSBhcnJvdzogdGhlIGNsaXBzIGRyaXZlIHRoZSByaWcgLS0+CiAgPGcgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGZpbGw9Im5vbmUiPgogICAgPGxpbmUgeDE9IjgwIiB5MT0iMTI4IiB4Mj0iMTEyIiB5Mj0iMTI4Ii8+CiAgICA8cG9seWxpbmUgcG9pbnRzPSIxMDAsMTE2IDExMiwxMjggMTAwLDE0MCIvPgogIDwvZz4KCiAgPCEtLSB0aGUgcmlnOiBib25lcyBpbiBhIG1pZC1zdHJpZGUgcG9zZSwgam9pbnRzIGNhbGxlZCBvdXQgLS0+CiAgPGcgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjExIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGZpbGw9Im5vbmUiPgogICAgPCEtLSBzcGluZSAtLT4KICAgIDxsaW5lIHgxPSIxODAiIHkxPSI4NiIgeDI9IjE4MCIgeTI9IjE0NiIvPgogICAgPCEtLSBhcm1zIC0tPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjEwMiIgeDI9IjE0NiIgeTI9IjEzMCIvPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjEwMiIgeDI9IjIxNiIgeTI9IjEyNiIvPgogICAgPCEtLSBsZWdzIC0tPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjE0NiIgeDI9IjE1NiIgeTI9IjE4OCIvPgogICAgPGxpbmUgeDE9IjE1NiIgeTE9IjE4OCIgeDI9IjE1MCIgeTI9IjIyNCIvPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjE0NiIgeDI9IjIxMCIgeTI9IjE4NCIvPgogICAgPGxpbmUgeDE9IjIxMCIgeTE9IjE4NCIgeDI9IjIxOCIgeTI9IjIyMiIvPgogIDwvZz4KCiAgPCEtLSBoZWFkIC0tPgogIDxjaXJjbGUgY3g9IjE4MCIgY3k9IjYyIiByPSIxNyIgZmlsbD0iI2ZmZmZmZiIvPgoKICA8IS0tIGpvaW50cyAtLT4KICA8ZyBmaWxsPSIjMTExMTExIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNyI+CiAgICA8Y2lyY2xlIGN4PSIxODAiIGN5PSIxMDIiIHI9IjgiLz4KICAgIDxjaXJjbGUgY3g9IjE4MCIgY3k9IjE0NiIgcj0iOSIvPgogICAgPGNpcmNsZSBjeD0iMTU2IiBjeT0iMTg4IiByPSI4Ii8+CiAgICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxODQiIHI9IjgiLz4KICA8L2c+Cjwvc3ZnPgo=",
+  "previewIconUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+CiAgPCEtLSBFeHRlcm5hbCBTa2VsZXRhbCBBbmltYXRvciAzRDogZXh0ZXJuYWwgY2xpcHMgZmVlZGluZyBhIHJpZyAtLT4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgcng9IjQ4IiBmaWxsPSIjMTExMTExIi8+CgogIDwhLS0gdGhyZWUgZXh0ZXJuYWwgYW5pbWF0aW9uIGNsaXBzLCBzdGFja2VkIC0tPgogIDxnIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjU1Ij4KICAgIDxsaW5lIHgxPSIyNiIgeTE9IjkyIiAgeDI9IjY2IiB5Mj0iOTIiLz4KICAgIDxsaW5lIHgxPSIyNiIgeTE9IjEyOCIgeDI9IjY2IiB5Mj0iMTI4Ii8+CiAgICA8bGluZSB4MT0iMjYiIHkxPSIxNjQiIHgyPSI2NiIgeTI9IjE2NCIvPgogIDwvZz4KCiAgPCEtLSBhcnJvdzogdGhlIGNsaXBzIGRyaXZlIHRoZSByaWcgLS0+CiAgPGcgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGZpbGw9Im5vbmUiPgogICAgPGxpbmUgeDE9IjgwIiB5MT0iMTI4IiB4Mj0iMTEyIiB5Mj0iMTI4Ii8+CiAgICA8cG9seWxpbmUgcG9pbnRzPSIxMDAsMTE2IDExMiwxMjggMTAwLDE0MCIvPgogIDwvZz4KCiAgPCEtLSB0aGUgcmlnOiBib25lcyBpbiBhIG1pZC1zdHJpZGUgcG9zZSwgam9pbnRzIGNhbGxlZCBvdXQgLS0+CiAgPGcgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjExIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGZpbGw9Im5vbmUiPgogICAgPCEtLSBzcGluZSAtLT4KICAgIDxsaW5lIHgxPSIxODAiIHkxPSI4NiIgeDI9IjE4MCIgeTI9IjE0NiIvPgogICAgPCEtLSBhcm1zIC0tPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjEwMiIgeDI9IjE0NiIgeTI9IjEzMCIvPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjEwMiIgeDI9IjIxNiIgeTI9IjEyNiIvPgogICAgPCEtLSBsZWdzIC0tPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjE0NiIgeDI9IjE1NiIgeTI9IjE4OCIvPgogICAgPGxpbmUgeDE9IjE1NiIgeTE9IjE4OCIgeDI9IjE1MCIgeTI9IjIyNCIvPgogICAgPGxpbmUgeDE9IjE4MCIgeTE9IjE0NiIgeDI9IjIxMCIgeTI9IjE4NCIvPgogICAgPGxpbmUgeDE9IjIxMCIgeTE9IjE4NCIgeDI9IjIxOCIgeTI9IjIyMiIvPgogIDwvZz4KCiAgPCEtLSBoZWFkIC0tPgogIDxjaXJjbGUgY3g9IjE4MCIgY3k9IjYyIiByPSIxNyIgZmlsbD0iI2ZmZmZmZiIvPgoKICA8IS0tIGpvaW50cyAtLT4KICA8ZyBmaWxsPSIjMTExMTExIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNyI+CiAgICA8Y2lyY2xlIGN4PSIxODAiIGN5PSIxMDIiIHI9IjgiLz4KICAgIDxjaXJjbGUgY3g9IjE4MCIgY3k9IjE0NiIgcj0iOSIvPgogICAgPGNpcmNsZSBjeD0iMTU2IiBjeT0iMTg4IiByPSI4Ii8+CiAgICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxODQiIHI9IjgiLz4KICA8L2c+Cjwvc3ZnPgo=",
+  "tags": [
+    "3D",
+    "animation",
+    "skeleton",
+    "skeletal",
+    "rig",
+    "bone",
+    "glTF",
+    "glb",
+    "mixamo",
+    "retarget",
+    "animation layer",
+    "bone attachment",
+    "socket",
+    "root motion",
+    "character",
+    "model"
+  ],
+  "authorIds": [],
+  "dependencies": [],
+  "globalVariables": [],
+  "sceneVariables": [],
+  "eventsFunctions": [],
+  "eventsBasedBehaviors": [
+    {
+      "name": "ExternalSkeletalAnimator3D",
+      "fullName": "External Skeletal Animator 3D",
+      "description": "Play animation clips from other .glb files on this model’s skeleton. One file can hold many clips, addressed as (file, clip name). Clips adapt to this character’s proportions.",
+      "objectType": "Scene3D::Model3DObject",
+      "propertyDescriptors": [
+        {
+          "name": "DefaultAnimation",
+          "type": "Resource",
+          "value": "",
+          "label": "Default animation file",
+          "description": "Animation .glb played when the object is created. Leave empty for none.",
+          "extraInformation": [
+            "model3D"
+          ]
+        },
+        {
+          "name": "DefaultClip",
+          "type": "String",
+          "value": "",
+          "label": "Default clip name",
+          "description": "Clip inside the default file. Leave empty to use the first clip."
+        },
+        {
+          "name": "DefaultLoop",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Loop by default",
+          "description": "Loop the default animation."
+        },
+        {
+          "name": "DefaultSpeed",
+          "type": "Number",
+          "value": "1",
+          "label": "Default speed",
+          "description": "Playback speed scale."
+        },
+        {
+          "name": "DefaultCrossfade",
+          "type": "Number",
+          "value": "0.2",
+          "label": "Default crossfade (s)",
+          "description": "Suggested crossfade duration, in seconds."
+        },
+        {
+          "name": "RootMotionMode",
+          "type": "Choice",
+          "value": "In-place (lock X/Z)",
+          "label": "Root motion",
+          "description": "How the root bone’s translation is handled.",
+          "extraInformation": [
+            "In-place (lock X/Z)",
+            "In-place (lock all)",
+            "Visual root motion",
+            "Drive object"
+          ]
+        },
+        {
+          "name": "AutoCleanBoneNames",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Auto-clean bone names",
+          "description": "Ignore rig namespaces such as \"mixamorig:\" when matching bones."
+        },
+        {
+          "name": "AdaptToProportions",
+          "type": "Boolean",
+          "value": "true",
+          "label": "Adapt to this model’s proportions",
+          "description": "Keep this character’s own bone lengths and rescale root motion to its height, instead of taking the proportions of whoever the animation was made for. Turn off only to replay a clip exactly as authored."
+        }
+      ],
+      "eventsFunctions": [
+        {
+          "name": "onCreated",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * ExternalSkeletalAnimator3D — runtime engine.\n *\n * Plays animation clips taken from OTHER .glb files on the skeleton of the\n * 3D Model object carrying this behavior.\n *\n * Design notes (verified against GDevelop 5.6.279 / Three r160):\n *  - We BORROW `renderer._animationMixer`. The engine constructs it in\n *    `_updateModel()` and ticks it every frame in `Model3DRuntimeObject.update()`.\n *    We must never construct a second one (they fight over the same bones) and\n *    never call `.update()` on it (that double-advances the clock -> 2x speed).\n *  - `Model3DManager.getModel()` returns the SHARED cached GLTF, so every clip\n *    is `.clone()`d before its tracks are touched.\n *  - A single .glb holds an `animations[]` ARRAY. Clips are addressed as\n *    (file, clipName); a blank clipName means \"first clip in the file\".\n */\nif (!gdjs.__externalSkeletalAnimator3D) {\n  gdjs.__externalSkeletalAnimator3D = (function () {\n    const TRACK_PROP = /\\.(position|quaternion|scale|rotation|morphTargetInfluences.*)$/;\n    const ROOT_CANDIDATES = ['hips', 'pelvis', 'root', 'bip01pelvis'];\n\n    /**\n     * Known rig namespaces, matched AFTER punctuation has been removed.\n     *\n     * This matters more than it looks. Three's GLTFLoader runs every node name\n     * through `PropertyBinding.sanitizeNodeName`, which deletes `[ ] . : /`\n     * outright (r160: `t.replace(/\\s/g,\"_\").replace(/[\\[\\]\\.:\\/]/g,\"\")`). So a\n     * bone authored as \"mixamorig:Hips\" arrives as \"mixamorigHips\" — the colon\n     * we would have split on is already gone. Mixamo also suffixes the\n     * namespace per export (\"mixamorig7:Hips\"), so two files of the same rig\n     * disagree by a digit buried mid-name. Both have to be stripped here.\n     */\n    const RIG_PREFIX = /^(mixamorig\\d*|armature|rig\\d*|bip\\d*|biped|character\\d*|root)/;\n\n    /**\n     * Prepared clips, shared across every object in the game.\n     *\n     * A prepared clip is a function of (source clip, target bone names, root\n     * motion mode) and nothing else, so two characters with the same skeleton\n     * -- which, for Mixamo, means almost any two characters -- can share one.\n     * Holding this per behavior instance instead would deep-clone all 195 tracks\n     * per character per animation: fifty NPCs sharing twenty animations would\n     * build a thousand identical clips rather than twenty.\n     */\n    const preparedCache = new Map();\n    const PREPARED_CACHE_LIMIT = 512;\n\n    /** Strip rig namespaces and punctuation so \"mixamorig7:Left_Arm\" == \"LeftArm\". */\n    function normalize(name) {\n      let n = String(name || '');\n      const colon = n.lastIndexOf(':');\n      if (colon >= 0) n = n.slice(colon + 1);\n      const bar = n.lastIndexOf('|');\n      if (bar >= 0) n = n.slice(bar + 1);\n      return n.toLowerCase().replace(/[\\s_.\\-]/g, '');\n    }\n\n    /** Longest common prefix of a list of names — an unknown namespace, usually. */\n    function commonPrefix(names) {\n      if (names.length < 3) return '';\n      let prefix = names[0];\n      for (let i = 1; i < names.length && prefix; i++) {\n        const other = names[i];\n        let j = 0;\n        while (j < prefix.length && j < other.length && prefix[j] === other[j]) j++;\n        prefix = prefix.slice(0, j);\n      }\n      // Refuse a prefix that would swallow a whole name, or that looks like a\n      // real bone name rather than a namespace.\n      if (!prefix || prefix.length > 24) return '';\n      for (let i = 0; i < names.length; i++) {\n        if (names[i].length <= prefix.length) return '';\n      }\n      return prefix;\n    }\n\n    /**\n     * Every key a node name might be matched under, most specific first:\n     * the normalized name, the name minus a known rig namespace, and the name\n     * minus whatever prefix this particular rig happens to share.\n     */\n    function keyVariants(name, prefix) {\n      const base = normalize(name);\n      const out = [base];\n      const noRig = base.replace(RIG_PREFIX, '');\n      if (noRig && noRig !== base && out.indexOf(noRig) < 0) out.push(noRig);\n      if (prefix) {\n        const p = normalize(prefix);\n        if (p && base.length > p.length && base.slice(0, p.length) === p) {\n          const cut = base.slice(p.length);\n          if (cut && out.indexOf(cut) < 0) out.push(cut);\n        }\n      }\n      return out;\n    }\n\n    function splitTrackName(trackName) {\n      const m = TRACK_PROP.exec(trackName);\n      if (!m) return null;\n      return { node: trackName.slice(0, m.index), prop: m[0] };\n    }\n\n    /* ------------------------------------------------------------------ rig */\n\n    /**\n     * Reads the target rig out of the Model3D renderer. Returns null when the\n     * object is not a 3D Model or its renderer is not ready yet.\n     */\n    function inspectRig(object) {\n      const renderer = object && object.getRenderer ? object.getRenderer() : null;\n      if (!renderer) return null;\n      const root = renderer._threeObject;\n      const mixer = renderer._animationMixer;\n      if (!root || !mixer || typeof mixer.clipAction !== 'function') return null;\n\n      const names = new Set();\n      const nameList = [];\n      let skinned = null;\n      root.traverse(function (n) {\n        if (n.name) {\n          names.add(n.name);\n          nameList.push(n.name);\n        }\n        if (!skinned && n.isSkinnedMesh) skinned = n;\n      });\n\n      let rootBone = null;\n      const bones = skinned && skinned.skeleton ? skinned.skeleton.bones : null;\n      const boneNames = bones ? bones.map(function (b) { return b.name; }) : nameList;\n      const prefix = commonPrefix(boneNames);\n\n      // Later variants are less specific, so an earlier bone always wins a key.\n      const byKey = new Map();\n      for (let i = 0; i < nameList.length; i++) {\n        const variants = keyVariants(nameList[i], prefix);\n        for (let v = 0; v < variants.length; v++) {\n          if (!byKey.has(variants[v])) byKey.set(variants[v], nameList[i]);\n        }\n      }\n\n      if (bones && bones.length) {\n        for (let i = 0; i < bones.length && !rootBone; i++) {\n          if (ROOT_CANDIDATES.indexOf(normalize(bones[i].name).replace(RIG_PREFIX, '')) >= 0) {\n            rootBone = bones[i].name;\n          }\n        }\n        if (!rootBone) rootBone = bones[0].name;\n      }\n\n      const original = renderer._originalModel;\n      const offsets = restOffsets(original && original.scene);\n      const upAxis = detectUpAxis(offsets);\n\n      return { renderer: renderer, root: root, mixer: mixer, names: names,\n               byKey: byKey, prefix: prefix, boneNames: boneNames,\n               signature: rigSignature(boneNames), restOffsets: offsets, upAxis: upAxis,\n               skinned: skinned, rootBone: rootBone };\n    }\n\n    /**\n     * Which axis points up, in the root bone's frame.\n     *\n     * Usually the root's own rest offset gives it away -- a hip sits about a\n     * metre above the origin with its other two components near zero. But BVH\n     * roots routinely sit AT the origin (CMU mocap files declare\n     * `ROOT Hips { OFFSET 0.00000 0.00000 0.00000 }`), which leaves nothing to\n     * read. Falling back to the leg chain works for any humanoid: summing a\n     * leg's rest offsets points along the body's vertical whatever the rig's\n     * naming or axis convention.\n     */\n    function detectUpAxis(offsets) {\n      const pick = function (v) {\n        const a = [Math.abs(v[0]), Math.abs(v[1]), Math.abs(v[2])];\n        const m = Math.max(a[0], a[1], a[2]);\n        return m > 1e-6 ? a.indexOf(m) : -1;\n      };\n\n      const hip = offsets.get('hips') || offsets.get('pelvis') || offsets.get('root');\n      if (hip) {\n        const fromHip = pick(hip);\n        if (fromHip >= 0) return fromHip;\n      }\n\n      const sum = [0, 0, 0];\n      const chain = ['leftupleg', 'leftleg', 'leftfoot',\n                     'lefthip', 'leftknee', 'leftankle'];\n      for (let i = 0; i < chain.length; i++) {\n        const o = offsets.get(chain[i]);\n        if (o) { sum[0] += Math.abs(o[0]); sum[1] += Math.abs(o[1]); sum[2] += Math.abs(o[2]); }\n      }\n      const fromLeg = pick(sum);\n      return fromLeg >= 0 ? fromLeg : 1;   // glTF is Y-up by convention\n    }\n\n    /**\n     * Identifies a rig by its bone-name set. A prepared clip depends on nothing\n     * else about the target, so every character sharing this signature can share\n     * one prepared clip -- which is the whole point when fifty townspeople of a\n     * dozen different body types all run off one animation library.\n     */\n    function rigSignature(boneNames) {\n      const joined = boneNames.join(',');\n      let h = 5381;\n      for (let i = 0; i < joined.length; i++) {\n        h = ((h << 5) + h + joined.charCodeAt(i)) | 0;\n      }\n      return boneNames.length + '.' + (h >>> 0).toString(36);\n    }\n\n    /**\n     * Length of the root bone's rest offset, read from a PRISTINE gltf scene\n     * (never posed by a mixer). For a Mixamo rig this is hip height, so the\n     * ratio between two of them is the height ratio between two characters.\n     */\n    function restRootLength(scene) {\n      if (!scene || !scene.traverse) return 0;\n      let found = 0;\n      scene.traverse(function (n) {\n        if (found || !n.name) return;\n        if (ROOT_CANDIDATES.indexOf(normalize(n.name).replace(RIG_PREFIX, '')) >= 0) {\n          found = n.position.length();\n        }\n      });\n      return found;\n    }\n\n    /** Multiplies every value of one named track in place. */\n    function scaleTrack(clip, trackName, factor) {\n      for (let i = 0; i < clip.tracks.length; i++) {\n        if (clip.tracks[i].name !== trackName) continue;\n        const v = clip.tracks[i].values;\n        for (let k = 0; k < v.length; k++) v[k] *= factor;\n      }\n    }\n\n    /* ------------------------------------------------------------ bone masks */\n\n    /**\n     * Names of a bone and everything under it, for splitting a skeleton in two.\n     *\n     * Masking is how animation layering works here, and it has to produce\n     * DISJOINT track sets. Three's PropertyMixer.accumulate() takes a weighted\n     * AVERAGE when two actions touch the same bone -- two actions at weight 1\n     * give a 50/50 blend of both poses, not an override. And apply() blends back\n     * toward the bone's saved original whenever total weight is under 1. So each\n     * bone must have exactly one owning layer at full weight: upper and lower\n     * partition the skeleton, and neither overlaps.\n     */\n    function subtreeNames(rig, splitBoneName) {\n      const out = new Set();\n      const matched = matchBone(rig, splitBoneName);\n      if (!matched) return out;\n      const node = rig.root.getObjectByName(matched);\n      if (!node) return out;\n      node.traverse(function (n) { if (n.name) out.add(n.name); });\n      return out;\n    }\n\n    /* ------------------------------------------------------- stride measure */\n\n    const LEG_CHAINS = [\n      ['leftupleg', 'leftleg', 'leftfoot'],\n      ['rightupleg', 'rightleg', 'rightfoot'],\n    ];\n\n    /** Rest-pose local offsets, keyed by normalized bone name, from a pristine scene. */\n    function restOffsets(scene) {\n      const out = new Map();\n      if (!scene || !scene.traverse) return out;\n      scene.traverse(function (n) {\n        if (!n.name) return;\n        const k = normalize(n.name).replace(RIG_PREFIX, '');\n        if (!out.has(k)) out.set(k, [n.position.x, n.position.y, n.position.z]);\n      });\n      return out;\n    }\n\n    /** Nearest-keyframe sample of a quaternion track. Clips here are 20-80 keys. */\n    function sampleQuat(track, t, out) {\n      const times = track.times;\n      let best = 0;\n      let bestD = Infinity;\n      for (let i = 0; i < times.length; i++) {\n        const d = Math.abs(times[i] - t);\n        if (d < bestD) { bestD = d; best = i; }\n      }\n      const v = track.values;\n      out.set(v[best * 4], v[best * 4 + 1], v[best * 4 + 2], v[best * 4 + 3]);\n      return out;\n    }\n\n    /**\n     * Ground speed the clip implies, measured on THIS rig.\n     *\n     * An in-place locomotion clip never moves its root, but the feet still sweep\n     * backwards under the body at exactly the speed the animator intended. Walk\n     * the leg chain with forward kinematics -- the clip's rotations, but the\n     * TARGET's bone lengths -- and the sweep comes out in the target's units.\n     *\n     * Measuring here rather than scaling a source-rig number matters: between two\n     * real Mixamo characters the leg-length ratio was 0.9347 while the hip-height\n     * ratio was 0.9552. They are not the same character scaled; no single factor\n     * is right for both.\n     */\n    function measureStride(clip, rig, upAxis) {\n      if (!rig.restOffsets || !clip.duration) return 0;\n      const q = new THREE.Quaternion();\n      const rot = new THREE.Quaternion();\n      const off = new THREE.Vector3();\n      const pos = new THREE.Vector3();\n\n      const byName = new Map();\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const parts = splitTrackName(clip.tracks[i].name);\n        if (parts && parts.prop === '.quaternion') {\n          byName.set(normalize(parts.node).replace(RIG_PREFIX, ''), clip.tracks[i]);\n        }\n      }\n\n      const axes = [0, 1, 2].filter(function (a) { return a !== upAxis; });\n      const SAMPLES = 24;\n      let widest = 0;\n\n      for (let c = 0; c < LEG_CHAINS.length; c++) {\n        const chain = LEG_CHAINS[c];\n        const lo = [Infinity, Infinity];\n        const hi = [-Infinity, -Infinity];\n        let usable = true;\n\n        for (let s = 0; s < SAMPLES && usable; s++) {\n          const t = (s / SAMPLES) * clip.duration;\n          rot.set(0, 0, 0, 1);\n          pos.set(0, 0, 0);\n          for (let b = 0; b < chain.length; b++) {\n            const rest = rig.restOffsets.get(chain[b]);\n            if (!rest) { usable = false; break; }\n            off.set(rest[0], rest[1], rest[2]).applyQuaternion(rot);\n            pos.add(off);\n            const track = byName.get(chain[b]);\n            if (track) rot.multiply(sampleQuat(track, t, q));\n          }\n          if (!usable) break;\n          const p = [pos.x, pos.y, pos.z];\n          for (let a = 0; a < 2; a++) {\n            const v = p[axes[a]];\n            if (v < lo[a]) lo[a] = v;\n            if (v > hi[a]) hi[a] = v;\n          }\n        }\n        if (!usable) continue;\n        for (let a = 0; a < 2; a++) {\n          const span = hi[a] - lo[a];\n          if (span > widest) widest = span;\n        }\n      }\n\n      // One gait cycle is two steps, so the body advances twice the sweep.\n      return widest > 0 ? (widest * 2) / clip.duration : 0;\n    }\n\n    /** Resolves a user-supplied or clip-supplied bone name onto this rig. */\n    function matchBone(rig, name) {\n      if (!rig) return null;\n      if (rig.names.has(name)) return name;\n      const variants = keyVariants(name, null);\n      for (let i = 0; i < variants.length; i++) {\n        const hit = rig.byKey.get(variants[i]);\n        if (hit) return hit;\n      }\n      return null;\n    }\n\n    function findNode(rig, boneName) {\n      const matched = matchBone(rig, boneName);\n      return matched ? rig.root.getObjectByName(matched) : null;\n    }\n\n    /* ----------------------------------------------------------- clip prep */\n\n    /**\n     * Clones a source clip and rewrites its tracks onto the target rig's bone\n     * names, then applies the root-motion filter. Never mutates the source.\n     */\n    function prepareClip(sourceClip, rig, cleanNames, rootMotionMode, opts) {\n      const proportional = !opts || opts.proportional !== false;\n      const hipScale = opts && opts.hipScale ? opts.hipScale : 1;\n      const mask = opts && opts.mask ? opts.mask : null;\n      const maskExcludes = !!(opts && opts.maskExcludes);\n      const clip = sourceClip.clone();\n      const kept = [];\n      const unmatched = [];\n      const matchedNodes = [];\n      let matched = 0;\n\n      // The source rig's own namespace has to come from the clip's own track\n      // names — the animation file's node hierarchy is not otherwise available.\n      const sourceNodes = [];\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const parts = splitTrackName(clip.tracks[i].name);\n        if (parts) sourceNodes.push(parts.node);\n      }\n      const sourcePrefix = commonPrefix(sourceNodes);\n\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const track = clip.tracks[i];\n        const parts = splitTrackName(track.name);\n        if (!parts) continue;\n\n        let target = null;\n        if (rig.names.has(parts.node)) {\n          target = parts.node;\n        } else if (cleanNames) {\n          const variants = keyVariants(parts.node, sourcePrefix);\n          for (let v = 0; v < variants.length && !target; v++) {\n            target = rig.byKey.get(variants[v]) || null;\n          }\n        }\n\n        if (!target) {\n          if (unmatched.indexOf(parts.node) < 0) unmatched.push(parts.node);\n          continue;\n        }\n        // Counted before the mask/proportional filters, so a masked layer is not\n        // mistaken for a bad rig match.\n        if (matchedNodes.indexOf(parts.node) < 0) matchedNodes.push(parts.node);\n\n        // Proportional adaptation. A Mixamo clip carries a translation AND a\n        // scale track for every bone, and a non-root bone's translation is not\n        // motion -- it is that bone's length in the rig the clip was authored\n        // for. Replaying it rewrites the target's skeleton into the source\n        // character's proportions (measured on real files: shin +8%, upper arm\n        // -23%, head +35%). Dropping them keeps each character its own shape;\n        // rotations, which are what the animation actually is, are unaffected.\n        if (proportional) {\n          if (parts.prop === '.scale') continue;\n          if (parts.prop === '.position' && target !== rig.rootBone) continue;\n        }\n\n        // Layer mask: keep only the half of the skeleton this layer owns.\n        if (mask) {\n          const inMask = mask.has(target);\n          if (inMask === maskExcludes) continue;\n        }\n\n        track.name = target + parts.prop;\n        matched++;\n        kept.push(track);\n      }\n      clip.tracks = kept;\n\n      // The root's translation IS motion, so it is kept -- but it is expressed\n      // in the source character's units. Rescale it by the height ratio, or a\n      // tall rig's animation leaves a short character floating.\n      if (proportional && hipScale !== 1 && rig.rootBone) {\n        scaleTrack(clip, rig.rootBone + '.position', hipScale);\n      }\n\n      // Snapshot the root translation before it is locked: 'drive' mode replays\n      // this as movement of the GDevelop object instead of the mesh.\n      let rootTrack = null;\n      for (let i = 0; i < clip.tracks.length && rig.rootBone; i++) {\n        if (clip.tracks[i].name !== rig.rootBone + '.position') continue;\n        rootTrack = {\n          times: Array.prototype.slice.call(clip.tracks[i].times),\n          values: Array.prototype.slice.call(clip.tracks[i].values),\n        };\n      }\n\n      if (rootMotionMode !== 'visual' && rig.rootBone) {\n        applyRootMotionFilter(clip, rig.rootBone,\n          rootMotionMode === 'drive' ? 'lockall' : rootMotionMode);\n      }\n      return { clip: clip, matched: matched, unmatched: unmatched,\n               matchedNodes: matchedNodes, rootTrack: rootTrack };\n    }\n\n    /**\n     * Pins the root bone's translation to its first keyframe. \"lockxz\" keeps the\n     * vertical bounce; \"lockall\" freezes translation entirely.\n     *\n     * The vertical axis is DETECTED, not assumed. glTF is nominally Y-up, but a\n     * root bone's translation is expressed in its parent's space, and Mixamo rigs\n     * round-tripped through Blender routinely land with the hip height on Z --\n     * measured on a real file: Hips.translation = [0.274, -0.254, -93.471], where\n     * 93.47 is plainly the hip height in centimetres. Hardcoding Y there would\n     * pin the bounce and let the character slide sideways instead, which is the\n     * exact opposite of what \"in-place\" means.\n     *\n     * At rest the root bone sits above the origin with its other two components\n     * near zero, so the largest absolute component identifies the vertical.\n     */\n    function applyRootMotionFilter(clip, rootBoneName, mode) {\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const track = clip.tracks[i];\n        if (track.name !== rootBoneName + '.position') continue;\n        const v = track.values;\n        if (v.length < 3) continue;\n\n        let up = 1;\n        let best = Math.abs(v[1]);\n        if (Math.abs(v[0]) > best) { up = 0; best = Math.abs(v[0]); }\n        if (Math.abs(v[2]) > best) { up = 2; }\n\n        const first = [v[0], v[1], v[2]];\n        for (let k = 0; k < v.length; k += 3) {\n          for (let axis = 0; axis < 3; axis++) {\n            if (mode === 'lockall' || axis !== up) v[k + axis] = first[axis];\n          }\n        }\n      }\n    }\n\n    function rootMotionKey(mode) {\n      const m = String(mode || '').toLowerCase();\n      if (m.indexOf('drive') >= 0) return 'drive';\n      if (m.indexOf('all') >= 0) return 'lockall';\n      if (m.indexOf('visual') >= 0 || m.indexOf('preserve') >= 0) return 'visual';\n      return 'lockxz';\n    }\n\n    /* ---------------------------------------------------------------- state */\n\n    function getState(behavior) {\n      if (!behavior.__esaState) {\n        behavior.__esaState = {\n          mixer: null,\n          rig: null,\n          aliases: new Map(),    // alias -> { file, clip }\n          action: null,\n          label: '',\n          speed: 1,\n          stride: 0,\n          layers: new Map(),   // layer name -> { action, label }\n          error: '',\n          started: false,\n          sockets: []\n        };\n      }\n      return behavior.__esaState;\n    }\n\n    /**\n     * Re-reads the rig and forgets the current action if the engine swapped the\n     * mixer (it does this in `_updateModel`, reached on hot reload). The shared\n     * clip cache survives: the clips are keyed by rig signature, not by mixer.\n     */\n    function refreshRig(object, state) {\n      const rig = inspectRig(object);\n      if (!rig) return null;\n      if (state.mixer !== rig.mixer) {\n        state.mixer = rig.mixer;\n        state.action = null;\n        // The old bone objects belong to a detached hierarchy now; re-resolve\n        // them or every socket silently freezes where it last stood.\n        for (let i = 0; i < state.sockets.length; i++) state.sockets[i].node = null;\n        state.label = '';\n      }\n      state.rig = rig;\n      return rig;\n    }\n\n    /* --------------------------------------------------------------- lookup */\n\n    function getGltf(runtimeScene, file) {\n      const game = runtimeScene.getGame();\n      const manager = game.getModel3DManager ? game.getModel3DManager() : null;\n      if (!manager) return null;\n      return manager.getModel(file);\n    }\n\n    function listClipNames(gltf) {\n      if (!gltf || !gltf.animations) return [];\n      return gltf.animations.map(function (a) { return a.name; });\n    }\n\n    /** Resolves (file, clipName) to a source clip, recording why it failed. */\n    function resolveSourceClip(runtimeScene, file, clipName, state) {\n      const gltf = getGltf(runtimeScene, file);\n      if (!gltf || !gltf.animations || gltf.animations.length === 0) {\n        state.error = 'No animations in \"' + file +\n          '\". The file may not be loaded yet (use \"Preload animation file\"), ' +\n          'may not exist, or may contain no clips.';\n        return null;\n      }\n      if (!clipName) return gltf.animations[0];\n      const found = THREE.AnimationClip.findByName(gltf.animations, clipName);\n      if (!found) {\n        state.error = 'Clip \"' + clipName + '\" not found in \"' + file +\n          '\". Available: ' + listClipNames(gltf).join(', ');\n        return null;\n      }\n      return found;\n    }\n\n    /* ----------------------------------------------------------------- play */\n\n    function play(runtimeScene, object, behavior, file, clipName, loop, speed, fade, mode, layer) {\n      const state = getState(behavior);\n      const rig = refreshRig(object, state);\n      if (!rig) {\n        state.error = 'No 3D Model renderer with a skeleton on this object.';\n        return false;\n      }\n\n      const modeKey = rootMotionKey(mode);\n      const proportional = behavior._getAdaptToProportions\n        ? behavior._getAdaptToProportions() !== false\n        : true;\n\n      // Height ratio between this character and the one the clip was authored\n      // for. Both read from pristine gltf scenes: the engine keeps the target's\n      // original in `renderer._originalModel` and only ever animates a clone.\n      let hipScale = 1;\n      if (proportional) {\n        const srcGltf = getGltf(runtimeScene, file);\n        const tgtGltf = rig.renderer._originalModel;\n        const srcLen = restRootLength(srcGltf && srcGltf.scene);\n        const tgtLen = restRootLength(tgtGltf && tgtGltf.scene);\n        if (srcLen > 1e-6 && tgtLen > 1e-6) hipScale = tgtLen / srcLen;\n      }\n\n      // A masked layer prepares its own variant of the clip, so the mask is part\n      // of the cache identity.\n      let mask = null;\n      let maskExcludes = false;\n      let maskKey = 'full';\n      if (layer && layer.splitBone) {\n        mask = subtreeNames(rig, layer.splitBone);\n        if (!mask.size) {\n          state.error = 'Split bone \"' + layer.splitBone + '\" not found on this model.';\n          return false;\n        }\n        maskExcludes = !!layer.excludes;\n        maskKey = (maskExcludes ? 'below:' : 'above:') + layer.splitBone;\n      }\n\n      const cacheKey = rig.signature + ' ' + file + ' ' + (clipName || '') + ' ' + modeKey +\n        ' ' + (proportional ? 'p' + hipScale.toFixed(4) : 'raw') + ' ' + maskKey;\n      let entry = preparedCache.get(cacheKey);\n\n      if (!entry) {\n        const source = resolveSourceClip(runtimeScene, file, clipName, state);\n        if (!source) return false;\n        const cleanNames = behavior._getAutoCleanBoneNames\n          ? behavior._getAutoCleanBoneNames() !== false\n          : true;\n        const result = prepareClip(source, rig, cleanNames, modeKey,\n          { proportional: proportional, hipScale: hipScale,\n            mask: mask, maskExcludes: maskExcludes });\n        if (result.matched === 0) {\n          if (!rig.skinned) {\n            state.error = 'This 3D Model has no skinned mesh, so it has no skeleton to ' +\n              'animate. Attach the behavior to the rigged character model.';\n          } else {\n            state.error = 'No track in \"' + source.name + '\" (' + file + ') matched a bone ' +\n              'on this model.' +\n              '\\n  Animation wants: ' + result.unmatched.slice(0, 4).join(', ') +\n              '\\n  Model has:       ' + rig.boneNames.slice(0, 4).join(', ') +\n              '\\n  These are different rigs, or a namespace this build does not know.';\n          }\n          return false;\n        }\n        let mismatch = '';\n        const resolved = result.matchedNodes.length;\n        const total = resolved + result.unmatched.length;\n        if (total > 0 && resolved / total < 0.6) {\n          // A partial match does not fail loudly -- it renders a plausible-looking\n          // wrong pose, which is harder to diagnose than no pose at all. CMU mocap\n          // onto a Mixamo rig matches about 5 of 31 bones, and two of those five\n          // mean different joints in the two rigs.\n          const nl = String.fromCharCode(10);\n          mismatch = 'Only ' + resolved + ' of ' + total + ' bones in \"' + file +\n            '\" matched this model, so the pose will be wrong.' +\n            nl + '  Unmatched: ' + result.unmatched.slice(0, 6).join(', ') +\n            nl + '  Model has: ' + rig.boneNames.slice(0, 6).join(', ') +\n            nl + '  These are different rig families. Retarget onto this skeleton in' +\n            ' your 3D tool before exporting.';\n          if (mismatch !== state.lastLoggedMismatch) {\n            state.lastLoggedMismatch = mismatch;\n            console.warn('[ExternalSkeletalAnimator3D] ' + mismatch);\n          }\n        }\n\n        entry = {\n          clip: result.clip,\n          // Measured once per (clip, rig, mode) and shared by every character\n          // built on that rig -- the expensive part is paid once, not per NPC.\n          stride: measureStride(result.clip, rig, rig.upAxis),\n          rootTrack: result.rootTrack,\n          mismatch: mismatch,\n        };\n        if (preparedCache.size >= PREPARED_CACHE_LIMIT) {\n          // Oldest-first eviction; Map preserves insertion order.\n          preparedCache.delete(preparedCache.keys().next().value);\n        }\n        preparedCache.set(cacheKey, entry);\n      }\n      const clip = entry.clip;\n\n      const slot = layer && layer.name ? state.layers.get(layer.name) : null;\n      const previous = layer && layer.name ? (slot ? slot.action : null) : state.action;\n      const action = state.mixer.clipAction(clip);\n      action.enabled = true;\n      action.reset();\n      action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce,\n                     loop ? Number.POSITIVE_INFINITY : 1);\n      action.clampWhenFinished = !loop;\n      action.timeScale = speed;\n\n      // The object's own built-in animation lives on this same mixer, so it has\n      // to be faded out too or it keeps writing the same bones underneath us.\n      const engineAction = rig.renderer._action;\n      const fadeFrom = (previous && previous !== action && previous.isRunning())\n        ? previous\n        : (engineAction && engineAction !== action && engineAction.isRunning() ? engineAction : null);\n\n      if (fadeFrom && fade > 0) action.crossFadeFrom(fadeFrom, fade, false);\n      else if (fadeFrom) fadeFrom.stop();\n\n      action.play();\n      state.mixer.update(0);\n\n      if (layer && layer.name) {\n        state.layers.set(layer.name, { action: action, label: file + '#' + (clipName || '') });\n        state.error = '';\n        return true;\n      }\n\n      // A full-body clip only conflicts with layers it actually shares bones\n      // with. That distinction matters for extra bones the humanoid animations\n      // never touch -- a hand-animated tail on a Mixamo-rigged character has no\n      // tracks in common with any Mixamo clip, so its layer keeps running while\n      // the body animation changes underneath it.\n      const newNames = new Set();\n      for (let i = 0; i < clip.tracks.length; i++) newNames.add(clip.tracks[i].name);\n      state.layers.forEach(function (l, key) {\n        if (!l.action) { state.layers.delete(key); return; }\n        const layerClip = l.action.getClip();\n        let overlaps = false;\n        for (let i = 0; i < layerClip.tracks.length && !overlaps; i++) {\n          if (newNames.has(layerClip.tracks[i].name)) overlaps = true;\n        }\n        if (overlaps) {\n          l.action.stop();\n          state.layers.delete(key);\n        }\n      });\n\n      state.action = action;\n      state.label = clipName ? (file + '#' + clipName) : file;\n      state.speed = speed;\n      state.stride = entry.stride;\n      state.rootTrack = modeKey === 'drive' ? entry.rootTrack : null;\n      state.lastRootTime = -1;\n      // Keep a rig-mismatch warning visible; it survives caching and replays.\n      state.error = entry.mismatch || '';\n      state.started = true;\n      return true;\n    }\n\n    /* -------------------------------------------------------------- sockets */\n\n    const RAD2DEG = 180 / Math.PI;\n\n    /**\n     * Pins attached objects to bones, matching both position AND orientation.\n     *\n     * Orientation is the whole point for a weapon: a sword that tracks the hand\n     * but never rotates just floats through it. GDevelop stores rotation in\n     * degrees and its renderer applies them as\n     * `rotation.set(toRad(rotationX), toRad(rotationY), toRad(angle))` with\n     * order \"ZYX\", so the bone's world quaternion decomposes straight onto those\n     * three properties.\n     *\n     * The offset is applied in the BONE's frame, not world axes -- \"5 units down\n     * the palm\" has to stay down the palm when the wrist turns.\n     */\n    function updateSockets(state) {\n      if (!state.sockets.length || !state.rig) return;\n      const v = updateSockets._v || (updateSockets._v = new THREE.Vector3());\n      const q = updateSockets._q || (updateSockets._q = new THREE.Quaternion());\n      const e = updateSockets._e || (updateSockets._e = new THREE.Euler());\n      const o = updateSockets._o || (updateSockets._o = new THREE.Vector3());\n\n      for (let i = state.sockets.length - 1; i >= 0; i--) {\n        const socket = state.sockets[i];\n        const target = socket.object;\n        if (!target || target._livingOnScene === false) {\n          state.sockets.splice(i, 1);\n          continue;\n        }\n        const bone = socket.node || (socket.node = findNode(state.rig, socket.bone));\n        if (!bone) continue;\n\n        // Bone world matrices are only refreshed at render time, which happens\n        // after events -- force this one so the socket is not a frame behind.\n        bone.updateWorldMatrix(true, false);\n        bone.getWorldPosition(v);\n        bone.getWorldQuaternion(q);\n\n        o.set(socket.dx, socket.dy, socket.dz).applyQuaternion(q);\n        target.setX(v.x + o.x);\n        target.setY(v.y + o.y);\n        if (target.setZ) target.setZ(v.z + o.z);\n\n        if (socket.orient !== false) {\n          e.setFromQuaternion(q, 'ZYX');\n          if (target.setRotationX) {\n            target.setRotationX(e.x * RAD2DEG);\n            target.setRotationY(e.y * RAD2DEG);\n            target.setAngle(e.z * RAD2DEG);\n          } else if (target.setAngle) {\n            target.setAngle(e.z * RAD2DEG);\n          }\n        }\n      }\n    }\n\n    /** Nearest-keyframe sample of a 3-component track. */\n    function sampleVec3(track, t, out) {\n      const times = track.times;\n      let best = 0;\n      let bestD = Infinity;\n      for (let i = 0; i < times.length; i++) {\n        const d = Math.abs(times[i] - t);\n        if (d < bestD) { bestD = d; best = i; }\n      }\n      out[0] = track.values[best * 3];\n      out[1] = track.values[best * 3 + 1];\n      out[2] = track.values[best * 3 + 2];\n      return out;\n    }\n\n    /**\n     * 'Drive object' root motion: the root track was stripped from the clip, so\n     * replay its per-frame delta as movement of the GDevelop object. Movement is\n     * then exactly what the animation does, which is the only way to get zero\n     * foot sliding without IK.\n     */\n    function driveRootMotion(object, state) {\n      const track = state.rootTrack;\n      const action = state.action;\n      if (!track || !action || !action.isRunning()) return;\n\n      const now = action.time;\n      const sample = driveRootMotion._s || (driveRootMotion._s = [0, 0, 0]);\n      const previous = driveRootMotion._p || (driveRootMotion._p = [0, 0, 0]);\n\n      if (state.lastRootTime < 0 || now < state.lastRootTime) {\n        // First frame, or the clip just looped -- take no delta across the seam.\n        state.lastRootTime = now;\n        sampleVec3(track, now, sample);\n        state.lastRootValue = [sample[0], sample[1], sample[2]];\n        return;\n      }\n\n      sampleVec3(track, now, sample);\n      const last = state.lastRootValue || sample;\n      const up = state.rig ? state.rig.upAxis : 1;\n      const d = [sample[0] - last[0], sample[1] - last[1], sample[2] - last[2]];\n\n      // The rig's vertical is the object's Z in GDevelop's frame; the other two\n      // axes are the ground plane, rotated by wherever the object is facing.\n      const ground = [0, 1, 2].filter(function (a) { return a !== up; });\n      const angle = gdjs.toRad(object.getAngle ? object.getAngle() : 0);\n      const cos = Math.cos(angle);\n      const sin = Math.sin(angle);\n      const gx = d[ground[0]];\n      const gy = d[ground[1]];\n\n      object.setX(object.getX() + gx * cos - gy * sin);\n      object.setY(object.getY() + gx * sin + gy * cos);\n\n      state.lastRootTime = now;\n      state.lastRootValue = [sample[0], sample[1], sample[2]];\n    }\n\n    /* --------------------------------------------------------------- public */\n\n    return {\n      normalize: normalize,\n      subtreeNames: subtreeNames,\n\n      stopLayer: function (state, name) {\n        const slot = state.layers.get(name);\n        if (slot && slot.action) slot.action.stop();\n        state.layers.delete(name);\n      },\n      keyVariants: keyVariants,\n      commonPrefix: commonPrefix,\n      inspectRig: inspectRig,\n      detectUpAxis: detectUpAxis,\n      prepareClip: prepareClip,\n      measureStride: measureStride,\n      restOffsets: restOffsets,\n      matchBone: matchBone,\n      findNode: findNode,\n      getState: getState,\n      refreshRig: refreshRig,\n      getGltf: getGltf,\n      listClipNames: listClipNames,\n      play: play,\n      updateSockets: updateSockets,\n      rootMotionKey: rootMotionKey,\n\n      /** Frame tick. Deliberately does NOT touch the mixer — the engine ticks it. */\n      step: function (object, behavior) {\n        const state = getState(behavior);\n        refreshRig(object, state);\n        driveRootMotion(object, state);\n        updateSockets(state);\n      },\n\n      isFinished: function (state) {\n        const a = state.action;\n        if (!a || !state.started) return false;\n        if (a.loop === THREE.LoopRepeat) return false;\n        return !a.isRunning();\n      },\n\n      progress: function (state) {\n        const a = state.action;\n        if (!a) return 0;\n        const d = a.getClip().duration;\n        return d > 0 ? Math.min(1, Math.max(0, a.time / d)) : 0;\n      },\n\n      dispose: function (behavior) {\n        const state = behavior.__esaState;\n        if (!state) return;\n        // Release this object's bindings and actions, but NOT the prepared\n        // clips -- those are shared with every other character on the same rig.\n        if (state.mixer && state.rig && state.mixer.uncacheRoot) {\n          try { state.mixer.uncacheRoot(state.rig.root); } catch (e) { /* already gone */ }\n        }\n        state.layers.forEach(function (l) { if (l.action) { try { l.action.stop(); } catch (e) {} } });\n        state.layers.clear();\n        state.aliases.clear();\n        state.sockets.length = 0;\n        state.action = null;\n        state.rig = null;\n        state.mixer = null;\n      }\n    };\n  })();\n}\n\nconst __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nstate.pendingDefault = true;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "doStepPreEvents",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "/**\n * ExternalSkeletalAnimator3D — runtime engine.\n *\n * Plays animation clips taken from OTHER .glb files on the skeleton of the\n * 3D Model object carrying this behavior.\n *\n * Design notes (verified against GDevelop 5.6.279 / Three r160):\n *  - We BORROW `renderer._animationMixer`. The engine constructs it in\n *    `_updateModel()` and ticks it every frame in `Model3DRuntimeObject.update()`.\n *    We must never construct a second one (they fight over the same bones) and\n *    never call `.update()` on it (that double-advances the clock -> 2x speed).\n *  - `Model3DManager.getModel()` returns the SHARED cached GLTF, so every clip\n *    is `.clone()`d before its tracks are touched.\n *  - A single .glb holds an `animations[]` ARRAY. Clips are addressed as\n *    (file, clipName); a blank clipName means \"first clip in the file\".\n */\nif (!gdjs.__externalSkeletalAnimator3D) {\n  gdjs.__externalSkeletalAnimator3D = (function () {\n    const TRACK_PROP = /\\.(position|quaternion|scale|rotation|morphTargetInfluences.*)$/;\n    const ROOT_CANDIDATES = ['hips', 'pelvis', 'root', 'bip01pelvis'];\n\n    /**\n     * Known rig namespaces, matched AFTER punctuation has been removed.\n     *\n     * This matters more than it looks. Three's GLTFLoader runs every node name\n     * through `PropertyBinding.sanitizeNodeName`, which deletes `[ ] . : /`\n     * outright (r160: `t.replace(/\\s/g,\"_\").replace(/[\\[\\]\\.:\\/]/g,\"\")`). So a\n     * bone authored as \"mixamorig:Hips\" arrives as \"mixamorigHips\" — the colon\n     * we would have split on is already gone. Mixamo also suffixes the\n     * namespace per export (\"mixamorig7:Hips\"), so two files of the same rig\n     * disagree by a digit buried mid-name. Both have to be stripped here.\n     */\n    const RIG_PREFIX = /^(mixamorig\\d*|armature|rig\\d*|bip\\d*|biped|character\\d*|root)/;\n\n    /**\n     * Prepared clips, shared across every object in the game.\n     *\n     * A prepared clip is a function of (source clip, target bone names, root\n     * motion mode) and nothing else, so two characters with the same skeleton\n     * -- which, for Mixamo, means almost any two characters -- can share one.\n     * Holding this per behavior instance instead would deep-clone all 195 tracks\n     * per character per animation: fifty NPCs sharing twenty animations would\n     * build a thousand identical clips rather than twenty.\n     */\n    const preparedCache = new Map();\n    const PREPARED_CACHE_LIMIT = 512;\n\n    /** Strip rig namespaces and punctuation so \"mixamorig7:Left_Arm\" == \"LeftArm\". */\n    function normalize(name) {\n      let n = String(name || '');\n      const colon = n.lastIndexOf(':');\n      if (colon >= 0) n = n.slice(colon + 1);\n      const bar = n.lastIndexOf('|');\n      if (bar >= 0) n = n.slice(bar + 1);\n      return n.toLowerCase().replace(/[\\s_.\\-]/g, '');\n    }\n\n    /** Longest common prefix of a list of names — an unknown namespace, usually. */\n    function commonPrefix(names) {\n      if (names.length < 3) return '';\n      let prefix = names[0];\n      for (let i = 1; i < names.length && prefix; i++) {\n        const other = names[i];\n        let j = 0;\n        while (j < prefix.length && j < other.length && prefix[j] === other[j]) j++;\n        prefix = prefix.slice(0, j);\n      }\n      // Refuse a prefix that would swallow a whole name, or that looks like a\n      // real bone name rather than a namespace.\n      if (!prefix || prefix.length > 24) return '';\n      for (let i = 0; i < names.length; i++) {\n        if (names[i].length <= prefix.length) return '';\n      }\n      return prefix;\n    }\n\n    /**\n     * Every key a node name might be matched under, most specific first:\n     * the normalized name, the name minus a known rig namespace, and the name\n     * minus whatever prefix this particular rig happens to share.\n     */\n    function keyVariants(name, prefix) {\n      const base = normalize(name);\n      const out = [base];\n      const noRig = base.replace(RIG_PREFIX, '');\n      if (noRig && noRig !== base && out.indexOf(noRig) < 0) out.push(noRig);\n      if (prefix) {\n        const p = normalize(prefix);\n        if (p && base.length > p.length && base.slice(0, p.length) === p) {\n          const cut = base.slice(p.length);\n          if (cut && out.indexOf(cut) < 0) out.push(cut);\n        }\n      }\n      return out;\n    }\n\n    function splitTrackName(trackName) {\n      const m = TRACK_PROP.exec(trackName);\n      if (!m) return null;\n      return { node: trackName.slice(0, m.index), prop: m[0] };\n    }\n\n    /* ------------------------------------------------------------------ rig */\n\n    /**\n     * Reads the target rig out of the Model3D renderer. Returns null when the\n     * object is not a 3D Model or its renderer is not ready yet.\n     */\n    function inspectRig(object) {\n      const renderer = object && object.getRenderer ? object.getRenderer() : null;\n      if (!renderer) return null;\n      const root = renderer._threeObject;\n      const mixer = renderer._animationMixer;\n      if (!root || !mixer || typeof mixer.clipAction !== 'function') return null;\n\n      const names = new Set();\n      const nameList = [];\n      let skinned = null;\n      root.traverse(function (n) {\n        if (n.name) {\n          names.add(n.name);\n          nameList.push(n.name);\n        }\n        if (!skinned && n.isSkinnedMesh) skinned = n;\n      });\n\n      let rootBone = null;\n      const bones = skinned && skinned.skeleton ? skinned.skeleton.bones : null;\n      const boneNames = bones ? bones.map(function (b) { return b.name; }) : nameList;\n      const prefix = commonPrefix(boneNames);\n\n      // Later variants are less specific, so an earlier bone always wins a key.\n      const byKey = new Map();\n      for (let i = 0; i < nameList.length; i++) {\n        const variants = keyVariants(nameList[i], prefix);\n        for (let v = 0; v < variants.length; v++) {\n          if (!byKey.has(variants[v])) byKey.set(variants[v], nameList[i]);\n        }\n      }\n\n      if (bones && bones.length) {\n        for (let i = 0; i < bones.length && !rootBone; i++) {\n          if (ROOT_CANDIDATES.indexOf(normalize(bones[i].name).replace(RIG_PREFIX, '')) >= 0) {\n            rootBone = bones[i].name;\n          }\n        }\n        if (!rootBone) rootBone = bones[0].name;\n      }\n\n      const original = renderer._originalModel;\n      const offsets = restOffsets(original && original.scene);\n      const upAxis = detectUpAxis(offsets);\n\n      return { renderer: renderer, root: root, mixer: mixer, names: names,\n               byKey: byKey, prefix: prefix, boneNames: boneNames,\n               signature: rigSignature(boneNames), restOffsets: offsets, upAxis: upAxis,\n               skinned: skinned, rootBone: rootBone };\n    }\n\n    /**\n     * Which axis points up, in the root bone's frame.\n     *\n     * Usually the root's own rest offset gives it away -- a hip sits about a\n     * metre above the origin with its other two components near zero. But BVH\n     * roots routinely sit AT the origin (CMU mocap files declare\n     * `ROOT Hips { OFFSET 0.00000 0.00000 0.00000 }`), which leaves nothing to\n     * read. Falling back to the leg chain works for any humanoid: summing a\n     * leg's rest offsets points along the body's vertical whatever the rig's\n     * naming or axis convention.\n     */\n    function detectUpAxis(offsets) {\n      const pick = function (v) {\n        const a = [Math.abs(v[0]), Math.abs(v[1]), Math.abs(v[2])];\n        const m = Math.max(a[0], a[1], a[2]);\n        return m > 1e-6 ? a.indexOf(m) : -1;\n      };\n\n      const hip = offsets.get('hips') || offsets.get('pelvis') || offsets.get('root');\n      if (hip) {\n        const fromHip = pick(hip);\n        if (fromHip >= 0) return fromHip;\n      }\n\n      const sum = [0, 0, 0];\n      const chain = ['leftupleg', 'leftleg', 'leftfoot',\n                     'lefthip', 'leftknee', 'leftankle'];\n      for (let i = 0; i < chain.length; i++) {\n        const o = offsets.get(chain[i]);\n        if (o) { sum[0] += Math.abs(o[0]); sum[1] += Math.abs(o[1]); sum[2] += Math.abs(o[2]); }\n      }\n      const fromLeg = pick(sum);\n      return fromLeg >= 0 ? fromLeg : 1;   // glTF is Y-up by convention\n    }\n\n    /**\n     * Identifies a rig by its bone-name set. A prepared clip depends on nothing\n     * else about the target, so every character sharing this signature can share\n     * one prepared clip -- which is the whole point when fifty townspeople of a\n     * dozen different body types all run off one animation library.\n     */\n    function rigSignature(boneNames) {\n      const joined = boneNames.join(',');\n      let h = 5381;\n      for (let i = 0; i < joined.length; i++) {\n        h = ((h << 5) + h + joined.charCodeAt(i)) | 0;\n      }\n      return boneNames.length + '.' + (h >>> 0).toString(36);\n    }\n\n    /**\n     * Length of the root bone's rest offset, read from a PRISTINE gltf scene\n     * (never posed by a mixer). For a Mixamo rig this is hip height, so the\n     * ratio between two of them is the height ratio between two characters.\n     */\n    function restRootLength(scene) {\n      if (!scene || !scene.traverse) return 0;\n      let found = 0;\n      scene.traverse(function (n) {\n        if (found || !n.name) return;\n        if (ROOT_CANDIDATES.indexOf(normalize(n.name).replace(RIG_PREFIX, '')) >= 0) {\n          found = n.position.length();\n        }\n      });\n      return found;\n    }\n\n    /** Multiplies every value of one named track in place. */\n    function scaleTrack(clip, trackName, factor) {\n      for (let i = 0; i < clip.tracks.length; i++) {\n        if (clip.tracks[i].name !== trackName) continue;\n        const v = clip.tracks[i].values;\n        for (let k = 0; k < v.length; k++) v[k] *= factor;\n      }\n    }\n\n    /* ------------------------------------------------------------ bone masks */\n\n    /**\n     * Names of a bone and everything under it, for splitting a skeleton in two.\n     *\n     * Masking is how animation layering works here, and it has to produce\n     * DISJOINT track sets. Three's PropertyMixer.accumulate() takes a weighted\n     * AVERAGE when two actions touch the same bone -- two actions at weight 1\n     * give a 50/50 blend of both poses, not an override. And apply() blends back\n     * toward the bone's saved original whenever total weight is under 1. So each\n     * bone must have exactly one owning layer at full weight: upper and lower\n     * partition the skeleton, and neither overlaps.\n     */\n    function subtreeNames(rig, splitBoneName) {\n      const out = new Set();\n      const matched = matchBone(rig, splitBoneName);\n      if (!matched) return out;\n      const node = rig.root.getObjectByName(matched);\n      if (!node) return out;\n      node.traverse(function (n) { if (n.name) out.add(n.name); });\n      return out;\n    }\n\n    /* ------------------------------------------------------- stride measure */\n\n    const LEG_CHAINS = [\n      ['leftupleg', 'leftleg', 'leftfoot'],\n      ['rightupleg', 'rightleg', 'rightfoot'],\n    ];\n\n    /** Rest-pose local offsets, keyed by normalized bone name, from a pristine scene. */\n    function restOffsets(scene) {\n      const out = new Map();\n      if (!scene || !scene.traverse) return out;\n      scene.traverse(function (n) {\n        if (!n.name) return;\n        const k = normalize(n.name).replace(RIG_PREFIX, '');\n        if (!out.has(k)) out.set(k, [n.position.x, n.position.y, n.position.z]);\n      });\n      return out;\n    }\n\n    /** Nearest-keyframe sample of a quaternion track. Clips here are 20-80 keys. */\n    function sampleQuat(track, t, out) {\n      const times = track.times;\n      let best = 0;\n      let bestD = Infinity;\n      for (let i = 0; i < times.length; i++) {\n        const d = Math.abs(times[i] - t);\n        if (d < bestD) { bestD = d; best = i; }\n      }\n      const v = track.values;\n      out.set(v[best * 4], v[best * 4 + 1], v[best * 4 + 2], v[best * 4 + 3]);\n      return out;\n    }\n\n    /**\n     * Ground speed the clip implies, measured on THIS rig.\n     *\n     * An in-place locomotion clip never moves its root, but the feet still sweep\n     * backwards under the body at exactly the speed the animator intended. Walk\n     * the leg chain with forward kinematics -- the clip's rotations, but the\n     * TARGET's bone lengths -- and the sweep comes out in the target's units.\n     *\n     * Measuring here rather than scaling a source-rig number matters: between two\n     * real Mixamo characters the leg-length ratio was 0.9347 while the hip-height\n     * ratio was 0.9552. They are not the same character scaled; no single factor\n     * is right for both.\n     */\n    function measureStride(clip, rig, upAxis) {\n      if (!rig.restOffsets || !clip.duration) return 0;\n      const q = new THREE.Quaternion();\n      const rot = new THREE.Quaternion();\n      const off = new THREE.Vector3();\n      const pos = new THREE.Vector3();\n\n      const byName = new Map();\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const parts = splitTrackName(clip.tracks[i].name);\n        if (parts && parts.prop === '.quaternion') {\n          byName.set(normalize(parts.node).replace(RIG_PREFIX, ''), clip.tracks[i]);\n        }\n      }\n\n      const axes = [0, 1, 2].filter(function (a) { return a !== upAxis; });\n      const SAMPLES = 24;\n      let widest = 0;\n\n      for (let c = 0; c < LEG_CHAINS.length; c++) {\n        const chain = LEG_CHAINS[c];\n        const lo = [Infinity, Infinity];\n        const hi = [-Infinity, -Infinity];\n        let usable = true;\n\n        for (let s = 0; s < SAMPLES && usable; s++) {\n          const t = (s / SAMPLES) * clip.duration;\n          rot.set(0, 0, 0, 1);\n          pos.set(0, 0, 0);\n          for (let b = 0; b < chain.length; b++) {\n            const rest = rig.restOffsets.get(chain[b]);\n            if (!rest) { usable = false; break; }\n            off.set(rest[0], rest[1], rest[2]).applyQuaternion(rot);\n            pos.add(off);\n            const track = byName.get(chain[b]);\n            if (track) rot.multiply(sampleQuat(track, t, q));\n          }\n          if (!usable) break;\n          const p = [pos.x, pos.y, pos.z];\n          for (let a = 0; a < 2; a++) {\n            const v = p[axes[a]];\n            if (v < lo[a]) lo[a] = v;\n            if (v > hi[a]) hi[a] = v;\n          }\n        }\n        if (!usable) continue;\n        for (let a = 0; a < 2; a++) {\n          const span = hi[a] - lo[a];\n          if (span > widest) widest = span;\n        }\n      }\n\n      // One gait cycle is two steps, so the body advances twice the sweep.\n      return widest > 0 ? (widest * 2) / clip.duration : 0;\n    }\n\n    /** Resolves a user-supplied or clip-supplied bone name onto this rig. */\n    function matchBone(rig, name) {\n      if (!rig) return null;\n      if (rig.names.has(name)) return name;\n      const variants = keyVariants(name, null);\n      for (let i = 0; i < variants.length; i++) {\n        const hit = rig.byKey.get(variants[i]);\n        if (hit) return hit;\n      }\n      return null;\n    }\n\n    function findNode(rig, boneName) {\n      const matched = matchBone(rig, boneName);\n      return matched ? rig.root.getObjectByName(matched) : null;\n    }\n\n    /* ----------------------------------------------------------- clip prep */\n\n    /**\n     * Clones a source clip and rewrites its tracks onto the target rig's bone\n     * names, then applies the root-motion filter. Never mutates the source.\n     */\n    function prepareClip(sourceClip, rig, cleanNames, rootMotionMode, opts) {\n      const proportional = !opts || opts.proportional !== false;\n      const hipScale = opts && opts.hipScale ? opts.hipScale : 1;\n      const mask = opts && opts.mask ? opts.mask : null;\n      const maskExcludes = !!(opts && opts.maskExcludes);\n      const clip = sourceClip.clone();\n      const kept = [];\n      const unmatched = [];\n      const matchedNodes = [];\n      let matched = 0;\n\n      // The source rig's own namespace has to come from the clip's own track\n      // names — the animation file's node hierarchy is not otherwise available.\n      const sourceNodes = [];\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const parts = splitTrackName(clip.tracks[i].name);\n        if (parts) sourceNodes.push(parts.node);\n      }\n      const sourcePrefix = commonPrefix(sourceNodes);\n\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const track = clip.tracks[i];\n        const parts = splitTrackName(track.name);\n        if (!parts) continue;\n\n        let target = null;\n        if (rig.names.has(parts.node)) {\n          target = parts.node;\n        } else if (cleanNames) {\n          const variants = keyVariants(parts.node, sourcePrefix);\n          for (let v = 0; v < variants.length && !target; v++) {\n            target = rig.byKey.get(variants[v]) || null;\n          }\n        }\n\n        if (!target) {\n          if (unmatched.indexOf(parts.node) < 0) unmatched.push(parts.node);\n          continue;\n        }\n        // Counted before the mask/proportional filters, so a masked layer is not\n        // mistaken for a bad rig match.\n        if (matchedNodes.indexOf(parts.node) < 0) matchedNodes.push(parts.node);\n\n        // Proportional adaptation. A Mixamo clip carries a translation AND a\n        // scale track for every bone, and a non-root bone's translation is not\n        // motion -- it is that bone's length in the rig the clip was authored\n        // for. Replaying it rewrites the target's skeleton into the source\n        // character's proportions (measured on real files: shin +8%, upper arm\n        // -23%, head +35%). Dropping them keeps each character its own shape;\n        // rotations, which are what the animation actually is, are unaffected.\n        if (proportional) {\n          if (parts.prop === '.scale') continue;\n          if (parts.prop === '.position' && target !== rig.rootBone) continue;\n        }\n\n        // Layer mask: keep only the half of the skeleton this layer owns.\n        if (mask) {\n          const inMask = mask.has(target);\n          if (inMask === maskExcludes) continue;\n        }\n\n        track.name = target + parts.prop;\n        matched++;\n        kept.push(track);\n      }\n      clip.tracks = kept;\n\n      // The root's translation IS motion, so it is kept -- but it is expressed\n      // in the source character's units. Rescale it by the height ratio, or a\n      // tall rig's animation leaves a short character floating.\n      if (proportional && hipScale !== 1 && rig.rootBone) {\n        scaleTrack(clip, rig.rootBone + '.position', hipScale);\n      }\n\n      // Snapshot the root translation before it is locked: 'drive' mode replays\n      // this as movement of the GDevelop object instead of the mesh.\n      let rootTrack = null;\n      for (let i = 0; i < clip.tracks.length && rig.rootBone; i++) {\n        if (clip.tracks[i].name !== rig.rootBone + '.position') continue;\n        rootTrack = {\n          times: Array.prototype.slice.call(clip.tracks[i].times),\n          values: Array.prototype.slice.call(clip.tracks[i].values),\n        };\n      }\n\n      if (rootMotionMode !== 'visual' && rig.rootBone) {\n        applyRootMotionFilter(clip, rig.rootBone,\n          rootMotionMode === 'drive' ? 'lockall' : rootMotionMode);\n      }\n      return { clip: clip, matched: matched, unmatched: unmatched,\n               matchedNodes: matchedNodes, rootTrack: rootTrack };\n    }\n\n    /**\n     * Pins the root bone's translation to its first keyframe. \"lockxz\" keeps the\n     * vertical bounce; \"lockall\" freezes translation entirely.\n     *\n     * The vertical axis is DETECTED, not assumed. glTF is nominally Y-up, but a\n     * root bone's translation is expressed in its parent's space, and Mixamo rigs\n     * round-tripped through Blender routinely land with the hip height on Z --\n     * measured on a real file: Hips.translation = [0.274, -0.254, -93.471], where\n     * 93.47 is plainly the hip height in centimetres. Hardcoding Y there would\n     * pin the bounce and let the character slide sideways instead, which is the\n     * exact opposite of what \"in-place\" means.\n     *\n     * At rest the root bone sits above the origin with its other two components\n     * near zero, so the largest absolute component identifies the vertical.\n     */\n    function applyRootMotionFilter(clip, rootBoneName, mode) {\n      for (let i = 0; i < clip.tracks.length; i++) {\n        const track = clip.tracks[i];\n        if (track.name !== rootBoneName + '.position') continue;\n        const v = track.values;\n        if (v.length < 3) continue;\n\n        let up = 1;\n        let best = Math.abs(v[1]);\n        if (Math.abs(v[0]) > best) { up = 0; best = Math.abs(v[0]); }\n        if (Math.abs(v[2]) > best) { up = 2; }\n\n        const first = [v[0], v[1], v[2]];\n        for (let k = 0; k < v.length; k += 3) {\n          for (let axis = 0; axis < 3; axis++) {\n            if (mode === 'lockall' || axis !== up) v[k + axis] = first[axis];\n          }\n        }\n      }\n    }\n\n    function rootMotionKey(mode) {\n      const m = String(mode || '').toLowerCase();\n      if (m.indexOf('drive') >= 0) return 'drive';\n      if (m.indexOf('all') >= 0) return 'lockall';\n      if (m.indexOf('visual') >= 0 || m.indexOf('preserve') >= 0) return 'visual';\n      return 'lockxz';\n    }\n\n    /* ---------------------------------------------------------------- state */\n\n    function getState(behavior) {\n      if (!behavior.__esaState) {\n        behavior.__esaState = {\n          mixer: null,\n          rig: null,\n          aliases: new Map(),    // alias -> { file, clip }\n          action: null,\n          label: '',\n          speed: 1,\n          stride: 0,\n          layers: new Map(),   // layer name -> { action, label }\n          error: '',\n          started: false,\n          sockets: []\n        };\n      }\n      return behavior.__esaState;\n    }\n\n    /**\n     * Re-reads the rig and forgets the current action if the engine swapped the\n     * mixer (it does this in `_updateModel`, reached on hot reload). The shared\n     * clip cache survives: the clips are keyed by rig signature, not by mixer.\n     */\n    function refreshRig(object, state) {\n      const rig = inspectRig(object);\n      if (!rig) return null;\n      if (state.mixer !== rig.mixer) {\n        state.mixer = rig.mixer;\n        state.action = null;\n        // The old bone objects belong to a detached hierarchy now; re-resolve\n        // them or every socket silently freezes where it last stood.\n        for (let i = 0; i < state.sockets.length; i++) state.sockets[i].node = null;\n        state.label = '';\n      }\n      state.rig = rig;\n      return rig;\n    }\n\n    /* --------------------------------------------------------------- lookup */\n\n    function getGltf(runtimeScene, file) {\n      const game = runtimeScene.getGame();\n      const manager = game.getModel3DManager ? game.getModel3DManager() : null;\n      if (!manager) return null;\n      return manager.getModel(file);\n    }\n\n    function listClipNames(gltf) {\n      if (!gltf || !gltf.animations) return [];\n      return gltf.animations.map(function (a) { return a.name; });\n    }\n\n    /** Resolves (file, clipName) to a source clip, recording why it failed. */\n    function resolveSourceClip(runtimeScene, file, clipName, state) {\n      const gltf = getGltf(runtimeScene, file);\n      if (!gltf || !gltf.animations || gltf.animations.length === 0) {\n        state.error = 'No animations in \"' + file +\n          '\". The file may not be loaded yet (use \"Preload animation file\"), ' +\n          'may not exist, or may contain no clips.';\n        return null;\n      }\n      if (!clipName) return gltf.animations[0];\n      const found = THREE.AnimationClip.findByName(gltf.animations, clipName);\n      if (!found) {\n        state.error = 'Clip \"' + clipName + '\" not found in \"' + file +\n          '\". Available: ' + listClipNames(gltf).join(', ');\n        return null;\n      }\n      return found;\n    }\n\n    /* ----------------------------------------------------------------- play */\n\n    function play(runtimeScene, object, behavior, file, clipName, loop, speed, fade, mode, layer) {\n      const state = getState(behavior);\n      const rig = refreshRig(object, state);\n      if (!rig) {\n        state.error = 'No 3D Model renderer with a skeleton on this object.';\n        return false;\n      }\n\n      const modeKey = rootMotionKey(mode);\n      const proportional = behavior._getAdaptToProportions\n        ? behavior._getAdaptToProportions() !== false\n        : true;\n\n      // Height ratio between this character and the one the clip was authored\n      // for. Both read from pristine gltf scenes: the engine keeps the target's\n      // original in `renderer._originalModel` and only ever animates a clone.\n      let hipScale = 1;\n      if (proportional) {\n        const srcGltf = getGltf(runtimeScene, file);\n        const tgtGltf = rig.renderer._originalModel;\n        const srcLen = restRootLength(srcGltf && srcGltf.scene);\n        const tgtLen = restRootLength(tgtGltf && tgtGltf.scene);\n        if (srcLen > 1e-6 && tgtLen > 1e-6) hipScale = tgtLen / srcLen;\n      }\n\n      // A masked layer prepares its own variant of the clip, so the mask is part\n      // of the cache identity.\n      let mask = null;\n      let maskExcludes = false;\n      let maskKey = 'full';\n      if (layer && layer.splitBone) {\n        mask = subtreeNames(rig, layer.splitBone);\n        if (!mask.size) {\n          state.error = 'Split bone \"' + layer.splitBone + '\" not found on this model.';\n          return false;\n        }\n        maskExcludes = !!layer.excludes;\n        maskKey = (maskExcludes ? 'below:' : 'above:') + layer.splitBone;\n      }\n\n      const cacheKey = rig.signature + ' ' + file + ' ' + (clipName || '') + ' ' + modeKey +\n        ' ' + (proportional ? 'p' + hipScale.toFixed(4) : 'raw') + ' ' + maskKey;\n      let entry = preparedCache.get(cacheKey);\n\n      if (!entry) {\n        const source = resolveSourceClip(runtimeScene, file, clipName, state);\n        if (!source) return false;\n        const cleanNames = behavior._getAutoCleanBoneNames\n          ? behavior._getAutoCleanBoneNames() !== false\n          : true;\n        const result = prepareClip(source, rig, cleanNames, modeKey,\n          { proportional: proportional, hipScale: hipScale,\n            mask: mask, maskExcludes: maskExcludes });\n        if (result.matched === 0) {\n          if (!rig.skinned) {\n            state.error = 'This 3D Model has no skinned mesh, so it has no skeleton to ' +\n              'animate. Attach the behavior to the rigged character model.';\n          } else {\n            state.error = 'No track in \"' + source.name + '\" (' + file + ') matched a bone ' +\n              'on this model.' +\n              '\\n  Animation wants: ' + result.unmatched.slice(0, 4).join(', ') +\n              '\\n  Model has:       ' + rig.boneNames.slice(0, 4).join(', ') +\n              '\\n  These are different rigs, or a namespace this build does not know.';\n          }\n          return false;\n        }\n        let mismatch = '';\n        const resolved = result.matchedNodes.length;\n        const total = resolved + result.unmatched.length;\n        if (total > 0 && resolved / total < 0.6) {\n          // A partial match does not fail loudly -- it renders a plausible-looking\n          // wrong pose, which is harder to diagnose than no pose at all. CMU mocap\n          // onto a Mixamo rig matches about 5 of 31 bones, and two of those five\n          // mean different joints in the two rigs.\n          const nl = String.fromCharCode(10);\n          mismatch = 'Only ' + resolved + ' of ' + total + ' bones in \"' + file +\n            '\" matched this model, so the pose will be wrong.' +\n            nl + '  Unmatched: ' + result.unmatched.slice(0, 6).join(', ') +\n            nl + '  Model has: ' + rig.boneNames.slice(0, 6).join(', ') +\n            nl + '  These are different rig families. Retarget onto this skeleton in' +\n            ' your 3D tool before exporting.';\n          if (mismatch !== state.lastLoggedMismatch) {\n            state.lastLoggedMismatch = mismatch;\n            console.warn('[ExternalSkeletalAnimator3D] ' + mismatch);\n          }\n        }\n\n        entry = {\n          clip: result.clip,\n          // Measured once per (clip, rig, mode) and shared by every character\n          // built on that rig -- the expensive part is paid once, not per NPC.\n          stride: measureStride(result.clip, rig, rig.upAxis),\n          rootTrack: result.rootTrack,\n          mismatch: mismatch,\n        };\n        if (preparedCache.size >= PREPARED_CACHE_LIMIT) {\n          // Oldest-first eviction; Map preserves insertion order.\n          preparedCache.delete(preparedCache.keys().next().value);\n        }\n        preparedCache.set(cacheKey, entry);\n      }\n      const clip = entry.clip;\n\n      const slot = layer && layer.name ? state.layers.get(layer.name) : null;\n      const previous = layer && layer.name ? (slot ? slot.action : null) : state.action;\n      const action = state.mixer.clipAction(clip);\n      action.enabled = true;\n      action.reset();\n      action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce,\n                     loop ? Number.POSITIVE_INFINITY : 1);\n      action.clampWhenFinished = !loop;\n      action.timeScale = speed;\n\n      // The object's own built-in animation lives on this same mixer, so it has\n      // to be faded out too or it keeps writing the same bones underneath us.\n      const engineAction = rig.renderer._action;\n      const fadeFrom = (previous && previous !== action && previous.isRunning())\n        ? previous\n        : (engineAction && engineAction !== action && engineAction.isRunning() ? engineAction : null);\n\n      if (fadeFrom && fade > 0) action.crossFadeFrom(fadeFrom, fade, false);\n      else if (fadeFrom) fadeFrom.stop();\n\n      action.play();\n      state.mixer.update(0);\n\n      if (layer && layer.name) {\n        state.layers.set(layer.name, { action: action, label: file + '#' + (clipName || '') });\n        state.error = '';\n        return true;\n      }\n\n      // A full-body clip only conflicts with layers it actually shares bones\n      // with. That distinction matters for extra bones the humanoid animations\n      // never touch -- a hand-animated tail on a Mixamo-rigged character has no\n      // tracks in common with any Mixamo clip, so its layer keeps running while\n      // the body animation changes underneath it.\n      const newNames = new Set();\n      for (let i = 0; i < clip.tracks.length; i++) newNames.add(clip.tracks[i].name);\n      state.layers.forEach(function (l, key) {\n        if (!l.action) { state.layers.delete(key); return; }\n        const layerClip = l.action.getClip();\n        let overlaps = false;\n        for (let i = 0; i < layerClip.tracks.length && !overlaps; i++) {\n          if (newNames.has(layerClip.tracks[i].name)) overlaps = true;\n        }\n        if (overlaps) {\n          l.action.stop();\n          state.layers.delete(key);\n        }\n      });\n\n      state.action = action;\n      state.label = clipName ? (file + '#' + clipName) : file;\n      state.speed = speed;\n      state.stride = entry.stride;\n      state.rootTrack = modeKey === 'drive' ? entry.rootTrack : null;\n      state.lastRootTime = -1;\n      // Keep a rig-mismatch warning visible; it survives caching and replays.\n      state.error = entry.mismatch || '';\n      state.started = true;\n      return true;\n    }\n\n    /* -------------------------------------------------------------- sockets */\n\n    const RAD2DEG = 180 / Math.PI;\n\n    /**\n     * Pins attached objects to bones, matching both position AND orientation.\n     *\n     * Orientation is the whole point for a weapon: a sword that tracks the hand\n     * but never rotates just floats through it. GDevelop stores rotation in\n     * degrees and its renderer applies them as\n     * `rotation.set(toRad(rotationX), toRad(rotationY), toRad(angle))` with\n     * order \"ZYX\", so the bone's world quaternion decomposes straight onto those\n     * three properties.\n     *\n     * The offset is applied in the BONE's frame, not world axes -- \"5 units down\n     * the palm\" has to stay down the palm when the wrist turns.\n     */\n    function updateSockets(state) {\n      if (!state.sockets.length || !state.rig) return;\n      const v = updateSockets._v || (updateSockets._v = new THREE.Vector3());\n      const q = updateSockets._q || (updateSockets._q = new THREE.Quaternion());\n      const e = updateSockets._e || (updateSockets._e = new THREE.Euler());\n      const o = updateSockets._o || (updateSockets._o = new THREE.Vector3());\n\n      for (let i = state.sockets.length - 1; i >= 0; i--) {\n        const socket = state.sockets[i];\n        const target = socket.object;\n        if (!target || target._livingOnScene === false) {\n          state.sockets.splice(i, 1);\n          continue;\n        }\n        const bone = socket.node || (socket.node = findNode(state.rig, socket.bone));\n        if (!bone) continue;\n\n        // Bone world matrices are only refreshed at render time, which happens\n        // after events -- force this one so the socket is not a frame behind.\n        bone.updateWorldMatrix(true, false);\n        bone.getWorldPosition(v);\n        bone.getWorldQuaternion(q);\n\n        o.set(socket.dx, socket.dy, socket.dz).applyQuaternion(q);\n        target.setX(v.x + o.x);\n        target.setY(v.y + o.y);\n        if (target.setZ) target.setZ(v.z + o.z);\n\n        if (socket.orient !== false) {\n          e.setFromQuaternion(q, 'ZYX');\n          if (target.setRotationX) {\n            target.setRotationX(e.x * RAD2DEG);\n            target.setRotationY(e.y * RAD2DEG);\n            target.setAngle(e.z * RAD2DEG);\n          } else if (target.setAngle) {\n            target.setAngle(e.z * RAD2DEG);\n          }\n        }\n      }\n    }\n\n    /** Nearest-keyframe sample of a 3-component track. */\n    function sampleVec3(track, t, out) {\n      const times = track.times;\n      let best = 0;\n      let bestD = Infinity;\n      for (let i = 0; i < times.length; i++) {\n        const d = Math.abs(times[i] - t);\n        if (d < bestD) { bestD = d; best = i; }\n      }\n      out[0] = track.values[best * 3];\n      out[1] = track.values[best * 3 + 1];\n      out[2] = track.values[best * 3 + 2];\n      return out;\n    }\n\n    /**\n     * 'Drive object' root motion: the root track was stripped from the clip, so\n     * replay its per-frame delta as movement of the GDevelop object. Movement is\n     * then exactly what the animation does, which is the only way to get zero\n     * foot sliding without IK.\n     */\n    function driveRootMotion(object, state) {\n      const track = state.rootTrack;\n      const action = state.action;\n      if (!track || !action || !action.isRunning()) return;\n\n      const now = action.time;\n      const sample = driveRootMotion._s || (driveRootMotion._s = [0, 0, 0]);\n      const previous = driveRootMotion._p || (driveRootMotion._p = [0, 0, 0]);\n\n      if (state.lastRootTime < 0 || now < state.lastRootTime) {\n        // First frame, or the clip just looped -- take no delta across the seam.\n        state.lastRootTime = now;\n        sampleVec3(track, now, sample);\n        state.lastRootValue = [sample[0], sample[1], sample[2]];\n        return;\n      }\n\n      sampleVec3(track, now, sample);\n      const last = state.lastRootValue || sample;\n      const up = state.rig ? state.rig.upAxis : 1;\n      const d = [sample[0] - last[0], sample[1] - last[1], sample[2] - last[2]];\n\n      // The rig's vertical is the object's Z in GDevelop's frame; the other two\n      // axes are the ground plane, rotated by wherever the object is facing.\n      const ground = [0, 1, 2].filter(function (a) { return a !== up; });\n      const angle = gdjs.toRad(object.getAngle ? object.getAngle() : 0);\n      const cos = Math.cos(angle);\n      const sin = Math.sin(angle);\n      const gx = d[ground[0]];\n      const gy = d[ground[1]];\n\n      object.setX(object.getX() + gx * cos - gy * sin);\n      object.setY(object.getY() + gx * sin + gy * cos);\n\n      state.lastRootTime = now;\n      state.lastRootValue = [sample[0], sample[1], sample[2]];\n    }\n\n    /* --------------------------------------------------------------- public */\n\n    return {\n      normalize: normalize,\n      subtreeNames: subtreeNames,\n\n      stopLayer: function (state, name) {\n        const slot = state.layers.get(name);\n        if (slot && slot.action) slot.action.stop();\n        state.layers.delete(name);\n      },\n      keyVariants: keyVariants,\n      commonPrefix: commonPrefix,\n      inspectRig: inspectRig,\n      detectUpAxis: detectUpAxis,\n      prepareClip: prepareClip,\n      measureStride: measureStride,\n      restOffsets: restOffsets,\n      matchBone: matchBone,\n      findNode: findNode,\n      getState: getState,\n      refreshRig: refreshRig,\n      getGltf: getGltf,\n      listClipNames: listClipNames,\n      play: play,\n      updateSockets: updateSockets,\n      rootMotionKey: rootMotionKey,\n\n      /** Frame tick. Deliberately does NOT touch the mixer — the engine ticks it. */\n      step: function (object, behavior) {\n        const state = getState(behavior);\n        refreshRig(object, state);\n        driveRootMotion(object, state);\n        updateSockets(state);\n      },\n\n      isFinished: function (state) {\n        const a = state.action;\n        if (!a || !state.started) return false;\n        if (a.loop === THREE.LoopRepeat) return false;\n        return !a.isRunning();\n      },\n\n      progress: function (state) {\n        const a = state.action;\n        if (!a) return 0;\n        const d = a.getClip().duration;\n        return d > 0 ? Math.min(1, Math.max(0, a.time / d)) : 0;\n      },\n\n      dispose: function (behavior) {\n        const state = behavior.__esaState;\n        if (!state) return;\n        // Release this object's bindings and actions, but NOT the prepared\n        // clips -- those are shared with every other character on the same rig.\n        if (state.mixer && state.rig && state.mixer.uncacheRoot) {\n          try { state.mixer.uncacheRoot(state.rig.root); } catch (e) { /* already gone */ }\n        }\n        state.layers.forEach(function (l) { if (l.action) { try { l.action.stop(); } catch (e) {} } });\n        state.layers.clear();\n        state.aliases.clear();\n        state.sockets.length = 0;\n        state.action = null;\n        state.rig = null;\n        state.mixer = null;\n      }\n    };\n  })();\n}\n\nconst __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\n\n// The renderer is not always ready on the creation frame, so the default\n// animation is started from the first step where the rig actually resolves.\nif (state.pendingDefault) {\n  const file = behavior._getDefaultAnimation ? behavior._getDefaultAnimation() : '';\n  if (!file) {\n    state.pendingDefault = false;\n  } else if (ESA.refreshRig(object, state)) {\n    const clip = behavior._getDefaultClip ? behavior._getDefaultClip() : '';\n    const loop = behavior._getDefaultLoop ? behavior._getDefaultLoop() : true;\n    const speed = behavior._getDefaultSpeed ? behavior._getDefaultSpeed() : 1;\n    const mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';\n    if (ESA.play(runtimeScene, object, behavior, file, clip, loop, speed, 0, mode)) {\n      state.pendingDefault = false;\n    } else if (!state.__defaultRetries || state.__defaultRetries < 120) {\n      // Keep retrying for ~2s so a lazily-loaded resource still gets a chance.\n      state.__defaultRetries = (state.__defaultRetries || 0) + 1;\n    } else {\n      state.pendingDefault = false;\n    }\n  }\n}\n\nESA.step(object, behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "onDestroy",
+          "fullName": "",
+          "description": "",
+          "functionType": "Action",
+          "private": true,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\ngdjs.__externalSkeletalAnimator3D.dispose(behavior);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PlayAnimation",
+          "fullName": "Play animation from a file",
+          "description": "Play clip _PARAM3_ from the animation file _PARAM2_ on _PARAM0_ (loop: _PARAM4_, speed: _PARAM5_, crossfade: _PARAM6_s)",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            },
+            {
+              "name": "ClipName",
+              "type": "string",
+              "description": "Clip name inside that file (leave empty for the first clip)"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop"
+            },
+            {
+              "name": "Speed",
+              "type": "expression",
+              "description": "Speed scale",
+              "defaultValue": "1"
+            },
+            {
+              "name": "Crossfade",
+              "type": "expression",
+              "description": "Crossfade duration in seconds",
+              "defaultValue": "0.2"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';\nconst speed = eventsFunctionContext.getArgument(\"Speed\");\nconst fade = eventsFunctionContext.getArgument(\"Crossfade\");\nESA.play(\n  runtimeScene, object, behavior,\n  eventsFunctionContext.getArgument(\"AnimationFile\"),\n  eventsFunctionContext.getArgument(\"ClipName\"),\n  !!eventsFunctionContext.getArgument(\"Loop\"),\n  Number.isFinite(speed) && speed !== 0 ? speed : 1,\n  Number.isFinite(fade) && fade > 0 ? fade : 0,\n  mode\n);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PlayAnimationByIndex",
+          "fullName": "Play animation by index",
+          "description": "Play clip number _PARAM3_ from the animation file _PARAM2_ on _PARAM0_ (loop: _PARAM4_, speed: _PARAM5_, crossfade: _PARAM6_s)",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            },
+            {
+              "name": "ClipIndex",
+              "type": "expression",
+              "description": "Clip index (0 = first clip in the file)",
+              "defaultValue": "0"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop"
+            },
+            {
+              "name": "Speed",
+              "type": "expression",
+              "description": "Speed scale",
+              "defaultValue": "1"
+            },
+            {
+              "name": "Crossfade",
+              "type": "expression",
+              "description": "Crossfade duration in seconds",
+              "defaultValue": "0.2"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst file = eventsFunctionContext.getArgument(\"AnimationFile\");\nconst gltf = ESA.getGltf(runtimeScene, file);\nconst names = ESA.listClipNames(gltf);\nconst raw = eventsFunctionContext.getArgument(\"ClipIndex\");\nconst index = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;\nif (index >= names.length) {\n  state.error = 'Clip index ' + index + ' is out of range for \"' + file +\n    '\" (' + names.length + ' clip(s): ' + names.join(', ') + ').';\n} else {\n  const mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';\n  const speed = eventsFunctionContext.getArgument(\"Speed\");\n  const fade = eventsFunctionContext.getArgument(\"Crossfade\");\n  ESA.play(\n    runtimeScene, object, behavior, file, names[index],\n    !!eventsFunctionContext.getArgument(\"Loop\"),\n    Number.isFinite(speed) && speed !== 0 ? speed : 1,\n    Number.isFinite(fade) && fade > 0 ? fade : 0,\n    mode\n  );\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "RegisterAnimation",
+          "fullName": "Register an animation alias",
+          "description": "Register _PARAM2_ on _PARAM0_ as clip _PARAM4_ of file _PARAM3_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Alias",
+              "type": "string",
+              "description": "Short name to use later"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            },
+            {
+              "name": "ClipName",
+              "type": "string",
+              "description": "Clip name inside that file (leave empty for the first clip)"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst alias = eventsFunctionContext.getArgument(\"Alias\");\nif (alias) {\n  state.aliases.set(alias, {\n    file: eventsFunctionContext.getArgument(\"AnimationFile\"),\n    clip: eventsFunctionContext.getArgument(\"ClipName\")\n  });\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PlayAlias",
+          "fullName": "Play a registered animation",
+          "description": "Play the registered animation _PARAM2_ on _PARAM0_ (loop: _PARAM3_, speed: _PARAM4_, crossfade: _PARAM5_s)",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Alias",
+              "type": "string",
+              "description": "Registered alias"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop"
+            },
+            {
+              "name": "Speed",
+              "type": "expression",
+              "description": "Speed scale",
+              "defaultValue": "1"
+            },
+            {
+              "name": "Crossfade",
+              "type": "expression",
+              "description": "Crossfade duration in seconds",
+              "defaultValue": "0.2"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst alias = eventsFunctionContext.getArgument(\"Alias\");\nconst entry = state.aliases.get(alias);\nif (!entry) {\n  const known = Array.from(state.aliases.keys());\n  state.error = 'No animation registered as \"' + alias + '\".' +\n    (known.length ? ' Registered: ' + known.join(', ') : ' Nothing is registered yet.');\n} else {\n  const mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';\n  const speed = eventsFunctionContext.getArgument(\"Speed\");\n  const fade = eventsFunctionContext.getArgument(\"Crossfade\");\n  ESA.play(\n    runtimeScene, object, behavior, entry.file, entry.clip,\n    !!eventsFunctionContext.getArgument(\"Loop\"),\n    Number.isFinite(speed) && speed !== 0 ? speed : 1,\n    Number.isFinite(fade) && fade > 0 ? fade : 0,\n    mode\n  );\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PauseAnimation",
+          "fullName": "Pause animation",
+          "description": "Pause the external animation on _PARAM0_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nif (state.action) state.action.paused = true;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ResumeAnimation",
+          "fullName": "Resume animation",
+          "description": "Resume the external animation on _PARAM0_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nif (state.action) state.action.paused = false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "StopAnimation",
+          "fullName": "Stop animation",
+          "description": "Stop the external animation on _PARAM0_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nif (state.action) { state.action.stop(); }\nstate.action = null;\nstate.label = '';\nstate.started = false;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetAnimationSpeed",
+          "fullName": "Set animation speed",
+          "description": "Set the animation speed of _PARAM0_ to _PARAM2_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Speed",
+              "type": "expression",
+              "description": "Speed scale",
+              "defaultValue": "1"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst speed = eventsFunctionContext.getArgument(\"Speed\");\nif (Number.isFinite(speed)) {\n  state.speed = speed;\n  if (state.action) state.action.timeScale = speed;\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetAnimationTime",
+          "fullName": "Set animation time",
+          "description": "Set the animation time of _PARAM0_ to _PARAM2_ seconds",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Time",
+              "type": "expression",
+              "description": "Time in seconds",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst t = eventsFunctionContext.getArgument(\"Time\");\nif (state.action && Number.isFinite(t)) {\n  state.action.time = Math.max(0, Math.min(t, state.action.getClip().duration));\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "SetAnimationProgress",
+          "fullName": "Set animation progress",
+          "description": "Set the animation progress of _PARAM0_ to _PARAM2_ (0 to 1)",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Progress",
+              "type": "expression",
+              "description": "Progress from 0 to 1",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst p = eventsFunctionContext.getArgument(\"Progress\");\nif (state.action && Number.isFinite(p)) {\n  const d = state.action.getClip().duration;\n  state.action.time = Math.max(0, Math.min(1, p)) * d;\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "AttachObjectToBone",
+          "fullName": "Attach an object to a bone",
+          "description": "Attach _PARAM2_ to bone _PARAM3_ of _PARAM0_ with offset (_PARAM4_, _PARAM5_, _PARAM6_)",
+          "functionType": "Action",
+          "group": "Bone sockets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "TargetObject",
+              "type": "objectList",
+              "description": "Object to attach"
+            },
+            {
+              "name": "BoneName",
+              "type": "string",
+              "description": "Bone name (namespaces like \"mixamorig:\" may be omitted)"
+            },
+            {
+              "name": "OffsetX",
+              "type": "expression",
+              "description": "Offset X",
+              "defaultValue": "0"
+            },
+            {
+              "name": "OffsetY",
+              "type": "expression",
+              "description": "Offset Y",
+              "defaultValue": "0"
+            },
+            {
+              "name": "OffsetZ",
+              "type": "expression",
+              "description": "Offset Z",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst targets = eventsFunctionContext.getObjects(\"TargetObject\");\nconst boneName = eventsFunctionContext.getArgument(\"BoneName\");\nconst dx = eventsFunctionContext.getArgument(\"OffsetX\") || 0;\nconst dy = eventsFunctionContext.getArgument(\"OffsetY\") || 0;\nconst dz = eventsFunctionContext.getArgument(\"OffsetZ\") || 0;\nESA.refreshRig(object, state);\nif (state.rig && !ESA.findNode(state.rig, boneName)) {\n  state.error = 'Bone \"' + boneName + '\" not found on this model.';\n}\nfor (let i = 0; i < targets.length; i++) {\n  const existing = state.sockets.findIndex(function (s) { return s.object === targets[i]; });\n  if (existing >= 0) state.sockets.splice(existing, 1);\n  state.sockets.push({ object: targets[i], bone: boneName, node: null, dx: dx, dy: dy, dz: dz });\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "DetachObjectFromBone",
+          "fullName": "Detach an object from its bone",
+          "description": "Detach _PARAM2_ from the bones of _PARAM0_",
+          "functionType": "Action",
+          "group": "Bone sockets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "TargetObject",
+              "type": "objectList",
+              "description": "Object to detach"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst targets = eventsFunctionContext.getObjects(\"TargetObject\");\nfor (let i = 0; i < targets.length; i++) {\n  const at = state.sockets.findIndex(function (s) { return s.object === targets[i]; });\n  if (at >= 0) state.sockets.splice(at, 1);\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PlayAnimationOnMask",
+          "fullName": "Play animation on part of the skeleton",
+          "description": "Layer _PARAM2_ of _PARAM0_: play clip _PARAM4_ of _PARAM3_ on _PARAM6_ bone _PARAM5_ (loop: _PARAM7_, speed: _PARAM8_, crossfade: _PARAM9_s)",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Layer",
+              "type": "string",
+              "description": "Layer name (use different names for upper and lower)"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            },
+            {
+              "name": "ClipName",
+              "type": "string",
+              "description": "Clip name (leave empty for the first clip)"
+            },
+            {
+              "name": "SplitBone",
+              "type": "string",
+              "description": "Bone to split the skeleton at, e.g. \"Spine1\""
+            },
+            {
+              "name": "Part",
+              "type": "stringWithSelector",
+              "description": "Which half this layer drives",
+              "supplementaryInformation": "[\"this bone and below\",\"everything else\"]"
+            },
+            {
+              "name": "Loop",
+              "type": "yesorno",
+              "description": "Loop"
+            },
+            {
+              "name": "Speed",
+              "type": "expression",
+              "description": "Speed scale",
+              "defaultValue": "1"
+            },
+            {
+              "name": "Crossfade",
+              "type": "expression",
+              "description": "Crossfade duration in seconds",
+              "defaultValue": "0.2"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';\nconst speed = eventsFunctionContext.getArgument(\"Speed\");\nconst fade = eventsFunctionContext.getArgument(\"Crossfade\");\nconst part = String(eventsFunctionContext.getArgument(\"Part\") || '');\nESA.play(\n  runtimeScene, object, behavior,\n  eventsFunctionContext.getArgument(\"AnimationFile\"),\n  eventsFunctionContext.getArgument(\"ClipName\"),\n  !!eventsFunctionContext.getArgument(\"Loop\"),\n  Number.isFinite(speed) && speed !== 0 ? speed : 1,\n  Number.isFinite(fade) && fade > 0 ? fade : 0,\n  mode,\n  {\n    name: eventsFunctionContext.getArgument(\"Layer\") || 'layer',\n    splitBone: eventsFunctionContext.getArgument(\"SplitBone\"),\n    // \"everything else\" masks OUT the subtree, leaving the rest of the body.\n    excludes: part.indexOf('else') >= 0\n  }\n);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "StopMaskLayer",
+          "fullName": "Stop a skeleton layer",
+          "description": "Stop layer _PARAM2_ on _PARAM0_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Layer",
+              "type": "string",
+              "description": "Layer name"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nESA.stopLayer(state, eventsFunctionContext.getArgument(\"Layer\"));\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "MatchSpeedToMovement",
+          "fullName": "Match animation speed to movement",
+          "description": "Match the animation speed of _PARAM0_ to a ground speed of _PARAM2_",
+          "functionType": "Action",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "GroundSpeed",
+              "type": "expression",
+              "description": "Ground speed in world units per second",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst wanted = eventsFunctionContext.getArgument(\"GroundSpeed\");\nif (!state.action) {\n  // nothing playing\n} else if (!state.stride || state.stride <= 0) {\n  state.error = 'This clip has no measurable stride, so its speed cannot be matched ' +\n    'to movement. Use it only on walk/run cycles.';\n} else if (Number.isFinite(wanted)) {\n  // The clip's own ground speed was measured on THIS character's bone lengths,\n  // so the ratio already accounts for its proportions.\n  const scale = Math.abs(wanted) / state.stride;\n  state.speed = scale;\n  state.action.timeScale = scale;\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "PreloadAnimation",
+          "fullName": "Preload an animation file",
+          "description": "Preload the animation file _PARAM2_ for _PARAM0_",
+          "functionType": "Action",
+          "group": "Loading",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst file = eventsFunctionContext.getArgument(\"AnimationFile\");\nconst loader = runtimeScene.getGame().getResourceLoader();\nif (file && loader) {\n  Promise.resolve(loader.loadResource(file))\n    .then(function () { return loader.processResource(file); })\n    .catch(function (e) { state.error = 'Could not load \"' + file + '\": ' + e; });\n}\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsPlaying",
+          "fullName": "Is playing",
+          "description": "An external animation is playing on _PARAM0_",
+          "functionType": "Condition",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = !!state.action && state.action.isRunning();\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsPaused",
+          "fullName": "Is paused",
+          "description": "The external animation on _PARAM0_ is paused",
+          "functionType": "Condition",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = !!state.action && state.action.paused === true;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "HasFinished",
+          "fullName": "Animation has finished",
+          "description": "The non-looping external animation on _PARAM0_ has finished",
+          "functionType": "Condition",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = ESA.isFinished(state);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentAnimationIs",
+          "fullName": "Current animation is",
+          "description": "The current external animation of _PARAM0_ is _PARAM2_",
+          "functionType": "Condition",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Name",
+              "type": "string",
+              "description": "Alias, or \"file#clip\""
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst wanted = eventsFunctionContext.getArgument(\"Name\");\nlet label = state.label;\nstate.aliases.forEach(function (entry, alias) {\n  const composed = entry.clip ? entry.file + '#' + entry.clip : entry.file;\n  if (composed === state.label && alias === wanted) label = alias;\n});\neventsFunctionContext.returnValue = label === wanted;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsMaskLayerPlaying",
+          "fullName": "Skeleton layer is playing",
+          "description": "Layer _PARAM2_ is playing on _PARAM0_",
+          "functionType": "Condition",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "Layer",
+              "type": "string",
+              "description": "Layer name"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst slot = state.layers.get(eventsFunctionContext.getArgument(\"Layer\"));\neventsFunctionContext.returnValue = !!(slot && slot.action && slot.action.isRunning());\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "IsAnimationReady",
+          "fullName": "Animation file is ready",
+          "description": "The animation file _PARAM2_ is loaded and has at least one clip",
+          "functionType": "Condition",
+          "group": "Loading",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst gltf = ESA.getGltf(runtimeScene, eventsFunctionContext.getArgument(\"AnimationFile\"));\neventsFunctionContext.returnValue = !!(gltf && gltf.animations && gltf.animations.length > 0);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "HasError",
+          "fullName": "Has an error",
+          "description": "_PARAM0_ reported an animation error",
+          "functionType": "Condition",
+          "group": "Loading",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = !!state.error;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentTime",
+          "fullName": "",
+          "description": "Current playback time in seconds",
+          "functionType": "Expression",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = state.action ? state.action.time : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "Duration",
+          "fullName": "",
+          "description": "Duration of the current clip in seconds",
+          "functionType": "Expression",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = state.action ? state.action.getClip().duration : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "Progress",
+          "fullName": "",
+          "description": "Progress of the current clip, from 0 to 1",
+          "functionType": "Expression",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = ESA.progress(state);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "Speed",
+          "fullName": "",
+          "description": "Current speed scale",
+          "functionType": "Expression",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = state.action ? state.action.timeScale : state.speed;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "StrideSpeed",
+          "fullName": "",
+          "description": "Ground speed this walk/run clip implies for this character, in units per second. Only meaningful for locomotion clips - it returns a number for any clip with leg motion",
+          "functionType": "Expression",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = state.stride || 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ClipCount",
+          "fullName": "",
+          "description": "Number of clips inside an animation file",
+          "functionType": "Expression",
+          "group": "Loading",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst gltf = ESA.getGltf(runtimeScene, eventsFunctionContext.getArgument(\"AnimationFile\"));\neventsFunctionContext.returnValue = gltf && gltf.animations ? gltf.animations.length : 0;\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "BonePositionX",
+          "fullName": "",
+          "description": "World X of a bone",
+          "functionType": "Expression",
+          "group": "Bone sockets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "BoneName",
+              "type": "string",
+              "description": "Bone name"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nfunction bonePos(axis) {\n  ESA.refreshRig(object, state);\n  const bone = state.rig ? ESA.findNode(state.rig, eventsFunctionContext.getArgument(\"BoneName\")) : null;\n  if (!bone) {\n    state.error = 'Bone \"' + eventsFunctionContext.getArgument(\"BoneName\") + '\" not found on this model.';\n    return 0;\n  }\n  bone.updateWorldMatrix(true, false);\n  const v = new THREE.Vector3();\n  bone.getWorldPosition(v);\n  return axis === 0 ? v.x : (axis === 1 ? v.y : v.z);\n}\neventsFunctionContext.returnValue = bonePos(0);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "BonePositionY",
+          "fullName": "",
+          "description": "World Y of a bone",
+          "functionType": "Expression",
+          "group": "Bone sockets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "BoneName",
+              "type": "string",
+              "description": "Bone name"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nfunction bonePos(axis) {\n  ESA.refreshRig(object, state);\n  const bone = state.rig ? ESA.findNode(state.rig, eventsFunctionContext.getArgument(\"BoneName\")) : null;\n  if (!bone) {\n    state.error = 'Bone \"' + eventsFunctionContext.getArgument(\"BoneName\") + '\" not found on this model.';\n    return 0;\n  }\n  bone.updateWorldMatrix(true, false);\n  const v = new THREE.Vector3();\n  bone.getWorldPosition(v);\n  return axis === 0 ? v.x : (axis === 1 ? v.y : v.z);\n}\neventsFunctionContext.returnValue = bonePos(1);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "BonePositionZ",
+          "fullName": "",
+          "description": "World Z of a bone",
+          "functionType": "Expression",
+          "group": "Bone sockets",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "BoneName",
+              "type": "string",
+              "description": "Bone name"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nfunction bonePos(axis) {\n  ESA.refreshRig(object, state);\n  const bone = state.rig ? ESA.findNode(state.rig, eventsFunctionContext.getArgument(\"BoneName\")) : null;\n  if (!bone) {\n    state.error = 'Bone \"' + eventsFunctionContext.getArgument(\"BoneName\") + '\" not found on this model.';\n    return 0;\n  }\n  bone.updateWorldMatrix(true, false);\n  const v = new THREE.Vector3();\n  bone.getWorldPosition(v);\n  return axis === 0 ? v.x : (axis === 1 ? v.y : v.z);\n}\neventsFunctionContext.returnValue = bonePos(2);\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "CurrentAnimation",
+          "fullName": "",
+          "description": "Name of the current animation (\"file#clip\", or its alias)",
+          "functionType": "StringExpression",
+          "group": "Playback",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nlet label = state.label;\nstate.aliases.forEach(function (entry, alias) {\n  const composed = entry.clip ? entry.file + '#' + entry.clip : entry.file;\n  if (composed === state.label) label = alias;\n});\neventsFunctionContext.returnValue = label || '';\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "ClipNameAt",
+          "fullName": "",
+          "description": "Name of the clip at a given index inside an animation file",
+          "functionType": "StringExpression",
+          "group": "Loading",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            },
+            {
+              "name": "AnimationFile",
+              "type": "model3DResource",
+              "description": "Animation file (.glb)",
+              "supplementaryInformation": "model3D"
+            },
+            {
+              "name": "Index",
+              "type": "expression",
+              "description": "Clip index",
+              "defaultValue": "0"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\nconst names = ESA.listClipNames(ESA.getGltf(runtimeScene, eventsFunctionContext.getArgument(\"AnimationFile\")));\nconst raw = eventsFunctionContext.getArgument(\"Index\");\nconst i = Number.isFinite(raw) ? Math.floor(raw) : 0;\neventsFunctionContext.returnValue = (i >= 0 && i < names.length) ? names[i] : '';\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        },
+        {
+          "name": "LastError",
+          "fullName": "",
+          "description": "The last error reported by this behavior",
+          "functionType": "StringExpression",
+          "group": "Loading",
+          "private": false,
+          "parameters": [
+            {
+              "name": "Object",
+              "type": "object",
+              "description": "Object"
+            },
+            {
+              "name": "Behavior",
+              "type": "behavior",
+              "description": "Behavior"
+            }
+          ],
+          "events": [
+            {
+              "type": "BuiltinCommonInstructions::JsCode",
+              "inlineCode": "const __esaObjects = eventsFunctionContext.getObjects(\"Object\");\nconst object = __esaObjects.length ? __esaObjects[0] : null;\nif (!object) return;\nconst behavior = object.getBehavior(eventsFunctionContext.getBehaviorName(\"Behavior\"));\nif (!behavior) return;\nif (!gdjs.__externalSkeletalAnimator3D) return;\nconst ESA = gdjs.__externalSkeletalAnimator3D;\nconst state = ESA.getState(behavior);\neventsFunctionContext.returnValue = state.error || '';\n",
+              "parameterObjects": "Object"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "eventsBasedObjects": []
+}
