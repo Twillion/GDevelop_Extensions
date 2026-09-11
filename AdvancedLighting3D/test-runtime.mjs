@@ -281,7 +281,6 @@ const mgrState = AL.registerSceneManager(mockScene, {
   enableVolumetricFog: true,
   volumetricFogDensity: 0.03,
   volumetricAnisotropy: 0.5,
-  enableContactShadows: true,
   globalIntensityScale: 1.2
 });
 
@@ -336,8 +335,8 @@ AL.hookObjectMaterials({
 
 assert.strictEqual(typeof sharedMaterial.customProgramCacheKey, 'function');
 const clusteredKey = sharedMaterial.customProgramCacheKey();
-assert.ok(clusteredKey.startsWith('GD_ADVLIGHT3D_V6|CL1|'), `Unexpected cache key ${clusteredKey}`);
-assert.ok(clusteredKey.endsWith('|LP0'), 'A material with no probe receiver must report LP0');
+assert.ok(clusteredKey.startsWith('GD_ADVLIGHT3D_V8|CL1|'), `Unexpected cache key ${clusteredKey}`);
+assert.ok(clusteredKey.includes('|LP0'), 'A material with no probe receiver must report LP0');
 
 const clusteredShader = makeShader();
 sharedMaterial.onBeforeCompile(clusteredShader);
@@ -419,7 +418,7 @@ assert.notStrictEqual(clone, receiverOriginal, 'The clone must not be the shared
 assert.strictEqual(receiverMesh.material, clone, 'The mesh must render the clone');
 
 const probeKey = clone.customProgramCacheKey();
-assert.ok(probeKey.endsWith('|LP1'), 'A receiver clone must report LP1');
+assert.ok(probeKey.includes('|LP1'), 'A receiver clone must report LP1');
 assert.notStrictEqual(probeKey, clusteredKey,
   'The probe and non-probe variants are different programs and must not share a cache key');
 
@@ -931,9 +930,9 @@ staleMaterial.onBeforeCompile = staleCompileHook;
 AL.__internals.injectShaderOnMaterial(staleMaterial, mgrState, null);
 assert.notStrictEqual(staleMaterial.onBeforeCompile, staleCompileHook,
   'A material injected by an older editor runtime must receive the current shader hook');
-assert.strictEqual(staleMaterial.__alInjection.version, '2026.09.02.8',
+assert.strictEqual(staleMaterial.__alInjection.version, '2026.09.11.3',
   'The material injection must identify the runtime that owns its texture bindings');
-assert.ok(staleMaterial.customProgramCacheKey().startsWith('GD_ADVLIGHT3D_V6|'),
+assert.ok(staleMaterial.customProgramCacheKey().startsWith('GD_ADVLIGHT3D_V8|'),
   'Replacing stale bindings must force a new Three.js shader program');
 console.log('  Passed: stale shader hook and frozen texture bindings replaced.');
 
@@ -1000,7 +999,7 @@ gdjs.__advancedLighting3D = staleRuntime;
 new Function(runtimeCode)();
 assert.notStrictEqual(gdjs.__advancedLighting3D, staleRuntime,
   'Re-importing the extension must replace a stale editor runtime');
-assert.strictEqual(gdjs.__advancedLighting3D.__runtimeVersion, '2026.09.02.8',
+assert.strictEqual(gdjs.__advancedLighting3D.__runtimeVersion, '2026.09.11.3',
   'The replacement runtime must identify the current build');
 assert.strictEqual(typeof registeredCallbacks.editorStep, 'function',
   'The replacement runtime must install its editor callback');
@@ -1139,14 +1138,14 @@ console.log('\n--- Test 30: SDF Material Program Cache Key and Shader Defines --
   const mat = makeStandardMaterial('SDFTestMat');
 
   // Without SDF:
-  state.enableSDFShadows = false;
+  AL.setShadowMode(testScene, 'Off');
   state.sdfVolume = null;
   AL.__internals.injectShaderOnMaterial(mat, state, null);
   const keyNoSDF = mat.customProgramCacheKey();
   assert.strictEqual(keyNoSDF.includes('|SDF1'), false, 'Program cache key without SDF must not contain |SDF1');
 
   // With SDF active:
-  state.enableSDFShadows = true;
+  AL.setShadowMode(testScene, 'Hybrid');
   state.sdfVolume = {
     texture: {},
     isBaked: true,
@@ -1158,7 +1157,7 @@ console.log('\n--- Test 30: SDF Material Program Cache Key and Shader Defines --
   mat.__alInjection = null; // force re-inject
   AL.__internals.injectShaderOnMaterial(mat, state, null);
   const keyWithSDF = mat.customProgramCacheKey();
-  assert.ok(keyWithSDF.endsWith('|SDF1'), `Program cache key with SDF must end with |SDF1, got ${keyWithSDF}`);
+  assert.ok(keyWithSDF.includes('|SDF1'), `Program cache key with SDF must end with |SDF1, got ${keyWithSDF}`);
 
   // Test shader defines and uniforms in onBeforeCompile
   const mockShader = {
@@ -1206,23 +1205,24 @@ console.log('\n--- Test 31: 4th Texel Light Data Packing (Shadow Flag and Source
     lightType: 'Point',
     radius: 10.0,
     castShadow: true,
+    shadowBias: 0.25,
     sourceRadius: 25.0
   });
 
   AL.doStepPostEvents(testScene);
 
   // Check 4th texel floats (indices 12..15 for light 0)
-  const shadowFlag = state.lightDataArray[14];
+  const shadowData = state.lightDataArray[14];
   const srcRadius = state.lightDataArray[15];
-  assert.strictEqual(shadowFlag, 1.0, 'Shadow flag (shape.z) must be 1.0 when castShadow is true');
+  assert.strictEqual(shadowData, 1.25, 'shape.z must pack a cast flag and the per-light SDF bias');
   assert.strictEqual(srcRadius, 25.0, 'Source radius (shape.w) must match configured sourceRadius');
 
   // Toggle shadow off
   AL.updateLight(testScene, lightObj, lightBeh, { castShadow: false });
   AL.doStepPostEvents(testScene);
-  assert.strictEqual(state.lightDataArray[14], 0.0, 'Shadow flag (shape.z) must be 0.0 when castShadow is false');
+  assert.strictEqual(state.lightDataArray[14], 0.25, 'Disabling casts must clear only the packed integer flag');
 
-  console.log('  Passed: 4th texel shadow flag and source radius packing verified.');
+  console.log('  Passed: 4th texel shadow flag, per-light bias and source radius packing verified.');
 }
 
 console.log('\n--- Test 32: SDF Volume Lifecycle, Scene Cleanup and Diagnostics ---');
@@ -1250,5 +1250,66 @@ console.log('\n--- Test 32: SDF Volume Lifecycle, Scene Cleanup and Diagnostics 
   console.log('  Passed: SDF volume lifecycle, VRAM metrics and scene teardown verified.');
 }
 
-console.log('\nALL 31 ADVANCED LIGHTING 3D UNIT TESTS PASSED CLEANLY (clustered + light probes + SDF shadows)!\n');
 
+console.log('--- Regression: SDF activation, shadow modes and receiver variants ---');
+{
+  const scene = { ...mockScene };
+  const state = AL.registerSceneManager(scene);
+  const behavior = {};
+  const volume = AL.registerSDFVolume(scene, {}, behavior, {resX:8,resY:8,resZ:4});
+  const material = {isMeshStandardMaterial:true};
+  const receiver = {normalBias:1};
+  AL.__internals.injectShaderOnMaterial(material, state, receiver);
+  assert.strictEqual(material.__alInjection.sdf, false, 'Unbaked volumes must not enable shadows');
+  volume.isBaked = true;
+  AL.doStepPostEvents(scene);
+  assert.strictEqual(material.__alInjection.sdf, true, 'Bake completion must refresh existing materials');
+  assert.strictEqual(material.__alInjection.probes, true, 'Refresh must preserve probe receivers');
+  AL.setShadowMode(scene, 'CSM');
+  AL.doStepPostEvents(scene);
+  assert.strictEqual(material.__alInjection.sdf, false);
+  AL.setShadowMode(scene, 'Hybrid');
+  AL.doStepPostEvents(scene);
+  assert.strictEqual(material.__alInjection.sdf, true);
+  AL.disposeSDFVolume(scene, behavior);
+  AL.doStepPostEvents(scene);
+  assert.strictEqual(material.__alInjection.sdf, false, 'Deleted volumes must disable their shader variant');
+}
+console.log('--- Regression: finite unbaked and empty baked SDF values ---');
+{
+  const scene = { ...mockScene };
+  const volume = AL.registerSDFVolume(scene, {}, {}, {resX:8,resY:8,resZ:4});
+  assert.ok([...volume.data].every(h => Number.isFinite(AL.fromHalf(h))));
+  assert.ok(AL.startSDFBake(scene));
+  for(let i=0;i<100 && !AL.isSDFBakeComplete(scene);i++) AL.doStepPostEvents(scene);
+  assert.ok(AL.isSDFBakeComplete(scene));
+  assert.ok([...volume.data].every(h => Number.isFinite(AL.fromHalf(h))));
+}
+console.log('--- Regression: anisotropic EDT matches brute force world distances ---');
+{
+  const [nx,ny,nz]=[4,5,3], spacing=[2,5,0.5];
+  const grid=new Float32Array(nx*ny*nz).fill(1e20);
+  const seeds=[[0,1,1,0.25],[3,4,0,1.5]];
+  for(const [x,y,z,d] of seeds)grid[(z*ny+y)*nx+x]=d;
+  AL.__internals.run3DEDT(grid,nx,ny,nz,...spacing);
+  for(let z=0;z<nz;z++)for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){
+    const expected=Math.sqrt(Math.min(...seeds.map(([sx,sy,sz,d])=>d+((x-sx)*spacing[0])**2+((y-sy)*spacing[1])**2+((z-sz)*spacing[2])**2)));
+    assert.ok(Math.abs(grid[(z*ny+y)*nx+x]-expected)<1e-5);
+  }
+}
+console.log('--- Regression: directional shadows are evaluated before native BRDF ---');
+{
+  const scene={...mockScene}; AL.setShadowMode(scene,'SDF'); const state=AL.registerSceneManager(scene);
+  const volume=AL.registerSDFVolume(scene,{},{}, {resX:8,resY:8,resZ:4});volume.isBaked=true;
+  const previous=THREE.ShaderChunk;
+  THREE.ShaderChunk={lights_fragment_begin:'getDirectionalLightInfo( directionalLight, directLight );\nRE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );'};
+  const material={isMeshStandardMaterial:true};
+  AL.__internals.injectShaderOnMaterial(material,state,null);
+  const shader={uniforms:{},vertexShader:'',fragmentShader:'#include <lights_fragment_begin>'};
+  material.onBeforeCompile(shader);
+  assert.ok(shader.fragmentShader.includes('length(uSdfSize), uSdfParams.w, 32)'));
+  assert.ok(shader.fragmentShader.indexOf('directLight.color *= sdfShadow') < shader.fragmentShader.indexOf('RE_Direct('));
+  THREE.ShaderChunk=previous;
+}
+
+console.log('\nALL 35 ADVANCED LIGHTING 3D UNIT TESTS PASSED CLEANLY (clustered + light probes + SDF shadows)!\n');

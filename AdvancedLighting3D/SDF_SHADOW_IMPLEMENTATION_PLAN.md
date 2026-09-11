@@ -1,6 +1,6 @@
 # SDF Shadows — Implementation Plan
 
-> **Status:** design only. No code written yet. Written to be folded into **AdvancedLighting3D**
+> **Status:** historical design reference. The SDF system is implemented in **AdvancedLighting3D**
 > as a third feature sharing the one `lights_fragment_begin` injection, alongside the clustered
 > direct-light loop ([IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)) and the baked probe grid
 > ([PROBE_IMPLEMENTATION_PLAN.md](./PROBE_IMPLEMENTATION_PLAN.md)).
@@ -9,9 +9,9 @@
 
 ## 0. Why SDF, and why here
 
-AdvancedLighting3D can already light a scene with 500 dynamic lights. It cannot **shadow** any of
-them. The README says so plainly: `EnableContactShadows` and the per-light `CastContactShadows`
-properties are inert, because screen-space contact shadows need a sampleable depth buffer and
+AdvancedLighting3D can register up to 512 dynamic lights, with a 256-light default and a 64-light
+per-cluster limit. Version 4.1.0 removes the unimplemented `EnableContactShadows` and per-light
+`CastContactShadows` properties because screen-space contact shadows need a sampleable depth buffer and
 GDevelop's 3D layer composer does not expose one (its render targets carry a depth *renderbuffer*,
 not a texture).
 
@@ -19,7 +19,7 @@ Enumerating what is actually available in this engine:
 
 | Technique | Verdict in GDevelop |
 | :--- | :--- |
-| **Shadow maps** (Three's native) | Works, but one directional plus a couple of spots is the practical ceiling. Each shadow-casting light is a full extra scene render. Cascades swim and crawl (the reason `StableShadowAnchor3D` exists). Cannot serve a clustered light system. |
+| **Shadow maps** (Three's native) | Works, but one directional plus a couple of spots is the practical ceiling. Each shadow-casting light is a full extra scene render. Cascades swim and crawl without light-space texel snapping (see Appendix A.3 of the shadow selector plan). Cannot serve a clustered light system. |
 | **Screen-space contact shadows** | **Impossible without rewriting the layer composer.** No depth texture. Also cannot shadow from off-screen geometry. |
 | **Voxel cone tracing (VXGI)** | Needs conservative rasterisation plus image load/store. No compute and no `imageStore` in WebGL2. Dead end. |
 | **Ray tracing / BVH in-shader** | A BVH traversal per light per fragment. Texture-fetch bound and branch-divergent; unusable at GDevelop's target hardware. |
@@ -73,7 +73,7 @@ flowchart TD
 ```
 
 * **Tier 1 — static field plus sun.** The single biggest visual win. Soft, stable, non-swimming sun
-  shadows over the whole level with no shadow camera, no cascades, no `StableShadowAnchor3D`.
+  shadows over the whole level with no shadow camera, no cascades, and no texel-snapping stabilization.
 * **Tier 2 — shadowed clustered lights.** Per-light opt-in flag, hard cap per fragment.
 * **Tier 3 — movers.** Analytic primitives (sphere / capsule / box) unioned into the field so the
   player and enemies cast without a rebake.

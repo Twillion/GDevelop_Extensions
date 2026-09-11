@@ -557,6 +557,20 @@ const behaviorFunctions = [
   strExpr('MaterialClass', 'Material class',
     'Which Three.js material class was built: Basic, Standard or Physical.',
     `M3.getMaterialClassName(behavior)`, G_DIAG),
+  strExpr('MeshNames', 'Mesh names on this object',
+    'Comma-separated names of every mesh on this 3D object - exactly the values that ' +
+    '"Mesh name" targeting can match. Use it to read the names a .glb actually shipped with ' +
+    'instead of copying them out of your modelling tool by eye.',
+    `M3.listMeshNames(object)`, G_DIAG),
+  strExpr('MaterialNames', 'Material names on this object',
+    'Comma-separated names of every material on this 3D object - exactly the values that ' +
+    '"Material name" targeting can match.',
+    `M3.listMaterialNames(object)`, G_DIAG),
+  numExpr('AOUVAliasCount', 'AO UV alias count',
+    'How many geometries had their single UV set aliased onto uv1 so an ambient occlusion map ' +
+    'could be sampled. Three.js reads aoMap from the second UV set, which most exported models ' +
+    'do not have; a non-zero value here means the AO map is working because of that aliasing.',
+    `M3.getAOUvAliasCount(behavior)`, G_DIAG),
 
   numExpr('CurrentFrame', 'Current flipbook frame', 'The frame the flipbook is showing.',
     `M3.getBehaviorState(behavior).flipbook.currentFrame`, G_FLIP),
@@ -573,8 +587,17 @@ const behaviorFunctions = [
   strExpr('AnisotropicFiltering', 'Anisotropic filtering mode', 'Current configured anisotropic filtering mode.',
     `M3.getAnisotropicFiltering(behavior)`, G_RENDER),
   cond('IsAnisotropicFilteringEnabled', 'Anisotropic filtering is enabled', '_PARAM0_ anisotropic filtering is enabled',
-    'Whether anisotropic filtering is active (anisotropy > 1).', [],
+    'Whether anisotropic filtering is configured above 1. This reports the SETTING. Use ' +
+    '"Anisotropic filtering is actually filtering" to find out whether it is changing pixels.', [],
     `M3.getTextureAnisotropy(behavior) > 1`, G_RENDER),
+  cond('IsAnisotropicFilteringEffective', 'Anisotropic filtering is actually filtering',
+    '_PARAM0_ anisotropic filtering is actually filtering',
+    'Whether anisotropic filtering is changing pixels rather than merely being set. Anisotropy ' +
+    'samples along a mipmap chain, so on a texture with mipmaps disabled it does nothing however ' +
+    'high the level reads back. Pair with "is enabled" the way BlendNeighborCount pairs with ' +
+    '"Blending with neighbours": one says configured, this one says working.', [],
+    `(function(){ const r = M3.getRootObject3D(object); return !!(r && gdjs.__materialController3D && gdjs.__materialController3D.isAnisotropyEffective(r)); })()`,
+    G_RENDER),
 
   /* ---------------------------------------------------------------- Sheen / iridescence / anisotropy */
   setter('Sheen', 'Set sheen', 'Set _PARAM0_ sheen to _PARAM2_',

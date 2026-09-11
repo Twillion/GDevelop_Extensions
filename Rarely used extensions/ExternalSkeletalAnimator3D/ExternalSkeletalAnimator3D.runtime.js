@@ -12,7 +12,8 @@
  *  - `Model3DManager.getModel()` returns the SHARED cached GLTF, so every clip
  *    is `.clone()`d before its tracks are touched.
  *  - A single .glb holds an `animations[]` ARRAY. Clips are addressed as
- *    (file, clipName); a blank clipName means "first clip in the file".
+ *    (file, selector), where the selector is a clip name ('' = the first clip)
+ *    or a position, `{ index: n }`. See `resolveSourceClip`.
  */
 if (!gdjs.__externalSkeletalAnimator3D) {
   gdjs.__externalSkeletalAnimator3D = (function () {
@@ -573,8 +574,33 @@ if (!gdjs.__externalSkeletalAnimator3D) {
       return gltf.animations.map(function (a) { return a.name; });
     }
 
-    /** Resolves (file, clipName) to a source clip, recording why it failed. */
-    function resolveSourceClip(runtimeScene, file, clipName, state) {
+    /**
+     * A clip selector is either a NAME (a string; '' means "first clip in the
+     * file") or a POSITION (`{ index: n }`).
+     *
+     * The two cannot be collapsed into one by looking the index up and passing
+     * the name along, which is what an earlier build did. Mixamo names every
+     * clip it exports `mixamo.com`, so a pack assembled from a dozen Mixamo
+     * downloads holds a dozen identically named clips -- and
+     * `AnimationClip.findByName` returns the FIRST match. Every index in that
+     * pack would resolve to clip 0: "play animation by index" would silently
+     * play the wrong animation in exactly the case it exists to serve.
+     */
+    function isIndexSelector(sel) {
+      return !!sel && typeof sel === 'object' && typeof sel.index === 'number';
+    }
+
+    /**
+     * Cache identity for a selector. The two forms are prefixed rather than
+     * stringified so a clip genuinely named "3" cannot share an entry with
+     * index 3 -- a collision there would hand back the wrong clip.
+     */
+    function clipSelectorKey(sel) {
+      return isIndexSelector(sel) ? 'idx:' + Math.floor(sel.index) : 'name:' + (sel || '');
+    }
+
+    /** Resolves (file, selector) to a source clip, recording why it failed. */
+    function resolveSourceClip(runtimeScene, file, sel, state) {
       const gltf = getGltf(runtimeScene, file);
       if (!gltf || !gltf.animations || gltf.animations.length === 0) {
         state.error = 'No animations in "' + file +
@@ -582,19 +608,42 @@ if (!gdjs.__externalSkeletalAnimator3D) {
           'may not exist, or may contain no clips.';
         return null;
       }
-      if (!clipName) return gltf.animations[0];
-      const found = THREE.AnimationClip.findByName(gltf.animations, clipName);
+      const clips = gltf.animations;
+
+      if (isIndexSelector(sel)) {
+        const i = Math.floor(sel.index);
+        if (!(i >= 0 && i < clips.length)) {
+          state.error = 'Clip index ' + i + ' is out of range for "' + file +
+            '" (' + clips.length + ' clip(s): ' + listClipNames(gltf).join(', ') + ').';
+          return null;
+        }
+        return clips[i];
+      }
+
+      if (!sel) return clips[0];
+      const found = THREE.AnimationClip.findByName(clips, sel);
       if (!found) {
-        state.error = 'Clip "' + clipName + '" not found in "' + file +
+        state.error = 'Clip "' + sel + '" not found in "' + file +
           '". Available: ' + listClipNames(gltf).join(', ');
         return null;
       }
       return found;
     }
 
+    /**
+     * The label `CurrentAnimation()` reports, and the string aliases are matched
+     * against: "file#clip", or just the file when the first clip was taken
+     * unnamed. An index selector reports the name it resolved to, so the label
+     * means the same thing however the clip was addressed.
+     */
+    function clipLabel(file, sel, resolvedName) {
+      if (isIndexSelector(sel)) return resolvedName ? file + '#' + resolvedName : file;
+      return sel ? file + '#' + sel : file;
+    }
+
     /* ----------------------------------------------------------------- play */
 
-    function play(runtimeScene, object, behavior, file, clipName, loop, speed, fade, mode, layer) {
+    function play(runtimeScene, object, behavior, file, clipSel, loop, speed, fade, mode, layer) {
       const state = getState(behavior);
       const rig = refreshRig(object, state);
       if (!rig) {
@@ -634,12 +683,12 @@ if (!gdjs.__externalSkeletalAnimator3D) {
         maskKey = (maskExcludes ? 'below:' : 'above:') + layer.splitBone;
       }
 
-      const cacheKey = rig.signature + ' ' + file + ' ' + (clipName || '') + ' ' + modeKey +
+      const cacheKey = rig.signature + ' ' + file + ' ' + clipSelectorKey(clipSel) + ' ' + modeKey +
         ' ' + (proportional ? 'p' + hipScale.toFixed(4) : 'raw') + ' ' + maskKey;
       let entry = preparedCache.get(cacheKey);
 
       if (!entry) {
-        const source = resolveSourceClip(runtimeScene, file, clipName, state);
+        const source = resolveSourceClip(runtimeScene, file, clipSel, state);
         if (!source) return false;
         const cleanNames = behavior._getAutoCleanBoneNames
           ? behavior._getAutoCleanBoneNames() !== false
@@ -683,6 +732,9 @@ if (!gdjs.__externalSkeletalAnimator3D) {
 
         entry = {
           clip: result.clip,
+          // What an index selector resolved to. Kept on the entry because a
+          // cache hit never calls resolveSourceClip() and so never sees it.
+          clipName: source.name,
           // Measured once per (clip, rig, mode) and shared by every character
           // built on that rig -- the expensive part is paid once, not per NPC.
           stride: measureStride(result.clip, rig, rig.upAxis),
@@ -721,7 +773,7 @@ if (!gdjs.__externalSkeletalAnimator3D) {
       state.mixer.update(0);
 
       if (layer && layer.name) {
-        state.layers.set(layer.name, { action: action, label: file + '#' + (clipName || '') });
+        state.layers.set(layer.name, { action: action, label: clipLabel(file, clipSel, entry.clipName) });
         state.error = '';
         return true;
       }
@@ -747,7 +799,7 @@ if (!gdjs.__externalSkeletalAnimator3D) {
       });
 
       state.action = action;
-      state.label = clipName ? (file + '#' + clipName) : file;
+      state.label = clipLabel(file, clipSel, entry.clipName);
       state.speed = speed;
       state.stride = entry.stride;
       state.rootTrack = modeKey === 'drive' ? entry.rootTrack : null;
@@ -775,6 +827,59 @@ if (!gdjs.__externalSkeletalAnimator3D) {
      * The offset is applied in the BONE's frame, not world axes -- "5 units down
      * the palm" has to stay down the palm when the wrist turns.
      */
+    /**
+     * How far an attached object's MESH sits from the position GDevelop stores
+     * for that object. Every 3D object type answers this differently, and the
+     * difference is the whole of the bug it fixes:
+     *
+     *  - Cube3D, and anything else left on the base `RuntimeObject3DRenderer`,
+     *    anchors its CORNER: `updatePosition()` puts the mesh at
+     *    `position + size / 2`.
+     *  - Model3D anchors its model ORIGIN POINT:
+     *    `position - size * (origin - center)`. That is exactly `position` while
+     *    both points sit at their defaults, and is not once either is moved.
+     *
+     * So writing a bone's world position straight into `setX/Y/Z` lands on the
+     * bone for a default Model3D and misses by half a bounding box for a Cube3D
+     * -- the usual placeholder weapon hovers beside the hand instead of in it.
+     *
+     * The offset is read off the live renderer instead of re-deriving each
+     * renderer's convention here, so an object type this build has never heard
+     * of is still placed correctly. It is measured once per size: a custom 3D
+     * object updates its container lazily, and re-reading a possibly stale
+     * transform every frame would feed the object's own motion back into its
+     * own offset.
+     */
+    function socketAnchor(socket, target) {
+      const w = target.getWidth ? target.getWidth() : 0;
+      const h = target.getHeight ? target.getHeight() : 0;
+      const d = target.getDepth ? target.getDepth() : 0;
+      if (socket.anchor && socket.anchorW === w && socket.anchorH === h && socket.anchorD === d) {
+        return socket.anchor;
+      }
+
+      const anchor = [0, 0, 0];
+      const renderer = target.getRenderer ? target.getRenderer() : null;
+      const three = renderer && renderer.get3DRendererObject
+        ? renderer.get3DRendererObject() : null;
+      if (three && three.position) {
+        // Never read a transform the renderer has not caught up with.
+        if (renderer.updatePosition) renderer.updatePosition();
+        anchor[0] = three.position.x - target.getX();
+        anchor[1] = three.position.y - target.getY();
+        anchor[2] = three.position.z - (target.getZ ? target.getZ() : 0);
+        for (let a = 0; a < 3; a++) {
+          if (!isFinite(anchor[a])) anchor[a] = 0;
+        }
+      }
+
+      socket.anchor = anchor;
+      socket.anchorW = w;
+      socket.anchorH = h;
+      socket.anchorD = d;
+      return anchor;
+    }
+
     function updateSockets(state) {
       if (!state.sockets.length || !state.rig) return;
       const v = updateSockets._v || (updateSockets._v = new THREE.Vector3());
@@ -799,9 +904,12 @@ if (!gdjs.__externalSkeletalAnimator3D) {
         bone.getWorldQuaternion(q);
 
         o.set(socket.dx, socket.dy, socket.dz).applyQuaternion(q);
-        target.setX(v.x + o.x);
-        target.setY(v.y + o.y);
-        if (target.setZ) target.setZ(v.z + o.z);
+
+        // Aim the object's MESH at the bone, not the corner GDevelop stores.
+        const anchor = socketAnchor(socket, target);
+        target.setX(v.x + o.x - anchor[0]);
+        target.setY(v.y + o.y - anchor[1]);
+        if (target.setZ) target.setZ(v.z + o.z - anchor[2]);
 
         if (socket.orient !== false) {
           e.setFromQuaternion(q, 'ZYX');
@@ -880,6 +988,9 @@ if (!gdjs.__externalSkeletalAnimator3D) {
     return {
       normalize: normalize,
       subtreeNames: subtreeNames,
+      clipSelectorKey: clipSelectorKey,
+      clipLabel: clipLabel,
+      socketAnchor: socketAnchor,
 
       stopLayer: function (state, name) {
         const slot = state.layers.get(name);
@@ -899,6 +1010,7 @@ if (!gdjs.__externalSkeletalAnimator3D) {
       refreshRig: refreshRig,
       getGltf: getGltf,
       listClipNames: listClipNames,
+      resolveSourceClip: resolveSourceClip,
       play: play,
       updateSockets: updateSockets,
       rootMotionKey: rootMotionKey,

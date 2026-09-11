@@ -1,5 +1,12 @@
 # Extension folder audit — 2026-08-28
 
+> **Update 2026-09-11:** the blueprint-only folders `CascadedShadowMaps3D/`, `MeshDeformation3D/`
+> and `StableShadowAnchor3D/` have since been deleted. The CSM math and API reference was folded
+> into Appendix A of
+> [`AdvancedLighting3D/SHADOW_SELECTOR_IMPLEMENTATION_PLAN.md`](../AdvancedLighting3D/SHADOW_SELECTOR_IMPLEMENTATION_PLAN.md).
+> `ClusteredDetail/` is the only blueprint-only folder still present. The body below is kept as the
+> record of what was true on 2026-08-28 and is not edited to match.
+
 A review of every top-level folder: what it is, whether it works, and a proposed disposition.
 **Nothing has been moved, renamed or deleted.** This is a plan only. Other agents are working in
 `AutoMeshLOD3D/`, `CameraTweens3d/`, `CascadedShadowMaps3D/`, `AdvancedLighting3D/`,

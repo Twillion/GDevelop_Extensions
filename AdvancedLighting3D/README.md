@@ -4,9 +4,9 @@
 **GDevelop 5 (Three.js WebGL2 backend)**. It covers direct light, indirect GI, and raymarched soft shadows:
 
 1. **Direct light.** By partitioning the camera view frustum into a 3D grid of **3,456 spatial clusters**
-($16 \times 9 \times 24$ depth slices), it lets scenes carry **100 to 500+ active dynamic lights**
-(torches, streetlamps, campfires, neon signs, magic spells, muzzle flashes) with zero shader
-recompilations, flat 60 FPS performance, and cinema-grade fidelity (Karis area light specular
+($16 \times 9 \times 24$ depth slices), it can register up to **512 active dynamic lights**
+(torches, streetlamps, campfires, neon signs, magic spells, muzzle flashes) without shader
+recompilation for ordinary light updates (Karis area light specular
 reflections, blackbody Kelvin colour temperatures, IES photometric profiles, and spot cones).
 
 2. **Indirect light.** A **`LightProbeVolume3D`** bakes the scene's ambient into a small RGBA16F 3D
@@ -15,12 +15,11 @@ canopy, into a cave, or along a red-lit corridor picks up the ambient colour of 
 of the single flat ambient value a scene otherwise gets. About 16 KB of VRAM at default settings and
 no additional draw calls.
 
-3. **Signed Distance Field (SDF) Soft Shadows.** An **`SDFVolume3D`** bakes scene geometry into an
+3. **SDF Soft Shadows.** An **`SDFVolume3D`** bakes scene geometry into an
 R16F 3D Signed Distance Field via exact Ericson triangle queries and Felzenszwalb's $O(N)$ separable
 Euclidean Distance Transform. The injected PBR shader raymarches this distance field with Quilez's
-improved penumbra estimator, delivering physically accurate contact-hardening soft shadows for the
-directional Sun and up to 16 closest clustered dynamic lights — without shadow maps, cascade acne,
-or extra render passes.
+improved penumbra estimator, delivering approximate contact-hardening soft shadows for the
+directional Sun in SDF mode and clustered local lights in SDF/Hybrid modes. Local shadow candidates are ordered by distance to each cluster center; the per-fragment budget defaults to four. This is a conservative surface-distance approximation; small features require sufficient voxel resolution.
 
 > **Why one extension.** All three systems inject into the same `lights_fragment_begin` chunk of the same
 > shared materials. Unifying them provides **one injection, one customProgramCacheKey and one
@@ -31,12 +30,12 @@ or extra render passes.
 
 ## 🌟 Key Highlights
 
-- **Scale to 500+ Dynamic Lights:** Flat $O(1)$ constant-time pixel evaluation by testing only the 1–3 lights in each pixel's 3D cluster bin.
+- **Clustered light evaluation:** Up to 512 registered lights; each pixel evaluates up to 64 entries in its cluster. Cost depends on overlap and shadow settings.
 - **Zero Shader Recompilation Stutter:** Light data is streamed dynamically through WebGL2 DataTextures and 3D textures (`sampler3D`), eliminating all runtime shader recompilations when lights spawn, move, or extinguish.
 - **Physically Based Area Lights (Karis Model):** Replaces artificial pinpoint specular reflections with realistic broad reflections for glowing embers, light bulbs, and neon tube/capsule lights.
 - **Blackbody Radiation Color Temperature:** Set authentic physical lighting in Kelvin (1,800K candle flames to 8,500K moonlight).
 - **IES Photometric Profiles:** Real-world architectural light distributions (wall sconces, streetlamps, spotlights, downlights), carried to the GPU in the fourth light texel.
-- **Volumetric SDF Soft Shadows:** Fast 3D Signed Distance Field raymarching using Inigo Quilez's penumbra estimator. Contact-hardening soft shadows for the directional Sun and up to 16 dynamic clustered lights with zero shadow maps or cascade seams.
+- **Volumetric SDF Soft Shadows:** Fast 3D Signed Distance Field raymarching using Inigo Quilez's penumbra estimator. Contact-hardening soft shadows for the directional Sun and clustered local lights. CSM uses native shadow-map passes for the Sun in Hybrid mode.
 - **O(N) Separable Euclidean Distance Transform:** Static geometry is converted into high-precision distance volumes using Ericson triangle distance tests and 3-axis Felzenszwalb parabolic envelopes under an amortised frame budget.
 - **Baked Indirect Light Probes:** A 3D grid of probes captures occlusion and coloured bounce, sampled with one hardware-filtered `sampler3D` fetch per fragment. Caves go dark because there is rock overhead; the corridor goes red because the wall beside it is red.
 - **Day / Night Probe Blending:** Two baked states blended on the GPU by a single global factor — no CPU recomputation, no rebake.
@@ -108,9 +107,9 @@ flowchart TD
 
 | Metric / Capability | Standard GDevelop 3D Lighting | AdvancedLighting3D |
 | :--- | :--- | :--- |
-| **Max Dynamic Lights** | 8–12 point lights | **200–500+ active lights** |
+| **Max Dynamic Lights** | Depends on the renderer and material path | **64–512 registered lights (256 default), with at most 64 in one cluster** |
 | **CPU cost of 100 Lights** | One draw path per light | **~1.3 ms broadphase, measured** (see below; GPU cost unprofiled) |
-| **Shader Hitching on Spawn** | Recompiles shader per light count change | **Zero recompilations (Streamed via textures)** |
+| **Shader Hitching on Spawn** | Light-count changes can alter the render path | **Ordinary light updates stream through textures without recompiling** |
 | **Specular Reflections** | Pinpoint plastic white dots | **Realistic Area Lights (Karis Tube & Sphere)** |
 | **Light Color Modeling** | Manual RGB hex codes | **Kelvin Blackbody Temperature (1,800K–8,500K)** |
 | **Light Profiles** | Uniform spheres only | **IES Photometric Lobes (Sconces, Downlights)** |
@@ -118,9 +117,32 @@ flowchart TD
 | **Indirect / Ambient Light** | One flat ambient value for the whole scene | **Spatially varying baked probe grid (occlusion + coloured bounce)** |
 | **Ambient in a Cave** | Same as outdoors | **Dark, because the bake saw rock overhead** |
 | **Day / Night Ambient** | Manual re-tint | **Two baked volumes blended by one GPU factor** |
-| **GPU VRAM Overhead** | High with multiple shadow maps | **< 60 KB clustered + ~16 KB probes + ~512 KB–2 MB SDF volume** |
+| **GPU VRAM Overhead** | Depends on native light and shadow settings | **Cluster buffers scale with MaxLights; probes and SDF scale with volume resolution; CSM scales with cascade count and map size** |
 
 ---
+
+## Shadow modes and CSM
+
+Hybrid is the default. CSM follows the first visible native directional Sun on the base 3D layer; it does not add another source of brightness. If there is no native Sun, CSM stays inactive. Add one in GDevelop before expecting Sun shadows.
+
+| Mode | Sun shadows | Clustered local-light shadows |
+| --- | --- | --- |
+| Off | Disabled | Disabled |
+| CSM | Cascaded shadow maps | Disabled |
+| SDF | Baked distance field | Baked distance field |
+| Hybrid | Cascaded shadow maps | Baked distance field |
+
+Use SetShadowMode, or add one **AdvancedShadowManager3D** to configure the scene in the inspector. CSM supports 2–4 cascades (default 3), 1024/2048/4096 maps (default 2048), maximum distance, practical split lambda, depth/normal bias, PCF softness and seam blending. Fitting handles the mirrored Y root and Z-up coordinates, snaps to shadow texels, overlaps cascade transition bands and fades the final cascade to unshadowed Sun. Meshes keep their authored Three.js `castShadow` and `receiveShadow` flags, so enable those flags on the casters and receivers that should participate. Mode changes and scene cleanup release owned maps and restore renderer settings.
+
+SDF baking now yields during voxel seeding, each distance-transform scanline, and conversion. Geometry collection and GPU texture upload remain synchronous. Deleting/resizing a volume cancels stale bake work. Loaded files validate bounds and samples. Zero normal bias is valid. Empty fields stay finite. Conservative half-voxel-diagonal dilation reduces thin-wall leaks, at the cost of slightly thicker silhouettes; rebake older SDF files to use this change. Local shadow priorities use distance to the cluster center, not exact per-fragment nearest-neighbor sorting.
+
+SDF is **static geometry only**: moving casters need CSM for Sun shadows; moving local-light casters are not implemented. Only the base 3D layer is currently managed. Per-light `ShadowBias` offsets local SDF rays in voxel-size units; the global SDF normal bias controls the directional Sun.
+
+### Validation
+
+Run node AdvancedLighting3D/test-light-flicker-effects.mjs, node AdvancedLighting3D/test-shadow-runtime.mjs, and node AdvancedLighting3D/test-shadow-webgl.mjs. The WebGL test uses the repository's Three.js r160 and headless Chrome with SwiftShader, checks actual changed pixels, mode restoration, cascade bounds and shader errors, and writes shadow-validation.png. It requires Chrome (or CHROME_PATH).
+
+Software-WebGL tests are not hardware performance measurements or a full GDevelop export test. Desktop/mobile GPU profiling and editor/export acceptance testing remain outstanding. No universal 60 FPS guarantee is made.
 
 ## 🚀 Quick Start Guide
 
@@ -132,11 +154,27 @@ flowchart TD
    - An AreaCapsule is a two-sided tube along the object's local Z axis. Diffuse lighting and attenuation use the nearest point on the fixed tube; only its physically view-dependent specular reflection uses the Karis representative point.
    - Set **Color Temperature:** e.g. `2200K` for warm torch fire or `5500K` for cool halogen.
    - Set **Attenuation Radius:** e.g. `12.0` meters.
-   - Enable **Procedural Flicker:** Select `FireFlicker` for dynamic organic flame modulation.
+   - For animation, add **`Lightflickereffects`** to the same object. Its **Flicker Mode** setting includes `FireFlicker` for flame modulation.
 4. **Trigger In Event Sheet:**
    - On spell cast: `ClusteredLight3D::SetIntensity(3.5)` and `ClusteredLight3D::SetRadius(25.0)`
-   - On shooting: `ClusteredLight3D::TriggerMuzzleFlash(duration: 0.05)`
+   - On shooting: `Lightflickereffects::TriggerMuzzleFlash(duration: 0.05)`
    - Master brightness: `AdvancedLighting3D::SetGlobalIntensity(1.2)`
+
+### Lightflickereffects and LightTweens
+
+These are separate optional companions for **ClusteredLight3D**. Add either or both to the same object. Leave **Light behavior name** empty to connect to its first light, or enter a specific behavior name when it has multiple lights. Use one of each companion per light.
+
+**Lightflickereffects** provides FireFlicker, FluorescentHum, SirenStrobe and PulseWave, with speed and variation. ApplyFlickerPreset configures Candle, Torch, Fluorescent, Alarm, Breathing or None. TriggerMuzzleFlash creates a decaying burst. PauseEffects, ResumeEffects and StopAllEffects affect only flicker and flashes.
+
+**LightTweens** smoothly changes intensity, radius (metres), RGB color and temperature (Kelvin). Each action takes a target, **duration in seconds** (default 1), easing style and playback mode. Available styles: Linear, EaseIn, EaseOut, EaseInOut, CubicIn, CubicOut, CubicInOut, SineIn, SineOut, SineInOut and ExponentialInOut. Playback can be Once, Loop or PingPong.
+
+For a half-second fade out, call LightTweens → TweenIntensity with target 0, duration 0.5, EaseOut, Once. For a breathing radius, use TweenRadius with your target radius, duration 2, SineInOut, PingPong.
+
+Intensity and radius can tween together. Color and temperature replace each other. Restarting a channel begins at its current value; zero duration applies immediately. PauseTweens and ResumeTweens control only transitions. StopTween stops one channel or All at the current values. IsTweenPlaying, IsTweenFinished and TweenProgress expose status; finished remains true until restarted or stopped, so use Trigger once for a one-shot event.
+
+Flicker modulates the tweened base intensity. Both behaviors work independently of their order on the object. Pauses are independent and survive behavior deactivation/reactivation. Destroying either companion leaves the other active. IsPaused and IsLightConnected are available on both. Animation runs in the game; the editor shows steady authored lighting.
+
+**Extension API changes:** Original ClusteredLight3D flicker settings and events now belong to Lightflickereffects. Transition actions previously on Lightflickereffects now belong to LightTweens. Only the extension is updated; project files are not modified.
 
 ### Adding baked indirect light
 

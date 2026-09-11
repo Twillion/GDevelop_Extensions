@@ -63,9 +63,12 @@ class BaseMat {
                      'side', 'depthWrite', 'roughness', 'metalness', 'emissiveIntensity',
                      'transmission', 'ior', 'thickness', 'clearcoat', 'clearcoatRoughness',
                      'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap',
-                     'vertexColors']) {
+                     'vertexColors', 'aoMapIntensity', 'envMapIntensity', 'alphaMap',
+                     'flatShading', 'toneMapped']) {
       if (this[k] !== undefined) c[k] = this[k];
     }
+    // A Vector2 on the real material, so a plain assignment would alias it into the clone.
+    if (this.normalScale) c.normalScale = new THREE.Vector2(this.normalScale.x, this.normalScale.y);
     if (this.color) c.color = new StubColor().copy(this.color);
     if (this.emissive) c.emissive = new StubColor().copy(this.emissive);
     c.userData = JSON.parse(JSON.stringify(this.userData ?? {}));
@@ -76,7 +79,9 @@ class BaseMat {
 class MeshBasicMaterial extends BaseMat { constructor() { super(); this.isMeshBasicMaterial = true; this.type = 'MeshBasicMaterial'; } }
 class MeshStandardMaterial extends BaseMat {
   constructor() { super(); this.isMeshStandardMaterial = true; this.type = 'MeshStandardMaterial';
-    this.roughness = 0.5; this.metalness = 0; this.emissive = new StubColor(); this.emissiveIntensity = 1; }
+    this.roughness = 0.5; this.metalness = 0; this.emissive = new StubColor(); this.emissiveIntensity = 1;
+    this.normalScale = new THREE.Vector2(1, 1); this.aoMapIntensity = 1; this.envMapIntensity = 1;
+    this.alphaMap = null; this.flatShading = false; this.toneMapped = true; }
 }
 class MeshPhysicalMaterial extends MeshStandardMaterial {
   constructor() { super(); this.isMeshPhysicalMaterial = true; this.type = 'MeshPhysicalMaterial';
@@ -91,6 +96,11 @@ class StubTexture {
     this.isTexture = true;
     this.wrapS = 1001;
     this.wrapT = 1001;
+    // What gdjs.PixiImageManager.getThreeTexture actually produces: LinearFilter, which is one
+    // of the two filters for which Three.js generates no mipmaps at all.
+    this.minFilter = 1006;
+    this.magFilter = 1006;
+    this.generateMipmaps = true;
     this.userData = {};
     this.repeat = new THREE.Vector2(1,1);
     this.offset = new THREE.Vector2();
@@ -101,7 +111,16 @@ class StubTexture {
     this.disposed = false;
     this.updates = 0;
   }
-  clone() { const t = new StubTexture(); t.anisotropy = this.anisotropy; return t; }
+  clone() {
+    const t = new StubTexture();
+    t.anisotropy = this.anisotropy;
+    t.wrapS = this.wrapS;
+    t.wrapT = this.wrapT;
+    t.minFilter = this.minFilter;
+    t.magFilter = this.magFilter;
+    t.generateMipmaps = this.generateMipmaps;
+    return t;
+  }
   dispose() { this.disposed = true; }
   update() { this.updates++; }
 }
@@ -226,8 +245,14 @@ globalThis.THREE = {
   FrontSide: 0, BackSide: 1, DoubleSide: 2,
   NormalBlending: 1, AdditiveBlending: 2, MultiplyBlending: 4,
   SRGBColorSpace: 'srgb', LinearSRGBColorSpace: 'srgb-linear',
-  NearestFilter: 1003, LinearFilter: 1006,
-  RepeatWrapping: 1000, Vector2: class { constructor(x = 0, y = 0) { this.x = x; this.y = y; } set(x, y) { this.x = x; this.y = y; return this; } },
+  NearestFilter: 1003, NearestMipmapNearestFilter: 1004, NearestMipmapLinearFilter: 1005,
+  LinearFilter: 1006, LinearMipmapNearestFilter: 1007, LinearMipmapLinearFilter: 1008,
+  RepeatWrapping: 1000, ClampToEdgeWrapping: 1001,
+  Vector2: class {
+    constructor(x = 0, y = 0) { this.x = x; this.y = y; }
+    set(x, y) { this.x = x; this.y = y; return this; }
+    copy(v) { this.x = v.x; this.y = v.y; return this; }
+  },
   Vector3: class { constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; } },
   Matrix3: class { setUvTransform() { return this; } identity() { return this; } },
   Texture: StubTexture,
@@ -1478,13 +1503,22 @@ console.log('\n21. Baked PBR roughness & metalness preservation');
   M3.applyToBehavior(c.behavior, c.object, c.game);
   check('Metalness is overridden when UseMetalness is true', Math.abs(c.mesh.material.metalness - 0.95) < 1e-4, String(c.mesh.material.metalness));
 
-  // 4. Preserved baked texture maps enforce RepeatWrapping
+  // 4. A map that arrived with the model keeps the wrap mode the model authored. Core used to
+  //    force Repeat here, which bleeds a ClampToEdge atlas for every other object drawing that
+  //    same shared texture, and outlives RestoreMaterials because Core never owned it. Textures
+  //    Core loads itself are set to Repeat in loadTexture; the clone AnimatedMaterial3D drives
+  //    is set to Repeat where it is created, so tiling and scrolling still wrap.
   const mappedMat = new MeshStandardMaterial();
   const bakedTex = new StubTexture();
+  bakedTex.wrapS = THREE.ClampToEdgeWrapping;
+  bakedTex.wrapT = THREE.ClampToEdgeWrapping;
   mappedMat.map = bakedTex;
   const d = setup({}, mappedMat);
   M3.applyToBehavior(d.behavior, d.object, d.game);
-  check('Preserved baked texture map has RepeatWrapping enforced', bakedTex.wrapS === THREE.RepeatWrapping && bakedTex.wrapT === THREE.RepeatWrapping);
+  check("A model's own texture keeps the wrap mode it was authored with",
+    bakedTex.wrapS === THREE.ClampToEdgeWrapping && bakedTex.wrapT === THREE.ClampToEdgeWrapping,
+    String(bakedTex.wrapS));
+  check('  and is still the map bound to the material', d.mesh.material.map === bakedTex);
 }
 
 console.log('\n22. Standalone Contributor behaviors (without Core)');
@@ -2336,6 +2370,218 @@ console.log('\n30. Cube3D tint and UV survival');
     DMx.stateOf(sizedB).rebuildCount === rebuildsBefore + 1, String(DMx.stateOf(sizedB).rebuildCount));
 
   MB.clear();
+}
+
+console.log('\n31. Authored .glb material survival');
+{
+  const game = { getImageManager: () => ({ getPIXITexture: () => null }) };
+
+  /* --- A class change cannot clone: a Standard material does not become a Physical one. So
+     everything the model authored has to be carried onto the replacement by hand. Only
+     name/color/map/roughness/metalness were, which meant an emissive, double-sided,
+     transparent glTF material came back black, opaque and single-sided the moment any
+     Physical field promoted the class. */
+  const authored = new MeshStandardMaterial();
+  authored.name = 'LeafCard';
+  authored.emissive.setRGB(0.2, 0.8, 0.4);
+  authored.emissiveIntensity = 2.5;
+  authored.side = THREE.DoubleSide;
+  authored.transparent = true;
+  authored.opacity = 0.4;
+  authored.alphaTest = 0.25;
+  authored.vertexColors = true;
+  authored.flatShading = true;
+  authored.aoMapIntensity = 0.6;
+  authored.envMapIntensity = 3;
+  authored.normalScale.set(0.3, 0.3);
+  authored.alphaMap = new StubTexture();
+
+  const promoted = setup({ ShaderType: 'Physical (transmission, clearcoat)' }, authored);
+  M3.applyToBehavior(promoted.behavior, promoted.object, promoted.game);
+  const pm = promoted.mesh.material;
+  check('A class change builds the requested class', pm.isMeshPhysicalMaterial === true, pm.type);
+  check('  and is not the material the model shipped', pm !== authored);
+  check('  emissive colour survives the change', Math.abs(pm.emissive.g - 0.8) < 1e-6, String(pm.emissive.g));
+  check('  emissive intensity survives', pm.emissiveIntensity === 2.5, String(pm.emissiveIntensity));
+  check('  double-sided survives', pm.side === THREE.DoubleSide, String(pm.side));
+  check('  transparency survives', pm.transparent === true && Math.abs(pm.opacity - 0.4) < 1e-6, String(pm.opacity));
+  check('  alpha test survives', Math.abs(pm.alphaTest - 0.25) < 1e-6, String(pm.alphaTest));
+  check('  vertex colours survive', pm.vertexColors === true);
+  check('  flat shading survives', pm.flatShading === true);
+  check('  AO intensity survives', Math.abs(pm.aoMapIntensity - 0.6) < 1e-6, String(pm.aoMapIntensity));
+  check('  env map intensity survives', pm.envMapIntensity === 3, String(pm.envMapIntensity));
+  check('  alpha map survives', pm.alphaMap === authored.alphaMap);
+  check('  normal scale survives', Math.abs(pm.normalScale.x - 0.3) < 1e-6, String(pm.normalScale.x));
+  check('  and normal scale is a copy, not the model’s own Vector2', pm.normalScale !== authored.normalScale);
+  check('  material name survives', pm.name === 'LeafCard', pm.name);
+
+  /* --- Forcing a wrap mode belongs on the clone a UV contributor drives, which the extension
+     owns, never on the shared source that came with the model. */
+  const C = globalThis.gdjs.__materialController3D;
+  const clampSource = new StubTexture();
+  clampSource.wrapS = THREE.ClampToEdgeWrapping;
+  clampSource.wrapT = THREE.ClampToEdgeWrapping;
+  const wrapHost = makeMesh('WrapHost', new MeshStandardMaterial());
+  const uvClone = C.acquireTextureClone(wrapHost, {}, clampSource);
+  check('The clone a UV contributor drives is forced to Repeat, so tiling wraps',
+    uvClone.wrapS === THREE.RepeatWrapping && uvClone.wrapT === THREE.RepeatWrapping, String(uvClone.wrapS));
+  check('  and the shared source it was cloned from is untouched',
+    clampSource.wrapS === THREE.ClampToEdgeWrapping, String(clampSource.wrapS));
+
+  /* --- Three.js r160 samples aoMap from uv1. The Blender glTF exporter writes one UV set
+     unless a second is added deliberately, so an AO map on a typical export sampled an
+     attribute that did not exist and contributed nothing, with a clean console. */
+  const aoMat = new MeshStandardMaterial();
+  aoMat.aoMap = new StubTexture();
+  const aoGeom = new StubBufferGeometry();
+  const aoUv = new StubBufferAttribute(new Float32Array([0, 0, 1, 0, 1, 1]), 2);
+  aoGeom.setAttribute('uv', aoUv);
+  const aoMesh = makeMesh('Body', aoMat, aoGeom);
+  const aoBehavior = makeBehavior({ ...DEFAULTS });
+  const aoObject = { get3DRendererObject: () => aoMesh, hasBehavior: () => true };
+  M3.applyToBehavior(aoBehavior, aoObject, game);
+  check('A single-UV model has uv aliased onto uv1 so its AO map is sampled',
+    aoGeom.attributes.uv1 === aoUv);
+  check('  and the alias is reported rather than silent',
+    M3.getAOUvAliasCount(aoBehavior) === 1, String(M3.getAOUvAliasCount(aoBehavior)));
+
+  const uv2Mat = new MeshStandardMaterial();
+  uv2Mat.aoMap = new StubTexture();
+  const uv2Geom = new StubBufferGeometry();
+  const ownUv1 = new StubBufferAttribute(new Float32Array([0, 0, 0.5, 0, 0.5, 0.5]), 2);
+  uv2Geom.setAttribute('uv', new StubBufferAttribute(new Float32Array([0, 0, 1, 0, 1, 1]), 2));
+  uv2Geom.setAttribute('uv1', ownUv1);
+  const uv2Behavior = makeBehavior({ ...DEFAULTS });
+  M3.applyToBehavior(uv2Behavior, {
+    get3DRendererObject: () => makeMesh('Body', uv2Mat, uv2Geom), hasBehavior: () => true
+  }, game);
+  check('A model that ships a real second UV set keeps it', uv2Geom.attributes.uv1 === ownUv1);
+  check('  and reports no aliasing', M3.getAOUvAliasCount(uv2Behavior) === 0);
+
+  /* --- Mesh and material names were unguessable: the expressions could read back the string
+     you typed but never what was there to type. */
+  const stoneMat = new MeshStandardMaterial(); stoneMat.name = 'StoneMat';
+  const mossMat = new MeshStandardMaterial(); mossMat.name = 'MossMat';
+  const rockMesh = makeMesh('Rock_LOD0', stoneMat);
+  const mossMesh = makeMesh('Moss', mossMat);
+  const modelRoot = { name: 'Scene', traverse(fn) { fn(this); fn(rockMesh); fn(mossMesh); } };
+  const modelObject = { get3DRendererObject: () => modelRoot, hasBehavior: () => true };
+  check('MeshNames lists what "Mesh name" targeting can match',
+    M3.listMeshNames(modelObject) === 'Rock_LOD0, Moss', M3.listMeshNames(modelObject));
+  check('MaterialNames lists what "Material name" targeting can match',
+    M3.listMaterialNames(modelObject) === 'StoneMat, MossMat', M3.listMaterialNames(modelObject));
+
+  const missBehavior = makeBehavior({ ...DEFAULTS, TargetMode: 'Mesh name', MeshName: 'Rock_LOD1' });
+  M3.applyToBehavior(missBehavior, modelObject, game);
+  const missError = M3.getError(missBehavior);
+  check('A mesh-name miss says which name was looked for', missError.includes('Rock_LOD1'), missError);
+  check('  and lists the names that are actually on the object',
+    missError.includes('Rock_LOD0') && missError.includes('Moss'), missError);
+
+  /* --- NormalScale applied only to maps this behavior loaded, so it was inert on a model's own
+     normal map. It now reaches it, but only when actually set: a default of 1 would otherwise
+     overwrite the strength the model authored just by attaching the behavior. */
+  const keepNormal = new MeshStandardMaterial();
+  keepNormal.normalMap = new StubTexture();
+  keepNormal.normalScale.set(0.25, 0.25);
+  const nsKeep = setup({}, keepNormal);
+  M3.applyToBehavior(nsKeep.behavior, nsKeep.object, nsKeep.game);
+  check('An authored normal strength is left alone while NormalScale is at its default',
+    Math.abs(nsKeep.mesh.material.normalScale.x - 0.25) < 1e-6, String(nsKeep.mesh.material.normalScale.x));
+
+  const setNormal = new MeshStandardMaterial();
+  setNormal.normalMap = new StubTexture();
+  setNormal.normalScale.set(0.25, 0.25);
+  const nsSet = setup({ NormalScale: 2 }, setNormal);
+  M3.applyToBehavior(nsSet.behavior, nsSet.object, nsSet.game);
+  check('  and a set NormalScale now reaches the model’s own normal map',
+    Math.abs(nsSet.mesh.material.normalScale.x - 2) < 1e-6, String(nsSet.mesh.material.normalScale.x));
+}
+
+console.log('\n32. Anisotropic filtering actually filters');
+{
+  const C = globalThis.gdjs.__materialController3D;
+  const game = { getImageManager: () => ({ getPIXITexture: () => null }) };
+
+  /* --- The bug: GDevelop builds every 3D texture with minFilter = LinearFilter, and Three.js
+     generates no mipmaps for that filter. Anisotropy samples ALONG a mip chain, so with no
+     chain it changed nothing -- while reading back as 16 and reporting itself as enabled. */
+  const stock = new StubTexture();
+  check('A stock engine texture arrives unmipmapped, which is the whole bug',
+    stock.minFilter === THREE.LinearFilter, String(stock.minFilter));
+
+  const groundMat = new MeshStandardMaterial();
+  groundMat.map = stock;
+  const ground = setup({}, groundMat);
+  M3.applyToBehavior(ground.behavior, ground.object, ground.game);
+  check('Applying anisotropy gives the texture a mip chain to sample',
+    stock.minFilter === THREE.LinearMipmapLinearFilter, String(stock.minFilter));
+  check('  and mipmap generation is switched on', stock.generateMipmaps === true);
+  check('  and the anisotropy level is set', stock.anisotropy === 16, String(stock.anisotropy));
+  check('  and the change is uploaded', stock.needsUpdate === true);
+
+  /* --- Nearest is the pixel-art choice. Forcing a mip chain there would blur exactly what the
+     user asked to keep crisp, so anisotropy leaves it alone. */
+  const pixelArt = new StubTexture();
+  pixelArt.minFilter = THREE.NearestFilter;
+  pixelArt.generateMipmaps = false;
+  C.applyAnisotropyToMaterial({ map: pixelArt }, 16);
+  check('Nearest-filtered textures keep their crisp filter', pixelArt.minFilter === THREE.NearestFilter);
+  check('  and are not given mipmaps', pixelArt.generateMipmaps === false);
+
+  /* --- Turning anisotropy off must not drag a mip chain in behind it. */
+  const off = new StubTexture();
+  C.applyAnisotropyToMaterial({ map: off }, 1);
+  check('Anisotropy of 1 does not force mipmaps on', off.minFilter === THREE.LinearFilter, String(off.minFilter));
+
+  /* --- Re-applying the same value must not re-upload the image every frame. */
+  const steady = new StubTexture();
+  C.applyAnisotropyToMaterial({ map: steady }, 16);
+  steady.needsUpdate = false;
+  C.applyAnisotropyToMaterial({ map: steady }, 16);
+  check('Re-applying an unchanged anisotropy does not re-upload the texture',
+    steady.needsUpdate === false);
+
+  /* --- "Configured" and "working" are separate questions, and the old condition only ever
+     answered the first one while sounding like it answered the second. */
+  const lying = new StubTexture();
+  lying.anisotropy = 16;
+  lying.minFilter = THREE.LinearFilter;
+  const lyingMesh = makeMesh('Ground', (() => { const m = new MeshStandardMaterial(); m.map = lying; return m; })());
+  check('Anisotropy set on an unmipmapped texture reports as NOT effective',
+    C.isAnisotropyEffective(lyingMesh) === false);
+  lying.minFilter = THREE.LinearMipmapLinearFilter;
+  check('  and reports effective once there is a mip chain to sample',
+    C.isAnisotropyEffective(lyingMesh) === true);
+}
+
+console.log('\n33. Wireframe and fog stop flattening the model');
+{
+  /* --- Both were written unconditionally from their property defaults, so merely attaching the
+     behavior forced wireframe off and fog on over whatever the model authored. */
+  const foggy = new MeshStandardMaterial();
+  foggy.fog = false;
+  foggy.wireframe = true;
+  const kept = setup({}, foggy);
+  M3.applyToBehavior(kept.behavior, kept.object, kept.game);
+  check('A model that authored fog off keeps it off', kept.mesh.material.fog === false);
+  check('A model that authored wireframe on keeps it on', kept.mesh.material.wireframe === true);
+
+  const forcedOff = setup({ Fog: false }, new MeshStandardMaterial());
+  M3.applyToBehavior(forcedOff.behavior, forcedOff.object, forcedOff.game);
+  check('Setting Fog to false still turns fog off', forcedOff.mesh.material.fog === false);
+
+  const forcedOn = setup({ Wireframe: true }, new MeshStandardMaterial());
+  M3.applyToBehavior(forcedOn.behavior, forcedOn.object, forcedOn.game);
+  check('Setting Wireframe to true still turns wireframe on', forcedOn.mesh.material.wireframe === true);
+
+  // The setter override is what makes "force it back off" reachable from events.
+  const viaSetter = setup({}, (() => { const m = new MeshStandardMaterial(); m.wireframe = true; return m; })());
+  M3.applyToBehavior(viaSetter.behavior, viaSetter.object, viaSetter.game);
+  M3.setOverride(viaSetter.behavior, 'Wireframe', false);
+  M3.reapply(viaSetter.behavior, viaSetter.object, viaSetter.game);
+  check('A Wireframe setter can still force it off from events',
+    viaSetter.mesh.material.wireframe === false);
 }
 
 console.log(`\n${'='.repeat(46)}`);

@@ -1,4 +1,4 @@
-# External Skeletal Animator 3D — 0.2.0
+# External Skeletal Animator 3D — 0.3.1
 
 Play skeletal animation clips stored in **other** `.glb` files on a GDevelop **3D Model** object,
 without baking every animation into the character file.
@@ -6,21 +6,34 @@ without baking every animation into the character file.
 A single `.glb` normally holds **many** clips. This extension lets you reach into any animation file,
 pick one clip by name or index, and drive the skeleton of the model carrying the behavior with it.
 
-> **Status.** Working in GDevelop as of 0.2.0: clip-level addressing, the borrowed mixer, bone-name
-> matching across Mixamo namespace variants, proportional adaptation, root-motion locking and
-> `Drive object`, stride measurement, skeleton layers and bone sockets.
+> **Status.** Verified in the GDevelop editor as of 0.2.0: clip-level addressing, the borrowed
+> mixer, bone-name matching across Mixamo namespace variants, proportional adaptation, root-motion
+> locking, and stride measurement.
 >
-> **Not verified in-engine:** bone sockets (position + orientation are unit-tested, but nobody has
-> looked at a sword in a hand yet), `Drive object` root motion, and skeleton layers.
+> **Not verified in-engine:** bone sockets, `Drive object` root motion, and skeleton layers. These
+> are covered by `test-runtime.mjs`, but a Node test cannot tell you whether a sword looks right in
+> a hand — nobody has watched one yet.
+>
+> **Fixed in 0.3.1, not yet seen in the editor:**
+> - **Play animation by index** addressed clips by resolving the index to a clip *name*. Mixamo names
+>   every clip it exports `mixamo.com`, so in a pack merged from Mixamo downloads every index played
+>   clip 0. Indices now address `animations[]` directly.
+> - **Bone sockets** wrote the bone's world position straight into the attached object's position.
+>   That is correct for a Model3D at its default origin, and half a bounding box off for a Cube3D
+>   (measured: a 20×20×100 placeholder sword sat 10, 10, 50 out of the hand). The socket now aims
+>   the object's *mesh* at the bone whatever anchoring its renderer uses.
+> - **Default crossfade** was declared as a property and read by nothing. It now blends out of the
+>   model's own built-in animation when the default animation starts.
 >
 > **Not implemented:** rest-pose retargeting (`SkeletonUtils.retargetClip`), per-layer blend weights,
-> and IK foot planting. See the notes at the end for why each is out of scope for now.
+> IK foot planting, and the ragdoll subsystem in `PLAN.md` §14. See the notes at the end for why each
+> is out of scope for now.
 
 ---
 
 ## Install
 
-1. `node ExternalSkeletalAnimator3D/build-extension.mjs` (already done — the JSON is committed).
+1. `node build-extension.mjs` from this folder (already done — the JSON is committed).
 2. In GDevelop: **Project Manager → Extensions → Import extension → from file**, pick
    `ExternalSkeletalAnimator3D.json`.
 3. Add the behavior **External Skeletal Animator 3D** to a **3D Model** object.
@@ -308,31 +321,38 @@ the one thing I could not determine by reading the engine — please note what y
 **Many files means many downloads.** Twelve Mixamo files is twelve fetches; one pack GLB is one.
 Iterate with separate files, consolidate for shipping.
 
+**Addressing a clip by index reads the file's clip order**, not its clip names, which matters because
+Mixamo gives every clip the same name. `ClipCount()` and `ClipNameAt()` list what a file holds;
+`Play animation by index` takes a position in that list. An out-of-range index goes to `LastError()`
+with the real count.
+
+**Bone sockets place the attached object's *mesh* on the bone.** GDevelop anchors different 3D object
+types differently — a Cube3D stores the corner of its box, a Model3D stores its model origin point —
+so the offset between the two is read off the object's own renderer rather than assumed. Your offsets
+are measured from the bone, in the bone's own frame, whichever kind of object you attach. The anchor
+is re-measured if the instance is resized.
+
+**`Default crossfade` applies once, at creation.** It blends from the model's own built-in animation
+into the behaviour's default animation. Every later change of animation carries its own crossfade
+field on the Play action.
+
+**`Drive object` moves along the ground only.** The root bone's two horizontal components are turned
+into object X/Y movement, rotated by the object's angle; its vertical component is dropped. A jump
+clip in this mode will not lift the object off the ground — drive the Z yourself, or use
+`Visual root motion` for clips that leave the floor.
+
 ---
 
-## Ragdoll Physics & Physical Dynamics
+## Ragdoll physics — designed, not built
 
-`ExternalSkeletalAnimator3D` integrates physics-driven ragdoll dynamics with GDevelop's **Jolt Physics** engine. When a character is knocked down, hit by a bullet, or struck by an explosion, the behavior transitions seamlessly from keyframed animations to physical simulation.
+**None of this exists in the extension yet.** There is no ragdoll code in the runtime, no Jolt
+dependency, and no `EnableRagdoll` action — an earlier draft of this README described the design in
+the present tense, which was wrong.
 
-### Key Capabilities
-- **Direct Handover:** Captures the exact live world positions and orientations of all bones at the moment of impact and activates Jolt collision bodies without snapping.
-- **Anatomical Joint Limits:** Configured with realistic physiological constraints—elbows and knees behave as 1-DOF hinges (preventing inverted knees/elbows), while shoulders and hips use multi-axis swing-twist limits.
-- **Bone Sockets Follow Physics:** Weapons, shields, helmets, or equipment attached via bone sockets continue tracking the physical bones as the character tumbles down slopes or staircases.
-- **Dynamic Get-Up Recovery:** Detects whether the ragdoll comes to rest face-up (on back) or face-down (on stomach) and slerps bones smoothly into a recovery animation clip over `0.35s`.
-- **Root Object Synchronization:** The GDevelop 3D object's $(X, Y, Z)$ automatically updates to match the fallen Hips/Pelvis bone position.
-
-### Ragdoll Event Sheet Quick Reference
-```
-// Trigger Ragdoll on Death / Hit:
-On Bullet Hit -> Character.ExternalSkeletalAnimator3D::EnableRagdoll(impulseForce: 30.0, hitBone: "Chest")
-
-// Radial Explosion Blast:
-On Explosion -> Character.ExternalSkeletalAnimator3D::ApplyBlastImpulse(blastX, blastY, blastZ, force: 120.0, radius: 8.0)
-
-// Recover & Stand Up:
-Condition: Character.ExternalSkeletalAnimator3D::HasRagdollStopped()
-Action:    Character.ExternalSkeletalAnimator3D::DisableRagdoll(recoveryClip: "StandUp.glb", blendDuration: 0.35)
-```
+The design is written up in `PLAN.md` §14: an animation-to-physics handover that snapshots live bone
+world transforms, anatomical joint limits (1-DOF hinges for knees and elbows, swing-twist cones for
+shoulders and hips), sockets that keep tracking bones while the body tumbles, and a get-up blend once
+the ragdoll settles. It is sequenced there as **1.2**, after rest-pose retargeting.
 
 ---
 
@@ -344,9 +364,20 @@ Action:    Character.ExternalSkeletalAnimator3D::DisableRagdoll(recoveryClip: "S
 | `ExternalSkeletalAnimator3D.runtime.js` | The engine — readable, lintable, `node --check`-able on its own |
 | `build-extension.mjs` | Inlines the runtime and emits the JSON; fails the build on a JS syntax error or a bad schema key |
 | `ExternalSkeletalAnimator3D.json` | The importable extension |
+| `test-runtime.mjs` | 11 phases over the pure logic: name matching, clip selection, root-motion filtering, stride, socket anchoring, and the built JSON's schema |
 
 Rebuild with:
 
 ```bash
-node ExternalSkeletalAnimator3D/build-extension.mjs
+node build-extension.mjs
 ```
+
+Test with:
+
+```bash
+node test-runtime.mjs
+```
+
+The suite reads the committed JSON as well as the runtime, so run the build first if you have edited
+declarations. Green here means the logic holds; it is not a substitute for importing the extension
+and looking at it.
