@@ -5,5 +5,8 @@ desktop.ini
 *.tmp
 *.bak
 
+# Local Claude configuration
+.claude/
+
 # GDJS harness: copied from the local GDevelop install by gdjs-harness/setup.mjs
 gdjs-harness/runtime/
