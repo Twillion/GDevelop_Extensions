@@ -12,7 +12,7 @@
  *
  * BRDFMaterials is deliberately NOT merged. It patches the existing material's shader through
  * onBeforeCompile rather than replacing the material, so it composes with this extension instead
- * of competing with it. See MATERIAL-CONSOLIDATION-PLAN.md §1.
+ * of competing with it. See ../docs/MATERIAL-CONSOLIDATION-PLAN.md §1.
  */
 
 import fs from 'node:fs';

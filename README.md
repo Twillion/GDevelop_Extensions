@@ -27,9 +27,22 @@ Read each folder's documentation before using it: some entries are plans or expe
 
 Repository planning documents:
 
-- [Extension audit](EXTENSION-AUDIT.md)
-- [Explored extension possibilities](Extension-explored-possibilities-list.md)
-- [Material consolidation plan](MATERIAL-CONSOLIDATION-PLAN.md)
+- [Extension audit](docs/EXTENSION-AUDIT.md)
+- [Explored extension possibilities](docs/Extension-explored-possibilities-list.md)
+- [Material consolidation plan](docs/MATERIAL-CONSOLIDATION-PLAN.md)
+
+## Folder layout
+
+- `AdvancedLighting3D/`, `MaterialMaster/`, and `WeatherFX2D/`: main extension source, builds, and documentation.
+- `Rarely used extensions/`: additional extensions, experiments, research, and tools.
+- `docs/`: repository audits and planning documents; historical paths in these documents describe the layout at the time they were written.
+- `demos/`: standalone HTML geometry demonstrations. Open them in a browser; external libraries may require an internet connection.
+
+Local Claude settings, Windows folder icons, and the harness's copied GDevelop runtime are ignored by Git. To recreate the harness runtime from an installed copy of GDevelop, run:
+
+```sh
+node "Rarely used extensions/gdjs-harness/setup.mjs"
+```
 
 ## Working on the source
 
