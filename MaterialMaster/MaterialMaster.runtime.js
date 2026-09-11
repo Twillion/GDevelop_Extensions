@@ -57,7 +57,10 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
 
                     originalMaterials: new Map(),
                     ownedMaterials: new Set(),
-                    ownedTextures: new Map() // cacheKey -> THREE.Texture owned by this behavior
+                    ownedTextures: new Map(), // cacheKey -> THREE.Texture owned by this behavior
+
+                    // How many times an AO map forced a uv -> uv1 alias onto a geometry.
+                    aoUvAliased: 0
                 };
             }
             return behavior.__material3DState;
@@ -189,6 +192,44 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
             return records;
         };
 
+        // What the targeting modes can actually match on this object. Mesh-name and
+        // material-name targeting were previously unguessable: the expressions could read back
+        // the string you typed but never what was there to type, so a name that came out of
+        // Blender had to be copied by eye from the outliner and a typo failed silently.
+        const nameList = (values) => {
+            const seen = [];
+            for (const value of values) {
+                const name = (value === undefined || value === null) ? '' : String(value);
+                if (name === '') continue;
+                if (seen.indexOf(name) < 0) seen.push(name);
+            }
+            return seen;
+        };
+
+        const meshNamesOf = (meshes) => nameList(meshes.map((mesh) => mesh && mesh.name));
+
+        const materialNamesOf = (meshes) => {
+            const names = [];
+            for (const mesh of meshes) {
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                for (const mat of mats) names.push(mat && mat.name);
+            }
+            return nameList(names);
+        };
+
+        // Meshes and materials an object exposes, resolved from scratch rather than from the
+        // behavior's own target list -- the point is to report what is available to target,
+        // including everything the current mode filtered out.
+        const listNames = (object, pick) => {
+            const root = getRootObject3D(object);
+            if (!root) return '';
+            try {
+                return pick(collectMeshRecords(root, true)).join(', ');
+            } catch(e) {
+                return '';
+            }
+        };
+
         const resolveTargets = (meshes, behavior) => {
             const targetMode = getString(behavior, 'TargetMode', 'All materials');
             const targetMatIndex = getNumber(behavior, 'MaterialIndex', 0);
@@ -266,6 +307,14 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
             }
             if (anisotropy !== null && anisotropy !== undefined) {
                 texture.anisotropy = anisotropy;
+                // Anisotropic filtering has nothing to sample without a mip chain, and the
+                // engine hands out textures with minFilter = LinearFilter, which suppresses
+                // mipmap generation. "Keep Original" therefore used to mean "anisotropy does
+                // nothing", silently, which is the default configuration.
+                if (anisotropy > 1 && gdjs.__materialController3D &&
+                    typeof gdjs.__materialController3D.ensureMipmapChain === 'function') {
+                    gdjs.__materialController3D.ensureMipmapChain(texture);
+                }
             }
             // Once, so the clone's colour space and filters reach the GPU. This must not
             // be repeated per frame: it forces a full re-upload of the image.
@@ -344,6 +393,64 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
             return wantsPhysical
                 ? { Ctor: THREE.MeshPhysicalMaterial, matches: (m) => m.isMeshPhysicalMaterial === true }
                 : { Ctor: THREE.MeshStandardMaterial, matches: (m) => m.isMeshStandardMaterial === true };
+        };
+
+        // Fields carried across a material class change. A class change cannot clone -- a
+        // Standard material does not become a Physical one -- so the replacement starts at
+        // Three.js defaults and everything the model authored is lost unless it is copied here.
+        // The six texture slots come back through __m3dBaseMaps; nothing else did, which is why
+        // an emissive panel went black and a double-sided transparent leaf card came back opaque
+        // and single-sided. "Preserve" could not help: there was no longer anything to preserve.
+        //
+        // Every field is guarded on both sides, so carrying a Physical into a Basic drops the
+        // fields Basic cannot honour instead of inventing them.
+        const CARRIED_COLORS = ['emissive', 'specularColor', 'sheenColor', 'attenuationColor'];
+        const CARRIED_NUMBERS = [
+            'emissiveIntensity', 'aoMapIntensity', 'lightMapIntensity', 'envMapIntensity',
+            'bumpScale', 'displacementScale', 'displacementBias', 'opacity', 'alphaTest',
+            'reflectivity'
+        ];
+        const CARRIED_FLAGS = [
+            'transparent', 'depthWrite', 'depthTest', 'vertexColors', 'flatShading',
+            'premultipliedAlpha', 'toneMapped', 'side', 'shadowSide', 'blending',
+            'alphaToCoverage', 'dithering'
+        ];
+        const CARRIED_MAPS = ['alphaMap', 'bumpMap', 'displacementMap', 'lightMap', 'envMap'];
+
+        const carryAuthoredFields = (newMat, baseMat) => {
+            if (!newMat || !baseMat) return;
+            newMat.name = baseMat.name;
+            if (baseMat.color && newMat.color) newMat.color.copy(baseMat.color);
+            if (baseMat.map) newMat.map = baseMat.map;
+            if (newMat.roughness !== undefined) {
+                newMat.roughness = baseMat.roughness !== undefined ? baseMat.roughness : 0.5;
+            }
+            if (newMat.metalness !== undefined) {
+                newMat.metalness = baseMat.metalness !== undefined ? baseMat.metalness : 0;
+            }
+            for (const key of CARRIED_COLORS) {
+                const src = baseMat[key];
+                const dst = newMat[key];
+                if (src && dst && typeof dst.copy === 'function') dst.copy(src);
+            }
+            for (const key of CARRIED_NUMBERS) {
+                if (newMat[key] === undefined) continue;
+                const v = Number(baseMat[key]);
+                if (Number.isFinite(v)) newMat[key] = v;
+            }
+            for (const key of CARRIED_FLAGS) {
+                if (newMat[key] === undefined || baseMat[key] === undefined) continue;
+                newMat[key] = baseMat[key];
+            }
+            for (const key of CARRIED_MAPS) {
+                if (newMat[key] === undefined) continue;
+                if (baseMat[key]) newMat[key] = baseMat[key];
+            }
+            // A Vector2. Assigning it would alias the model's own object, so that editing one
+            // material's normal strength silently moved every material sharing the source.
+            if (baseMat.normalScale && newMat.normalScale && typeof newMat.normalScale.copy === 'function') {
+                newMat.normalScale.copy(baseMat.normalScale);
+            }
         };
 
         const applyMaterialSettings = (mat, behavior, root) => {
@@ -445,8 +552,24 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
             else if (sideMode === 'Double') mat.side = THREE.DoubleSide;
             // "Preserve" leaves mat.side as the model authored it.
 
-            if (mat.wireframe !== undefined) mat.wireframe = getBoolean(behavior, 'Wireframe', false);
-            if (mat.fog !== undefined) mat.fog = getBoolean(behavior, 'Fog', true);
+            // Both of these used to be written unconditionally from their property defaults, so
+            // merely attaching the behavior forced wireframe off and fog on -- flattening what
+            // the model authored, which is the same silent overwrite the Use* gates and the
+            // Preserve defaults exist to prevent. They now write only when the value actually
+            // says something: a setter override (so turning either OFF from events still works)
+            // or a property moved off its default.
+            if (mat.wireframe !== undefined) {
+                const wireframe = getBoolean(behavior, 'Wireframe', false);
+                if (readOverride(behavior, 'Wireframe') !== undefined || wireframe === true) {
+                    mat.wireframe = wireframe;
+                }
+            }
+            if (mat.fog !== undefined) {
+                const fog = getBoolean(behavior, 'Fog', true);
+                if (readOverride(behavior, 'Fog') !== undefined || fog === false) {
+                    mat.fog = fog;
+                }
+            }
 
             mat.needsUpdate = true;
         };
@@ -480,22 +603,42 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
                 // losing them to an empty slot.
                 const base = mat.__m3dBaseMaps || {};
                 for (const slot of TEXTURE_SLOTS) {
-                    const currentMap = resolved[slot.target] || base[slot.target] || null;
+                    const ownMap = resolved[slot.target] || null;
+                    const currentMap = ownMap || base[slot.target] || null;
                     mat[slot.target] = currentMap;
-                    if (currentMap && typeof currentMap === 'object') {
+                    // Only textures this behavior loaded get their wrap mode forced. A map that
+                    // arrived with the model is shared and not ours to change: glTF routinely
+                    // authors ClampToEdge for atlases and non-tiling UV layouts, and switching
+                    // that to Repeat bleeds the edges for every other object drawing the same
+                    // image. It also outlives RestoreMaterials, which restores materials but has
+                    // no record of a texture it never owned.
+                    if (ownMap && typeof ownMap === 'object') {
                         if (typeof THREE !== 'undefined' && THREE.RepeatWrapping) {
-                            currentMap.wrapS = THREE.RepeatWrapping;
-                            currentMap.wrapT = THREE.RepeatWrapping;
+                            ownMap.wrapS = THREE.RepeatWrapping;
+                            ownMap.wrapT = THREE.RepeatWrapping;
                         }
                     }
                 }
-                if (resolved.normalMap && mat.normalScale) mat.normalScale.set(normalScale, normalScale);
-                if (resolved.aoMap) mat.aoMapIntensity = aoIntensity;
+                // These used to apply only to maps this behavior loaded, so both properties were
+                // inert on a model's own normal and AO maps. They now reach whichever map is
+                // actually bound -- but only when the value was really set, because a default of 1
+                // would otherwise overwrite the strength the model authored the instant the
+                // behavior was attached, which is the failure the Use* gates exist to prevent.
+                const normalScaleSet = readOverride(behavior, 'NormalScale') !== undefined || normalScale !== 1;
+                const aoIntensitySet = readOverride(behavior, 'AOIntensity') !== undefined || aoIntensity !== 1;
+                if (mat.normalMap && mat.normalScale && normalScaleSet) {
+                    mat.normalScale.set(normalScale, normalScale);
+                }
+                if (mat.aoMap && mat.aoMapIntensity !== undefined && aoIntensitySet) {
+                    mat.aoMapIntensity = aoIntensity;
+                }
                 if (anisotropy !== null && gdjs.__materialController3D) {
                     gdjs.__materialController3D.applyAnisotropyToMaterial(mat, anisotropy);
                 }
                 mat.needsUpdate = true;
             }
+
+            ensureAOUv(state);
 
             // Drop textures this behavior owns that nothing references any more, so
             // repeatedly swapping a texture at runtime does not accumulate GPU memory.
@@ -504,6 +647,31 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
                 if (usedKeys.has(key)) continue;
                 try { texture.dispose(); } catch(e) {}
                 state.ownedTextures.delete(key);
+            }
+        };
+
+        // Three.js r160 samples aoMap from the SECOND UV set, geometry.attributes.uv1. The
+        // Blender glTF exporter writes a single UV set unless a second one is added on purpose,
+        // so an AO map on a typical .glb sampled an attribute that was not there and contributed
+        // nothing at all, with a clean console -- the exact silent failure this extension's
+        // diagnostics exist to remove. Alias uv onto uv1 in that case: with one UV set those ARE
+        // the same coordinates, so this is what the model meant. A model that ships a real uv1 is
+        // left alone. UVRepairCount's sibling, AOUVAliasCount(), reports when it fired.
+        const ensureAOUv = (state) => {
+            let needsAO = false;
+            for (const mat of state.targetMaterials) {
+                if (mat && mat.aoMap) { needsAO = true; break; }
+            }
+            if (!needsAO) return;
+            for (const mesh of state.targetMeshes) {
+                const geom = mesh && mesh.geometry;
+                const attrs = geom && geom.attributes;
+                if (!attrs || !attrs.uv || attrs.uv1) continue;
+                if (typeof geom.setAttribute !== 'function') continue;
+                try {
+                    geom.setAttribute('uv1', attrs.uv);
+                    state.aoUvAliased++;
+                } catch(e) {}
             }
         };
 
@@ -533,7 +701,24 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
                 state.materialsCount = targets.length;
 
                 if (targets.length === 0) {
-                    fail(state, 'No materials matched the current Target Mode.');
+                    // Naming what IS there turns the most common 3D-model mistake -- a mesh or
+                    // material name that does not match what the .glb actually shipped -- from a
+                    // silent no-op into a one-line answer.
+                    const mode = getString(behavior, 'TargetMode', 'All materials');
+                    let detail = '';
+                    if (mode === 'Mesh name') {
+                        const available = meshNamesOf(allMeshes);
+                        detail = ' Looking for mesh "' + getString(behavior, 'MeshName', '') +
+                            '". This object has: ' + (available.length ? available.join(', ') : '(no named meshes)') + '.';
+                    } else if (mode === 'Material name') {
+                        const available = materialNamesOf(allMeshes);
+                        detail = ' Looking for material "' + getString(behavior, 'MaterialName', '') +
+                            '". This object has: ' + (available.length ? available.join(', ') : '(no named materials)') + '.';
+                    } else if (mode === 'Material index') {
+                        detail = ' Looking for material index ' + getNumber(behavior, 'MaterialIndex', 0) +
+                            ' across ' + allMeshes.length + ' mesh(es).';
+                    }
+                    fail(state, 'No materials matched the current Target Mode.' + detail);
                     return;
                 }
 
@@ -564,17 +749,7 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
                         // Basic cannot honour.
                         const reusable = baseMat && wanted.matches(baseMat);
                         newMat = reusable ? baseMat.clone() : new wanted.Ctor();
-                        if (baseMat) {
-                            newMat.name = baseMat.name;
-                            if (baseMat.color && newMat.color) newMat.color.copy(baseMat.color);
-                            if (baseMat.map) newMat.map = baseMat.map;
-                            if (newMat.roughness !== undefined) {
-                                newMat.roughness = baseMat.roughness !== undefined ? baseMat.roughness : 0.5;
-                            }
-                            if (newMat.metalness !== undefined) {
-                                newMat.metalness = baseMat.metalness !== undefined ? baseMat.metalness : 0;
-                            }
-                        }
+                        carryAuthoredFields(newMat, baseMat);
                         state.ownedMaterials.add(newMat);
                     } else {
                         newMat = baseMat;
@@ -803,6 +978,9 @@ if (typeof THREE !== 'undefined' && !gdjs.__material3D) {
             getError: (behavior) => getBehaviorState(behavior).error,
             getRetryCount: (behavior) => getBehaviorState(behavior).retryCount,
             getMeshCount: (behavior) => getBehaviorState(behavior).meshesCount,
+            getAOUvAliasCount: (behavior) => getBehaviorState(behavior).aoUvAliased || 0,
+            listMeshNames: (object) => listNames(object, meshNamesOf),
+            listMaterialNames: (object) => listNames(object, materialNamesOf),
             getMaterialCount: (behavior) => getBehaviorState(behavior).materialsCount,
             // What actually reached the shader compiler on this object's first material. Empty
             // until the object has rendered at least one frame — onBeforeCompile has not run

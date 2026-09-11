@@ -3,7 +3,7 @@
  * light-probe GI for GDevelop 5 (Three.js r160, WebGL2).
  *
  * Direct light: the camera view frustum is partitioned into a 3D grid of 3,456 clusters
- * (16 x 9 x 24 logarithmic depth slices). 100-500+ dynamic lights are streamed through
+ * (16 x 9 x 24 logarithmic depth slices). Up to 512 registered dynamic lights are streamed through
  * WebGL2 data textures with no shader recompilation, giving Karis representative-point area
  * specular, blackbody Kelvin colour, IES photometric profiles, Frostbite windowed
  * attenuation and procedural flicker.
@@ -34,7 +34,7 @@
   // The scene editor keeps `gdjs` alive when an extension is re-imported. A plain
   // singleton guard pins the previous runtime and its editor callback indefinitely.
   // Skip only another copy of this exact build; replace older builds during hot reload.
-  var RUNTIME_VERSION = '2026.09.02.8';
+  var RUNTIME_VERSION = '2026.09.11.3';
   // GDevelop r160 configures its Three.js renderer to use legacy light units. Reading
   // Three.js's deprecated legacy-lights renderer flag emits a throttled warning, so
   // preserve GDevelop's established brightness without touching that property.
@@ -55,6 +55,255 @@
   }
 
   var THREE_OK = typeof THREE !== 'undefined';
+
+  // Shadow maps are owned by this scene, but rendered by Three's native shadow pass.
+  // Cascade lights have zero intensity: the existing Sun is the sole radiance source.
+  function shadowState(state) {
+    if (!state.shadows) state.shadows = {
+      mode: 'Hybrid', count: 3, distance: 25000, lambda: 0.75, mapSize: 2048,
+      bias: 0.0005, normalBias: 0.02, blend: 0.10, softness: 1.5,
+      lights: [], sun: null, savedSunShadow: null,
+      renderer: null, rendererState: null, ready: false, manager: null, managers: [],
+      splits: new Float32Array(4), ranges: [], matrices: [], maps: [], direction: null
+    };
+    return state.shadows;
+  }
+
+  function sdfEnabled(state) {
+    var mode = shadowState(state).mode;
+    return mode === 'SDF' || mode === 'Hybrid';
+  }
+
+  function disposeCSM(state) {
+    var c = shadowState(state);
+    c.lights.forEach(function (light) {
+      if (light.shadow.map) light.shadow.map.dispose();
+      if (light.shadow.mapPass) light.shadow.mapPass.dispose();
+      if (light.parent) light.parent.remove(light);
+      if (light.target.parent) light.target.parent.remove(light.target);
+    });
+    c.lights.length = 0; c.maps.length = 0; c.matrices.length = 0; c.ready = false;
+    if (c.sun) c.sun.castShadow = c.savedSunShadow;
+    c.sun = null;
+    if (c.savedTarget) { c.savedTarget.target.position.copy(c.savedTarget.position); c.savedTarget.target.updateMatrixWorld(true); c.savedTarget = null; }
+    if (c.renderer && c.rendererState) {
+      c.renderer.shadowMap.enabled = c.rendererState.enabled;
+      c.renderer.shadowMap.type = c.rendererState.type;
+      c.renderer.shadowMap.autoUpdate = c.rendererState.autoUpdate;
+    }
+    c.renderer = null; c.rendererState = null;
+  }
+
+  function setShadowMode(scene, mode) {
+    var state = stateOf(scene), c = shadowState(state);
+    var names = { off: 'Off', csm: 'CSM', sdf: 'SDF', hybrid: 'Hybrid' };
+    var canonical = names[String(mode).toLowerCase()];
+    if (!canonical) return false;
+    if (canonical !== c.mode) { disposeCSM(state); c.mode = canonical; }
+    return true;
+  }
+
+  function configureCSM(scene, options) {
+    var state = stateOf(scene), c = shadowState(state);
+    var limits = {count:[2,4],distance:[1,10000000],lambda:[0,1],bias:[-0.1,0.1],normalBias:[0,1000],blend:[0,0.25],softness:[0,10]};
+    Object.keys(limits).forEach(function (key) {
+      if (options[key] === undefined || !Number.isFinite(Number(options[key]))) return;
+      var val = clamp(Number(options[key]), limits[key][0], limits[key][1]);
+      if (key === 'count') val = Math.floor(val);
+      if (key === 'count' && c.count !== val) disposeCSM(state);
+      c[key] = val;
+    });
+    if ([1024,2048,4096].indexOf(Number(options.mapSize)) >= 0 && c.mapSize !== Number(options.mapSize)) {
+      disposeCSM(state); c.mapSize = Number(options.mapSize);
+    }
+    if (options.mode !== undefined) setShadowMode(scene, options.mode);
+  }
+
+  function registerShadowManager(scene, behavior, options) {
+    var c = shadowState(stateOf(scene));
+    var record = null;
+    for (var i = 0; i < c.managers.length; i++) {
+      if (c.managers[i].behavior === behavior) { record = c.managers[i]; break; }
+    }
+    if (!record) {
+      record = { behavior: behavior, options: options || {}, warned: false };
+      c.managers.push(record);
+    } else {
+      record.options = options || {};
+    }
+    if (!c.manager) {
+      c.manager = behavior;
+      configureCSM(scene, record.options);
+      return true;
+    }
+    if (c.manager === behavior) {
+      configureCSM(scene, record.options);
+      return true;
+    }
+    if (!record.warned) {
+      record.warned = true;
+      console.warn('[AdvancedLighting3D] A shadow manager is already active; this instance will take over if the active manager is removed.');
+    }
+    return false;
+  }
+
+  function destroyShadowManager(scene, behavior) {
+    var state = stateOf(scene), c = shadowState(state);
+    var wasOwner = c.manager === behavior;
+    c.managers = c.managers.filter(function (record) { return record.behavior !== behavior; });
+    if (!wasOwner) return;
+    setShadowMode(scene, 'Off');
+    c.manager = null;
+    if (c.managers.length) {
+      c.manager = c.managers[0].behavior;
+      configureCSM(scene, c.managers[0].options);
+    }
+  }
+
+  function practicalSplits(near, far, count, lambda) {
+    var result = [];
+    for (var i = 1; i <= count; i++) {
+      var t = i / count;
+      result.push(i === count ? far : lerp(near + (far - near) * t, near * Math.pow(far / near, t), lambda));
+    }
+    return result;
+  }
+
+  function updateCSM(scene, camera) {
+    var state = stateOf(scene), c = shadowState(state), root = getThreeScene(scene);
+    if (!root || !root.traverse || !THREE.DirectionalLight || !camera.projectionMatrixInverse) return;
+    var wantsMaps = c.mode === 'CSM' || c.mode === 'Hybrid';
+    var sun = null;
+    root.traverse(function (node) {
+      if (!sun && node.isDirectionalLight && !node.__alCascade && node.visible && node.intensity > 0) sun = node;
+    });
+    if (c.sun && c.sun !== sun) disposeCSM(state);
+    if (!sun) { if (c.lights.length) disposeCSM(state); return; }
+    // Native Sun maps must not multiply an SDF/CSM shadow a second time.
+    if (!c.sun) { c.sun = sun; c.savedSunShadow = sun.castShadow; }
+    sun.castShadow = false;
+    if (!wantsMaps) return;
+    var renderer = threeRendererOf(scene);
+    if (!renderer || !renderer.shadowMap) return;
+    if (!c.renderer) {
+      c.renderer = renderer;
+      c.rendererState = {enabled:renderer.shadowMap.enabled,type:renderer.shadowMap.type,autoUpdate:renderer.shadowMap.autoUpdate};
+    }
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = true;
+    root.updateMatrixWorld(true);
+    var sunPosition = new THREE.Vector3(), targetPosition = new THREE.Vector3();
+    sun.getWorldPosition(sunPosition); sun.target.getWorldPosition(targetPosition);
+    var direction = c.direction ? c.direction.clone() : targetPosition.sub(sunPosition).normalize();
+    if (direction.lengthSq() < 1e-10) direction.set(0.3,0.4,-1).normalize();
+    c.sunDirection = direction.clone().negate().transformDirection(camera.matrixWorldInverse);
+    // Preserve the native Sun's orientation when using an explicit direction override.
+    if (c.direction) {
+      if (!c.savedTarget) c.savedTarget = {position:sun.target.position.clone(),target:sun.target};
+      var targetWorld = sunPosition.clone().add(direction);
+      sun.target.position.copy(sun.target.parent ? sun.target.parent.worldToLocal(targetWorld) : targetWorld);
+      sun.target.updateMatrixWorld(true);
+    }
+    if (!c.lights.length) {
+      for (var i = 0; i < c.count; i++) {
+        var light = new THREE.DirectionalLight(0xffffff,0);
+        light.__alCascade = true; light.castShadow = true;
+        light.shadow.mapSize.set(c.mapSize,c.mapSize);
+        root.add(light); root.add(light.target); c.lights.push(light);
+      }
+    }
+    var near = Math.max(camera.near,0.001), far = Math.max(near + 0.001, Math.min(camera.far,c.distance));
+    var splits = practicalSplits(near,far,c.count,c.lambda);
+    var up = Math.abs(direction.z) > 0.99 ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
+    var orientation = new THREE.Matrix4().lookAt(new THREE.Vector3(),direction,up);
+    var inverse = orientation.clone().invert();
+    c.ranges.length = 0;
+    for (var i = 0; i < c.count; i++) {
+      c.splits[i] = splits[i];
+      var previous = i ? splits[i-1] : near;
+      // Overlap the incoming blend region so both maps cover every blended fragment.
+      var lower = i ? previous - c.blend * (previous - (i > 1 ? splits[i-2] : near)) : near;
+      var corners = [], center = new THREE.Vector3();
+      for (var z = 0; z < 2; z++) for (var y = -1; y <= 1; y += 2) for (var x = -1; x <= 1; x += 2) {
+        var a = new THREE.Vector3(x,y,-1).applyMatrix4(camera.projectionMatrixInverse);
+        var b = new THREE.Vector3(x,y,1).applyMatrix4(camera.projectionMatrixInverse);
+        var depth = z ? splits[i] : lower;
+        var point = a.lerp(b,(-depth-a.z)/(b.z-a.z)).applyMatrix4(camera.matrixWorld);
+        corners.push(point); center.add(point);
+      }
+      center.multiplyScalar(1/8);
+      var radius = 0;
+      corners.forEach(function (point) { radius = Math.max(radius,point.distanceTo(center)); });
+      // A bounding sphere gives rotation-independent extent, with a texel margin for snapping.
+      radius = Math.ceil(radius * 16)/16;
+      var half = radius / (1 - 2/c.mapSize);
+      var texel = 2 * half / c.mapSize;
+      var localCenter = center.clone().applyMatrix4(inverse);
+      localCenter.x = Math.round(localCenter.x / texel) * texel;
+      localCenter.y = Math.round(localCenter.y / texel) * texel;
+      var margin = Math.max(1000,half);
+      localCenter.z += radius + margin;
+      var position = localCenter.clone().applyMatrix4(orientation);
+      var target = position.clone().add(direction);
+      var light = c.lights[i];
+      light.position.copy(root.worldToLocal(position.clone()));
+      light.target.position.copy(root.worldToLocal(target.clone()));
+      var cam = light.shadow.camera;
+      cam.up.copy(up); cam.left=-half; cam.right=half; cam.top=half; cam.bottom=-half;
+      cam.near=0.1; cam.far=2*radius+2*margin;
+      cam.updateProjectionMatrix();
+      light.shadow.bias=c.bias; light.shadow.normalBias=c.normalBias; light.shadow.radius=c.softness;
+      light.updateMatrixWorld(true); light.target.updateMatrixWorld(true);
+      c.ranges.push({corners:corners,half:half,texel:texel,center:localCenter.clone(),orientation:orientation.clone()});
+    }
+    c.near = near; c.far = far;
+    syncCSMUniforms(state);
+  }
+
+  function syncCSMUniforms(state, uniforms) {
+    var c = shadowState(state);
+    c.ready = c.lights.length === c.count && c.lights.every(function (l) { return !!l.shadow.map; });
+    function write(u) {
+      if (!u || !u.uAlCSMReady) return;
+      u.uAlCSMReady.value = c.ready ? 1 : 0;
+      u.uAlCSMSplits.value = c.splits;
+      u.uAlCSMNear.value = c.near || 0.1; u.uAlCSMBlend.value = c.blend;
+      u.uAlCSMSize.value = c.mapSize; u.uAlCSMBias.value = c.bias;
+      u.uAlCSMNormalBias.value = c.normalBias; u.uAlCSMSoftness.value = c.softness;
+      u.uAlCSMDirection.value = c.sunDirection || new THREE.Vector3();
+      u.uAlCSMViewToWorld.value = state.viewToWorldMatrix;
+      for (var i=0;i<c.count;i++) {
+        if (!u['uAlCSMMap'+i] || !c.lights[i]) continue;
+        u['uAlCSMMap'+i].value = c.lights[i].shadow.map ? c.lights[i].shadow.map.texture : null;
+        u['uAlCSMMatrix'+i].value = c.lights[i].shadow.matrix;
+      }
+    }
+    if (uniforms) write(uniforms);
+    else state.hookedMaterials.forEach(function (mat) { write(mat.__alUniforms); });
+  }
+
+  function csmShaderPrelude(count) {
+    var lines = ['uniform float uAlCSMReady, uAlCSMNear, uAlCSMBlend, uAlCSMSize, uAlCSMBias, uAlCSMNormalBias, uAlCSMSoftness;',
+      'uniform float uAlCSMSplits[4];','uniform vec3 uAlCSMDirection;','uniform mat4 uAlCSMViewToWorld;'];
+    for (var i=0;i<count;i++) lines.push('uniform sampler2D uAlCSMMap'+i+'; uniform mat4 uAlCSMMatrix'+i+';');
+    return lines.join('\n');
+  }
+
+  function csmShadowCode(count) {
+    var lines=['{','if (uAlCSMReady > 0.5 && dot(directLight.direction,uAlCSMDirection) > 0.9999) {',
+      'vec3 alN = inverseTransformDirection(geometryNormal, viewMatrix);',
+      'vec3 alP = (uAlCSMViewToWorld * vec4(geometryPosition,1.0)).xyz + alN * uAlCSMNormalBias;',
+      'float alDepth = -geometryPosition.z;', 'float alShadow = 1.0;'];
+    for (var i=0;i<count;i++) {
+      var sample='getShadow(uAlCSMMap'+i+',vec2(uAlCSMSize),uAlCSMBias,uAlCSMSoftness,uAlCSMMatrix'+i+'*vec4(alP,1.0))';
+      lines.push((i ? 'else ' : '')+'if (alDepth <= uAlCSMSplits['+i+']) {');
+      lines.push('alShadow = '+sample+';');
+      var next=i<count-1 ? 'getShadow(uAlCSMMap'+(i+1)+',vec2(uAlCSMSize),uAlCSMBias,uAlCSMSoftness,uAlCSMMatrix'+(i+1)+'*vec4(alP,1.0))' : '1.0';
+      lines.push('float alWidth = max(0.0001,uAlCSMBlend*(uAlCSMSplits['+i+']-'+(i?'uAlCSMSplits['+(i-1)+']':'uAlCSMNear')+'));');
+      lines.push('if (uAlCSMBlend > 0.0) alShadow = mix(alShadow,'+next+',smoothstep(uAlCSMSplits['+i+']-alWidth,uAlCSMSplits['+i+'],alDepth));','}');
+    }
+    lines.push('directLight.color *= alShadow;','}','}');
+    return lines.join('\n');
+  }
 
   /* ------------------------------------------------------------- Grid Constants */
   var CLUSTER_GRID_X = 16;
@@ -268,17 +517,18 @@
 
   // Felzenszwalb & Huttenlocher 1D Euclidean Distance Transform (Theory of Computing, Vol 8, 2012).
   // Computes lower parabolic envelope in O(n) time.
-  function felzenszwalb1D(f, d, v, z, n) {
+  function felzenszwalb1D(f, d, v, z, n, spacingSq) {
+    spacingSq = spacingSq || 1;
     var k = 0;
     v[0] = 0;
     z[0] = -1e20;
     z[1] = 1e20;
     for (var q = 1; q < n; q++) {
       var fq = f[q];
-      var s = ((fq + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      var s = ((fq + spacingSq * q * q) - (f[v[k]] + spacingSq * v[k] * v[k])) / (2 * spacingSq * (q - v[k]));
       while (s <= z[k]) {
         k--;
-        s = ((fq + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+        s = ((fq + spacingSq * q * q) - (f[v[k]] + spacingSq * v[k] * v[k])) / (2 * spacingSq * (q - v[k]));
       }
       k++;
       v[k] = q;
@@ -292,13 +542,14 @@
       }
       var vk = v[k];
       var diff = q - vk;
-      d[q] = diff * diff + f[vk];
+      d[q] = spacingSq * diff * diff + f[vk];
     }
   }
 
   // Separable 3D Distance Transform over a grid of size resX x resY x resZ.
-  // Modifies grid in-place from squared distances to Euclidean distance in voxel units.
-  function run3DEDT(grid, resX, resY, resZ) {
+  // Seeds and output use the spacing units; omitted spacing preserves unit-grid behavior.
+  function run3DEDT(grid, resX, resY, resZ, spacingX, spacingY, spacingZ) {
+    spacingX = spacingX || 1; spacingY = spacingY || 1; spacingZ = spacingZ || 1;
     var maxDim = Math.max(resX, resY, resZ);
     var f = new Float32Array(maxDim);
     var d = new Float32Array(maxDim);
@@ -310,7 +561,7 @@
       for (var j = 0; j < resY; j++) {
         var base = (k * resY + j) * resX;
         for (var i = 0; i < resX; i++) f[i] = grid[base + i];
-        felzenszwalb1D(f, d, v, z, resX);
+        felzenszwalb1D(f, d, v, z, resX, spacingX * spacingX);
         for (var i = 0; i < resX; i++) grid[base + i] = d[i];
       }
     }
@@ -321,7 +572,7 @@
         for (var j = 0; j < resY; j++) {
           f[j] = grid[(k * resY + j) * resX + i];
         }
-        felzenszwalb1D(f, d, v, z, resY);
+        felzenszwalb1D(f, d, v, z, resY, spacingY * spacingY);
         for (var j = 0; j < resY; j++) {
           grid[(k * resY + j) * resX + i] = d[j];
         }
@@ -334,7 +585,7 @@
         for (var k = 0; k < resZ; k++) {
           f[k] = grid[(k * resY + j) * resX + i];
         }
-        felzenszwalb1D(f, d, v, z, resZ);
+        felzenszwalb1D(f, d, v, z, resZ, spacingZ * spacingZ);
         for (var k = 0; k < resZ; k++) {
           grid[(k * resY + j) * resX + i] = Math.sqrt(Math.max(0.0, d[k]));
         }
@@ -439,7 +690,6 @@
         enableVolumetricFog: false,
         volumetricFogDensity: 0.02,
         volumetricAnisotropy: 0.4,
-        enableContactShadows: true,
         globalIntensityScale: 1.0,
         showDebugVisualizer: false,
 
@@ -495,7 +745,6 @@
         sdfBakeBudgetMs: 8.0,
         sdfBakeState: null,
         isSdfBakeComplete: false,
-        enableSDFShadows: true,
         maxShadowedLights: 4,
         pointShadowDistance: 800.0,
         sdfSunSoftness: 1.8,        // degrees
@@ -742,7 +991,7 @@
   function getDummySDFTexture(state) {
     if (!state.dummySdfTexture && THREE_OK) {
       var d = new Uint16Array(1);
-      d[0] = toHalf(1e5);
+      d[0] = toHalf(65504);
       state.dummySdfTexture = makeSDFData3DTexture(d, 1, 1, 1);
     }
     return state.dummySdfTexture;
@@ -922,12 +1171,17 @@
     '',
     '  float sdfShadow(vec3 ro, vec3 rd, float tMin, float tMax, float k, int maxSteps) {',
     '    float res = 1.0;',
-    '    float t = tMin;',
+    '    vec3 safeDir = vec3(abs(rd.x) < 1e-8 ? 1e-8 : rd.x, abs(rd.y) < 1e-8 ? 1e-8 : rd.y, abs(rd.z) < 1e-8 ? 1e-8 : rd.z);',
+    '    vec3 ta = (uSdfMin - ro) / safeDir;',
+    '    vec3 tb = (uSdfMin + uSdfSize - ro) / safeDir;',
+    '    vec3 lo = min(ta,tb), hi = max(ta,tb);',
+    '    float t = max(tMin,max(lo.x,max(lo.y,lo.z)));',
+    '    tMax = min(tMax,min(hi.x,min(hi.y,hi.z)));',
+    '    if (t >= tMax) return 1.0;',
     '    float ph = 1e20;',
     '    float voxelSize = uSdfParams.x;',
     '    float hitEps = max(uSdfParams.y * voxelSize, 0.05);',
-    '    float minStep = 0.5 * voxelSize;',
-    '    float maxStep = 8.0 * voxelSize;',
+    '    float minStep = max(0.05,0.05 * voxelSize);',
     '',
     '    for (int i = 0; i < 32; i++) {',
     '      if (i >= maxSteps || t >= tMax) break;',
@@ -937,7 +1191,7 @@
     '      float d = sqrt(max(h * h - y * y, 0.0));',
     '      res = min(res, k * d / max(t - y, 1e-4));',
     '      ph = h;',
-    '      t += clamp(h, minStep, maxStep);',
+    '      t += max(h, minStep);',
     '    }',
     '    return clamp(res, 0.0, 1.0);',
     '  }',
@@ -981,7 +1235,6 @@
     '  #ifdef AL_SDF_SHADOWS',
     '    vec3 wp = (uViewToWorld * vec4(geometryPosition, 1.0)).xyz;',
     '    vec3 nw = inverseTransformDirection(geometryNormal, viewMatrix);',
-    '    vec3 ro = wp + nw * max(uSdfParams.z * uSdfParams.x, 0.1);',
     '    uint shadowedSoFar = 0u;',
     '  #endif',
     '',
@@ -1077,14 +1330,17 @@
     '      vec3 radiance = cInt.rgb * (cInt.w * atten * lightScaleFactor);',
     '      #ifdef AL_SDF_SHADOWS',
     '        float sdfShadowFactor = 1.0;',
-    '        if (shadowedSoFar < uMaxShadowedLights && (uint(shape.z) & 1u) == 1u && clDiffuseNdotL > 0.0) {',
+    '        uint shadowBits = uint(floor(shape.z));',
+    '        float lightShadowBias = fract(shape.z);',
+    '        if (shadowedSoFar < uMaxShadowedLights && (shadowBits & 1u) == 1u && clDiffuseNdotL > 0.0) {',
     '          vec3 Lw = inverseTransformDirection(clDiffuseL, viewMatrix);',
+    '          vec3 localRo = wp + nw * max(lightShadowBias * uSdfParams.x, 0.1);',
     '          float srcR = max(shape.w, 0.01);',
-    '          float tMin = 2.0 * uSdfParams.x;',
+    '          float tMin = max(0.05,uSdfParams.y * uSdfParams.x);',
     '          float tMax = min(attenuationDistance, uPointShadowDistance);',
     '          if (tMax > tMin) {',
     '            float k = attenuationDistance / srcR;',
-    '            sdfShadowFactor = sdfShadow(ro, Lw, tMin, tMax, k, 12);',
+    '            sdfShadowFactor = sdfShadow(localRo, Lw, tMin, tMax, k, 12);',
     '            shadowedSoFar++;',
     '          }',
     '        }',
@@ -1136,15 +1392,21 @@
 
     var existing = material.__alInjection;
     var use3D = !!state.clusterGrid3DTexture;
-    var hasSDF = !!(state.enableSDFShadows && state.sdfVolume && (state.sdfVolume.texture || state.sdfVolume.isBaked));
-    if (existing && existing.probes === wantProbes && existing.sdf === hasSDF && existing.version === RUNTIME_VERSION) {
+    var hasSDF = !!(sdfEnabled(state) && state.sdfVolume && state.sdfVolume.texture && state.sdfVolume.isBaked);
+    var csm = shadowState(state);
+    var csmCount = csm.lights.length;
+    var sdfSun = hasSDF && csm.mode === 'SDF';
+    if (existing && existing.owner === state && existing.csmCount === csmCount && existing.sdfSun === sdfSun && existing.probes === wantProbes && existing.sdf === hasSDF && existing.version === RUNTIME_VERSION) {
       state.hookedMaterials.add(material);
       return true;
     }
 
-    var cacheKey = 'GD_ADVLIGHT3D_V6|CL1|G3D' + (use3D ? '1' : '0') + '|LP' + (wantProbes ? '1' : '0') + (hasSDF ? '|SDF1' : '');
+    // Three caches per-material uniforms with programs. Drop old variants before
+    // changing feature ownership so returning to an earlier mode cannot reuse stale bindings.
+    if (existing && typeof material.dispose === 'function') material.dispose();
+    var cacheKey = 'GD_ADVLIGHT3D_V8|CL1|G3D' + (use3D ? '1' : '0') + '|LP' + (wantProbes ? '1' : '0') + (hasSDF ? '|SDF1' : '') + '|CSM' + csmCount + '|SUN' + (sdfSun ? 1 : 0);
 
-    material.__alInjection = { probes: wantProbes, sdf: hasSDF, key: cacheKey, version: RUNTIME_VERSION };
+    material.__alInjection = { probes: wantProbes, sdf: hasSDF, key: cacheKey, version: RUNTIME_VERSION, receiver: receiverRecord, owner: state, csmCount: csmCount, sdfSun: sdfSun };
     material.customProgramCacheKey = function () {
       return cacheKey;
     };
@@ -1162,6 +1424,10 @@
       }
 
       shader.defines = shader.defines || {};
+      // Three shares this object with material.defines across program variants.
+      delete shader.defines.AL_SDF_SHADOWS;
+      delete shader.defines.USE_PROBE_GRID;
+      delete shader.defines.USE_3D_CLUSTER_TEXTURE;
       shader.defines.USE_CLUSTERED_LIGHTS = 1;
       // Integer literals, so they can index texelFetch directly. Passing them as uniforms
       // would mean ivec uniforms, which three uploads through uniform3iv and which need a
@@ -1195,10 +1461,18 @@
         shader.uniforms.uSdfSize = { value: state.sdfVolume ? state.sdfVolume.threeSize : (THREE_OK ? new THREE.Vector3(1, 1, 1) : { x: 1, y: 1, z: 1 }) };
         var vx = state.sdfVolume ? (state.sdfVolume.voxelSize || ((state.sdfVolume.maxX - state.sdfVolume.minX) / state.sdfVolume.resX)) : 10.0;
         var sunK = 1.0 / Math.tan((state.sdfSunSoftness || 1.8) * Math.PI / 180.0);
-        shader.uniforms.uSdfParams = { value: (THREE_OK && THREE.Vector4) ? new THREE.Vector4(vx, state.sdfHitEps || 0.05, state.sdfNormalBias || 1.0, sunK) : { x: vx, y: 0.05, z: 1.0, w: sunK } };
+        shader.uniforms.uSdfParams = { value: (THREE_OK && THREE.Vector4) ? new THREE.Vector4(vx, state.sdfHitEps || 0.05, state.sdfNormalBias, sunK) : { x: vx, y: 0.05, z: 1.0, w: sunK } };
         shader.uniforms.uViewToWorld = { value: state.viewToWorldMatrix || (THREE_OK ? new THREE.Matrix4() : null) };
         shader.uniforms.uMaxShadowedLights = { value: state.maxShadowedLights || 4 };
         shader.uniforms.uPointShadowDistance = { value: state.pointShadowDistance || 800.0 };
+      }
+
+      if (csmCount) {
+        shader.uniforms.uAlCSMReady = {value:0};
+        ['Near','Blend','Size','Bias','NormalBias','Softness','Splits','Direction','ViewToWorld'].forEach(function (name) { shader.uniforms['uAlCSM'+name] = {value:null}; });
+        for (var i=0;i<csmCount;i++) { shader.uniforms['uAlCSMMap'+i]={value:null}; shader.uniforms['uAlCSMMatrix'+i]={value:null}; }
+        syncCSMUniforms(state,shader.uniforms);
+        shader.fragmentShader = csmShaderPrelude(csmCount) + '\n' + shader.fragmentShader;
       }
 
       // --- Probe uniforms. Intensity starts at 0 so the frames between this compile and
@@ -1220,9 +1494,26 @@
       material.__alUniforms = shader.uniforms;
 
       shader.fragmentShader = GLSL_CLUSTER_PRELUDE + '\n' + GLSL_PROBE_PRELUDE + '\n' + GLSL_SDF_PRELUDE + '\n' + shader.fragmentShader;
+      var lightingHook = GLSL_FRAGMENT_HOOK;
+      if ((sdfSun || csmCount) && THREE.ShaderChunk && THREE.ShaderChunk.lights_fragment_begin) {
+        // Shadow each native directional contribution before Three evaluates its BRDF.
+        var directionalAnchor = 'getDirectionalLightInfo( directionalLight, directLight );';
+        var nativeLighting = THREE.ShaderChunk.lights_fragment_begin.replace(directionalAnchor,
+          directionalAnchor + '\n' + (csmCount ? csmShadowCode(csmCount) : [
+            '#ifdef AL_SDF_SHADOWS',
+            '{', // Keep declarations scoped when Three unrolls multiple Suns.
+            'vec3 alSunWorldPos = (uViewToWorld * vec4(geometryPosition, 1.0)).xyz;',
+            'vec3 alSunNormal = inverseTransformDirection(geometryNormal, viewMatrix);',
+            'vec3 alSunOrigin = alSunWorldPos + alSunNormal * max(uSdfParams.z * uSdfParams.x, 0.1);',
+            'vec3 alSunDirection = inverseTransformDirection(directLight.direction, viewMatrix);',
+            'directLight.color *= sdfShadow(alSunOrigin, alSunDirection, max(0.05,uSdfParams.y * uSdfParams.x), length(uSdfSize), uSdfParams.w, 32);',
+            '}',
+            '#endif'
+          ].join('\n')));
+        lightingHook = lightingHook.replace('#include <lights_fragment_begin>', nativeLighting);
+      }
       shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <lights_fragment_begin>',
-        GLSL_FRAGMENT_HOOK
+        '#include <lights_fragment_begin>', lightingHook
       );
 
       if (wantProbes) {
@@ -1279,7 +1570,7 @@
     } else if (mode === 'FluorescentHum') {
       // 50/60 Hz buzz with an occasional dropout
       var hum = Math.sin(t * 6.2831853);
-      var dropout = Math.sin(t * 0.37) > 0.96 ? 0.25 : 1.0;
+      var dropout = Math.sin(t * 0.37) > 0.96 ? 1.0 - 0.75 * variation : 1.0;
       factor = (1.0 + variation * hum * 0.15) * dropout;
     } else if (mode === 'SirenStrobe') {
       // Hard on/off square wave
@@ -1300,7 +1591,6 @@
       if (options.enableVolumetricFog !== undefined) state.enableVolumetricFog = !!options.enableVolumetricFog;
       if (options.volumetricFogDensity !== undefined) state.volumetricFogDensity = options.volumetricFogDensity;
       if (options.volumetricAnisotropy !== undefined) state.volumetricAnisotropy = clamp(options.volumetricAnisotropy, 0.0, 0.9);
-      if (options.enableContactShadows !== undefined) state.enableContactShadows = !!options.enableContactShadows;
       if (options.globalIntensityScale !== undefined) state.globalIntensityScale = options.globalIntensityScale;
       if (options.showDebugVisualizer !== undefined) state.showDebugVisualizer = !!options.showDebugVisualizer;
     }
@@ -1314,7 +1604,6 @@
       if (options.globalIntensityScale !== undefined) state.globalIntensityScale = options.globalIntensityScale;
       if (options.volumetricFogDensity !== undefined) state.volumetricFogDensity = options.volumetricFogDensity;
       if (options.volumetricAnisotropy !== undefined) state.volumetricAnisotropy = clamp(options.volumetricAnisotropy, 0.0, 0.9);
-      if (options.enableContactShadows !== undefined) state.enableContactShadows = !!options.enableContactShadows;
       if (options.enableVolumetricFog !== undefined) state.enableVolumetricFog = !!options.enableVolumetricFog;
       if (options.showDebugVisualizer !== undefined) {
         state.showDebugVisualizer = !!options.showDebugVisualizer;
@@ -1494,7 +1783,6 @@
         lightColor: parseColor(options && options.lightColor, [255, 180, 100]),
         emissiveBoost: options && options.emissiveBoost !== undefined ? options.emissiveBoost : 1.0,
         iesProfile: (options && options.iesProfile) || 'None',
-        castContactShadows: options && options.castContactShadows !== undefined ? !!options.castContactShadows : true,
         shadowBias: options && options.shadowBias !== undefined ? options.shadowBias : 0.02,
         castShadow: options && options.castShadow !== undefined ? !!options.castShadow : false,
         sourceRadius: options && options.sourceRadius !== undefined ? options.sourceRadius : 0.0,
@@ -1547,7 +1835,6 @@
     if (options.lightColor !== undefined) light.lightColor = parseColor(options.lightColor, light.lightColor);
     if (options.emissiveBoost !== undefined) light.emissiveBoost = options.emissiveBoost;
     if (options.iesProfile !== undefined) light.iesProfile = options.iesProfile;
-    if (options.castContactShadows !== undefined) light.castContactShadows = !!options.castContactShadows;
     if (options.shadowBias !== undefined) light.shadowBias = options.shadowBias;
     if (options.castShadow !== undefined) light.castShadow = !!options.castShadow;
     if (options.sourceRadius !== undefined) light.sourceRadius = options.sourceRadius;
@@ -1568,18 +1855,23 @@
 
   function triggerMuzzleFlash(light, duration) {
     if (!light) return;
-    light.muzzleFlashDuration = Math.max(0.01, duration || 0.05);
+    light.muzzleFlashDuration = Number.isFinite(Number(duration)) ? Math.max(0.01, Number(duration)) : 0.05;
     light.muzzleFlashTimer = light.muzzleFlashDuration;
     light.muzzleFlashActive = true;
+    light.currentIntensity = light.intensity * 5;
   }
 
   function stepLight(runtimeScene, object, behavior) {
     var light = behavior.__alLight;
-    if (!light || !light.active) return;
+    if (!light || !light.active || light.flickerController) return;
 
     var dt = (runtimeScene.getElapsedTime ? runtimeScene.getElapsedTime() : 16.6) / 1000.0;
     var time = (runtimeScene.getTimeManager ? runtimeScene.getTimeManager().getTimeFromStart() : Date.now()) / 1000.0;
 
+    updateLightEffects(light, dt, time);
+  }
+
+  function updateLightEffects(light, dt, time) {
     if (light.muzzleFlashActive) {
       light.muzzleFlashTimer -= dt;
       if (light.muzzleFlashTimer <= 0.0) {
@@ -1602,6 +1894,197 @@
       );
     }
     light.currentIntensity = baseIntensity;
+  }
+
+  // Optional companion behavior. One controller owns animation of a light at a time.
+  function resolveTweenLight(scene, rec) {
+    if (!rec) return null;
+    var slot = rec.kind === 'tweens' ? 'tweenController' : 'flickerController';
+    var lights = stateOf(scene).lights;
+    if (rec.light && lights.has(rec.light) && rec.light[slot] === rec) return rec.light;
+    var match = null;
+    lights.forEach(function (light) {
+      if (light.object !== rec.object) return;
+      if (rec.lightBehavior && (!light.behavior.getName || light.behavior.getName() !== rec.lightBehavior)) return;
+      if (!match) match = light;
+    });
+    if (rec.light && rec.light !== match) releaseTweenLight(rec);
+    if (!match || (match[slot] && match[slot] !== rec)) return null;
+    match[slot] = rec;
+    rec.light = match;
+    return match;
+  }
+
+  function releaseTweenLight(rec) {
+    var slot = rec.kind === 'tweens' ? 'tweenController' : 'flickerController';
+    if (rec.light && rec.light[slot] === rec) {
+      rec.light[slot] = null;
+      if (rec.kind !== 'tweens') {
+        rec.light.flickerMode = 'None';
+        rec.light.muzzleFlashActive = false;
+        rec.light.currentIntensity = rec.light.intensity;
+      }
+    }
+    rec.light = null;
+  }
+
+  function registerLightflickereffects(scene, object, behavior, options) {
+    options = options || {};
+    var rec = behavior.__alLightflickereffects;
+    if (!rec) rec = behavior.__alLightflickereffects = {
+      object: object, light: null, lightBehavior: options.lightBehavior || '',
+      flickerMode: options.flickerMode || 'None',
+      flickerSpeed: Math.max(0, Number(options.flickerSpeed === undefined ? 8 : options.flickerSpeed) || 0),
+      flickerIntensityVariation: clamp(Number(options.flickerIntensityVariation === undefined ? 0.25 : options.flickerIntensityVariation) || 0, 0, 1),
+      time: 0, paused: false, suspended: false, channels: Object.create(null)
+    };
+    setLightTweenFlicker(behavior, rec.flickerMode, rec.flickerSpeed, rec.flickerIntensityVariation);
+    resolveTweenLight(scene, rec);
+    return rec;
+  }
+
+  function registerLightTweens(scene, object, behavior, options) {
+    var rec = behavior.__alLightTweens;
+    if (!rec) rec = behavior.__alLightTweens = {
+      kind: 'tweens', object: object, light: null, lightBehavior: options && options.lightBehavior || '',
+      time: 0, paused: false, suspended: false, channels: Object.create(null)
+    };
+    resolveTweenLight(scene, rec);
+    return rec;
+  }
+
+  function destroyLightTweens(scene, behavior) {
+    if (behavior.__alLightTweens) releaseTweenLight(behavior.__alLightTweens);
+    behavior.__alLightTweens = null;
+  }
+
+  function tweenEase(t, easing) {
+    if (easing === 'CubicIn') return t * t * t;
+    if (easing === 'CubicOut') return 1 - Math.pow(1 - t, 3);
+    if (easing === 'CubicInOut') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    if (easing === 'SineIn') return 1 - Math.cos(t * Math.PI / 2);
+    if (easing === 'SineOut') return Math.sin(t * Math.PI / 2);
+    if (easing === 'ExponentialInOut') return t === 0 || t === 1 ? t : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+
+    if (easing === 'EaseIn') return t * t;
+    if (easing === 'EaseOut') return t * (2 - t);
+    if (easing === 'EaseInOut') return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    if (easing === 'SineInOut') return (1 - Math.cos(Math.PI * t)) / 2;
+    return t;
+  }
+
+  function applyLightTween(light, channel, value) {
+    if (channel === 'Color') {
+      light.lightColor = value; light.colorMode = 'RGB';
+    } else if (channel === 'Temperature') {
+      light.colorTemperature = value; light.colorMode = 'Kelvin';
+    } else if (channel === 'Radius') light.radius = value;
+    else light.intensity = value;
+    if (light.flickerMode === 'None' && !light.muzzleFlashActive) light.currentIntensity = light.intensity;
+  }
+
+  function startLightTween(scene, behavior, channel, target, duration, easing, loop) {
+    var rec = behavior.__alLightTweens;
+    var light = resolveTweenLight(scene, rec);
+    if (!light || ['Intensity', 'Radius', 'Color', 'Temperature'].indexOf(channel) < 0) return false;
+    duration = Number(duration);
+    if (!Number.isFinite(duration)) return false;
+    var from;
+    var fromColor = channel === 'Temperature' && light.colorMode === 'RGB' ? light.lightColor.slice() : null;
+    if (channel === 'Color') {
+      from = light.colorMode === 'Kelvin' ? kelvinToRGB(light.colorTemperature).map(function (v) { return v * 255; }) : light.lightColor.slice();
+      target = parseColor(target, from).map(function (v) { return clamp(Number(v) || 0, 0, 255); });
+      delete rec.channels.Temperature;
+    } else {
+      target = Number(target);
+      if (!Number.isFinite(target)) return false;
+      target = channel === 'Temperature' ? clamp(target, 1000, 12000) : Math.max(0, target);
+      from = channel === 'Temperature' ? light.colorTemperature : channel === 'Radius' ? light.radius : light.intensity;
+      if (channel === 'Temperature') delete rec.channels.Color;
+    }
+    var tween = rec.channels[channel] = { from: from, target: target,
+      fromColor: fromColor,
+      targetColor: fromColor ? kelvinToRGB(target).map(function (v) { return v * 255; }) : null,
+      duration: Math.max(0, duration), elapsed: 0, progress: 0,
+      easing: easing || 'Linear', loop: loop || 'Once', playing: true, finished: false };
+    if (tween.duration === 0) {
+      applyLightTween(light, channel, target);
+      tween.progress = 1; tween.playing = false; tween.finished = true;
+    }
+    return true;
+  }
+
+  function stepLightflickereffects(scene, object, behavior) {
+    stepLightAnimation(scene, object, behavior.__alLightflickereffects);
+  }
+
+  function stepLightTweens(scene, object, behavior) {
+    stepLightAnimation(scene, object, behavior.__alLightTweens);
+  }
+
+  function stepLightAnimation(scene, object, rec) {
+    var light = resolveTweenLight(scene, rec);
+    if (!light || rec.paused || rec.suspended || !light.active) return;
+    var dt = Math.max(0, (object.getElapsedTime ? object.getElapsedTime(scene) : scene.getElapsedTime ? scene.getElapsedTime() : 16.6) / 1000);
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    rec.time += dt;
+    Object.keys(rec.channels).forEach(function (channel) {
+      var tween = rec.channels[channel];
+      if (!tween.playing) return;
+      tween.elapsed += dt;
+      var cycles = tween.elapsed / tween.duration;
+      var t;
+      if (tween.loop === 'Loop') t = cycles % 1;
+      else if (tween.loop === 'PingPong') { t = cycles % 2; if (t > 1) t = 2 - t; }
+      else { t = Math.min(1, cycles); if (t === 1) { tween.playing = false; tween.finished = true; } }
+      tween.progress = t;
+      var eased = tweenEase(t, tween.easing);
+      if (tween.fromColor && !(tween.finished && t === 1)) {
+        applyLightTween(light, 'Color', lerpColor(tween.fromColor, tween.targetColor, eased));
+      } else {
+        applyLightTween(light, channel, channel === 'Color' ? lerpColor(tween.from, tween.target, eased) : lerp(tween.from, tween.target, eased));
+      }
+    });
+    if (rec.kind === 'tweens') {
+      // Re-evaluate modulation at its existing phase; never advance the effect twice.
+      var fx = light.flickerController;
+      updateLightEffects(light, 0, fx ? fx.time : rec.time);
+    } else {
+      light.flickerMode = rec.flickerMode;
+      light.flickerSpeed = rec.flickerSpeed;
+      light.flickerIntensityVariation = rec.flickerIntensityVariation;
+      updateLightEffects(light, dt, rec.time);
+    }
+  }
+
+  function setLightTweenFlicker(behavior, mode, speed, variation) {
+    var rec = behavior.__alLightflickereffects;
+    if (!rec) return;
+    rec.flickerMode = ['None', 'FireFlicker', 'FluorescentHum', 'SirenStrobe', 'PulseWave'].indexOf(mode) >= 0 ? mode : 'None';
+    rec.flickerSpeed = Number.isFinite(Number(speed)) ? Math.max(0, Number(speed)) : 0;
+    rec.flickerIntensityVariation = Number.isFinite(Number(variation)) ? clamp(Number(variation), 0, 1) : 0;
+    if (rec.light) {
+      rec.light.flickerMode = rec.flickerMode;
+      rec.light.flickerSpeed = rec.flickerSpeed;
+      rec.light.flickerIntensityVariation = rec.flickerIntensityVariation;
+      updateLightEffects(rec.light, 0, rec.time);
+    }
+  }
+
+  function stopLightTween(behavior, channel) {
+    var rec = behavior.__alLightTweens;
+    if (!rec) return;
+    Object.keys(rec.channels).forEach(function (key) {
+      if (channel !== 'All' && channel !== key) return;
+      rec.channels[key].playing = false;
+      rec.channels[key].finished = false;
+    });
+  }
+
+  function destroyLightflickereffects(scene, behavior) {
+    var rec = behavior.__alLightflickereffects;
+    if (rec) releaseTweenLight(rec);
+    behavior.__alLightflickereffects = null;
   }
 
   function toggleClusterDebugVisualizer(runtimeScene, show) {
@@ -2513,15 +2996,15 @@
 
     vol.threeMin.set(vol.minX, -vol.maxY, vol.minZ);
     vol.threeSize.set(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
-    vol.voxelSize = (vol.maxX - vol.minX) / Math.max(1, vol.resX);
+    vol.voxelSize = Math.min((vol.maxX - vol.minX) / vol.resX, (vol.maxY - vol.minY) / vol.resY, (vol.maxZ - vol.minZ) / vol.resZ);
   }
 
   function ensureSDFTextures(vol) {
     if (!vol) return;
     var totalVoxels = vol.resX * vol.resY * vol.resZ;
-    if (!vol.data || vol.data.length !== totalVoxels) {
+    if (!vol.data || vol.data.length !== totalVoxels || !vol.texture || vol.texture.image.width !== vol.resX || vol.texture.image.height !== vol.resY || vol.texture.image.depth !== vol.resZ) {
       vol.data = new Uint16Array(totalVoxels);
-      var farHalf = toHalf(1e5);
+      var farHalf = toHalf(65504);
       for (var i = 0; i < totalVoxels; i++) {
         vol.data[i] = farHalf;
       }
@@ -2529,7 +3012,7 @@
       vol.texture = makeSDFData3DTexture(vol.data, vol.resX, vol.resY, vol.resZ);
       vol.isBaked = false;
     }
-    vol.voxelSize = (vol.maxX - vol.minX) / Math.max(1, vol.resX);
+    vol.voxelSize = Math.min((vol.maxX - vol.minX) / vol.resX, (vol.maxY - vol.minY) / vol.resY, (vol.maxZ - vol.minZ) / vol.resZ);
   }
 
   function disposeSDFVolume(runtimeScene, behavior) {
@@ -2537,6 +3020,8 @@
     if (!vol) return;
     var state = scenes.get(runtimeScene);
     if (state && state.sdfVolume === vol) {
+      cancelSDFBake(runtimeScene);
+      state.isSdfBakeComplete = false;
       state.sdfVolume = null;
     }
     if (vol.texture) { vol.texture.dispose(); vol.texture = null; }
@@ -2612,6 +3097,7 @@
       totalTriangles: Math.floor(triangles.length / 9),
       triangles: triangles,
       grid: grid,
+      signature: [vol.resX,vol.resY,vol.resZ,vol.minX,vol.minY,vol.minZ,vol.maxX,vol.maxY,vol.maxZ].join(),
       vol: vol
     };
 
@@ -2636,8 +3122,9 @@
     if (!bs || !bs.inProgress) return;
 
     var vol = bs.vol || state.sdfVolume;
-    if (!vol) {
-      bs.inProgress = false;
+    if (!vol || vol !== state.sdfVolume || bs.signature !== [vol.resX,vol.resY,vol.resZ,vol.minX,vol.minY,vol.minZ,vol.maxX,vol.maxY,vol.maxZ].join()) {
+      cancelSDFBake(runtimeScene);
+      state.isSdfBakeComplete = false;
       return;
     }
 
@@ -2650,8 +3137,6 @@
     var voxelSizeX = vol.threeSize.x / resX;
     var voxelSizeY = vol.threeSize.y / resY;
     var voxelSizeZ = vol.threeSize.z / resZ;
-    var voxelSize = vol.voxelSize || voxelSizeX;
-    var invVoxelSizeSq = 1.0 / (voxelSize * voxelSize);
 
     var grid = bs.grid;
     var tris = bs.triangles;
@@ -2684,22 +3169,23 @@
         var kMin = clamp(Math.floor((minTz - padZ - vol.threeMin.z) / voxelSizeZ), 0, resZ - 1);
         var kMax = clamp(Math.ceil((maxTz + padZ - vol.threeMin.z) / voxelSizeZ), 0, resZ - 1);
 
-        for (var k = kMin; k <= kMax; k++) {
+        var nx = iMax - iMin + 1, ny = jMax - jMin + 1;
+        var cells = nx * ny * (kMax - kMin + 1);
+        while ((bs.seedIndex || 0) < cells) {
+          var seed = bs.seedIndex || 0;
+          var i = iMin + seed % nx;
+          var j = jMin + Math.floor(seed / nx) % ny;
+          var k = kMin + Math.floor(seed / (nx * ny));
+          var px = vol.threeMin.x + (i + 0.5) * voxelSizeX;
+          var py = vol.threeMin.y + (j + 0.5) * voxelSizeY;
           var pz = vol.threeMin.z + (k + 0.5) * voxelSizeZ;
-          for (var j = jMin; j <= jMax; j++) {
-            var py = vol.threeMin.y + (j + 0.5) * voxelSizeY;
-            var rowBase = (k * resY + j) * resX;
-            for (var i = iMin; i <= iMax; i++) {
-              var px = vol.threeMin.x + (i + 0.5) * voxelSizeX;
-              var d2 = closestPointOnTriangleSq(px, py, pz, ax, ay, az, bx, by, bz, cx, cy, cz);
-              var d2Voxel = d2 * invVoxelSizeSq;
-              var gIdx = rowBase + i;
-              if (d2Voxel < grid[gIdx]) {
-                grid[gIdx] = d2Voxel;
-              }
-            }
-          }
+          var d2 = closestPointOnTriangleSq(px, py, pz, ax, ay, az, bx, by, bz, cx, cy, cz);
+          var gIdx = (k * resY + j) * resX + i;
+          if (d2 < grid[gIdx]) grid[gIdx] = d2;
+          bs.seedIndex = seed + 1;
+          if ((bs.seedIndex & 255) === 0 && performance.now() - start >= budget) return;
         }
+        bs.seedIndex = 0;
 
         bs.triangleIndex++;
 
@@ -2716,7 +3202,28 @@
 
     // Phase 1: Separable 3D EDT
     if (bs.phase === 1) {
-      run3DEDT(grid, resX, resY, resZ);
+      if (!bs.edt) {
+        var size = Math.max(resX, resY, resZ);
+        bs.edt = { axis: 0, line: 0, f: new Float32Array(size), d: new Float32Array(size), v: new Int32Array(size), z: new Float32Array(size + 1) };
+      }
+      var edt = bs.edt;
+      while (edt.axis < 3) {
+        var n = [resX, resY, resZ][edt.axis];
+        var lineCount = resX * resY * resZ / n;
+        var spacing = [voxelSizeX, voxelSizeY, voxelSizeZ][edt.axis];
+        while (edt.line < lineCount) {
+          var base, stride;
+          if (edt.axis === 0) { base = edt.line * resX; stride = 1; }
+          else if (edt.axis === 1) { base = Math.floor(edt.line / resX) * resX * resY + edt.line % resX; stride = resX; }
+          else { base = edt.line; stride = resX * resY; }
+          for (var q = 0; q < n; q++) edt.f[q] = grid[base + q * stride];
+          felzenszwalb1D(edt.f, edt.d, edt.v, edt.z, n, spacing * spacing);
+          for (var q = 0; q < n; q++) grid[base + q * stride] = edt.axis === 2 ? Math.sqrt(Math.max(0, edt.d[q])) : edt.d[q];
+          edt.line++;
+          if (performance.now() - start >= budget) return;
+        }
+        edt.axis++; edt.line = 0;
+      }
       bs.phase = 2;
       var nowAfterPhase1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
       if (nowAfterPhase1 - start >= budget) return;
@@ -2725,10 +3232,11 @@
     // Phase 2: Convert grid to half-float texture
     if (bs.phase === 2) {
       var totalVoxels = resX * resY * resZ;
-      var buffer = new Uint16Array(totalVoxels);
-      for (var idx = 0; idx < totalVoxels; idx++) {
-        var worldDist = grid[idx] * voxelSize;
-        buffer[idx] = toHalf(worldDist);
+      var buffer = bs.output || (bs.output = new Uint16Array(totalVoxels));
+      for (var idx = bs.outputIndex || 0; idx < totalVoxels; idx++) {
+        buffer[idx] = toHalf(Math.min(65504, Math.max(0, grid[idx] - 0.5 * Math.sqrt(voxelSizeX * voxelSizeX + voxelSizeY * voxelSizeY + voxelSizeZ * voxelSizeZ))));
+        bs.outputIndex = idx + 1;
+        if ((idx & 255) === 0 && performance.now() - start >= budget) return;
       }
       vol.data = buffer;
       if (vol.texture) vol.texture.dispose();
@@ -2748,11 +3256,19 @@
     }
     var bs = state.sdfBakeState;
     if (bs.phase === 0) {
-      return bs.totalTriangles > 0 ? (bs.triangleIndex / bs.totalTriangles) * 0.8 : 0.8;
+      return bs.totalTriangles > 0 ? (bs.triangleIndex / bs.totalTriangles) * 0.6 : 0.6;
     } else if (bs.phase === 1) {
-      return 0.9;
+      var vol = bs.vol || state.sdfVolume;
+      if (!vol || !bs.edt) return 0.6;
+      var lineCounts = [vol.resY * vol.resZ, vol.resX * vol.resZ, vol.resX * vol.resY];
+      var completedLines = bs.edt.line;
+      for (var axis = 0; axis < bs.edt.axis; axis++) completedLines += lineCounts[axis];
+      var totalLines = lineCounts[0] + lineCounts[1] + lineCounts[2];
+      return 0.6 + 0.3 * (totalLines ? completedLines / totalLines : 1.0);
     } else {
-      return 0.95;
+      var vol = bs.vol || state.sdfVolume;
+      var totalVoxels = vol ? vol.resX * vol.resY * vol.resZ : 0;
+      return 0.9 + 0.1 * (totalVoxels ? (bs.outputIndex || 0) / totalVoxels : 1.0);
     }
   }
 
@@ -2837,7 +3353,14 @@
     var maxY = view.getFloat32(48, true);
     var maxZ = view.getFloat32(52, true);
 
+    if (![minX,minY,minZ,maxX,maxY,maxZ].every(Number.isFinite) || maxX <= minX || maxY <= minY || maxZ <= minZ) return false;
     var totalVoxels = rx * ry * rz;
+    var payload = new Uint16Array(totalVoxels);
+    for (var i=0;i<totalVoxels;i++) {
+      var value = fromHalf(view.getUint16(56+i*2,true));
+      if (Number.isNaN(value) || value < 0) return false;
+      payload[i] = toHalf(Math.min(value,65504));
+    }
     var state = stateOf(runtimeScene);
     var vol = state.sdfVolume;
 
@@ -2855,6 +3378,8 @@
         'Using file bounds; cube no longer controls this volume.');
     }
 
+    cancelSDFBake(runtimeScene);
+    state.isSdfBakeComplete = true;
     vol.resX = rx;
     vol.resY = ry;
     vol.resZ = rz;
@@ -2869,9 +3394,9 @@
 
     vol.threeMin.set(minX, -maxY, minZ);
     vol.threeSize.set(maxX - minX, maxY - minY, maxZ - minZ);
-    vol.voxelSize = (maxX - minX) / rx;
+    vol.voxelSize = Math.min((maxX-minX)/rx,(maxY-minY)/ry,(maxZ-minZ)/rz);
 
-    vol.data = new Uint16Array(new Uint16Array(arrayBuffer, 56, totalVoxels));
+    vol.data = payload;
     if (vol.texture) vol.texture.dispose();
     vol.texture = makeSDFData3DTexture(vol.data, rx, ry, rz);
 
@@ -2909,8 +3434,14 @@
       state.viewToWorldMatrix.copy(camera.matrixWorld);
     }
 
+    updateCSM(runtimeScene, camera);
     updateClusterAABBs(state, camera);
     initTextures(state, runtimeScene);
+
+    // Refresh variants when a bake completes, a volume disappears, or shadows toggle.
+    state.hookedMaterials.forEach(function (mat) {
+      injectShaderOnMaterial(mat, state, mat.__alInjection ? mat.__alInjection.receiver : null);
+    });
 
     // Auto-discover scene materials. Receiver clones are already hooked, so they are
     // skipped here rather than double-injected.
@@ -3057,14 +3588,16 @@
       lightData[baseFloatIdx + 10] = dirZ;
       lightData[baseFloatIdx + 11] = extraParam;
 
-      var shadowFlag = light.castShadow ? 1.0 : 0.0;
+      // shape.z packs the integer cast flag plus a fractional per-light normal bias.
+      // Keep the fraction below 1 so floor(shape.z) remains an exact boolean decode.
+      var shadowData = (light.castShadow ? 1.0 : 0.0) + clamp(Number(light.shadowBias) || 0.0, 0.0, 0.999);
       var srcRadius = light.sourceRadius !== undefined && light.sourceRadius > 0.0
         ? light.sourceRadius
         : (light.radius * 0.05 * WORLD_UNITS_PER_METER);
 
       lightData[baseFloatIdx + 12] = iesId;
       lightData[baseFloatIdx + 13] = cosInner;
-      lightData[baseFloatIdx + 14] = shadowFlag;
+      lightData[baseFloatIdx + 14] = shadowData;
       lightData[baseFloatIdx + 15] = srcRadius;
 
       // 2. Depth slice range [kMin, kMax]
@@ -3152,6 +3685,18 @@
       clusterHeaders[cc * 2 + 1] = count;         // .g = count
 
       var binBase = cc * MAX_LIGHTS_PER_CLUSTER;
+      if (count > 1 && sdfEnabled(state) && state.sdfVolume && state.sdfVolume.isBaked && state.maxShadowedLights > 0) {
+        var ao = cc * 6;
+        var cx = (aabbs[ao] + aabbs[ao + 3]) * 0.5;
+        var cy = (aabbs[ao + 1] + aabbs[ao + 4]) * 0.5;
+        var cz = (aabbs[ao + 2] + aabbs[ao + 5]) * 0.5;
+        binData.subarray(binBase, binBase + count).sort(function (a, b) {
+          var ai = a * LIGHT_FLOATS, bi = b * LIGHT_FLOATS;
+          var da = Math.pow(lightData[ai] - cx, 2) + Math.pow(lightData[ai + 1] - cy, 2) + Math.pow(lightData[ai + 2] - cz, 2);
+          var db = Math.pow(lightData[bi] - cx, 2) + Math.pow(lightData[bi + 1] - cy, 2) + Math.pow(lightData[bi + 2] - cz, 2);
+          return da - db || a - b;
+        });
+      }
       for (var bi = 0; bi < count; ++bi) {
         lightIndexList[currentOffset + bi] = binData[binBase + bi];
       }
@@ -3197,7 +3742,7 @@
         var vx = state.sdfVolume.voxelSize || ((state.sdfVolume.maxX - state.sdfVolume.minX) / state.sdfVolume.resX);
         var sunK = 1.0 / Math.tan((state.sdfSunSoftness || 1.8) * Math.PI / 180.0);
         if (uniforms.uSdfParams.value && typeof uniforms.uSdfParams.value.set === 'function') {
-          uniforms.uSdfParams.value.set(vx, state.sdfHitEps || 0.05, state.sdfNormalBias || 1.0, sunK);
+          uniforms.uSdfParams.value.set(vx, state.sdfHitEps || 0.05, state.sdfNormalBias, sunK);
         }
       }
       if (uniforms.uSdfVolume && state.sdfVolume && state.sdfVolume.texture) {
@@ -3242,6 +3787,7 @@
   function cleanupScene(runtimeScene) {
     var state = scenes.get(runtimeScene);
     if (!state) return;
+    disposeCSM(state);
 
     state.lights.forEach(function (light) {
       restoreSpotDirectionFace(light);
@@ -3268,6 +3814,16 @@
     if (state.clusterGrid3DTexture) state.clusterGrid3DTexture.dispose();
     if (state.clusterGrid2DTexture) state.clusterGrid2DTexture.dispose();
     if (state.lightIndexTexture) state.lightIndexTexture.dispose();
+    state.hookedMaterials.forEach(function (mat) {
+      if (mat.__alInjection && mat.__alInjection.owner === state) {
+        mat.onBeforeCompile = function () {};
+        mat.customProgramCacheKey = function () { return ''; };
+        if (mat.defines) ['USE_CLUSTERED_LIGHTS','USE_PROBE_GRID','USE_3D_CLUSTER_TEXTURE','AL_SDF_SHADOWS','AL_LIGHT_INDEX_WIDTH','AL_LIGHT_TEXELS','AL_WORLD_UNITS_PER_METER'].forEach(function (key) { delete mat.defines[key]; });
+        mat.__alInjection = null; mat.__alUniforms = null;
+        if (mat.dispose) mat.dispose();
+        mat.needsUpdate = true;
+      }
+    });
     state.hookedMaterials.clear();
     scenes.delete(runtimeScene);
   }
@@ -3282,11 +3838,7 @@
         gdjs._unregisterCallback(doStepInGameEditor);
         gdjs._unregisterCallback(cleanupScene);
       }
-      scenes.forEach(function (state) {
-        state.lights.forEach(function (light) {
-          restoreSpotDirectionFace(light);
-        });
-      });
+      Array.from(scenes.keys()).forEach(cleanupScene);
       if (spotDirectionMaterial) spotDirectionMaterial.dispose();
       if (spotDirectionTexture) spotDirectionTexture.dispose();
       if (spotDirectionGeometry) spotDirectionGeometry.dispose();
@@ -3295,6 +3847,11 @@
       spotDirectionGeometry = null;
     },
 
+    setShadowMode: setShadowMode,
+    configureCSM: configureCSM,
+    registerShadowManager: registerShadowManager,
+    destroyShadowManager: destroyShadowManager,
+    shadowState: function (scene) { return shadowState(stateOf(scene)); },
     // Math & helpers
     kelvinToRGB: kelvinToRGB,
     parseColor: parseColor,
@@ -3316,6 +3873,18 @@
     hookObjectMaterials: hookObjectMaterials,
     toggleDebugVisualizer: toggleClusterDebugVisualizer,
 
+    // Lightflickereffects companion behavior
+    registerLightTweens: registerLightTweens,
+    stepLightTweens: stepLightTweens,
+    destroyLightTweens: destroyLightTweens,
+    registerLightflickereffects: registerLightflickereffects,
+    stepLightflickereffects: stepLightflickereffects,
+    destroyLightflickereffects: destroyLightflickereffects,
+    startLightTween: startLightTween,
+    stopLightTween: stopLightTween,
+    setLightTweenFlicker: setLightTweenFlicker,
+    resolveTweenLight: resolveTweenLight,
+
     // Clustered lights
     registerLight: registerLight,
     updateLight: updateLight,
@@ -3334,9 +3903,6 @@
     },
     setVolumetricFogEnabled: function (scene, enable) {
       stateOf(scene).enableVolumetricFog = !!enable;
-    },
-    enableContactShadows: function (scene, enable) {
-      stateOf(scene).enableContactShadows = !!enable;
     },
     setMaxLights: function (scene, count) {
       applyMaxLights(stateOf(scene), count);
@@ -3546,13 +4112,10 @@
       vol.boundsLocked = true;
       vol.threeMin.set(vol.minX, -vol.maxY, vol.minZ);
       vol.threeSize.set(vol.maxX - vol.minX, vol.maxY - vol.minY, vol.maxZ - vol.minZ);
-      vol.voxelSize = (vol.maxX - vol.minX) / Math.max(1, vol.resX);
-    },
-    setSDFShadowsEnabled: function (runtimeScene, enable) {
-      stateOf(runtimeScene).enableSDFShadows = !!enable;
+      vol.voxelSize = Math.min((vol.maxX - vol.minX) / vol.resX, (vol.maxY - vol.minY) / vol.resY, (vol.maxZ - vol.minZ) / vol.resZ);
     },
     isSDFShadowsEnabled: function (runtimeScene) {
-      return !!stateOf(runtimeScene).enableSDFShadows;
+      return !!sdfEnabled(stateOf(runtimeScene));
     },
     setMaxShadowedLights: function (runtimeScene, count) {
       stateOf(runtimeScene).maxShadowedLights = Math.max(0, Math.floor(count));
@@ -3648,6 +4211,10 @@
     // Internal seams for the unit test harness. Not part of the events API and not
     // referenced by any generated JsCode block.
     __internals: {
+      updateCSM: updateCSM,
+      disposeCSM: disposeCSM,
+      practicalSplits: practicalSplits,
+      csmShadowCode: csmShadowCode,
       collectBakeGeometry: collectBakeGeometry,
       injectShaderOnMaterial: injectShaderOnMaterial,
       syncSpotDirectionFace: syncSpotDirectionFace,

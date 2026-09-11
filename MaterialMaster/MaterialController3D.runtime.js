@@ -281,6 +281,18 @@ if (typeof THREE !== 'undefined' && !gdjs.__materialController3D) {
       if (!owned) { owned = new Map(); state.textureOwners.set(ownerKey, owned); }
       if (owned.has(source)) return owned.get(source);
       var clone = source.clone();
+      // This clone exists precisely so its UV transform can be driven -- tiling, scrolling,
+      // flipbook frames -- and every one of those needs Repeat, or the edge pixel smears
+      // instead of the image wrapping. Texture.clone() carries the source's wrap mode, so a
+      // model that authored ClampToEdge would clamp the instant it was tiled.
+      //
+      // This is the ONLY place the extension forces a wrap mode onto a texture that came from
+      // a model: the clone is ours, per-object, and disposed with the contributor. Core must
+      // not do it to the shared source, which every other object drawing that image also uses.
+      if (typeof THREE !== 'undefined' && THREE.RepeatWrapping !== undefined) {
+        clone.wrapS = THREE.RepeatWrapping;
+        clone.wrapT = THREE.RepeatWrapping;
+      }
       owned.set(source, clone);
       return clone;
     }
@@ -375,6 +387,29 @@ if (typeof THREE !== 'undefined' && !gdjs.__materialController3D) {
       return Number.isFinite(n) ? Math.max(1, n) : null;
     }
 
+    // Anisotropic filtering samples ALONG A MIP CHAIN. Without one there is nothing for it to
+    // do, so texture.anisotropy sits there reading back as 16 while changing not one pixel --
+    // which is exactly how this looked: the setting applied, the condition said enabled, the
+    // ground stayed smeared at grazing angles.
+    //
+    // GDevelop builds every 3D texture with minFilter = LinearFilter (pixi-image-manager.js,
+    // getThreeTexture), and LinearFilter is one of the two filters for which Three.js skips
+    // mipmap generation entirely. So on a stock GDevelop texture, anisotropy was ALWAYS inert.
+    //
+    // Nearest is left alone: it is the pixel-art choice, mipmaps are not wanted there, and
+    // forcing a mip chain would blur exactly what the user asked to keep crisp.
+    function ensureMipmapChain(tex) {
+      if (!tex || typeof THREE === 'undefined') return false;
+      if (tex.minFilter === THREE.NearestFilter ||
+          tex.minFilter === THREE.NearestMipmapNearestFilter ||
+          tex.minFilter === THREE.NearestMipmapLinearFilter) return false;
+      if (tex.generateMipmaps === false && tex.mipmaps && tex.mipmaps.length > 1) return false;
+      if (tex.minFilter === THREE.LinearMipmapLinearFilter && tex.generateMipmaps !== false) return false;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      return true;
+    }
+
     function applyAnisotropyToMaterial(mat, anisotropy) {
       if (!mat || anisotropy === null || anisotropy === undefined) return 0;
       var count = 0;
@@ -382,14 +417,44 @@ if (typeof THREE !== 'undefined' && !gdjs.__materialController3D) {
         var key = TEXTURE_MAP_PROPERTIES[i];
         var tex = mat[key];
         if (tex && typeof tex === 'object' && (tex.isTexture === true || typeof tex.anisotropy === 'number')) {
+          var changed = false;
           if (tex.anisotropy !== anisotropy) {
             tex.anisotropy = anisotropy;
-            tex.needsUpdate = true;
+            changed = true;
           }
+          // Only worth a mip chain when anisotropy is actually asking for one.
+          if (anisotropy > 1 && ensureMipmapChain(tex)) changed = true;
+          // Re-uploads the image, so it must stay behind a real change -- doing this every
+          // frame would push the whole texture to the GPU every frame.
+          if (changed) tex.needsUpdate = true;
           count++;
         }
       }
       return count;
+    }
+
+    // Whether anisotropy is actually changing pixels on this object, rather than merely being
+    // set. A value above 1 on a texture with no mip chain reports false, because that is the
+    // state this whole class of bug lived in: configured, reported as on, and doing nothing.
+    function isAnisotropyEffective(root) {
+      if (!root || typeof THREE === 'undefined') return false;
+      var targets = getTargets(root);
+      if (!targets.length) targets = findLiveTargets(root);
+      for (var i = 0; i < targets.length; i++) {
+        var mat = targets[i].material || liveMaterial(targets[i]);
+        if (!mat) continue;
+        for (var j = 0; j < TEXTURE_MAP_PROPERTIES.length; j++) {
+          var tex = mat[TEXTURE_MAP_PROPERTIES[j]];
+          if (!tex || typeof tex !== 'object') continue;
+          if (!(tex.anisotropy > 1)) continue;
+          var mipped = tex.minFilter === THREE.LinearMipmapLinearFilter ||
+                       tex.minFilter === THREE.LinearMipmapNearestFilter ||
+                       tex.minFilter === THREE.NearestMipmapLinearFilter ||
+                       tex.minFilter === THREE.NearestMipmapNearestFilter;
+          if (mipped) return true;
+        }
+      }
+      return false;
     }
 
     function applyAnisotropyToObject(root, rawValue, game) {
@@ -601,6 +666,8 @@ if (typeof THREE !== 'undefined' && !gdjs.__materialController3D) {
       activeContributorIds: activeContributorIds,
       requestVertexColors: requestVertexColors,
       requiresVertexColors: requiresVertexColors,
+      ensureMipmapChain: ensureMipmapChain,
+      isAnisotropyEffective: isAnisotropyEffective,
       acquireTextureClone: acquireTextureClone,
       ownResource: ownResource,
       releaseOwnedResources: releaseOwnedResources,

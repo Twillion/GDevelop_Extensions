@@ -13,7 +13,7 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 | :--- | :--- | :---: | :--- |
 | Max lights | `SetMaxLights` | `256` | Dynamic lights streamed to the GPU simultaneously ($64 - 512$). Changing it reallocates the light data texture. |
 | Master brightness | `SetGlobalIntensity` | `1.0` | Multiplier over all clustered lights. |
-| SDF Shadows | `SetSDFShadowsEnabled` | `true` | Enable or disable raymarched distance field soft shadows globally. |
+| Shadow mode | `SetShadowMode` | `Hybrid` | Select `Off`, `CSM`, `SDF`, or `Hybrid`. This is the sole global shadow selector. |
 | Max Shadowed Lights | `SetMaxShadowedLights` | `4` | Cap on simultaneous shadowed clustered point/spot lights ($1 - 16$). |
 | Point Shadow Distance | `SetPointShadowDistance` | `800.0` | Cutoff distance in world units beyond which point/spot shadows are skipped. |
 | Sun Penumbra Softness | `SetSDFSunSoftness` | `1.8` | Angular diameter in degrees of directional Sun source ($0.1 - 10.0^\circ$). |
@@ -46,11 +46,14 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 | :--- | :--- | :---: | :--- |
 | **`IESProfile`** | Choice | `"None"` | Architectural photometric profile: `"None"`, `"WallSconce"`, `"StreetLamp"`, `"Downlight"`, `"Searchlight"`. |
 | **`CastShadows`** | Boolean | `false` | Enables SDF volumetric raymarched soft shadows from this specific light. |
-| **`SourceRadius`** | Number | `10.0` | Physical light source radius in world units for penumbra softness calculation. |
-| **`CastContactShadows`**| Boolean | `true` | Compatibility flag for micro-shadows. |
-| **`ShadowBias`** | Number | `0.02` | Normal offset bias to prevent self-shadow acne. |
+| **`SourceRadius`** | Number | `0.0` | Physical source radius in world units for penumbra softness; 0 uses 5% of the light radius. |
+| **`ShadowBias`** | Number | `0.02` | SDF normal offset in voxel-size units, clamped to 0–0.999. |
 
-### Group 4: Procedural Animation & Flicker
+## Lightflickereffects (companion behavior)
+
+Attach alongside ClusteredLight3D. The animation properties below no longer belong to ClusteredLight3D. Optional `LightBehavior` (String, empty by default) selects a specific light behavior name; empty chooses the first light on the object.
+
+### Procedural Animation & Flicker
 | Property | Type | Default | Description |
 | :--- | :--- | :---: | :--- |
 | **`FlickerMode`** | Choice | `"None"` | Animation pattern: `"None"`, `"FireFlicker"`, `"FluorescentHum"`, `"SirenStrobe"`, `"PulseWave"`. |
@@ -79,6 +82,7 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 * **`Set light RGB color on _PARAM0_ to _PARAM1_`**: Set custom RGB color string (e.g. `"#00ffcc"` or `"0;255;200"`).
 * **`Set spotlight angles on _PARAM0_ (Inner: _PARAM1_, Outer: _PARAM2_)`**: Adjust spot focus and soft penumbra.
 * **`Set area capsule length on _PARAM0_ to _PARAM1_`**: Adjust neon tube/bar length in meters.
+### Lightflickereffects animation actions
 * **`Set procedural flicker mode on _PARAM0_ to _PARAM1_ with speed _PARAM2_ and variation _PARAM3_`**: Configure flame/strobe animations.
 * **`Trigger muzzle flash burst on _PARAM0_ with duration _PARAM1_ seconds`**: Single-shot high-intensity decay burst.
 
@@ -90,7 +94,7 @@ extension lifecycle function; scene-wide settings are free actions, not properti
 * **`Is light within camera view frustum on _PARAM0_`**: True if light's bounding sphere intersects the active camera frustum.
 * **`Does light cast shadows on _PARAM0_`**: True if `CastShadows` is enabled on this light.
 * **`Are SDF soft shadows enabled in scene`**: True if global SDF shadow raymarching is active.
-* **`Is light procedural flicker active on _PARAM0_`**: Checks if animated flicker/pulse is running.
+* **`Is light procedural flicker active on _PARAM0_`**: Lightflickereffects condition: checks if flicker is configured and playback is not paused.
 
 ---
 
@@ -220,7 +224,6 @@ The cube's scale and position represent the shadow volume in world space; the cu
 
 ### Actions
 * **`SetSDFVolumeBounds(minX, minY, minZ, maxX, maxY, maxZ)`**: Manually set distance field boundaries in GDevelop world units.
-* **`SetSDFShadowsEnabled(_PARAM0_)`**: Globally enable or disable SDF soft shadow raymarching.
 * **`SetMaxShadowedLights(_PARAM0_)`**: Maximum simultaneous dynamic point/spot lights that raymarch shadows ($1 - 16$).
 * **`SetPointShadowDistance(_PARAM0_)`**: View distance cutoff (world units) for dynamic light shadow evaluation.
 * **`SetSDFSunSoftness(_PARAM0_)`**: Angular diameter in degrees ($0.1 - 10.0^\circ$) for directional Sun penumbra.
@@ -268,7 +271,7 @@ the form:
 | `uProbeDayNightBlend`, `uProbeNormalBias` | `float` | Probe blend factor and normal offset. |
 | `uSdfVolume` | `sampler3D` R16F | 3D Signed Distance Field texture storing world-unit Euclidean distance. |
 | `uSdfMin` / `uSdfSize` | `vec3` | SDF bounding box in Three.js space ($[minX, -maxY, minZ]$). |
-| `uSdfParams` | `vec4` | `(invVoxelSize, hitEps, normalBias, inflate)`. |
+| `uSdfParams` | `vec4` | `(voxelSize, hitEps, globalNormalBias, sunPenumbraFactor)`. |
 | `uViewToWorld` | `mat4` | Current camera view-to-world transformation matrix. |
 | `uMaxShadowedLights` | `int` | Maximum simultaneous dynamic lights allowed to trace shadows. |
 | `uPointShadowDistance`| `float` | Distance threshold for dynamic light shadow raymarching. |
@@ -280,7 +283,7 @@ the form:
 | 0 | view-space position x | y | z | attenuation radius |
 | 1 | colour r | g | b | intensity |
 | 2 | view-space direction x | y | z | type flag: `0` point, `cos(outer)` spot, `10 + halfLength` capsule |
-| 3 | IES profile id (0-4) | `cos(innerAngle)` | shadow flag (`1.0` if `CastShadows`) | source radius (penumbra size) |
+| 3 | IES profile id (0-4) | `cos(innerAngle)` | integer shadow flag + fractional per-light bias | source radius (penumbra size) |
 
 ---
 
@@ -316,3 +319,34 @@ Little-endian. Byte offsets:
 | `22` | 10 | Reserved, zero |
 | `32` | 24 | `float32` minX, minY, minZ, maxX, maxY, maxZ — **unmirrored** GDevelop coordinates |
 | `56` | `resX·resY·resZ·2` | Distance field payload, R16F, indexed `(z·resY + y)·resX + x` |
+
+## LightTweens tween API
+
+| Action | Target | Additional arguments |
+| --- | --- | --- |
+| TweenIntensity | Nonnegative intensity; 0 fades out | Duration (seconds), Easing, Playback |
+| TweenRadius | Nonnegative radius in metres | Duration, Easing, Playback |
+| TweenColor | RGB color | Duration, Easing, Playback |
+| TweenTemperature | 1000–12000 Kelvin | Duration, Easing, Playback |
+| PauseTweens / ResumeTweens | Light transitions only | None |
+| StopTween | Intensity, Radius, Color, Temperature, or All | Channel |
+
+Easing: Linear, EaseIn, EaseOut, EaseInOut, CubicIn, CubicOut, CubicInOut, SineIn, SineOut, SineInOut, ExponentialInOut. Playback: Once, Loop, PingPong. Zero duration applies immediately. Replacing a tween starts from its current value; color and temperature are mutually exclusive. StopTween leaves current values and does not stop flicker.
+
+Conditions: IsTweenPlaying(Channel), IsTweenFinished(Channel). Finished remains true until the channel is restarted or stopped. Expression: TweenProgress(Channel), 0–1 for the current leg. FlickerSpeed() and FlickerIntensityVariation() now belong to Lightflickereffects.
+
+Migration: add Lightflickereffects, copy previous flicker property values, and redirect old animation events to the companion. See README for examples.
+
+Lightflickereffects also provides ApplyFlickerPreset(Preset): Candle, Torch, Fluorescent, Alarm, Breathing, None. Presets configure mode, speed and variation without changing base color or intensity. StopAllEffects stops flicker and flashes only; LightTweens transitions continue. IsPaused reports pause/deactivation; IsLightConnected checks target binding. Explicit pauses survive behavior deactivation/reactivation.
+
+LightTweens is a separate companion with only a LightBehavior binding property. Tween actions accept durations in seconds (default 1). Both companions can control the same light: LightTweens changes base values and Lightflickereffects modulates intensity. Pauses, deactivation and teardown are independent. IsPaused and IsLightConnected are available on each behavior.
+
+## Shadow selector and CSM API
+
+SetShadowMode(Mode): Off, CSM, SDF, Hybrid (default). This is the only global shadow selector. ShadowModeIs(Mode), ShadowMode(), and IsCSMActive expose selected mode and readiness. IsSDFShadowsEnabled is true in SDF and Hybrid modes. CSM uses the first visible native directional Sun on the base layer.
+
+SetCSMCascadeCount: 2–4, default 3. SetCSMMaxDistance: world units, default 25000, bounded by camera far. SetCSMSplitLambda: 0–1, default 0.75. SetCSMShadowMapSize: 1024/2048/4096, default 2048. SetCSMBias: depth bias and world-space normal bias, both accept zero. SetCSMSeamBlendWidth: 0–0.25, default 0.1. SetCSMSoftness: PCF radius 0–10. SetCSMSunDirection: ray direction in GDevelop XYZ; zero input ignored. CSMCascadeCount, CSMMaxDistance, CSMSplitLambda, CSMShadowMapSize, CSMSeamBlendWidth, CSMSoftness and CSMSplitDistance(index) report configuration.
+
+AdvancedShadowManager3D exposes these settings as inspector properties. Only one instance owns a scene. Extra managers wait in registration order; when the owner is destroyed, the next manager takes over with its own settings. Free actions work without a manager. CSM cascades carry zero intensity, so the native Sun contributes brightness exactly once. CSM honors each mesh's existing `castShadow` and `receiveShadow` flags.
+
+SDF bake distances include conservative voxel dilation. SDF local shadow candidates are sorted by cluster-center distance, within the 64-light cluster limit. Static SDF fields must be rebaked after geometry changes. Per-light ShadowBias affects local SDF ray origins; the global SDF normal bias affects the directional Sun.

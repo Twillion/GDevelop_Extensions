@@ -47,16 +47,14 @@ mindmap
 | :--- | :--- | :---: | :--- |
 | 📁 **[`AutoMeshLOD3D/`](./AutoMeshLOD3D)** | Single-Model QEM Decimation in Web Workers & Shared Vertex Index Swapping | Complete Blueprint | [README](./AutoMeshLOD3D/README.md) · [Plan](./AutoMeshLOD3D/IMPLEMENTATION_PLAN.md) · [API](./AutoMeshLOD3D/API_REFERENCE.md) |
 | 📁 **[`CameraTweens3d/`](./CameraTweens3d)** | 8-Module Procedural Motion, Shakes, Spring-Dampers & 4 Genre Presets | Implemented | [README](./CameraTweens3d/README.md) · [Plan](./CameraTweens3d/IMPLEMENTATION_PLAN.md) · [API](./CameraTweens3d/API_REFERENCE.md) |
-| 📁 **[`CascadedShadowMaps3D/`](./CascadedShadowMaps3D)** | 3–4 Depth Cascades, Texel Snapping, 16-Tap Poisson PCF & Contact Shadows | Complete Blueprint | [README](./CascadedShadowMaps3D/README.md) · [Plan](./CascadedShadowMaps3D/IMPLEMENTATION_PLAN.md) · [API](./CascadedShadowMaps3D/API_REFERENCE.md) |
+| 📁 **`CascadedShadowMaps3D/`** *(folder removed)* | 3–4 Depth Cascades, Texel Snapping, 16-Tap Poisson PCF & Contact Shadows | Folded into AdvancedLighting3D | [Shadow Selector Plan, Appendix A](../AdvancedLighting3D/SHADOW_SELECTOR_IMPLEMENTATION_PLAN.md) |
 | 📁 **[`CinematicPostFX3D/`](./CinematicPostFX3D)** | All-in-One SSR Reflections, GTAO Ambient Occlusion, 13-Tap Karis Bloom, Bokeh DOF | Implemented | [README](./CinematicPostFX3D/README.md) · [Plan](./CinematicPostFX3D/IMPLEMENTATION_PLAN.md) · [API](./CinematicPostFX3D/API_REFERENCE.md) |
 | 📁 **[`ClusteredDetail/`](./ClusteredDetail)** | Clustered Forward Projective Decals (0 Draw Calls, Bullet Holes, Blood, Scorch Marks, Runes) | Complete Blueprint | [README](./ClusteredDetail/README.md) · [Plan](./ClusteredDetail/IMPLEMENTATION_PLAN.md) · [API](./ClusteredDetail/API_REFERENCE.md) |
 | 📁 **[`AdvancedLighting3D/`](./AdvancedLighting3D)** | 16x9x24 Frustum Clustered Multi-Lights (500+ Lights, Karis Area Specular, Volumetric Fog, SSCS) | Complete Blueprint | [README](./AdvancedLighting3D/README.md) · [Plan](./AdvancedLighting3D/IMPLEMENTATION_PLAN.md) · [API](./AdvancedLighting3D/API_REFERENCE.md) |
 | 📁 **[`ExternalSkeletalAnimator3D/`](./ExternalSkeletalAnimator3D)** | Multi-Clip External GLB Animation Player, Bone Sockets & Jolt Ragdoll Physics | Implemented / Active | [README](./ExternalSkeletalAnimator3D/README.md) · [Plan](./ExternalSkeletalAnimator3D/PLAN.md) |
 | 📁 **[`FluidAndWater3D/`](./FluidAndWater3D)** | Sizable Gerstner Oceans, Jolt Buoyancy, Snell's Window & Pourable SPH Liquids | Implemented | [README](./FluidAndWater3D/README.md) · [Plan](./FluidAndWater3D/IMPLEMENTATION_PLAN.md) · [API](./FluidAndWater3D/API_REFERENCE.md) |
 | 📁 **[`Material3D/`](./Material3D)** | Universal PBR & BRDF Material Engine + v3.5 FX (POM 3D Relief, SSS Skin, Triplanar, Wetness) | Implemented / Active Plan | [README](./Material3D/README.md) · [v3.5 Plan](./Material3D/ADVANCED_MATERIAL_ENHANCEMENT_PLAN.md) |
-| 📁 **[`MeshDeformation3D/`](./MeshDeformation3D)** | Real-Time Vertex Sculpting, Thermal Blacksmithing, Volume Metal Flow & Chiseling | Complete Blueprint | [README](./MeshDeformation3D/README.md) · [Plan](./MeshDeformation3D/IMPLEMENTATION_PLAN.md) · [API](./MeshDeformation3D/API_REFERENCE.md) |
 | 📁 **[`MidiSynthPlayer/`](./MidiSynthPlayer)** | WebAudio Algorithmic FM/Chiptune MIDI OST Engine (0 KB Samples, 99% Size Reduction) | Complete Blueprint | [README](./MidiSynthPlayer/README.md) · [Plan](./MidiSynthPlayer/IMPLEMENTATION_PLAN.md) · [API](./MidiSynthPlayer/API_REFERENCE.md) |
-| 📁 **[`StableShadowAnchor3D/`](./StableShadowAnchor3D)** | Editor & Runtime Shadow Stabilization (World-Fixed, Focus-Object & Frozen Anchors) | Complete Blueprint | [README](./StableShadowAnchor3D/README.md) · [Plan](./StableShadowAnchor3D/IMPLEMENTATION_PLAN.md) · [API](./StableShadowAnchor3D/API_REFERENCE.md) |
 | 📁 **[`WorldPartition3D Suite/`](./Multi%20extension%20work%20space%20folder)** | Multi-Extension Workspace: WorldPartition3D, FloatingOrigin3D & AutoMeshLOD3D | Complete Blueprint | [Workspace Overview](./Multi%20extension%20work%20space%20folder/README.md) · [WorldPartition3D](./Multi%20extension%20work%20space%20folder/WorldPartition3D/README.md) · [FloatingOrigin3D](./Multi%20extension%20work%20space%20folder/FloatingOrigin3D/README.md) |
 
 ---
@@ -101,7 +99,7 @@ mindmap
 
 ## 2. Advanced Lighting & Atmospheric Extensions
 
-### 2.1 `CascadedShadowMaps3D` (CSM Sun Lighting) — *[Folder: CascadedShadowMaps3D/](./CascadedShadowMaps3D)*
+### 2.1 `CascadedShadowMaps3D` (CSM Sun Lighting) — *folded into [AdvancedLighting3D/](./AdvancedLighting3D) as the `CSM` shadow mode; spec in [Appendix A](../AdvancedLighting3D/SHADOW_SELECTOR_IMPLEMENTATION_PLAN.md)*
 * **Type:** Layer Effect / Global Manager
 * **Purpose:** Replaces GDevelop's single directional shadow map with a multi-tier cascaded shadow system for sharp shadows near the player and wide shadows in the distance.
 * **Key Features:**
@@ -301,7 +299,7 @@ mindmap
 
 ## 7. Physics & Interactive Mesh Deformation
 
-### 7.1 `MeshDeformation3D` (Blacksmithing, Sculpting & Plasticity) — *[Folder: MeshDeformation3D/](./MeshDeformation3D)*
+### 7.1 `MeshDeformation3D` (Blacksmithing, Sculpting & Plasticity) — *blueprint folder removed; concept retained, nearest shipped work is [DeformableIngot3D](../Rarely%20used%20extensions/DeformableIngot3D/README.md)*
 * **Type:** Custom 3D Object / Behavior
 * **Purpose:** Real-time procedural vertex deformation engine for physical metal blacksmithing, stone statue sculpting, clay modeling, grindstone blade sharpening, and vehicle impact crushing.
 * **Key Features:**
@@ -373,8 +371,8 @@ mindmap
 | **`CameraTweens3d`** | Camera & Motion Polish | Low | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Implemented (`CameraTweens3d/`) |
 | **`AdvancedLighting3D`** (Advanced Lighting) | Dynamic Multi-Lights **+ Probe-Grid Indirect GI** | High | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Built (`AdvancedLighting3D/`) |
 | **`MidiSynthPlayer`** | Audio & Dynamic OST | Low | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`MidiSynthPlayer/`) |
-| **`CascadedShadowMaps3D`** | Lighting & Shadows | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`CascadedShadowMaps3D/`) |
-| **`MeshDeformation3D`** | Physics & Deformation | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`MeshDeformation3D/`) |
+| **`CascadedShadowMaps3D`** | Lighting & Shadows | High | ⭐⭐⭐⭐⭐ (Maximum) | 🔗 Folded into `AdvancedLighting3D/` (Appendix A) |
+| **`MeshDeformation3D`** | Physics & Deformation | Medium | ⭐⭐⭐⭐⭐ (Maximum) | 💡 Explored Blueprint (folder removed) |
 | **`CinematicPostFX3D`** | Post-Processing & Optics| High | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Implemented (`CinematicPostFX3D/`) |
 | **`FluidAndWater3D`** | Fluids & Water | High | ⭐⭐⭐⭐⭐ (Maximum) | ✅ Implemented (`FluidAndWater3D/`) |
 | **`WorldPartition3D`** | Open World / Streaming | High | ⭐⭐⭐⭐⭐ (Maximum) | 📁 Documented (`WorldPartition3D/`) |

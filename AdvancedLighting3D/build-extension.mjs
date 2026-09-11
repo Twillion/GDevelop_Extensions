@@ -113,13 +113,9 @@ const LIGHT_OPTIONS = `{
   lightColor: behavior._getLightColor ? behavior._getLightColor() : '255;180;100',
   emissiveBoost: behavior._getEmissiveBoost ? behavior._getEmissiveBoost() : 1.0,
   iesProfile: behavior._getIESProfile ? behavior._getIESProfile() : 'None',
-  castContactShadows: behavior._getCastContactShadows ? behavior._getCastContactShadows() : true,
   shadowBias: behavior._getShadowBias ? behavior._getShadowBias() : 0.02,
   castShadow: behavior._getCastShadows ? behavior._getCastShadows() : false,
-  sourceRadius: behavior._getSourceRadius ? behavior._getSourceRadius() : 0.0,
-  flickerMode: behavior._getFlickerMode ? behavior._getFlickerMode() : 'None',
-  flickerSpeed: behavior._getFlickerSpeed ? behavior._getFlickerSpeed() : 8.0,
-  flickerIntensityVariation: behavior._getFlickerIntensityVariation ? behavior._getFlickerIntensityVariation() : 0.25
+  sourceRadius: behavior._getSourceRadius ? behavior._getSourceRadius() : 0.0
 }`;
 
 const lightLifecycle = [
@@ -240,15 +236,6 @@ AL.updateLight(runtimeScene, object, behavior, { capsuleLength: val });
     `const val = eventsFunctionContext.getArgument("Profile");
 if (behavior._setIESProfile) behavior._setIESProfile(val);
 AL.updateLight(runtimeScene, object, behavior, { iesProfile: val });
-`, { group: G_LIGHT_SHADOW }),
-
-  fn('SetCastContactShadows', 'Enable contact micro-shadows',
-    'Enable contact micro-shadows on _PARAM0_: _PARAM2_',
-    'Toggle screen-space contact micro-shadow raymarching for this light.', 'Action',
-    [bool('Enable', 'Enable contact micro-shadows')],
-    `const val = !!eventsFunctionContext.getArgument("Enable");
-if (behavior._setCastContactShadows) behavior._setCastContactShadows(val);
-AL.updateLight(runtimeScene, object, behavior, { castContactShadows: val });
 `, { group: G_LIGHT_SHADOW }),
 
   fn('SetCastShadows', 'Enable SDF soft shadows',
@@ -432,7 +419,7 @@ eventsFunctionContext.returnValue = light ? light.viewDistance : 0.0;
 const clusteredLightBehavior = {
   name: 'ClusteredLight3D',
   fullName: 'Clustered Light 3D',
-  description: 'Adds high-performance clustered dynamic lighting to a 3D object (Point, Spot, or Area Capsule) with Karis area specular, Frostbite falloff, blackbody Kelvin temperature, IES photometric profiles, and procedural flicker.',
+  description: 'Adds high-performance clustered dynamic lighting to a 3D object (Point, Spot, or Area Capsule) with Karis area specular, Frostbite falloff, blackbody Kelvin temperature, IES photometric profiles. Add Lightflickereffects to animate this light.',
   objectType: '',
   private: false,
   propertyDescriptors: [
@@ -453,7 +440,6 @@ const clusteredLightBehavior = {
     prop('IESProfile', 'Choice', 'IES Profile', 'Architectural photometric profile.', 'None', {
       extraInformation: ['None', 'WallSconce', 'StreetLamp', 'Downlight', 'Searchlight']
     }),
-    prop('CastContactShadows', 'Boolean', 'Cast Contact Micro-Shadows', 'Enable screen-space contact micro-shadows.', 'true'),
     prop('CastShadows', 'Boolean', 'Cast SDF Shadows', 'Cast raymarched soft shadows from the static scene Signed Distance Field volume.', 'false'),
     prop('SourceRadius', 'Number', 'Light Source Radius', 'Physical light source radius for penumbra calculation (in world units, 0 uses 5% of light radius).', '0.0'),
     prop('ShadowBias', 'Number', 'Shadow Bias', 'Normal offset bias to prevent self-shadow acne.', '0.02'),
@@ -469,6 +455,132 @@ const clusteredLightBehavior = {
     ...lightConditions,
     ...lightExpressions,
   ],
+};
+
+/* ========================================================= Lightflickereffects Companion Behavior */
+
+const fxNames = new Set(['SetProceduralFlicker', 'TriggerMuzzleFlash', 'IsFlickerActive', 'FlickerSpeed', 'FlickerIntensityVariation']);
+const fxFunctions = clusteredLightBehavior.eventsFunctions.filter(f => fxNames.has(f.name));
+clusteredLightBehavior.eventsFunctions = clusteredLightBehavior.eventsFunctions.filter(f => !fxNames.has(f.name));
+const fxProperties = clusteredLightBehavior.propertyDescriptors.filter(p => p.name.startsWith('Flicker'));
+clusteredLightBehavior.propertyDescriptors = clusteredLightBehavior.propertyDescriptors.filter(p => !p.name.startsWith('Flicker'));
+for (const f of fxFunctions) {
+  for (const e of f.events) {
+    e.inlineCode = e.inlineCode.replaceAll('const light = behavior.__alLight;', 'const light = AL.resolveTweenLight(runtimeScene, behavior.__alLightflickereffects);');
+    if (['IsFlickerActive', 'FlickerSpeed', 'FlickerIntensityVariation'].includes(f.name)) {
+      e.inlineCode = e.inlineCode.replace('const light = AL.resolveTweenLight(runtimeScene, behavior.__alLightflickereffects);', 'const light = behavior.__alLightflickereffects;');
+      if (f.name === 'IsFlickerActive') e.inlineCode = e.inlineCode.replace("light && light.flickerMode", "light && light.light && light.light.active && !light.paused && !light.suspended && light.flickerMode");
+    }
+    if (f.name === 'SetProceduralFlicker') {
+      e.inlineCode = BEHAVIOR_PREAMBLE + `
+const mode = eventsFunctionContext.getArgument("Mode");
+const speed = eventsFunctionContext.getArgument("Speed");
+const variation = eventsFunctionContext.getArgument("Variation");
+if (behavior._setFlickerMode) behavior._setFlickerMode(mode);
+if (behavior._setFlickerSpeed) behavior._setFlickerSpeed(speed);
+if (behavior._setFlickerIntensityVariation) behavior._setFlickerIntensityVariation(variation);
+AL.setLightTweenFlicker(behavior, mode, speed, variation);
+`;
+    }
+  }
+}
+const tweenLifecycle = (name, code, withRuntime = false) => ({
+  name, fullName:name, description:'', functionType:'Action', private:true, parameters:[...OB],
+  events:ev(BEHAVIOR_PREAMBLE + code, {withRuntime})
+});
+const tweenOptions = `{
+  lightBehavior: behavior._getLightBehavior ? behavior._getLightBehavior() : '',
+  flickerMode: behavior._getFlickerMode ? behavior._getFlickerMode() : 'None',
+  flickerSpeed: behavior._getFlickerSpeed ? behavior._getFlickerSpeed() : 8,
+  flickerIntensityVariation: behavior._getFlickerIntensityVariation ? behavior._getFlickerIntensityVariation() : 0.25
+}`;
+const tweenChannels = ['Intensity', 'Radius', 'Color', 'Temperature'];
+const tweenActions = tweenChannels.map(channel => fn('Tween' + channel, 'Tween light ' + channel.toLowerCase(),
+  'Tween light ' + channel.toLowerCase() + ' on _PARAM0_ to _PARAM2_ over _PARAM3_ seconds with _PARAM4_ easing and _PARAM5_ playback',
+  'Animate from the current value. Starting again replaces this channel. Zero duration applies immediately. Radius uses metres; temperature uses Kelvin. Color and temperature replace each other.',
+  'Action', [channel === 'Color' ? col('Target', 'Target RGB color', '255;255;255') : num('Target', 'Target value', channel === 'Temperature' ? '6500' : channel === 'Radius' ? '12' : '1'),
+    num('Duration', 'Duration in seconds', '1'), choice('Easing','Easing',['Linear','EaseIn','EaseOut','EaseInOut','CubicIn','CubicOut','CubicInOut','SineIn','SineOut','SineInOut','ExponentialInOut']), choice('Playback','Playback',['Once','Loop','PingPong'])],
+  `AL.startLightTween(runtimeScene, behavior, '${channel}', eventsFunctionContext.getArgument("Target"), eventsFunctionContext.getArgument("Duration"), eventsFunctionContext.getArgument("Easing"), eventsFunctionContext.getArgument("Playback"));`,
+  {group:'Light Tweens'}));
+const lightFlickerEffectsBehavior = {
+  name:'Lightflickereffects', fullName:'Lightflickereffects',
+  description:'Optional animation companion for ClusteredLight3D on the same object. Adds flicker, flash bursts, fades, color and temperature transitions, radius tweens, easing and looping. Use one Lightflickereffects per light.',
+  objectType:'', private:false,
+  propertyDescriptors:[prop('LightBehavior','String','Light behavior name','Leave empty to use the first ClusteredLight3D on this object. Enter its behavior name when the object has multiple lights.',''), ...fxProperties],
+  eventsFunctions:[
+    tweenLifecycle('onCreated', `AL.registerLightflickereffects(runtimeScene, object, behavior, ${tweenOptions});`, true),
+    tweenLifecycle('doStepPreEvents','AL.stepLightflickereffects(runtimeScene, object, behavior);'),
+    tweenLifecycle('onDestroy','AL.destroyLightflickereffects(runtimeScene, behavior);'),
+    tweenLifecycle('onDeActivate','if (behavior.__alLightflickereffects) behavior.__alLightflickereffects.suspended = true;'),
+    tweenLifecycle('onActivate','if (behavior.__alLightflickereffects) behavior.__alLightflickereffects.suspended = false;'),
+    ...fxFunctions, ...tweenActions,
+    fn('ApplyFlickerPreset','Apply flicker preset','Apply _PARAM2_ flicker preset to _PARAM0_', 'Set a ready-to-use flicker pattern, speed and variation. Does not change light color or base intensity.', 'Action',
+      [choice('Preset','Preset',['Candle','Torch','Fluorescent','Alarm','Breathing','None'])],
+      `const presets = {Candle:['FireFlicker',4,0.18],Torch:['FireFlicker',8,0.4],Fluorescent:['FluorescentHum',50,0.35],Alarm:['SirenStrobe',2,1],Breathing:['PulseWave',0.5,0.5],None:['None',0,0]};
+const p = presets[eventsFunctionContext.getArgument("Preset")];
+if (p) {
+  AL.setLightTweenFlicker(behavior, p[0], p[1], p[2]);
+  if (behavior._setFlickerMode) behavior._setFlickerMode(p[0]);
+  if (behavior._setFlickerSpeed) behavior._setFlickerSpeed(p[1]);
+  if (behavior._setFlickerIntensityVariation) behavior._setFlickerIntensityVariation(p[2]);
+}`, {group:'Animation & Flicker'}),
+    fn('StopAllEffects','Stop all light effects','Stop all light effects on _PARAM0_', 'Stop all tweens, flicker and flash bursts, retaining the current base light properties.', 'Action', [],
+      `AL.stopLightTween(behavior, 'All');
+const rec = behavior.__alLightflickereffects;
+if (rec && rec.light) rec.light.muzzleFlashActive = false;
+AL.setLightTweenFlicker(behavior, 'None', 0, 0);
+if (behavior._setFlickerMode) behavior._setFlickerMode('None');`, {group:'Playback'}),
+    fn('IsPaused','Light effects are paused','Light effects on _PARAM0_ are paused', 'True while explicitly paused or the behavior is deactivated.', 'Condition', [],
+      'const rec = behavior.__alLightflickereffects; eventsFunctionContext.returnValue = !!(rec && (rec.paused || rec.suspended));', {group:'Playback'}),
+    fn('IsLightConnected','Light animation is connected','Light animation on _PARAM0_ is connected to a light', 'Check whether the target light exists and this behavior owns its animation.', 'Condition', [],
+      'eventsFunctionContext.returnValue = !!AL.resolveTweenLight(runtimeScene, behavior.__alLightflickereffects);', {group:'Playback'}),
+
+    fn('PauseEffects','Pause light effects','Pause light effects on _PARAM0_', 'Freeze tweens, flicker and flash timers at their current values.', 'Action',[],
+      'if (behavior.__alLightflickereffects) behavior.__alLightflickereffects.paused = true;', {group:'Playback'}),
+    fn('ResumeEffects','Resume light effects','Resume light effects on _PARAM0_', 'Continue paused effects.', 'Action',[],
+      'if (behavior.__alLightflickereffects) behavior.__alLightflickereffects.paused = false;', {group:'Playback'}),
+    fn('StopTween','Stop light tween','Stop _PARAM2_ light tween on _PARAM0_', 'Stop the selected tween at its current value without marking it complete. Flicker continues.', 'Action',
+      [choice('Channel','Tween channel',['All',...tweenChannels])],
+      'AL.stopLightTween(behavior, eventsFunctionContext.getArgument("Channel"));', {group:'Playback'}),
+    fn('IsTweenPlaying','Light tween is playing','_PARAM2_ light tween on _PARAM0_ is playing','False while paused or after completion.', 'Condition',
+      [choice('Channel','Tween channel',tweenChannels)],
+      'const rec = behavior.__alLightflickereffects; const t = rec && rec.channels[eventsFunctionContext.getArgument("Channel")]; eventsFunctionContext.returnValue = !!(t && t.playing && rec.light && rec.light.active && !rec.paused && !rec.suspended);', {group:'Playback'}),
+    fn('IsTweenFinished','Light tween has finished','_PARAM2_ light tween on _PARAM0_ has finished','Stays true after a Once tween completes until that channel is restarted or stopped. Use Trigger once for a single event.', 'Condition',
+      [choice('Channel','Tween channel',tweenChannels)],
+      'const rec = behavior.__alLightflickereffects; const t = rec && rec.channels[eventsFunctionContext.getArgument("Channel")]; eventsFunctionContext.returnValue = !!(t && t.finished);', {group:'Playback'}),
+    fn('TweenProgress','Light tween progress','','Current leg progress from 0 to 1; ping-pong decreases on its return leg.', 'Expression',
+      [str('Channel','Tween channel: Intensity, Radius, Color or Temperature','"Intensity"')],
+      'const rec = behavior.__alLightflickereffects; const t = rec && rec.channels[eventsFunctionContext.getArgument("Channel")]; eventsFunctionContext.returnValue = t ? t.progress : 0;', {group:'Playback',expressionType:'number'}),
+  ]
+};
+
+// Keep the two companion APIs independent; both can bind the same light.
+const tweenFunctionNames = new Set(['TweenIntensity','TweenRadius','TweenColor','TweenTemperature','StopTween','IsTweenPlaying','IsTweenFinished','TweenProgress']);
+const movedTweenFunctions = lightFlickerEffectsBehavior.eventsFunctions.filter(f => tweenFunctionNames.has(f.name));
+lightFlickerEffectsBehavior.eventsFunctions = lightFlickerEffectsBehavior.eventsFunctions.filter(f => !tweenFunctionNames.has(f.name));
+for (const f of movedTweenFunctions) for (const e of f.events) e.inlineCode = e.inlineCode.replaceAll('__alLightflickereffects','__alLightTweens');
+lightFlickerEffectsBehavior.description = 'Flicker presets and flash bursts for ClusteredLight3D. Works alongside LightTweens on the same light.';
+for (const f of lightFlickerEffectsBehavior.eventsFunctions) {
+  if (f.name === 'StopAllEffects') { f.description = 'Stop flicker and flash bursts while LightTweens continues.'; for (const e of f.events) e.inlineCode = e.inlineCode.replace("AL.stopLightTween(behavior, 'All');", ''); }
+  if (f.name === 'PauseEffects') f.description = 'Freeze flicker and flash timers. LightTweens remains independent.';
+}
+const lightTweensBehavior = {
+  name:'LightTweens', fullName:'Light Tweens',
+  description:'Smoothly transition light intensity, radius, RGB color and temperature over a duration in seconds, with 11 easing styles and Once, Loop or PingPong playback. Works alongside Lightflickereffects.',
+  objectType:'', private:false,
+  propertyDescriptors:[prop('LightBehavior','String','Light behavior name','Leave empty for the first ClusteredLight3D on this object, or enter a specific behavior name.','')],
+  eventsFunctions:[
+    tweenLifecycle('onCreated', "AL.registerLightTweens(runtimeScene, object, behavior, {lightBehavior: behavior._getLightBehavior ? behavior._getLightBehavior() : ''});", true),
+    tweenLifecycle('doStepPreEvents','AL.stepLightTweens(runtimeScene, object, behavior);'),
+    tweenLifecycle('onDestroy','AL.destroyLightTweens(runtimeScene, behavior);'),
+    tweenLifecycle('onDeActivate','if (behavior.__alLightTweens) behavior.__alLightTweens.suspended = true;'),
+    tweenLifecycle('onActivate','if (behavior.__alLightTweens) behavior.__alLightTweens.suspended = false;'),
+    ...movedTweenFunctions,
+    fn('PauseTweens','Pause light tweens','Pause light tweens on _PARAM0_','Freeze transitions at their current values; flicker continues.', 'Action',[], 'if (behavior.__alLightTweens) behavior.__alLightTweens.paused = true;', {group:'Playback'}),
+    fn('ResumeTweens','Resume light tweens','Resume light tweens on _PARAM0_','Continue paused transitions.', 'Action',[], 'if (behavior.__alLightTweens) behavior.__alLightTweens.paused = false;', {group:'Playback'}),
+    fn('IsPaused','Light tweens are paused','Light tweens on _PARAM0_ are paused','True while paused or deactivated.', 'Condition',[], 'const rec = behavior.__alLightTweens; eventsFunctionContext.returnValue = !!(rec && (rec.paused || rec.suspended));', {group:'Playback'}),
+    fn('IsLightConnected','Light tweens are connected','Light tweens on _PARAM0_ are connected','Check the target light is available.', 'Condition',[], 'eventsFunctionContext.returnValue = !!AL.resolveTweenLight(runtimeScene, behavior.__alLightTweens);', {group:'Playback'})
+  ]
 };
 
 /* ========================================================= Global / Scene Manager Functions */
@@ -489,13 +601,6 @@ const freeActions = [
     'Configure the maximum dynamic lights streamed to GPU simultaneously (64 - 512).', 'Action',
     [num('MaxLights', 'Maximum active lights (64 - 512)', '256')],
     `AL.setMaxLights(runtimeScene, eventsFunctionContext.getArgument("MaxLights"));\n`,
-    { group: G_SCENE_CONTROL, withRuntime: true }),
-
-  freeFn('EnableContactShadows', 'Enable clustered contact micro-shadows',
-    'Enable clustered contact micro-shadows: _PARAM0_',
-    'Toggle screen-space contact micro-shadowing (SSCS) globally across all clustered lights.', 'Action',
-    [bool('Enable', 'Enable screen-space contact micro-shadows')],
-    `AL.enableContactShadows(runtimeScene, !!eventsFunctionContext.getArgument("Enable"));\n`,
     { group: G_SCENE_CONTROL, withRuntime: true }),
 
   freeFn('ToggleDebugVisualizer', 'Show / hide debug visualizer',
@@ -1108,13 +1213,6 @@ const G_SDF_BAKE = 'SDF Shadows — Baking';
 const G_SDF_METRICS = 'SDF Shadows — Metrics';
 
 const sdfFreeActions = [
-  freeFn('SetSDFShadowsEnabled', 'Enable SDF soft shadows',
-    'Enable Signed Distance Field raymarched soft shadows in scene: _PARAM0_',
-    'Globally enable or disable Signed Distance Field soft shadows.', 'Action',
-    [bool('Enable', 'Enable SDF shadows')],
-    `AL.setSDFShadowsEnabled(runtimeScene, !!eventsFunctionContext.getArgument("Enable"));\n`,
-    { group: G_SDF_CONTROL, withRuntime: true }),
-
   freeFn('SetMaxShadowedLights', 'Set maximum SDF shadowed lights',
     'Set maximum SDF shadowed dynamic lights to _PARAM0_',
     'Configure the maximum number of dynamic lights casting SDF shadows per fragment.', 'Action',
@@ -1304,9 +1402,9 @@ const installerFunction = {
 const extension = {
   name: 'AdvancedLighting3D',
   fullName: 'Advanced Lighting 3D',
-  version: '2.0.0',
-  description: 'High-fidelity clustered forward dynamic multi-lighting, baked indirect light-probe GI, AND Signed Distance Field (SDF) raymarched soft shadows for GDevelop 5 (Three.js WebGL2). Scales scenes to 500+ active dynamic lights (Point, Spot, Area Capsule) with flat 60 FPS performance, zero shader recompilation stutter, Karis representative point area specular reflections, blackbody Kelvin colour temperatures, IES photometric distributions, Frostbite windowed attenuation, and procedural flicker waveforms. A LightProbeVolume3D bakes the scene ambient into a 3D texture that ReceiveLightProbes objects sample per fragment. An SDFVolume3D bakes the static scene into a distance volume for Quilez-penumbra contact and soft shadows. All features share one shader injection and one program cache key.',
-  shortDescription: 'Clustered forward multi-lighting (500+ lights, Karis area specular), baked light-probe indirect GI, and static SDF soft shadows.',
+  version: '4.1.0',
+  description: 'Clustered forward dynamic lighting, baked light-probe GI, cascaded Sun shadows, and Signed Distance Field raymarched soft shadows for GDevelop 5 (Three.js WebGL2). Streams up to 512 registered Point, Spot, or Area Capsule lights through data textures, with a default 256-light budget and a 64-light limit per screen/depth cluster. Includes Karis representative-point area specular reflections, blackbody Kelvin colors, IES photometric distributions, Frostbite windowed attenuation, dedicated Lightflickereffects presets, and independent LightTweens transitions. A LightProbeVolume3D supplies baked indirect light. AdvancedShadowManager3D selects Off, CSM, SDF, or Hybrid shadows. Performance depends on light overlap, shadow mode, cascade settings, SDF resolution, scene geometry, and target hardware.',
+  shortDescription: 'Clustered dynamic lighting, baked light-probe GI, polished CSM Sun shadows, and static SDF soft shadows.',
   category: '3D',
   author: 'Twillion',
   previewIconUrl: iconUrl,
@@ -1331,11 +1429,51 @@ const extension = {
   ],
   eventsBasedBehaviors: [
     clusteredLightBehavior,
+    lightFlickerEffectsBehavior,
+    lightTweensBehavior,
     volumeBehavior,
     receiverBehavior,
     sdfVolumeBehavior,
   ],
 };
+
+const shadowModes = ['Off','CSM','SDF','Hybrid'];
+const shadowGroup = 'Shadows — CSM and SDF';
+extension.eventsFunctions.push(
+  freeFn('SetShadowMode','Set shadow mode','Set shadow mode to _PARAM0_','Hybrid uses CSM for the native Sun and SDF for clustered local lights.', 'Action',[choice('Mode','Shadow technique',shadowModes)], 'AL.setShadowMode(runtimeScene, eventsFunctionContext.getArgument("Mode"));', {group:shadowGroup}),
+  freeFn('ShadowModeIs','Shadow mode is','Shadow mode is _PARAM0_','Compare the selected shadow technique.', 'Condition',[choice('Mode','Shadow technique',shadowModes)], 'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).mode === eventsFunctionContext.getArgument("Mode");',{group:shadowGroup}),
+  freeFn('ShadowMode','Shadow mode','','Current shadow technique.', 'StringExpression',[], 'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).mode;',{group:shadowGroup,expressionType:'string'}),
+  freeFn('IsCSMActive','CSM shadows are ready','CSM shadows are ready','True once all cascade maps exist and a receiving material has the current shader variant.', 'Condition',[], 'const s = AL.shadowState(runtimeScene); eventsFunctionContext.returnValue = !!(s.ready && s.lights.length && Array.from(AL.stateOf(runtimeScene).hookedMaterials).some(m => m.__alInjection && m.__alInjection.csmCount === s.count && m.__alUniforms && m.__alUniforms.uAlCSMReady));',{group:shadowGroup})
+);
+const csmSettings = [
+ ['CascadeCount','count','Cascade count','3'],['MaxDistance','distance','Maximum distance in world units','25000'],
+ ['SplitLambda','lambda','Logarithmic split blend (0 to 1)','0.75'],['ShadowMapSize','mapSize','Shadow map size (1024, 2048 or 4096)','2048'],
+ ['SeamBlendWidth','blend','Cascade blend fraction (0 to 0.25)','0.1'],['Softness','softness','PCF filter radius','1.5']
+];
+for (const [name,key,label,defaultValue] of csmSettings) {
+  extension.eventsFunctions.push(freeFn('SetCSM'+name,'Set CSM '+label.toLowerCase(),'Set CSM '+label.toLowerCase()+' to _PARAM0_',label,'Action',[num('Value',label,defaultValue)],
+    'AL.configureCSM(runtimeScene, {'+key+': eventsFunctionContext.getArgument("Value")});',{group:shadowGroup}));
+  extension.eventsFunctions.push(freeFn('CSM'+name,'CSM '+label.toLowerCase(),'',label,'Expression',[],
+    'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).'+key+';',{group:shadowGroup,expressionType:'number'}));
+}
+extension.eventsFunctions.push(
+  freeFn('SetCSMBias','Set CSM depth and normal bias','Set CSM depth bias to _PARAM0_ and normal bias to _PARAM1_','Normal bias uses world units. Zero is supported.', 'Action',[num('Bias','Depth bias','0.0005'),num('NormalBias','Normal bias','0.02')], 'AL.configureCSM(runtimeScene, {bias: eventsFunctionContext.getArgument("Bias"), normalBias: eventsFunctionContext.getArgument("NormalBias")});',{group:shadowGroup}),
+  freeFn('SetCSMSunDirection','Set CSM Sun direction','Set CSM Sun ray direction to (_PARAM0_; _PARAM1_; _PARAM2_)','Direction uses GDevelop axes, with Z up. Zero-length input is ignored.', 'Action',[num('X','X','0.3'),num('Y','Y','0.4'),num('Z','Z','-1')], 'const x=Number(eventsFunctionContext.getArgument("X")), y=Number(eventsFunctionContext.getArgument("Y")), z=Number(eventsFunctionContext.getArgument("Z")); if ([x,y,z].every(Number.isFinite) && x*x+y*y+z*z > 0) AL.shadowState(runtimeScene).direction = new THREE.Vector3(x,-y,z).normalize();',{group:shadowGroup}),
+  freeFn('CSMSplitDistance','CSM split distance','','End distance in world units for cascade index 0 to count minus 1; zero if not fitted.', 'Expression',[num('Index','Cascade index','0')], 'const s=AL.shadowState(runtimeScene); const i=Math.floor(eventsFunctionContext.getArgument("Index")); eventsFunctionContext.returnValue=i>=0 && i<s.count ? s.splits[i] : 0;',{group:shadowGroup,expressionType:'number'})
+);
+const shadowManager = {
+ name:'AdvancedShadowManager3D',fullName:'Advanced Shadow Manager 3D',objectType:'',private:false,
+ description:'One optional manager per scene. Configures Hybrid, CSM, SDF or Off. CSM follows the existing directional Sun; local lights use SDF in Hybrid.',
+ propertyDescriptors:[prop('ShadowMode','Choice','Shadow mode','Shadow technique.','Hybrid',{extraInformation:shadowModes}),
+ ...csmSettings.map(([name,key,label,value])=>prop(name,'Number',label,label,value)),
+ prop('ConstantBias','Number','Depth bias','Depth bias.','0.0005'),prop('NormalBias','Number','Normal bias','World-space normal bias.','0.02')],
+ eventsFunctions:[
+ tweenLifecycle('onCreated',
+ 'AL.registerShadowManager(runtimeScene, behavior, {mode:behavior._getShadowMode(), '+csmSettings.map(([name,key])=>key+':behavior._get'+name+'()').join(', ')+', bias:behavior._getConstantBias(), normalBias:behavior._getNormalBias()});',true),
+ tweenLifecycle('onDestroy','AL.destroyShadowManager(runtimeScene, behavior);')
+ ]
+};
+extension.eventsBasedBehaviors.push(shadowManager);
 
 // Every behavior in this extension, for the pre-build checks below.
 const ALL_BEHAVIORS = extension.eventsBasedBehaviors;

@@ -15,8 +15,8 @@ One extension with focused, composable material behaviors.
 | **BRDF Material** | Patches the material's shader to swap the diffuse lighting model with texture anisotropy control. 16 properties, 30 functions. |
 | **Displaced Mesh 3D** | Physical vertex displacement, cube face subdivision, pattern relief coupling, geological weathering, crevice shading and anisotropic filtering. 40 properties, 71 functions. |
 
-> **Status: built, unit-tested (194/194 pass), and headless browser verified.** `node MaterialMaster/test-materialmaster.mjs`
-> passes 194 checks against the real runtime under a stub Three.js, and headless browser validation renders 90+ real frames cleanly under Three.js r160.
+> **Status: built, unit-tested (417/417 pass), and headless browser verified.** `node MaterialMaster/test-materialmaster.mjs`
+> passes 417 checks against the real runtime under a stub Three.js, and headless browser validation renders 90+ real frames cleanly under Three.js r160.
 
 ---
 
@@ -108,6 +108,35 @@ In standard WebGL and Three.js pipelines, textures viewed at oblique, grazing, o
   - Expressions: `TextureAnisotropy()` (numeric level), `AnisotropicFiltering()` (mode string).
   - Condition: `IsAnisotropicFilteringEnabled()` (checks if anisotropy > 1).
   - In-place updates: changing filtering at runtime updates `texture.anisotropy` and triggers `texture.needsUpdate = true` immediately without rebuilding the material.
+
+### Anisotropy needs a mipmap chain, and GDevelop's textures do not have one
+
+This is the bug that made the whole feature inert, and like the rest of the family it reported
+success the entire time.
+
+Anisotropic filtering works by taking several samples **along a mipmap chain**. With no chain there
+is nothing for it to sample, so the setting applies, `TextureAnisotropy()` reads back `16`, and not
+one pixel changes. And GDevelop builds every 3D texture with `minFilter = LinearFilter`
+(`pixi-image-manager.js`, `getThreeTexture`) — one of exactly two filters for which Three.js skips
+mipmap generation entirely. So on a stock engine texture, anisotropy was **always** doing nothing,
+in the default configuration, with a clean console and a condition cheerfully reporting "enabled".
+
+Requesting anisotropy above 1 now ensures the texture has a chain to sample: `generateMipmaps` on
+and `minFilter` set to `LinearMipmapLinearFilter`. Two deliberate exceptions:
+
+- **Nearest-filtered textures are left alone.** That is the pixel-art choice, and forcing a mip
+  chain would blur exactly what you asked to keep crisp. Anisotropy does nothing there, by design.
+- **An anisotropy of 1 forces nothing.** Turning the feature off must not drag a mip chain in
+  behind it.
+
+The re-upload stays behind a real change — setting `needsUpdate` pushes the whole image to the GPU,
+so doing it per frame would be worse than the blur it fixes.
+
+**Anisotropic filtering is actually filtering** is a separate condition from **Anisotropic filtering
+is enabled**, and the distinction is the point: the first says it is changing pixels, the second only
+says it is switched on. This is the same pairing as `BlendNeighborCount()` against **Blending with
+neighbours** — configured versus working. Filtering is a property of the *image*, not of one object,
+so a texture shared by several objects carries one filter setting for all of them.
 
 ---
 
@@ -250,6 +279,59 @@ tiling, inflate compensation and blend push are all computed against.
 
 ---
 
+## Working with authored models
+
+A `.glb` arrives with its PBR already authored, so the guiding rule for every behavior here is that
+attaching one must not quietly undo what the model shipped with. That is what the `Use*` gates are
+for — `UseRoughness`, `UseMetalness`, `UseBaseColor` and `UseEmissive` all default to off, meaning
+*don't touch*, and `Alpha mode` and `Rendered side` default to `Preserve` for the same reason. A
+texture slot left empty falls back to the map the model already had rather than blanking it.
+
+Four places did not honour that rule, and all four failed in the silent way this extension exists to
+eliminate.
+
+**A material class change kept almost nothing.** A class change cannot clone — a Standard material
+does not become a Physical one — so the replacement is built fresh and the authored fields have to be
+carried over by hand. Only `name`, `color`, `map`, `roughness` and `metalness` were. The moment any
+Physical field promoted the class, an emissive panel went black, a double-sided transparent leaf card
+came back opaque and single-sided, and `Preserve` could not help because there was no longer anything
+on the material to preserve. Emissive colour and intensity, `side`, `transparent`, `opacity`,
+`alphaTest`, `depthWrite`, `vertexColors`, `flatShading`, `normalScale`, `aoMapIntensity`,
+`envMapIntensity`, `alphaMap`, `bumpMap`, `lightMap` and `envMap` now all survive the change, each
+guarded on both sides so carrying a Physical into a Basic drops what Basic cannot honour instead of
+inventing it.
+
+**Wrap modes were forced onto textures the extension did not own.** Every bound map was switched to
+`RepeatWrapping`, including maps that arrived with the model. glTF routinely authors `ClampToEdge` for
+atlases and non-tiling UV layouts, and switching that to Repeat bleeds the edges — for every other
+object drawing the same shared texture, and permanently, since `Restore original materials` has no
+record of a texture it never owned. A model's own textures are now left exactly as authored. Textures
+this extension loads are still set to Repeat, and so is the private clone Animated Material 3D drives,
+which is what tiling and scrolling actually need.
+
+**AO maps did nothing on most models.** Three.js r160 samples `aoMap` from the *second* UV set,
+`geometry.attributes.uv1`. Most exporters write a single UV set unless a second is added on purpose,
+so an ambient occlusion map on a typical export sampled an attribute that was not there and
+contributed nothing, with a clean console. A single-UV model now has its `uv` aliased onto `uv1` —
+with one UV set those are the same coordinates, so it is what the model meant — and
+`AOUVAliasCount()` reports when that happened. A model shipping a real second UV set is left alone.
+
+**Wireframe and fog were written unconditionally.** Both came straight from their property
+defaults on every apply, so merely attaching the behavior forced wireframe off and fog on over
+whatever the model authored — the same silent overwrite the `Use*` gates and the `Preserve` defaults
+exist to prevent. They now write only when the value actually says something: a setter override, or
+a property moved off its default. Setting **Wireframe** to true still turns it on, setting **Fog** to
+false still turns it off, and the setter actions still reach both in either direction; what no
+longer happens is a default quietly flattening a model that had chosen otherwise.
+
+**Normal and AO strength could not reach a model's own maps.** `NormalScale` and `AOIntensity` applied
+only to maps this behavior had loaded itself, so both were inert on a model's baked-in normal and AO
+maps. They now reach whichever map is bound — but only when the value was actually set, because a
+default of 1 would otherwise overwrite the strength the model authored the instant the behavior was
+attached, which is the very failure the `Use*` gates exist to prevent.
+
+---
+
 ## Diagnostics — the reason the merge was worth doing
 
 3D material work in GDevelop fails quietly. A wrong mesh name, a renderer that was not ready yet, a
@@ -262,10 +344,21 @@ Material 3D exposes:
 | | |
 | :--- | :--- |
 | **Conditions** | Material is ready · application succeeded · failed · waiting for renderer · is idle · has matching materials · has matching meshes · is using shader type · has pending changes |
-| **Expressions** | `State()` · `LastError()` · `MaterialClass()` · `MatchingMeshCount()` · `MatchingMaterialCount()` · `RetryCount()` |
+| **Expressions** | `State()` · `LastError()` · `MaterialClass()` · `MatchingMeshCount()` · `MatchingMaterialCount()` · `RetryCount()` · `MeshNames()` · `MaterialNames()` · `AOUVAliasCount()` |
 
 When a material does not appear, `HasMatchingMeshes` plus `MatchingMeshCount()` tells you in one
 condition whether the problem is your targeting or something else.
+
+`MeshNames()` and `MaterialNames()` close the other half of that loop. Mesh-name and material-name
+targeting could only ever read back the string you typed, never what there was to type, so a name
+that came out of a modelling tool had to be copied by eye and a typo failed silently. Both
+expressions list what the object actually carries, and a targeting miss now names the value it
+looked for alongside the values that were available:
+
+```
+No materials matched the current Target Mode. Looking for mesh "Rock_LOD1".
+This object has: Rock_LOD0, Moss.
+```
 
 ---
 
@@ -361,9 +454,9 @@ a behavior parameter is bound to the wrong type, a condition never assigns
 node MaterialMaster/test-materialmaster.mjs
 ```
 
-329 checks covering material-class selection, the Preserve defaults, the override layer, performance hot paths, the
+417 checks covering material-class selection, the Preserve defaults, the override layer, performance hot paths, the
 diagnostics, mesh-name targeting, restore, BRDF composition, contributors (Physical, Wet, Animated, Pattern),
-and Displaced Mesh 3D geometry deformation.
+authored-model survival, anisotropic filtering effectiveness, and Displaced Mesh 3D geometry deformation.
 
 ---
 

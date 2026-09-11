@@ -102,7 +102,12 @@ if (state.pendingDefault) {
     const loop = behavior._getDefaultLoop ? behavior._getDefaultLoop() : true;
     const speed = behavior._getDefaultSpeed ? behavior._getDefaultSpeed() : 1;
     const mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';
-    if (ESA.play(runtimeScene, object, behavior, file, clip, loop, speed, 0, mode)) {
+    // A Model3D with its own clips is already playing animation 0 by now, so the
+    // default animation has something to blend out of. This is where the
+    // "Default crossfade" property applies.
+    const fade = behavior._getDefaultCrossfade ? behavior._getDefaultCrossfade() : 0;
+    if (ESA.play(runtimeScene, object, behavior, file, clip, loop, speed,
+                 Number.isFinite(fade) && fade > 0 ? fade : 0, mode)) {
       state.pendingDefault = false;
     } else if (!state.__defaultRetries || state.__defaultRetries < 120) {
       // Keep retrying for ~2s so a lazily-loaded resource still gets a chance.
@@ -172,25 +177,22 @@ ESA.play(
       num('Crossfade', 'Crossfade duration in seconds', '0.2'),
     ],
     `const file = eventsFunctionContext.getArgument("AnimationFile");
-const gltf = ESA.getGltf(runtimeScene, file);
-const names = ESA.listClipNames(gltf);
 const raw = eventsFunctionContext.getArgument("ClipIndex");
-const index = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
-if (index >= names.length) {
-  state.error = 'Clip index ' + index + ' is out of range for "' + file +
-    '" (' + names.length + ' clip(s): ' + names.join(', ') + ').';
-} else {
-  const mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';
-  const speed = eventsFunctionContext.getArgument("Speed");
-  const fade = eventsFunctionContext.getArgument("Crossfade");
-  ESA.play(
-    runtimeScene, object, behavior, file, names[index],
-    !!eventsFunctionContext.getArgument("Loop"),
-    Number.isFinite(speed) && speed !== 0 ? speed : 1,
-    Number.isFinite(fade) && fade > 0 ? fade : 0,
-    mode
-  );
-}
+const mode = behavior._getRootMotionMode ? behavior._getRootMotionMode() : '';
+const speed = eventsFunctionContext.getArgument("Speed");
+const fade = eventsFunctionContext.getArgument("Crossfade");
+// Passed as a POSITION, not resolved to a name here. Mixamo names every clip it
+// exports "mixamo.com", so in a pack merged from Mixamo downloads a name lookup
+// collapses every index onto clip 0. The runtime indexes animations[] directly
+// and reports an out-of-range index through LastError().
+ESA.play(
+  runtimeScene, object, behavior, file,
+  { index: Number.isFinite(raw) ? Math.floor(raw) : 0 },
+  !!eventsFunctionContext.getArgument("Loop"),
+  Number.isFinite(speed) && speed !== 0 ? speed : 1,
+  Number.isFinite(fade) && fade > 0 ? fade : 0,
+  mode
+);
 `, { group: PLAYBACK }),
 
   fn('RegisterAnimation', 'Register an animation alias',
@@ -530,7 +532,9 @@ const behavior = {
     prop('DefaultLoop', 'Boolean', 'Loop by default', 'Loop the default animation.', 'true'),
     prop('DefaultSpeed', 'Number', 'Default speed', 'Playback speed scale.', '1'),
     prop('DefaultCrossfade', 'Number', 'Default crossfade (s)',
-      'Suggested crossfade duration, in seconds.', '0.2'),
+      'Seconds to blend from the model’s own built-in animation into the default ' +
+      'animation above, when the object is created. Each Play action carries its own ' +
+      'crossfade field for every later change.', '0.2'),
     prop('RootMotionMode', 'Choice', 'Root motion',
       'How the root bone’s translation is handled.', 'In-place (lock X/Z)',
       { extraInformation: ['In-place (lock X/Z)', 'In-place (lock all)',
@@ -551,7 +555,7 @@ const extension = {
   extensionNamespace: '',
   fullName: 'External Skeletal Animator 3D',
   name: 'ExternalSkeletalAnimator3D',
-  version: '0.3.0',
+  version: '0.3.1',
   shortDescription: `Play skeletal animations from separate .glb files on any rigged 3D Model, so one animation library can drive many different characters.`,
   description: `Animate a rigged 3D Model with clips that live in OTHER .glb files, instead of baking every animation into every character.
 
