@@ -92,7 +92,7 @@ by `AdvancedLighting3D`'s clustered volumetric fog.
 ## 4. Rarely used — DELETED 2026-08-28
 
 Four small, narrow or superseded extensions were removed at the maintainer's instruction rather than
-being filed into `Rarely used extensions/`. All parsed clean and used the correct property key; they
+being filed into `tools/`. All parsed clean and used the correct property key; they
 were simply not worth keeping.
 
 | Folder | Was | Why removed |
@@ -112,7 +112,7 @@ examples of correct `propertyDescriptors` / `extraInformation` usage, and
 `ExternalSkeletalAnimator3D/PLAN.md:364,371` cites VolumetricFog and Custom3DShaderBackend as the
 build-script precedent. Worth a footnote in each if those docs are revised.
 
-`Rarely used extensions/` is now empty with no candidates. Either drop the folder or hold it for
+`tools/` is now empty with no candidates. Either drop the folder or hold it for
 future demotions — `InGameCamera3D` (prototype) is the likeliest next occupant if it stalls.
 
 ---
@@ -251,7 +251,7 @@ deleted files are recoverable with `git checkout <commit> -- LightProbeGrid3D`.
 ## Current shape — restructured 2026-08-28
 
 At the maintainer's instruction, **all 23 remaining folders were moved into
-`Rarely used extensions/`**, to be promoted back to the root individually as each one proves it is
+`tools/`**, to be promoted back to the root individually as each one proves it is
 still in use. The root now holds only markdown and dotfiles.
 
 ```
@@ -259,7 +259,7 @@ GDevelop_Extensions/
 ├── EXTENSION-AUDIT.md
 ├── Extension-explored-possibilities-list.md
 ├── .gitignore  .fold11_icon.ico  .claude/
-└── Rarely used extensions/       ← all 23 folders, awaiting promotion by use
+└── tools/       ← all 23 folders, awaiting promotion by use
 ```
 
 The folder name is now a staging area rather than a judgement — the extensions inside it are not all
@@ -303,9 +303,9 @@ As folders get promoted back out, the shape worth aiming for:
 
 **Done 2026-08-28:** step 6's demotion half — `ThreeJsTweaks`, `TweenLightRadius`, `VolumetricFog`
 and `Custom3DShaderBackend` deleted outright instead of being filed (§4). Then all 23 remaining
-folders were moved into `Rarely used extensions/` for promotion-by-use. Both the deletions and the
+folders were moved into `tools/` for promotion-by-use. Both the deletions and the
 move are in the working tree but **not committed**.
 
-Note that steps 1–5 now operate on paths inside `Rarely used extensions/`. The `SoftBody3D` and
+Note that steps 1–5 now operate on paths inside `tools/`. The `SoftBody3D` and
 `Advanced3DMaterial` property-key bugs (§1) and the stale 3DCRT+ / YAxis publish copies (§2) are
 still outstanding and unaffected by the reorganisation.

@@ -1,0 +1,200 @@
+CONFLICTS
+=========
+
+Shared-resource conflicts in this repo: two writers, one resource, last one
+wins silently. Mostly between extensions that cannot see each other, but also
+within one extension where a setting's scope does not match its effect's scope.
+Each entry says how confident it is and what would settle the question.
+
+
+-------------------------------------------------------------------------------
+1. MaterialMaster ShaderChain vs. AdvancedLighting3D onBeforeCompile
+-------------------------------------------------------------------------------
+Status:     RESOLVED 2026-09-12. Kept for the record; do not re-open without
+            re-checking the evidence below.
+
+            AdvancedLighting3D no longer assigns onBeforeCompile at all. It
+            registers a ShaderChain injector in the BASE SHADING band (order
+            100) instead, and reads its per-material state from
+            material.__alInjection. Verified:
+
+              grep -c "onBeforeCompile *=" AdvancedLighting3D.runtime.js   -> 0
+              grep -c "__m3dShaderChain"    AdvancedLighting3D.runtime.js   -> 6
+
+            ShaderChain itself was raised to VERSION 2 with a shared registry
+            held off the closure, so an editor re-import migrates already-
+            installed hooks instead of orphaning them.
+
+            Covered by test-shaderchain-coexistence.mjs (both load orders, key
+            separation, replacement recovery, one-sided teardown, clone safety)
+            and by test-shadow-runtime.mjs, which loads ShaderChain before the
+            lighting runtime exactly as the built extension concatenates them.
+
+            NOT yet verified in the GDevelop editor itself - the original
+            "SUSPECTED, not reproduced" caveat now applies to the fix as much
+            as it did to the bug.
+
+            Original entry follows.
+
+Status:     SUSPECTED - found by reading both runtimes, NOT reproduced in
+            GDevelop. Noted 2026-09-11.
+Severity:   High if real. Fails silently in both directions, which is the
+            failure class both extensions were specifically built to remove.
+Affects:    Any 3D object carrying Material 3D Core AND receiving clustered
+            light / probes / SDF shadows. Both target MeshStandardMaterial,
+            so this is an ordinary combination, not an exotic one.
+
+THE SEAM
+  material.onBeforeCompile is ONE function property, not a list. Two systems
+  that both assign it do not compose - whichever assigns last silently wins.
+
+  - MaterialMaster: ShaderChain.runtime.js owns onBeforeCompile. Injectors
+    register into an ordered chain. Its build script REFUSES TO COMPILE if any
+    MaterialMaster runtime assigns the hook directly.
+  - AdvancedLighting3D: assigns it directly.
+        AdvancedLighting3D.runtime.js:1414   material.onBeforeCompile = function (shader) {...}
+        AdvancedLighting3D.runtime.js:3819   mat.onBeforeCompile = function () {};   (teardown)
+
+  MaterialMaster's build-time guard only polices MaterialMaster's own runtimes.
+  Neither extension references the other anywhere in its runtime - confirmed by
+  grep: AdvancedLighting3D.runtime.js contains no occurrence of
+  __m3dShaderChain, materialController3D, MaterialMaster or Material3D.
+
+  AdvancedLighting3D.runtime.js:16 already states the rationale for unifying the
+  three lighting systems into one extension: two independent onBeforeCompile
+  assignments do not compose. That argument does not stop at the extension
+  boundary - it applies to the MaterialMaster seam for the same reason.
+
+TWO PREDICTED FAILURE DIRECTIONS
+  a) Core wins.
+     MaterialMaster Core owns mesh.material and rebuilds/clones it on apply,
+     then re-installs its own chain. Material.copy() carries neither the hook
+     nor customProgramCacheKey, so AdvancedLighting3D's injection is dropped.
+     Symptom: the object silently stops receiving clustered lights, probe
+     irradiance and SDF shadows. Clean console.
+
+  b) Lighting wins.
+     AdvancedLighting3D assigns over a material Core has already chained.
+     Symptom: pattern / BRDF / wetness / animated-UV shader edits silently
+     vanish. Clean console. Teardown then sets onBeforeCompile to an empty
+     function (line 3819), clearing Core's chain outright rather than
+     restoring it - guarded by __alInjection.owner === state, so it only
+     touches materials AdvancedLighting3D itself hooked, but if (b) happened
+     it hooked a Core-owned material in the first place.
+
+  Both directions are the same class as the BRDF-clobbers-Core bug documented
+  in MaterialMaster/README.md ("They used to break each other"), one level up.
+
+COMPLICATION - AdvancedLighting3D also clones
+  collectMeshesAndCloneMaterials (AdvancedLighting3D.runtime.js:~2321) takes its
+  own copy of a shared material before injecting, and assigns the clone to the
+  mesh. Core considers itself the sole owner of mesh.material. So the two may
+  be fighting over material OWNERSHIP as well as over the hook, and the order
+  of operations between them decides which clone survives. Worth establishing
+  which of the two actually ends up on the mesh before designing any fix.
+
+HOW TO SETTLE IT
+  In GDevelop: one Cube3D or Model3D with Material 3D Core plus a visible
+  Core-owned shader feature (Tiled Custom Pattern is the easiest to see),
+  inside an AdvancedLighting3D clustered light, ideally also a probe receiver.
+  Then:
+    - MaterialMaster's  ShaderInjectors()  /  "Shader injector is active"
+    - AdvancedLighting3D's own diagnostics
+  Both report what actually reached the compiler, so they should disagree in a
+  readable way if either direction is real. Try attaching the behaviors in both
+  orders - the BRDF bug was order-dependent and this probably is too.
+
+LIKELY FIX IF CONFIRMED
+  Promote ShaderChain to a cross-extension registry (its own gdjs.__* global,
+  installed by whichever extension loads first, version-checked), and have
+  AdvancedLighting3D register an injector into it - declaring the chunk it
+  edits (lights_fragment_begin) - instead of assigning the hook. Composition
+  then works the way it already does between Core and BRDF Material, and
+  customProgramCacheKey stays composed from the full active set so two
+  materials with different features never share a compiled program.
+
+  Note the chunks currently differ, which is in this fix's favour:
+    - AdvancedLighting3D  -> lights_fragment_begin
+    - BRDF Material       -> lights_physical_pars_fragment (BRDF_Lambert)
+    - Tiled Pattern       -> map_fragment / roughnessmap_fragment / metalnessmap_fragment
+  So the edits themselves do not overlap. Only the single hook property does,
+  which is exactly what a chain exists to solve.
+
+DEFERRED
+  Raised 2026-09-11, deliberately deferred. Nothing is known to be broken in
+  shipped behaviour; no user has reported it; it was found by reading code.
+
+
+-------------------------------------------------------------------------------
+2. MaterialMaster anisotropic filtering: per-behavior setting, per-image effect
+-------------------------------------------------------------------------------
+Status:     CONFIRMED by design. This is a scope mismatch, not a bug report -
+            nothing misbehaves at default settings. Noted 2026-09-11.
+Severity:   Low today, latent. All seven copies default to 16x, so they agree
+            and the conflict stays invisible until someone changes one.
+Affects:    Any two behaviors or two objects that write different anisotropy
+            values to the same texture.
+
+THE MISMATCH
+  Anisotropic filtering is texture SAMPLER state - texture.anisotropy in
+  Three.js, GL_TEXTURE_MAX_ANISOTROPY_EXT underneath. It is a property of the
+  IMAGE, not of an object or a material. GDevelop shares one texture per
+  resource name (gdjs.PixiImageManager._loadedThreeTextures), so every object
+  drawing that image shares one filter setting.
+
+  MaterialMaster exposes it as a per-behavior property, declared seven times,
+  each defaulting to '16x':
+        build-extension.mjs:714    Material 3D Core
+        build-extension.mjs:1153   \
+        build-extension.mjs:1382    |  the four brdfProp-style contributors
+        build-extension.mjs:1511    |  (Physical, Wet, Animated, Pattern/BRDF)
+        build-extension.mjs:1561   /
+        build-extension.mjs:1674   (pd)     Tiled Custom Pattern
+        build-extension.mjs:1982   (dProp)  Displaced Mesh 3D
+
+  So a per-object control drives a per-project resource.
+
+CONSEQUENCES
+  - Two objects sharing one grass texture, one at 16x and one at '1 (Off)':
+    last applied wins, the other silently loses. Same "two writers, one
+    resource" shape as entry 1.
+  - Seven behaviors on a single object each carry their own copy and each
+    write the same texture. Invisible while they agree.
+  - It is a QUALITY setting - the kind you set once per project - living in an
+    appearance panel, repeated seven times. Inspector noise.
+
+WHY THE DUPLICATION EXISTS (do not just delete it)
+  Deliberate: each contributor is documented to work standalone, attached
+  directly to a 3D object without Material 3D Core. Removing the copies would
+  break that. The problem is the absent single authority, not the copies.
+
+HOW OTHER ENGINES SHAPE IT
+  All of them pair a per-texture value with a global quality override, and none
+  of them put it on the camera:
+        Unity   importer anisoLevel  +  QualitySettings.anisotropicFiltering
+        Unreal  texture asset sampler +  r.MaxAnisotropy scalability CVar
+        Godot   texture import       +  default_filters/anisotropic_filtering_level
+  GDevelop exposes no texture import UI for 3D textures, which is why the
+  material behavior is the only reachable home for it. The placement is right;
+  the scope is not.
+
+OPTIONS IF PICKED UP
+  a) Single authority. A scene/manager-level default action, with the
+     per-behavior property meaning "inherit the project default" unless
+     explicitly overridden. Cleanest, but changing the default away from 16x
+     is a behaviour change for existing projects - version it.
+  b) Minimum viable. Leave the properties alone and just make the conflict
+     visible: MaterialController3D already tracks anisotropyWrites and
+     anisotropyScans, so detecting two different values landing on one texture
+     is cheap. A warning naming the texture would match how the rest of the
+     extension reports silent failures.
+
+RELATED
+  The same per-image reasoning applies to minFilter/generateMipmaps, which the
+  anisotropy fix of 2026-09-11 now also writes (see MaterialMaster/README.md,
+  "Anisotropy needs a mipmap chain"). That fix has the same global reach, and
+  is correct for the same reason - but it is a second writer on the same
+  shared resource, so it belongs to this entry rather than being separate.
+
+DEFERRED
+  Raised 2026-09-11, deliberately deferred. Harmless at default settings.

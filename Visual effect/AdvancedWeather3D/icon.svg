@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="cubeGradTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.15" />
+    </linearGradient>
+    <linearGradient id="cubeGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0.08" />
+    </linearGradient>
+    <linearGradient id="cubeGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="rainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.1" />
+      <stop offset="60%" stop-color="#7dd3fc" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="1.0" />
+    </linearGradient>
+    <linearGradient id="lightningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#eab308" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded plate -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.4" />
+
+  <!-- 3D Bounding Cube Isometric Faces -->
+  <!-- Top Face -->
+  <polygon points="64,22 98,40 64,58 30,40" fill="url(#cubeGradTop)" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3" stroke-opacity="0.85" />
+  <!-- Left Face -->
+  <polygon points="30,40 64,58 64,102 30,84" fill="url(#cubeGradLeft)" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3" stroke-opacity="0.6" />
+  <!-- Right Face -->
+  <polygon points="64,58 98,40 98,84 64,102" fill="url(#cubeGradRight)" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3" stroke-opacity="0.6" />
+
+  <!-- Raindrop streaks inside 3D volume -->
+  <line x1="48" y1="36" x2="42" y2="60" stroke="url(#rainGrad)" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="60" y1="44" x2="55" y2="72" stroke="url(#rainGrad)" stroke-width="3" stroke-linecap="round" />
+  <line x1="76" y1="38" x2="71" y2="62" stroke="url(#rainGrad)" stroke-width="2.2" stroke-linecap="round" />
+  <line x1="84" y1="52" x2="79" y2="78" stroke="url(#rainGrad)" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="45" y1="68" x2="40" y2="90" stroke="url(#rainGrad)" stroke-width="2.2" stroke-linecap="round" />
+  <line x1="70" y1="70" x2="65" y2="92" stroke="url(#rainGrad)" stroke-width="2.8" stroke-linecap="round" />
+
+  <!-- Splashes on bottom floor plane -->
+  <ellipse cx="40" cy="91" rx="7" ry="2.8" fill="none" stroke="#7dd3fc" stroke-width="1.5" stroke-opacity="0.8" />
+  <ellipse cx="65" cy="93" rx="9" ry="3.5" fill="none" stroke="#7dd3fc" stroke-width="1.6" stroke-opacity="0.9" />
+
+  <!-- Lightning Bolt -->
+  <polygon points="68,26 56,48 64,48 54,68 76,46 66,46" fill="url(#lightningGrad)" filter="url(#glow)" stroke="#fef9c3" stroke-width="0.8" />
+
+  <!-- Snowflake Crystal Accent -->
+  <g transform="translate(86, 32) scale(0.65)" stroke="#bae6fd" stroke-width="1.6" stroke-linecap="round">
+    <line x1="0" y1="-10" x2="0" y2="10" />
+    <line x1="-8.66" y1="-5" x2="8.66" y2="5" />
+    <line x1="-8.66" y1="5" x2="8.66" y2="-5" />
+    <circle cx="0" cy="0" r="1.8" fill="#e0f2fe" />
+  </g>
+</svg>
