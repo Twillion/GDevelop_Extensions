@@ -21,7 +21,10 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
-const root = path.resolve(decodeURIComponent(here), '..');
+// The repo root is TWO levels up: this file lives at 3D/AdvancedLighting3D/. It was one level
+// when extensions sat at the repo root, and the category reorganisation left it resolving to
+// 3D/ - so every path below pointed at 3D/tools/... and the bench died on its first request.
+const root = path.resolve(decodeURIComponent(here), '..', '..');
 
 const html = `<!doctype html><canvas id="c" width="640" height="360"></canvas>
 <script src="/three.js"></script><script>var gdjs={};</script><script src="/runtime.js"></script><script>

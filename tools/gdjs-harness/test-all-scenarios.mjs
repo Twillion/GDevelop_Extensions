@@ -1,4 +1,12 @@
 import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Resolved from THIS file, not from the caller's working directory. The literal
+// 'gdjs-harness/serve.js' broke when the harness moved under tools/, and it broke silently:
+// the spawn failed, the fetch to the debugging port still succeeded, and the scenario simply
+// reported nothing.
+const SERVE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'serve.js');
 
 const SCENARIOS = [
   'waveworks_presets',
@@ -6,13 +14,14 @@ const SCENARIOS = [
   'buoyancy',
   'sph',
   'lighting',
+  'shadows',
   'postfx',
   'material',
   'shore'
 ];
 
 async function runScenario(scenario) {
-  const server = spawn('node', ['gdjs-harness/serve.js'], { stdio: 'pipe' });
+  const server = spawn('node', [SERVE], { stdio: 'pipe' });
   await new Promise(resolve => setTimeout(resolve, 600));
 
   const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';

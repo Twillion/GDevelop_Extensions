@@ -83,7 +83,16 @@ window.run = function (backend, lightType, noShadow) {
   const errors = [];
   const originalError = console.error;
   console.error = function () { errors.push(Array.prototype.join.call(arguments, ' ')); };
-  const draw = () => { AL.doStepPostEvents(scene); renderer.render(root, camera); };
+  // The viewport the extension leaves behind, read BEFORE the main render. The owned depth pass
+  // sets a map-sized viewport; leaving it set made the main render draw into a corner of the
+  // canvas, which is what the 85% divergence below actually was. A pixel diff can only say the two
+  // images differ, so this asserts the cause directly and names it when it breaks again.
+  let viewportAfterStep = null;
+  const draw = () => {
+    AL.doStepPostEvents(scene);
+    viewportAfterStep = renderer.getViewport(new THREE.Vector4()).toArray();
+    renderer.render(root, camera);
+  };
   for (let i = 0; i < 6; i++) draw();
   console.error = originalError;
 
@@ -188,7 +197,7 @@ window.run = function (backend, lightType, noShadow) {
     pixels: Array.from(px), samplers: samplers, samplerNames: names,
     backend: st.backend, owned: !!slot0.owned, everRendered: !!slot0.everRendered,
     mapped: st.mappedCount, errors: errors, glError: glError, mtx: mtx, cam: cam, mapStats: mapStats, mapB64: mapB64,
-    mapSample: mapSample, coord: coord, params: params,
+    mapSample: mapSample, coord: coord, params: params, viewportAfterStep: viewportAfterStep,
   };
 };
 </script>`;
@@ -265,6 +274,9 @@ try {
   for (const [name, r] of [['native', native], ['owned', owned], ['owned/point', ownedPoint]]) {
     assert.equal(r.glError, 0, `${name}: GL error ${r.glError}`);
     assert.equal(r.errors.length, 0, `${name}: shader errors — ${r.errors.join(' | ')}`);
+    assert.deepEqual(r.viewportAfterStep, [0, 0, W, H],
+      `${name}: the extension left the viewport at ${JSON.stringify(r.viewportAfterStep)} instead of ` +
+      `the full ${W}x${H} canvas. The main render then draws into part of the frame.`);
   }
   assert.equal(owned.backend, 'Owned', 'the owned backend must actually be selected');
   assert.equal(ownedPoint.owned, false, 'a point light must fall back to the native path, not half-render');
@@ -363,16 +375,20 @@ try {
   console.log(`  lit-area mean: native ${(sumN / n).toFixed(1)}  owned ${(sumO / n).toFixed(1)}  ` +
     `(pixels differing by >25: ${bigDiff} of ${n})`);
 
-  // EQUIVALENCE IS THE REAL GATE, and it currently FAILS. Recorded, not asserted, because the
-  // backend is opt-in and off by default — but it must be closed before Owned can be a default.
+  // EQUIVALENCE IS THE REAL GATE, and it now HOLDS: the two backends render byte-identically.
   //
-  // The centroid test below is deliberately kept as a weak smoke check. On its own it passed a
-  // render where 85% of lit pixels differ by more than 25 luminance, because two quite different
-  // images can have dark regions whose centroids happen to land near each other. Do not read it as
-  // equivalence.
-  // THE CONTROL. Depth maps are byte-identical, so if the images still diverge with shadows OFF
-  // entirely, the difference was never the shadow — it is the extra zero-intensity SpotLight the
-  // Native backend parks in the scene.
+  // It did not always. This diverged across 85.3% of lit pixels, and the cause was neither the
+  // matrix, the camera, the biases nor the depth map — all of which measured identical, which is
+  // exactly why it took so long. renderOwnedSlot set a map-sized viewport and never restored it,
+  // so the MAIN render drew into a fraction of the canvas. The assertion below is what stops that
+  // returning; the viewport check above is what will name it if it does.
+  //
+  // The centroid test further down stays as a weak smoke check only. On its own it passed that
+  // broken render, because two quite different images can have dark regions whose centroids happen
+  // to land near each other. Do not read it as equivalence.
+  //
+  // THE CONTROL. If the images diverge with shadows OFF entirely, the difference was never the
+  // shadow — it would be the extra zero-intensity SpotLight the Native backend parks in the scene.
   const nativeNoShadow = await run('Native', 'Spot', true);
   const ownedNoShadow = await run('Owned', 'Spot', true);
   let ctlDiff = 0, ctlN = 0;
@@ -384,13 +400,15 @@ try {
     `(${(100 * ctlDiff / Math.max(1, ctlN)).toFixed(1)}%)`);
 
   const divergence = 100 * bigDiff / n;
-  if (divergence > 5) {
-    console.log(`  NOT EQUIVALENT: ${divergence.toFixed(1)}% of lit pixels differ by >25 luminance.`);
-    console.log('  Eliminated so far, each measured rather than reasoned: light-space matrix');
-    console.log('  (delta exactly zero), shadow camera near/far/fov/position, depth bias and normal');
-    console.log('  bias, material side, and the map clear colour. The cause is still unknown.');
-    console.log('  Owned must stay opt-in until this closes.');
-  }
+  console.log(`  divergence: ${divergence.toFixed(2)}% of lit pixels differ by >25 luminance`);
+  // 1% rather than 0%: the two paths feed the same shader the same texture and the same matrix, so
+  // the result is exactly identical today, but a threshold of zero would make this test fail on a
+  // driver that reorders a single multiply. Anything a viewer could notice is far above 1%.
+  assert.ok(divergence < 1.0,
+    `the owned backend must render what the native one renders, and ${divergence.toFixed(1)}% of lit ` +
+    'pixels differ by more than 25 luminance. Check first that both passes restore the viewport and ' +
+    'the render target — an unrestored viewport is what caused this before, and it presents as a ' +
+    'large, confusing, whole-frame difference rather than as a shadow bug.');
 
   const dx = Math.abs(ownedDark.cx - nativeDark.cx), dy = Math.abs(ownedDark.cy - nativeDark.cy);
   assert.ok(dx < 20 && dy < 20,

@@ -37,6 +37,7 @@
     <option value="buoyancy">🚤 Buoyancy3D (4-Probe Floating Boat)</option>
     <option value="sph">🧪 PourableLiquid3D (SPH Droplets & Cauldron)</option>
     <option value="lighting">💡 AdvancedLighting3D (Clustered & GI)</option>
+  <option value="shadows">shadows &mdash; AdvancedLighting3D shadow maps (PCF / VSM / owned backend)</option>
     <option value="postfx">🎬 CinematicPostFX3D (Bokeh & Bloom)</option>
     <option value="material">✨ Material3D (BRDF & Physical Shaders)</option>
     <option value="shore">🏖️ WaterEdge3D (Shore Foam)</option>
@@ -108,11 +109,15 @@ window.addEventListener('error', function (e) {
 <!-- The real GDJS runtime, in the order an export uses. -->
 <script src="./runtime/load.js"></script>
 
-<!-- Extension runtimes -->
+<!-- Extension runtimes.
+     ORDER MATTERS. ShaderChain must load before anything that injects through it: the real
+     extension build embeds it ahead of AdvancedLighting3D for exactly this reason. Loaded after,
+     clustered lighting, probes and SDF/local shadows are all silently skipped and the scene
+     renders unlit rather than erroring in any way a scenario would notice. -->
+<script src="/ext/MaterialMaster/ShaderChain.runtime.js"></script>
 <script src="/ext/FluidAndWater3D/FluidAndWater3D.runtime.js"></script>
 <script src="/ext/AdvancedLighting3D/AdvancedLighting3D.runtime.js"></script>
 <script src="/ext/CinematicPostFX3D/CinematicPostFX3D.runtime.js"></script>
-<script src="/ext/MaterialMaster/ShaderChain.runtime.js"></script>
 <script src="/ext/MaterialMaster/BRDFMaterial.runtime.js"></script>
 <script src="/ext/MaterialMaster/MaterialMaster.runtime.js"></script>
 <script src="/ext/DeformableIngot3D/DeformableIngot3D.runtime.js"></script>
