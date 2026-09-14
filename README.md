@@ -8,7 +8,8 @@ A collection of GDevelop extensions, runtime source code, tools, and experiments
 | --- | --- | --- |
 | [AdvancedLighting3D](AdvancedLighting3D/README.md) | Clustered dynamic 3D lighting, baked indirect light probes, and signed distance field soft shadows. | [AdvancedLighting3D.json](AdvancedLighting3D/AdvancedLighting3D.json) |
 | [AdvancedWeather3D](AdvancedWeather3D/README.md) | Volumetric 3D weather systems (rain, snow, hail, dust, embers, fog, lightning) inside sizable 3D boxes or follow-camera zones. | [AdvancedWeather3D.json](AdvancedWeather3D/AdvancedWeather3D.json) |
-| [Material 3D](MaterialMaster/README.md) | Composable 3D material behaviors for PBR surfaces, glass, animation, patterns, wetness, shading, and mesh displacement. | [MaterialMaster.json](MaterialMaster/MaterialMaster.json) |
+| [Material 3D](3D/MaterialMaster/README.md) | Composable 3D material behaviors for PBR surfaces, glass, animation, procedural patterns, wetness, BRDF diffuse lighting, and anisotropic filtering. | [MaterialMaster.json](3D/MaterialMaster/MaterialMaster.json) |
+| [MeshDeformation](3D/MeshDeformation/README.md) | Physical 3D mesh deformation, cube subdivision, pattern relief, geological weathering, and neighbour blending. | [MeshDeformation.json](3D/MeshDeformation/MeshDeformation.json) |
 | [NavMesh 3D](NavMesh3D/README.md) | 3D navigation mesh pathfinding, live 3D editor wireframe lines, slope filtering, dynamic obstacles, elevation clamping, and off-mesh links. | [NavMesh3D.json](NavMesh3D/NavMesh3D.json) |
 | [Weather FX 2D](WeatherFX2D/README.md) | Snow, rain, fog, embers, water rings, heat effects, underwater distortion, and other screen effects. | [WeatherFX2D.json](WeatherFX2D/WeatherFX2D.json) |
 
@@ -26,9 +27,7 @@ These extensions are stored under [tools](Rarely%20used%20extensions/), includin
 | [External Skeletal Animator 3D](Rarely%20used%20extensions/ExternalSkeletalAnimator3D/README.md) | Play skeletal clips from external GLB files, with root-motion controls, skeleton layers, and bone sockets. | [ExternalSkeletalAnimator3D.json](Rarely%20used%20extensions/ExternalSkeletalAnimator3D/ExternalSkeletalAnimator3D.json) |
 | [FluidAndWater3D](Rarely%20used%20extensions/FluidAndWater3D/README.md) | Water volumes, ocean waves, buoyancy, wakes, splashes, and pourable particle liquids. | [FluidAndWater3D.json](Rarely%20used%20extensions/FluidAndWater3D/FluidAndWater3D.json) |
 | [In-Game Camera 3D](Rarely%20used%20extensions/InGameCamera3D/README.md) | Prototype live camera feeds and layer captures displayed on 3D screens. | [InGameCamera3D.json](Rarely%20used%20extensions/InGameCamera3D/InGameCamera3D.json) |
-| [MIDI Synth Player](Rarely%20used%20extensions/MidiSynthPlayer/README.md) | Procedural FM and chiptune MIDI playback with channel, tempo, and pitch controls. | [MidiSynthPlayer.json](Rarely%20used%20extensions/MidiSynthPlayer/MidiSynthPlayer.json) |
 | [Polygon 3D](Rarely%20used%20extensions/Polygon3D/README.md) | Procedural polygon objects with per-face textures, tiling, and slicing. | [Polygon3D.json](Rarely%20used%20extensions/Polygon3D/Polygon3D.json) |
-| [Portal3D](Rarely%20used%20extensions/Portal3D/README.md) | Perspective-matched portal rendering and momentum-preserving teleportation. | [Portal3D.json](Rarely%20used%20extensions/Portal3D/Portal3D.json) |
 | [AutoMeshLOD3D](Rarely%20used%20extensions/Multi%20extension%20work%20space%20folder/AutoMeshLOD3D/README.md) | Automatic mesh simplification, level-of-detail switching, and HLOD proxy generation. | [AutoMeshLOD3D.json](Rarely%20used%20extensions/Multi%20extension%20work%20space%20folder/AutoMeshLOD3D/AutoMeshLOD3D.json) |
 | [ClusteredDetail](Rarely%20used%20extensions/ClusteredDetail/README.md) | Clustered forward projective decals for surface details (bullet holes, footsteps, scorch marks, glowing runes). | [ClusteredDetail.json](Rarely%20used%20extensions/ClusteredDetail/ClusteredDetail.json) |
 | [FloatingOrigin3D](Rarely%20used%20extensions/Multi%20extension%20work%20space%20folder/FloatingOrigin3D/README.md) | Large-world coordinates and origin shifting to reduce rendering and physics precision issues. | [FloatingOrigin3D.json](Rarely%20used%20extensions/Multi%20extension%20work%20space%20folder/FloatingOrigin3D/FloatingOrigin3D.json) |
@@ -36,7 +35,7 @@ These extensions are stored under [tools](Rarely%20used%20extensions/), includin
 | [Extruded Sprite 3D](Rarely%20used%20extensions/Updated%20Finished%20extensions/README.md) | Extrude animated sprites into 3D meshes with optional static pixel-mesh physics. | [ExtrudedSprite3D.json](Rarely%20used%20extensions/Updated%20Finished%20extensions/extensions/ExtrudedSprite3D.json) |
 | [Y-axis 3D Physics Character](Rarely%20used%20extensions/Updated%20Finished%20extensions/README.md) | Y-up physics character controller that walks on the X/Z plane. | [YAxisPhysicsCharacter3D.json](Rarely%20used%20extensions/Updated%20Finished%20extensions/extensions/YAxisPhysicsCharacter3D.json) |
 
-The [finished-extension collection](Rarely%20used%20extensions/Updated%20Finished%20extensions/README.md) also contains copies of [3DCRTplus.json](Rarely%20used%20extensions/Updated%20Finished%20extensions/extensions/3DCRTplus.json) and [MidiSynthPlayer.json](Rarely%20used%20extensions/Updated%20Finished%20extensions/extensions/MidiSynthPlayer.json).
+The [finished-extension collection](Rarely%20used%20extensions/Updated%20Finished%20extensions/README.md) also contains a copy of [3DCRTplus.json](Rarely%20used%20extensions/Updated%20Finished%20extensions/extensions/3DCRTplus.json).
 
 ## Design records and archived blueprints
 
@@ -94,8 +93,11 @@ node AdvancedWeather3D/build-extension.mjs
 node AdvancedWeather3D/test-runtime.mjs
 node AdvancedWeather3D/test-webgl.mjs
 
-node MaterialMaster/build-extension.mjs
-node MaterialMaster/test-materialmaster.mjs
+node 3D/MaterialMaster/build-extension.mjs
+node 3D/MaterialMaster/test-materialmaster.mjs
+
+node 3D/MeshDeformation/build-extension.mjs
+node 3D/MeshDeformation/test-meshdeformation.mjs
 
 node NavMesh3D/build-extension.mjs
 node NavMesh3D/test-runtime.mjs

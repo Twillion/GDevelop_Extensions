@@ -10,8 +10,7 @@ inside it, and buried actively-developed extensions next to research notes.
 | `3D/` | AdvancedLighting3D, MaterialMaster, CinematicPostFX3D, AnimatedPBR3D, CameraTweens3d, ClusteredDetail, ExternalSkeletalAnimator3D, FluidAndWater3D, InGameCamera3D, Polygon3D, AutoMeshLOD3D, FloatingOrigin3D, WorldPartition3D |
 | `Visual effect/` | AdvancedWeather3D, WeatherFX2D, 3d CRT PLUS |
 | `Movement/` | NavMesh3D |
-| `Audio/` | MidiSynthPlayer |
-| `General/` | DeformableIngot3D, Portal3D |
+| `General/` | DeformableIngot3D |
 | `tools/` | `gdjs-harness` (the GDJS runtime every WebGL test boots), WGLEXE_Packager, multi-extension-workspace |
 | `reference/` | CustomRuntimeObject (GDevelop source excerpts), GDevelop extension library, SeaOfThieves_TechArt research |
 | `published/` | Released extension bundle |
