@@ -27,25 +27,47 @@ var HARNESS_CONFIG = (function () {
 var gdjs = gdjs || {};
 
 function createCubeContent(w, h, d, color, matType) {
+  // THE REAL GDJS SCHEMA, which this previously did not match.
+  //
+  // Cube3DRuntimeObject builds its visible-faces bitmask from frontFaceVisible..bottomFaceVisible.
+  // This function set enableTextureOnFaceFront/faceUpTexture instead - names from an older schema
+  // that GDJS never reads - so the bitmask came out 0, EVERY face was invisible, and the renderer
+  // handed all six slots the shared transparent placeholder MeshBasicMaterial. The cubes were
+  // fully invisible and unlit, which is why every lighting scenario in this harness reported
+  // "Object uses MeshBasicMaterial ... injection bypassed" and shaded nothing.
+  //
+  // materialType likewise accepts exactly 'StandardWithoutMetalness' or 'Basic': _convertMaterialType
+  // is a single equality test and silently falls back to Basic for anything else, so the plausible
+  // 'Standard' was also wrong.
   return {
     width: w || 100,
     height: h || 100,
     depth: d || 100,
-    enableTextureOnFaceFront: false,
-    enableTextureOnFaceBack: false,
-    enableTextureOnFaceLeft: false,
-    enableTextureOnFaceRight: false,
-    enableTextureOnFaceTop: false,
-    enableTextureOnFaceBottom: false,
-    faceUpTexture: '',
-    faceDownTexture: '',
-    faceLeftTexture: '',
-    faceRightTexture: '',
-    faceFrontTexture: '',
-    faceBackTexture: '',
+    frontFaceVisible: true,
+    backFaceVisible: true,
+    leftFaceVisible: true,
+    rightFaceVisible: true,
+    topFaceVisible: true,
+    bottomFaceVisible: true,
+    frontFaceResourceName: '',
+    backFaceResourceName: '',
+    leftFaceResourceName: '',
+    rightFaceResourceName: '',
+    topFaceResourceName: '',
+    bottomFaceResourceName: '',
+    frontFaceResourceRepeat: false,
+    backFaceResourceRepeat: false,
+    leftFaceResourceRepeat: false,
+    rightFaceResourceRepeat: false,
+    topFaceResourceRepeat: false,
+    bottomFaceResourceRepeat: false,
+    enableTextureTransparency: false,
     backFaceUpThroughWhichAxisRotation: 'X',
     facesOrientation: 'Y',
-    materialType: matType || 'Standard',
+    tileScale: 1,
+    isCastingShadow: true,
+    isReceivingShadow: true,
+    materialType: matType || 'StandardWithoutMetalness',
     tint: color || '255;255;255',
   };
 }
@@ -137,7 +159,7 @@ gdjs.projectData = {
         },
       ],
       effects: [],
-      content: createCubeContent(120, 200, 60, '180;100;40', 'Standard'),
+      content: createCubeContent(120, 200, 60, '180;100;40', 'StandardWithoutMetalness'),
     },
     {
       name: 'Bottle',
@@ -145,7 +167,7 @@ gdjs.projectData = {
       variables: [],
       behaviors: [],
       effects: [],
-      content: createCubeContent(40, 40, 80, '100;180;255', 'Standard'),
+      content: createCubeContent(40, 40, 80, '100;180;255', 'StandardWithoutMetalness'),
     },
     {
       name: 'Cauldron',
@@ -153,7 +175,7 @@ gdjs.projectData = {
       variables: [],
       behaviors: [],
       effects: [],
-      content: createCubeContent(150, 150, 100, '50;50;60', 'Standard'),
+      content: createCubeContent(150, 150, 100, '50;50;60', 'StandardWithoutMetalness'),
     },
     {
       name: 'Ground',
@@ -161,7 +183,7 @@ gdjs.projectData = {
       variables: [],
       behaviors: [],
       effects: [],
-      content: createCubeContent(2000, 2000, 20, '120;120;120', 'Standard'),
+      content: createCubeContent(2000, 2000, 20, '120;120;120', 'StandardWithoutMetalness'),
     },
     {
       name: 'TargetCube',
@@ -169,7 +191,7 @@ gdjs.projectData = {
       variables: [],
       behaviors: [],
       effects: [],
-      content: createCubeContent(80, 80, 80, '220;60;60', 'Standard'),
+      content: createCubeContent(80, 80, 80, '220;60;60', 'StandardWithoutMetalness'),
     },
     {
       name: 'Crate',
@@ -201,7 +223,7 @@ gdjs.projectData = {
         },
       ],
       effects: [],
-      content: createCubeContent(50, 50, 50, '210;150;70', 'Standard'),
+      content: createCubeContent(50, 50, 50, '210;150;70', 'StandardWithoutMetalness'),
     },
   ],
   variables: [],

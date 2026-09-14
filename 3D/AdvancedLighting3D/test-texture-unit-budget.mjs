@@ -1,7 +1,7 @@
 // Texture-unit budget check.
 //
-// LOCAL_SHADOW_SLOTS was raised from 4 to 8, implemented as 8 individual sampler2D uniforms rather
-// than an array texture. Samplers are a HARD limit: WebGL2 guarantees only 16 fragment texture
+// LOCAL_SHADOW_SLOTS is implemented as individual sampler2D uniforms rather than an array texture.
+// Samplers are a HARD limit: WebGL2 guarantees only 16 fragment texture
 // image units, and a fully-featured lit material is already using a lot of them. Overrunning it is
 // a link failure at runtime — the surface renders black or falls back, with a console error that
 // looks nothing like "too many textures".
@@ -9,7 +9,7 @@
 // SCOPE, and this matters for how the result should be read: this measures the STOCK Three path
 // only — a fully-textured MeshStandardMaterial plus the native shadow-casting lights the extension
 // parks in the scene. It does NOT yet run the clustered-lighting injector, so it does not count the
-// extension's own samplers: the 4 cluster data textures, the SDF volume, up to 3 CSM cascade maps,
+// extension's own samplers: the cluster data textures, the SDF volume, up to 3 CSM cascade maps,
 // and up to LOCAL_SHADOW_SLOTS local maps. Those land on top of whatever this reports.
 //
 // So a PASS here is a floor, not a clearance. Extending this to inject first is the obvious next
@@ -80,7 +80,7 @@ window.runInjected = function () {
   mesh.geometry.setAttribute('uv1', mesh.geometry.getAttribute('uv'));
   root.add(mesh);
 
-  const SLOTS = AL.__internals.LOCAL_SHADOW_SLOTS || 8;
+  const SLOTS = AL.__internals.LOCAL_SHADOW_SLOTS;
   for (let i = 0; i < SLOTS; i++) {
     const spot = new THREE.SpotLight(0xffffff, 0);
     spot.castShadow = true; spot.position.set(i * 10, 200, 300);
@@ -169,7 +169,7 @@ window.run = function () {
 
   // Native shadow-casting spot lights: one per local shadow slot, which is what the extension
   // parks in the scene. Each one costs Three a sampler of its own.
-  const SLOTS = gdjs.__advancedLighting3D.__internals.LOCAL_SHADOW_SLOTS || 8;
+  const SLOTS = gdjs.__advancedLighting3D.__internals.LOCAL_SHADOW_SLOTS;
   for (let i = 0; i < SLOTS; i++) {
     const spot = new THREE.SpotLight(0xffffff, 0);
     spot.castShadow = true;
@@ -314,14 +314,8 @@ try {
   //   5. Binding textures to "every null sampler" — the name filter also matched non-samplers such
   //      as uClusterGridDims, so 36 is a count of uniforms poked, not of samplers.
   //
-  // The one solid fact: with probes, SDF, CSM and 8 local shadow maps all active, the program does
-  // not pass VALIDATE_STATUS even on SwiftShader, which advertises 32 texture units. That is worth
-  // knowing and worth chasing. It is NOT yet proof of a texture-unit overrun - VALIDATE_STATUS also
-  // fails for sampler-type collisions on a shared unit, and this harness binds nothing the way the
-  // real runtime does.
-  //
-  // Turning this into a gate requires measuring inside a real GDJS scene where the runtime binds
-  // its own uniforms, rather than a mock that has to guess at them.
+  // This remains a raw diagnostic of the all-features permutation. The sampler ladder separately
+  // verifies that the runtime's automatic 16-unit fallback suppresses unsafe feature blocks.
   assert.ok(inj.injected, 'the injector must have reached the material, or this measures nothing');
   console.log('\nNOTE: the injected configuration does not validate here. Cause NOT established -');
   console.log('see the comment above for what was tried and why each attempt was unreliable.');

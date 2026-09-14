@@ -251,14 +251,14 @@ wins a slot, which changes `NUM_POINT_LIGHT_SHADOWS` and so still triggers the s
 that 5.4 otherwise eliminates. The fix is a fixed authored spot/point split, allocated once. 5.4 is
 therefore a large improvement, not a complete one.
 
-**New finding, unresolved: the texture-unit budget.** `LOCAL_SHADOW_SLOTS` is now 8, as 8 individual
-`sampler2D` uniforms. `test-texture-unit-budget.mjs` measures the stock path at **15 active sampler
-units against a guaranteed minimum of 16** — one spare, before the extension adds its own. With
-probes, SDF, CSM and 8 local maps all active the program fails `VALIDATE_STATUS` even on SwiftShader,
-which advertises 32 units. The cause is NOT established: validation also fails on sampler-type
-collisions, and the harness binds uniforms differently from the real runtime. The test gates the
-stock measurement and reports the injected one, with the five wrong counting methods recorded so
-nobody repeats them. This needs measuring inside a real GDJS scene.
+**Resolved 2026-09-13: texture-unit safety.** There are four local-map samplers. Linked-program
+measurement now establishes the complete cost: 25 active fragment samplers with Native local maps,
+21 with Owned, against WebGL2's guaranteed minimum of 16. A scene-wide allocator reads the hardware
+limit, scans the heaviest material and external native shadow casters, and admits complete optional
+feature blocks before shader compilation. `test-sampler-ladder.mjs` forces the raw permutations to
+measure their cost, then verifies the automatic 16-unit fallback links at 11 units with CSM and
+Native local maps suppressed. This prevents the black/white scene failure while preserving as many
+explicitly requested features as fit.
 
 ## 11. Section 6 — owned depth rendering, r1 (2026-09-12)
 

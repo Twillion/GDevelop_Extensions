@@ -1,9 +1,17 @@
 import { spawn } from 'node:child_process';
 import http from 'node:http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Resolved from THIS file, not from the caller's working directory. The literal
+// 'gdjs-harness/serve.js' broke when the harness moved under tools/, and it broke silently:
+// the spawn failed, the fetch to the debugging port still succeeded, and the scenario simply
+// reported nothing.
+const SERVE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'serve.js');
 
 async function main() {
   const scenario = process.argv[2] || 'ocean';
-  const server = spawn('node', ['gdjs-harness/serve.js'], { stdio: 'pipe' });
+  const server = spawn('node', [SERVE], { stdio: 'pipe' });
   await new Promise(resolve => setTimeout(resolve, 800));
 
   const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -62,8 +70,9 @@ async function main() {
         const msg = JSON.parse(event.data);
         if (msg.id === shotId && msg.result?.data) {
           import('node:fs').then(fs => {
-            fs.writeFileSync(`gdjs-harness/preview_${scenario}.png`, Buffer.from(msg.result.data, 'base64'));
-            console.log(`Screenshot saved to gdjs-harness/preview_${scenario}.png`);
+            const shot = path.join(path.dirname(SERVE), `preview_${scenario}.png`);
+            fs.writeFileSync(shot, Buffer.from(msg.result.data, 'base64'));
+            console.log(`Screenshot saved to ${shot}`);
             resolve();
           });
         } else if (origOnMessage) {

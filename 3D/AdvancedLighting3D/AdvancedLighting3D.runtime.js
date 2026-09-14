@@ -34,7 +34,7 @@
   // The scene editor keeps `gdjs` alive when an extension is re-imported. A plain
   // singleton guard pins the previous runtime and its editor callback indefinitely.
   // Skip only another copy of this exact build; replace older builds during hot reload.
-  var RUNTIME_VERSION = '2026.09.11.3';
+  var RUNTIME_VERSION = '2026.09.13.5';
   // GDevelop r160 configures its Three.js renderer to use legacy light units. Reading
   // Three.js's deprecated legacy-lights renderer flag emits a throttled warning, so
   // preserve GDevelop's established brightness without touching that property.
@@ -66,7 +66,7 @@
     if (!state.shadows) state.shadows = {
       mode: 'Auto', sunShadows: 'Cascades', count: 3, distance: 25000, lambda: 0.75, mapSize: 2048,
       bias: 0.0005, normalBias: 0.02, blend: 0.10, softness: 1.5,
-      lights: [], sun: null, savedSunShadow: null,
+      lights: [], cascades: [], depthMaterial: null, sun: null, savedSunShadow: null,
       renderer: null, rendererState: null, ready: false, manager: null, managers: [],
       splits: new Float32Array(4), ranges: [], matrices: [], maps: [], direction: null
     };
@@ -79,7 +79,8 @@
   // how the Sun is shadowed, and how local lights are - so those are now the two things they
   // always were: shadowState.sunShadows, and the per-light ShadowTechnique property.
   function sdfEnabled(state) {
-    return shadowState(state).mode === 'Auto';
+    return shadowState(state).mode === 'Auto' &&
+      (!state.textureUnitBudget || state.textureUnitBudget.sdf !== false);
   }
 
   // Real depth maps for clustered spot lights. Unlike the SDF these handle moving casters and need
@@ -92,69 +93,41 @@
    * VALIDATE_STATUS rather than anything an author would recognise. WebGL2 guarantees only 16, and
    * plenty of real hardware reports exactly 16.
    *
-   * Each slot costs two units (Three's spotShadowMap entry plus our own sampler), and the cluster
-   * textures, cascades, SDF volume and the material's own maps all come out of the same pool. So
-   * this checks the actual limit and turns the feature off rather than taking the scene down.
+   * A Native slot costs two units (Three's shadow entry plus our own sampler); an Owned spot slot
+   * costs one. Cluster data, cascades, probes, SDF, contact depth and material maps all share that
+   * pool, so the scene-wide allocator disables complete optional blocks instead of taking the
+   * scene down.
    */
   function canAffordLocalMaps(state, runtimeScene) {
-    if (state.__localMapsAffordable !== undefined) return state.__localMapsAffordable;
-    var affordable = true;
-    try {
-      var renderer = threeRendererOf(runtimeScene);
-      var gl = renderer && renderer.getContext ? renderer.getContext() : null;
-      if (gl) {
-        var units = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) || 16;
-        // Reserve for: cluster data + index list + grid (3), the material's own maps (~6), and
-        // Three's own shadow arrays for the cascades (3).
-        var reserved = 12;
-        // Cost PER SLOT depends on who renders the map. The native backend pays twice - Three
-        // declares spotShadowMap[] for its hidden light, and we declare uAlLocalMap<i> for the same
-        // map. The owned backend has no native light, so it pays once. That difference is exactly
-        // what decides whether this fits on 16-unit hardware.
-        var ls = state.localShadows;
-        var perSlot = (ls && ls.backend === 'Owned') ? 1 : 2;
-        var affordableSlots = Math.floor((units - reserved) / perSlot);
-
-        // The shader declares LOCAL_SHADOW_SLOTS samplers whether or not every slot is in use, so
-        // the test is "do ALL of them fit", not "does at least one fit".
-        //
-        // This read `affordableSlots > 0` and so reported "disabled" while returning ENABLED: on
-        // 16-unit hardware it found room for 2 of 4 slots, warned, and then let all 4 compile
-        // anyway. That is the overrun the warning exists to prevent, announced and then committed.
-        affordable = affordableSlots >= LOCAL_SHADOW_SLOTS;
-        if (!affordable) {
-          var needed = reserved + LOCAL_SHADOW_SLOTS * perSlot;
-          warnOnce('textureUnitBudget',
-            'This GPU reports ' + units + ' fragment texture units. Local shadow maps need about ' +
-            needed + ' with the ' + (perSlot === 1 ? 'Owned' : 'Native') + ' depth renderer, so they ' +
-            'are disabled here to stop the shader failing to link (which renders the whole scene ' +
-            'black). Clustered lighting, probes and the Sun cascades still work.' +
-            (perSlot === 2
-              ? ' Set the shadow manager property "Maps: Depth renderer" to Owned — it halves the ' +
-                'cost by not borrowing the Three.js shadow pass, which needs about ' +
-                (reserved + LOCAL_SHADOW_SLOTS) + ' units and should fit.'
-              : ' Reduce the material texture count, or give lights Shadow Technique SDF.'));
-        }
-      }
-    } catch (e) { /* if the limit cannot be read, do not second-guess the hardware */ }
-    state.__localMapsAffordable = affordable;
-    return affordable;
+    refreshTextureUnitBudget(state, runtimeScene || state.runtimeScene);
+    return state.__localMapsAffordable !== false;
   }
 
   function localMapsEnabled(state, runtimeScene) {
     if (shadowState(state).mode !== 'Auto') return false;
-    if (runtimeScene && !canAffordLocalMaps(state, runtimeScene)) return false;
-    return state.__localMapsAffordable !== false;
+    // The scene manager refreshes this once before shadow work each frame. Shader injection can
+    // visit hundreds of materials, so never rescan the whole scene from this hot-path accessor.
+    if (!state.textureUnitBudget && (runtimeScene || state.runtimeScene)) {
+      refreshTextureUnitBudget(state, runtimeScene || state.runtimeScene);
+    }
+    return !state.textureUnitBudget || state.textureUnitBudget.localMaps !== false;
   }
 
   function disposeCSM(state) {
     var c = shadowState(state);
+    // c.lights is retained only to clean up cascade DirectionalLights left by an older runtime
+    // after an editor hot-reload. Nothing creates them any more.
     c.lights.forEach(function (light) {
-      if (light.shadow.map) light.shadow.map.dispose();
-      if (light.shadow.mapPass) light.shadow.mapPass.dispose();
+      if (light.shadow && light.shadow.map) light.shadow.map.dispose();
+      if (light.shadow && light.shadow.mapPass) light.shadow.mapPass.dispose();
       if (light.parent) light.parent.remove(light);
-      if (light.target.parent) light.target.parent.remove(light.target);
+      if (light.target && light.target.parent) light.target.parent.remove(light.target);
     });
+    c.cascades.forEach(function (cascade) {
+      if (cascade.target) { cascade.target.dispose(); cascade.target = null; }
+      cascade.camera = null;
+    });
+    c.cascades.length = 0;
     c.lights.length = 0; c.maps.length = 0; c.matrices.length = 0; c.ready = false;
     if (c.sun) c.sun.castShadow = c.savedSunShadow;
     c.sun = null;
@@ -178,8 +151,22 @@
 
   var _lsTmpVec = null;
   function lsTmp() { if (!_lsTmpVec && THREE_OK) _lsTmpVec = new THREE.Vector3(); return _lsTmpVec; }
-  var _camPosVec = null;
-  function camPosTmp() { if (!_camPosVec && THREE_OK) _camPosVec = new THREE.Vector3(); return _camPosVec; }
+
+  function syncLightWorldTransform(light) {
+    var obj = light && light.object;
+    if (!obj || !THREE_OK) return;
+    var obj3d = obj.get3DRendererObject ? obj.get3DRendererObject() : null;
+    if (obj3d && obj3d.getWorldPosition) {
+      obj3d.getWorldPosition(light.worldPosition);
+      if (obj3d.getWorldDirection) obj3d.getWorldDirection(light.worldDirection);
+      return;
+    }
+    light.worldPosition.set(
+      obj.getX ? obj.getX() : 0,
+      obj.getY ? -obj.getY() : 0,
+      obj.getZ ? obj.getZ() : 0
+    );
+  }
 
   function localShadowState(state) {
     if (!state.localShadows) state.localShadows = {
@@ -189,9 +176,25 @@
       // maps here. Owned halves the texture-unit cost and removes the recompile hitch, but it is
       // newer, so it stays opt-in until it has been measured on real hardware.
       backend: 'Native',
+      // 'PCF' compares one depth per tap and averages nine of them. 'VSM' stores the mean and
+      // standard deviation of depth instead, which can be BLURRED - and a blurred depth comparison
+      // is not a valid operation, which is the entire reason PCF has to tap nine times.
+      filter: 'PCF',
+      vsmBlurRadius: 4,
+      vsmLightBleed: 0.15,
+      vsmSamples: 8,
+      vsmScratch: null,          // { size: WebGLRenderTarget }, built lazily
+      vsmScene: null,
+      vsmQuad: null,
+      vsmCamera: null,
+      vsmVertical: null,
+      vsmHorizontal: null,
       depthMaterial: null,
       distanceMaterial: null,
       maxUpdatesPerFrame: 4,
+      // Longest a barely-visible shadow may go without re-rendering, in frames. 1 disables the
+      // throttle entirely and every dirty map re-renders as soon as the budget allows.
+      maxUpdateInterval: 6,
       frame: 0,
       updatesThisFrame: 0,
       mappedCount: 0,
@@ -202,6 +205,21 @@
     return state.localShadows;
   }
 
+  /**
+   * Which filter this light's map actually uses.
+   *
+   * Point lights are excluded unconditionally, and not as a preference: their map is a 4x2 atlas
+   * of six cube faces packed edge to edge, so a separable blur would drag depth across face
+   * boundaries and produce seams along edges that do not exist in the scene. They also never reach
+   * the Owned backend, which is what produces moments at all.
+   */
+  function filterForLight(ls, light) {
+    if (!light || light.lightType === 'Point') return 'PCF';
+    var want = light.shadowMapFilter || 'Auto';
+    if (want === 'Auto') want = ls.filter;
+    return want === 'VSM' ? 'VSM' : 'PCF';
+  }
+
   // Identity of everything that invalidates a cached map on the LIGHT's side. A caster moving is
   // handled separately by collectMovedCasters/moverAffectsLight.
   function localShadowKeyOf(light) {
@@ -209,7 +227,7 @@
     return [p.x.toFixed(2), p.y.toFixed(2), p.z.toFixed(2),
             d.x.toFixed(3), d.y.toFixed(3), d.z.toFixed(3),
             light.radius, light.spotOuterAngle, light.lightType,
-            light.shadowMapSize || 1024].join(',');
+            light.shadowMapSize || 1024, light.shadowMapFilter || 'Auto'].join(',');
   }
 
   // Meshes whose world matrix changed since the previous frame. Only these can dirty a cached map,
@@ -230,8 +248,16 @@
     return out;
   }
 
-  // Conservative sphere test: could this mover possibly change what the light sees? Cheap, and
-  // erring towards "yes" only costs a redundant depth render.
+  /**
+   * Could this mover possibly change what the light sees? Erring towards "yes" only costs a
+   * redundant depth render, so both tests here are conservative.
+   *
+   * The sphere is the cheap reject. The CONE is what stops a spot re-rendering its whole depth map
+   * because something walked past it: a 16 m spot has a 32 m-wide range sphere even when its beam
+   * is narrow and points elsewhere, so a sphere-only test dirtied the map for movers the light
+   * cannot possibly illuminate. That is the same range-sphere laxity that used to hand shadow-map
+   * slots to off-screen lights, and this is the same finite cone that fixed it.
+   */
   function moverAffectsLight(node, light) {
     var v = lsTmp();
     if (!v || !node.geometry) return true;
@@ -242,8 +268,30 @@
     if (!bs) return true;
     v.copy(bs.center).applyMatrix4(node.matrixWorld);
     var scale = Math.max(Math.abs(node.scale.x), Math.abs(node.scale.y), Math.abs(node.scale.z));
+    var radius = bs.radius * scale;
     var reach = (light.radius || 0) * WORLD_UNITS_PER_METER;
-    return v.distanceTo(light.worldPosition) <= reach + bs.radius * scale;
+    // Squared, and written out rather than via Vector3.distanceTo: it skips a sqrt on a test that
+    // runs per mover per light per frame, and it keeps this function dependent on nothing but
+    // plain numbers, which is what lets it be unit-tested without a GL context.
+    var dx = v.x - light.worldPosition.x;
+    var dy = v.y - light.worldPosition.y;
+    var dz = v.z - light.worldPosition.z;
+    var limit = reach + radius;
+    if (dx * dx + dy * dy + dz * dz > limit * limit) return false;
+
+    // Spot only, and only below 89 degrees: at that point tan() is unbounded and the cone is
+    // effectively a hemisphere, so the sphere test above is already the right answer.
+    if (light.lightType === 'Spot' && light.worldDirection) {
+      var outerRadians = Math.max(0.001, light.spotOuterAngle || 45) * Math.PI / 180.0;
+      if (outerRadians < 89.0 * Math.PI / 180.0) {
+        return sphereIntersectsFiniteCone(
+          v.x, v.y, v.z, radius,
+          light.worldPosition.x, light.worldPosition.y, light.worldPosition.z,
+          light.worldDirection.x, light.worldDirection.y, light.worldDirection.z,
+          reach, Math.tan(outerRadians));
+      }
+    }
+    return true;
   }
 
   function disposeLocalSlotLight(slot) {
@@ -340,6 +388,68 @@
     return BIAS_REMAP;
   }
 
+  /* ============================================ Borrowed-renderer state =================
+   *
+   * Every off-screen pass here - cascade depth, owned spot maps, the VSM blur, the contact
+   * prepass - borrows the SCENE's renderer. Render target, viewport, scissor rect, scissor
+   * enable, clear colour and shadowMap.enabled are all renderer-GLOBAL, not properties of the
+   * target, so a pass that changes one and does not put it back corrupts the frame that follows.
+   *
+   * This has now bitten three times, each time presenting as something else entirely:
+   *   - an unrestored VIEWPORT made the owned spot backend differ from the native one across 85%
+   *     of lit pixels, which looked like a broken shadow projection;
+   *   - the same thing in the contact prepass darkened 79% of the frame;
+   *   - SCISSOR was disabled and never restored, which is invisible in an exported game (nothing
+   *     else uses scissor) but breaks the GDevelop scene editor, where the view is drawn into a
+   *     sub-rectangle of a shared canvas. With scissor off the editor's clear covers the whole
+   *     canvas while the scene still draws only inside its viewport, so everything outside the
+   *     view goes black.
+   *
+   * Hence one capture/restore pair rather than each pass remembering its own list. A pass that
+   * forgets an item is the bug; the way to stop forgetting is to stop having a list per pass.
+   */
+  function captureRendererState(renderer) {
+    var saved = {
+      target: renderer.getRenderTarget ? renderer.getRenderTarget() : null,
+      viewport: new THREE.Vector4(),
+      scissor: new THREE.Vector4(),
+      scissorTest: renderer.getScissorTest ? renderer.getScissorTest() : false,
+      clearColor: new THREE.Color(),
+      clearAlpha: renderer.getClearAlpha ? renderer.getClearAlpha() : 1,
+      shadowMapEnabled: renderer.shadowMap ? renderer.shadowMap.enabled : false,
+    };
+    if (renderer.getViewport) renderer.getViewport(saved.viewport);
+    if (renderer.getScissor) renderer.getScissor(saved.scissor);
+    if (renderer.getClearColor) renderer.getClearColor(saved.clearColor);
+    return saved;
+  }
+
+  function restoreRendererState(renderer, saved) {
+    if (!renderer || !saved) return;
+    // TARGET LAST, and the order is the whole point.
+    //
+    // setViewport/setScissor/setScissorTest write the renderer's PERSISTENT values and then apply
+    // them to the GL state as canvas-relative (scaled by pixel ratio). setRenderTarget applies the
+    // ACTIVE values instead: a bound target's own viewport when one is bound, or the persistent
+    // ones when it is null.
+    //
+    // Restoring the target first and the viewport second therefore corrupts the case where the
+    // caller was rendering INTO A TARGET - which the GDevelop scene editor does, drawing the view
+    // into its own buffer. The target's correct viewport gets overwritten by a canvas-derived one,
+    // and the editor's next frame draws squashed into part of its pane while input, which never
+    // consulted the renderer, keeps using the full rectangle.
+    //
+    // Setting the persistent values first and letting setRenderTarget have the last word is right
+    // for both cases: with a target bound it re-applies the target's own, and with null it
+    // recomputes from exactly the persistent values just restored.
+    if (renderer.setViewport) renderer.setViewport(saved.viewport);
+    if (renderer.setScissor) renderer.setScissor(saved.scissor);
+    if (renderer.setScissorTest) renderer.setScissorTest(saved.scissorTest);
+    if (renderer.setRenderTarget) renderer.setRenderTarget(saved.target);
+    if (renderer.setClearColor) renderer.setClearColor(saved.clearColor, saved.clearAlpha);
+    if (renderer.shadowMap) renderer.shadowMap.enabled = saved.shadowMapEnabled;
+  }
+
   function ownedMaterials(ls) {
     if (!ls.depthMaterial) {
       // RGBADepthPacking, because the shader unpacks with unpackRGBAToDepth. This is the same
@@ -416,9 +526,8 @@
       });
     }
 
-    var previousTarget = renderer.getRenderTarget();
+    var savedRenderer = captureRendererState(renderer);
     var previousOverride = root.overrideMaterial;
-    var previousShadowEnabled = renderer.shadowMap.enabled;
     // Our own pass must not trigger Three's shadow pass recursively.
     renderer.shadowMap.enabled = false;
 
@@ -428,9 +537,6 @@
     // occluder sitting on the near plane", and every fragment whose lookup lands outside the
     // caster's silhouette reads as shadowed. The visible result is a shadow far larger than it
     // should be, filling the map's whole frustum footprint.
-    var previousClear = new THREE.Color();
-    renderer.getClearColor(previousClear);
-    var previousClearAlpha = renderer.getClearAlpha();
     renderer.setClearColor(0xffffff, 1.0);
 
     try {
@@ -483,20 +589,23 @@
         slot.camera.lookAt(aim.x, aim.y, aim.z);
         slot.camera.updateMatrixWorld(true);
         slot.camera.updateProjectionMatrix();
+        // No setViewport: setRenderTarget already sets it to the target's full size, and
+        // setViewport would also overwrite the renderer's persistent viewport.
         renderer.setRenderTarget(slot.target);
-        renderer.setViewport(0, 0, slot.faceSize, slot.faceSize);
         renderer.clear();
         renderer.render(root, slot.camera);
         slot.matrix.copy(biasRemap());
         slot.matrix.multiply(slot.camera.projectionMatrix);
         slot.matrix.multiply(slot.camera.matrixWorldInverse);
+        // Spot only. A point light's atlas packs six faces edge to edge, so a separable blur would
+        // drag depths across face boundaries and leave seams where none exist in the scene - and
+        // point lights do not reach this backend at all today.
+        if (filterForLight(ls, light) === 'VSM') renderVsmMoments(renderer, ls, slot, near, far);
+        else slot.vsmReady = false;
       }
     } finally {
       root.overrideMaterial = previousOverride;
-      renderer.setRenderTarget(previousTarget);
-      renderer.shadowMap.enabled = previousShadowEnabled;
-      renderer.setClearColor(previousClear, previousClearAlpha);
-      renderer.setScissorTest(false);
+      restoreRendererState(renderer, savedRenderer);
       for (var h = 0; h < hidden.length; h++) hidden[h].visible = true;
       for (var o = 0; o < ownHidden.length; o++) ownHidden[o].visible = true;
       restoreOwnCasting(light);
@@ -514,8 +623,311 @@
   function disposeOwnedSlot(slot) {
     if (!slot) return;
     if (slot.target) { slot.target.dispose(); slot.target = null; }
+    if (slot.vsm) { slot.vsm.dispose(); slot.vsm = null; }
+    slot.vsmReady = false;
     slot.camera = null;
     slot.everRendered = false;
+  }
+
+  /* ======================================================= Variance shadow maps (VSM) ====
+   *
+   * WHAT IT IS. A PCF map stores one depth per texel and the shader asks "is this fragment behind
+   * it?" nine times over a small kernel, averaging the yes/no answers. That is the only way to get
+   * a soft edge out of a depth map, because a depth value cannot be blurred: the average of two
+   * depths is not the depth of anything, and comparing against it gives a wrong answer rather than
+   * a soft one.
+   *
+   * VSM stores the MEAN and STANDARD DEVIATION of depth over a neighbourhood instead. Those are
+   * statistics, and statistics blur correctly. So the map itself can be blurred once, up front,
+   * and then read with a SINGLE bilinear tap. Chebyshev's inequality turns the two moments back
+   * into an upper bound on the fraction of the light that is visible.
+   *
+   * WHAT THAT BUYS, concretely:
+   *   - One texture fetch per light instead of nine. The saving grows with the softness: a wider
+   *     PCF kernel costs more taps, a wider VSM blur costs nothing at sampling time.
+   *   - Hardware bilinear filtering does real work, where on a packed depth map it produces
+   *     garbage. The moments target is therefore LinearFilter and the depth map stays Nearest -
+   *     swapping those is silent corruption, not a visual difference.
+   *   - Depth bias mostly stops mattering. Acne comes from comparing a quantised depth against
+   *     itself; Chebyshev returns a probability, not a comparison.
+   *
+   * WHAT IT COSTS. Light bleeding: where a near occluder and a far occluder both cover a receiver,
+   * the variance is large and the bound becomes loose, so the far surface brightens where it
+   * should be fully dark. uAlVsmBleed rescales the probability to crush that, at the price of
+   * hardening the penumbra. This is inherent to the technique, not a defect in this implementation.
+   *
+   * STORAGE. Two 16-bit fixed-point values packed into one RGBA8 texel, exactly as Three's own VSM
+   * does, via pack2HalfToRGBA / unpackRGBATo2Half from <packing>. That deliberately avoids float
+   * render targets: RG16F needs EXT_color_buffer_float to be colour-renderable, and a missing
+   * extension would mean VSM works on the development machine and renders nothing on a user's.
+   */
+
+  var VSM_BLUR_FRAGMENT = [
+    'uniform sampler2D shadow_pass;',
+    'uniform vec2 resolution;',
+    'uniform float radius;',
+    'uniform vec2 nearFar;',
+    '#include <packing>',
+    // WHY THE MOMENTS ARE TAKEN OVER *LINEAR* DEPTH, which is the difference between VSM working
+    // and VSM being a slower PCF.
+    //
+    // A perspective depth buffer spends nearly all its precision close to the near plane. For a
+    // spot light in this engine's pixel scale, every surface it can usefully shadow lands between
+    // about 0.92 and 1.0 - measured, not assumed. Variance is a SQUARED quantity, so compressing
+    // the depth range 12x compresses the variance 150x: the standard deviation collapses to under
+    // one part in 255 and cannot even survive the 16-bit store. Chebyshev then sees variance ~0,
+    // and s2/(s2+d^2) degenerates into exactly the hard step VSM exists to avoid.
+    //
+    // Linearising first spreads the same surfaces across the whole [0,1] range, so the deviation
+    // is a real number and the bound is a real gradient. This is the one place this implementation
+    // deliberately diverges from Three's own VSM, which converts the projected depth as-is - and
+    // which is why Three's spot VSM shadows look barely softer than its PCF ones.
+    '  float alLinearise(float depth) {',
+    '    float viewZ = perspectiveDepthToViewZ(depth, nearFar.x, nearFar.y);',
+    '    return clamp((-viewZ - nearFar.x) / max(nearFar.y - nearFar.x, 1e-4), 0.0, 1.0);',
+    '  }',
+    'void main() {',
+    '  const float samples = float(AL_VSM_SAMPLES);',
+    '  float mean = 0.0;',
+    '  float squared_mean = 0.0;',
+    '  float uvStride = samples <= 1.0 ? 0.0 : 2.0 / (samples - 1.0);',
+    '  float uvStart = samples <= 1.0 ? 0.0 : -1.0;',
+    '  for (float i = 0.0; i < samples; i++) {',
+    '    float uvOffset = uvStart + i * uvStride;',
+    '    #ifdef AL_VSM_HORIZONTAL',
+    // Second pass: the input is already moments, so the mean of the means is the mean, and the
+    // squared mean has to be reconstituted from the stored deviation before it can be averaged.
+    '      vec2 distribution = unpackRGBATo2Half(',
+    '        texture2D(shadow_pass, (gl_FragCoord.xy + vec2(uvOffset, 0.0) * radius) / resolution));',
+    '      mean += distribution.x;',
+    '      squared_mean += distribution.y * distribution.y + distribution.x * distribution.x;',
+    '    #else',
+    // First pass: the input is the PACKED DEPTH map, so it unpacks as a depth, not as moments.
+    '      float depth = alLinearise(unpackRGBAToDepth(',
+    '        texture2D(shadow_pass, (gl_FragCoord.xy + vec2(0.0, uvOffset) * radius) / resolution)));',
+    '      mean += depth;',
+    '      squared_mean += depth * depth;',
+    '    #endif',
+    '  }',
+    '  mean = mean / samples;',
+    '  squared_mean = squared_mean / samples;',
+    // max() is NOT cosmetic. E[d^2] - E[d]^2 is non-negative in exact arithmetic, but over a flat
+    // region every sample is equal and the subtraction is catastrophic cancellation: it lands a
+    // few ULP below zero, sqrt returns NaN, and the NaN propagates through Chebyshev to leave a
+    // permanently black texel. Three omits this clamp; flat floors are exactly where it bites.
+    '  float std_dev = sqrt(max(0.0, squared_mean - mean * mean));',
+    '  gl_FragColor = pack2HalfToRGBA(vec2(mean, std_dev));',
+    '}',
+  ].join('\n');
+
+  function ensureVsmResources(ls) {
+    if (ls.vsmScene) return ls;
+    // A single triangle larger than the viewport, not a quad. Two triangles meet along the
+    // diagonal, and fragments on that seam are shaded by both, which shows up as a visible line
+    // through the middle of the blurred map.
+    var geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(
+      new Float32Array([-1, -1, 0.5, 3, -1, 0.5, -1, 3, 0.5]), 3));
+    function makeMaterial(horizontal) {
+      var defines = { AL_VSM_SAMPLES: ls.vsmSamples };
+      if (horizontal) defines.AL_VSM_HORIZONTAL = 1;
+      var m = new THREE.ShaderMaterial({
+        defines: defines,
+        uniforms: {
+          shadow_pass: { value: null },
+          resolution: { value: new THREE.Vector2(1, 1) },
+          radius: { value: 4 },
+          nearFar: { value: new THREE.Vector2(1, 1000) },
+        },
+        vertexShader: 'void main() { gl_Position = vec4(position, 1.0); }',
+        fragmentShader: VSM_BLUR_FRAGMENT,
+      });
+      m.depthTest = false;
+      m.depthWrite = false;
+      return m;
+    }
+    ls.vsmVertical = makeMaterial(false);
+    ls.vsmHorizontal = makeMaterial(true);
+    ls.vsmQuad = new THREE.Mesh(geom, ls.vsmVertical);
+    ls.vsmQuad.frustumCulled = false;      // its clip-space vertices defeat any bounding test
+    ls.vsmScene = new THREE.Scene();
+    ls.vsmScene.add(ls.vsmQuad);
+    ls.vsmCamera = new THREE.Camera();     // the vertex shader ignores it; render() demands one
+    return ls;
+  }
+
+  // LinearFilter is the point of the whole exercise: moments interpolate meaningfully, so one
+  // bilinear tap replaces a PCF kernel. Never give these NearestFilter, and never give the packed
+  // depth map LinearFilter - interpolating packDepthToRGBA's bytes yields a depth that is not
+  // between the two it came from.
+  function vsmScratchFor(ls, size) {
+    if (!ls.vsmScratch || typeof ls.vsmScratch.dispose === 'function') ls.vsmScratch = {};
+    ls.vsmScratch[size] = vsmTarget(ls.vsmScratch[size], size);
+    return ls.vsmScratch[size];
+  }
+
+  function vsmTarget(existing, size) {
+    if (existing && existing.width === size && existing.height === size) return existing;
+    if (existing) existing.dispose();
+    var t = new THREE.WebGLRenderTarget(size, size, {
+      minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat, type: THREE.UnsignedByteType,
+      depthBuffer: false, stencilBuffer: false,
+    });
+    t.texture.generateMipmaps = false;
+    return t;
+  }
+
+  /**
+   * Convert one freshly rendered packed-depth map into a blurred moments map.
+   *
+   * The intermediate is SHARED across slots rather than per-slot: it is consumed by the second
+   * pass immediately, within this call, so four slots need one scratch buffer and not four. At
+   * 1024 that is 4 MB saved per slot beyond the first.
+   *
+   * Assumes the caller has already saved the render target and viewport - it is called from inside
+   * renderOwnedSlot's try/finally, which restores both.
+   */
+  function renderVsmMoments(renderer, ls, slot, near, far) {
+    ensureVsmResources(ls);
+    var size = slot.faceSize;
+    var scratch = vsmScratchFor(ls, size);
+    slot.vsm = vsmTarget(slot.vsm, size);
+    if (ls.vsmVertical.defines.AL_VSM_SAMPLES !== ls.vsmSamples) {
+      ls.vsmVertical.defines.AL_VSM_SAMPLES = ls.vsmSamples;
+      ls.vsmHorizontal.defines.AL_VSM_SAMPLES = ls.vsmSamples;
+      ls.vsmVertical.needsUpdate = true;
+      ls.vsmHorizontal.needsUpdate = true;
+    }
+    var radius = ls.vsmBlurRadius;
+    ls.vsmVertical.uniforms.shadow_pass.value = slot.target.texture;
+    ls.vsmVertical.uniforms.resolution.value.set(size, size);
+    ls.vsmVertical.uniforms.radius.value = radius;
+    ls.vsmVertical.uniforms.nearFar.value.set(near, far);
+    ls.vsmQuad.material = ls.vsmVertical;
+    renderer.setRenderTarget(scratch);
+    renderer.render(ls.vsmScene, ls.vsmCamera);
+
+    ls.vsmHorizontal.uniforms.shadow_pass.value = scratch.texture;
+    ls.vsmHorizontal.uniforms.resolution.value.set(size, size);
+    ls.vsmHorizontal.uniforms.radius.value = radius;
+    ls.vsmQuad.material = ls.vsmHorizontal;
+    renderer.setRenderTarget(slot.vsm);
+    renderer.render(ls.vsmScene, ls.vsmCamera);
+
+    slot.vsmReady = true;
+    return true;
+  }
+
+  /* ============================================ Depth prepass & contact shadows ========
+   *
+   * WHY THIS EXISTS. A shadow map costs one texture unit PER LIGHT. On hardware reporting the
+   * WebGL2 minimum of 16 units that is the whole budget after four lights, which is what turned a
+   * real project black. Contact shadows march the scene depth buffer instead: every light shares
+   * ONE texture, so forty lights cost exactly what one costs. The cost stops scaling with light
+   * count, which is the only thing that actually fixes the budget problem.
+   *
+   * WHY A PREPASS IS UNAVOIDABLE. The obvious shortcut is to reuse the depth attachment
+   * CinematicPostFX3D already puts on the layer composer. It cannot work: that buffer is filled BY
+   * the main render, and clustered lighting runs DURING that render. Reading the depth buffer you
+   * are currently writing is a feedback loop. The alternative - last frame's depth - lags by a
+   * frame and smears on fast motion. So this renders depth once, up front, before the main pass.
+   *
+   * WHAT IT CANNOT DO, stated plainly because the limitation is structural rather than a bug:
+   * only occluders that are ON SCREEN and in the depth buffer cast anything. An object behind the
+   * camera, or outside the frustum, casts nothing. And the march is short-range by nature - these
+   * are CONTACT shadows, the darkening where objects meet, not a substitute for a spot light's
+   * full-length shadow. Use them alongside shadow maps, not instead of them.
+   */
+
+  function contactState(state) {
+    if (!state.contact) state.contact = {
+      enabled: false,
+      target: null,
+      material: null,
+      // Full resolution prevents the grazing-angle depth staircases that show up as long
+      // horizontal bars on floors. The old half-resolution Nearest texture made each depth texel
+      // cover four output pixels and turned a normal ray-march miss into a conspicuous stripe.
+      scale: 1.0,
+      width: 0, height: 0,
+      strength: 1.0,
+      distance: 120.0,     // world units the march may travel
+      steps: 12,
+      thickness: 40.0,     // how deep behind a depth sample still counts as the same occluder
+      rendered: false,
+    };
+    return state.contact;
+  }
+
+  function ensureContactTarget(cs, renderer) {
+    var size = renderer.getSize(new THREE.Vector2());
+    var w = Math.max(64, Math.floor(size.x * cs.scale));
+    var h = Math.max(64, Math.floor(size.y * cs.scale));
+    if (cs.target && (cs.width !== w || cs.height !== h)) { cs.target.dispose(); cs.target = null; }
+    if (!cs.target) {
+      cs.target = new THREE.WebGLRenderTarget(w, h, {
+        minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
+        format: THREE.RGBAFormat, type: THREE.UnsignedByteType,
+        depthBuffer: true, stencilBuffer: false,
+      });
+      cs.target.texture.generateMipmaps = false;
+      cs.width = w; cs.height = h;
+    }
+    if (!cs.material) {
+      // RGBA-packed window depth, so the shader unpacks it with the same unpackRGBAToDepth the
+      // shadow-map path already uses, and the comparison stays in window-depth space with no
+      // near/far reconstruction to get wrong.
+      cs.material = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+    }
+    return cs.target;
+  }
+
+  /**
+   * Render scene depth from the main camera, before the main pass.
+   * One pass, shared by every light.
+   */
+  function renderDepthPrepass(runtimeScene, camera) {
+    var state = stateOf(runtimeScene);
+    var cs = contactState(state);
+    cs.rendered = false;
+    if (!cs.enabled || (state.textureUnitBudget && state.textureUnitBudget.contact === false) ||
+        !THREE_OK || !camera) return false;
+    var renderer = threeRendererOf(runtimeScene);
+    var root = getThreeScene(runtimeScene);
+    if (!renderer || !root || !root.traverse) return false;
+
+    ensureContactTarget(cs, renderer);
+
+    var savedRenderer = captureRendererState(renderer);
+    var previousOverride = root.overrideMaterial;
+
+    // White is FAR once unpacked. Clearing to the scene colour would make every untouched texel
+    // read as an occluder sitting on the near plane — the same trap the shadow-map pass hit.
+    renderer.setClearColor(0xffffff, 1.0);
+    renderer.shadowMap.enabled = false;
+    root.overrideMaterial = cs.material;
+    try {
+      // No setViewport: the target carries its own, and setViewport would also overwrite the
+      // renderer's persistent viewport.
+      renderer.setRenderTarget(cs.target);
+      renderer.clear();
+      renderer.render(root, camera);
+      cs.rendered = true;
+    } catch (e) {
+      cs.rendered = false;
+      warnOnce('contactPrepass', 'The depth prepass failed, so contact shadows are off for this ' +
+        'scene: ' + (e && e.message ? e.message : e));
+    } finally {
+      root.overrideMaterial = previousOverride;
+      restoreRendererState(renderer, savedRenderer);
+    }
+    return cs.rendered;
+  }
+
+  function contactShadowsActive(state) {
+    var cs = state.contact;
+    return !!(cs && cs.enabled && cs.target && cs.rendered &&
+      (!state.textureUnitBudget || state.textureUnitBudget.contact !== false));
   }
 
   function ensureLocalSlot(ls, root, index, wantPoint) {
@@ -567,6 +979,34 @@
    * What one re-render of this slot actually costs, in depth passes.
    * A PointLightShadow renders six cube faces; a SpotLightShadow renders one.
    */
+  /**
+   * How often this light's map is allowed to re-render, in frames.
+   *
+   * WHAT THIS IS FOR. A light that leaves the view already loses its slot, so a completely
+   * invisible shadow costs nothing. The case this handles is the one you actually hit walking
+   * around: a light still on screen whose shadow is a handful of pixels across, re-rendering its
+   * whole depth map every time anything inside its radius twitches. Spending a full depth pass on
+   * that, at the same rate as the shadow at the player's feet, is the waste.
+   *
+   * Coverage is the number of screen-space clusters the light was binned into this frame - a
+   * direct measure of how much of the view it occupies, already computed by the culling pass, so
+   * this costs nothing to evaluate.
+   *
+   * WHAT THIS DELIBERATELY DOES NOT DO: gate on whether the CASTER is visible. A caster behind the
+   * camera legitimately throws a shadow into view, and dropping its map when it leaves the screen
+   * makes shadows pop out of existence as you turn. Visibility of the LIGHT's footprint is the
+   * only safe proxy.
+   */
+  function updateIntervalFor(ls, light) {
+    var maxInterval = Math.max(1, ls.maxUpdateInterval || 1);
+    if (maxInterval <= 1 || !light) return 1;
+    var coverage = light.__alMapCoverage || 1;
+    if (coverage >= 24) return 1;                      // filling a good part of the screen
+    if (coverage >= 8) return Math.min(2, maxInterval);
+    if (coverage >= 3) return Math.min(4, maxInterval);
+    return maxInterval;                                 // a few pixels; update rarely
+  }
+
   function slotFaceCost(slot) {
     // The owned backend has no native light; its type is on the slot itself.
     if (slot && slot.owned) return slot.isPoint ? 6 : 1;
@@ -589,13 +1029,13 @@
     //
     // Keeping parked slots VISIBLE does stop NUM_SPOT_LIGHT_SHADOWS churning, and that reasoning
     // still stands. What it missed is the price: every visible shadow-casting slot light occupies a
-    // spotShadowMap[] entry for the whole scene's life. With LOCAL_SHADOW_SLOTS at 8 that is 8
+    // spotShadowMap[] entry for the whole scene's life. With four local slots that is four
     // texture units permanently spent instead of however many lights are actually shadowing - on
     // top of the material's own maps and this extension's cluster, SDF, CSM and local-map samplers.
     // Past the hardware limit the program stops linking and the scene renders white.
     //
-    // test-texture-unit-budget.mjs had already measured the stock path at 15 of a guaranteed 16
-    // units, with spotShadowMap[] alone accounting for 8 of them. The warning was in hand and the
+    // test-texture-unit-budget.mjs measures the stock path against the guaranteed 16-unit floor,
+    // with spotShadowMap[] accounting for one unit per visible Native slot. The warning was in hand and the
     // change was shipped anyway; that is the mistake, not the idea.
     //
     // Hiding costs the recompile hitch and is what shipped before. It stays until the sampler
@@ -653,13 +1093,6 @@
     // them. A camera fitted from stale matrices points at where the light used to be.
     root.updateMatrixWorld(true);
 
-    var camPos = null;
-    if (camera && camera.getWorldPosition && THREE_OK) {
-      camPos = camera.getWorldPosition(camPosTmp());
-    } else if (camera && camera.position) {
-      camPos = camera.position;
-    }
-
     /* ---- 1. Candidates. Phase A is spot-only; point lights need six faces. ---- */
     var candidates = [];
     state.lights.forEach(function (l) {
@@ -668,19 +1101,37 @@
       if (l.lightType !== 'Spot' && l.lightType !== 'Point') return;
       var technique = l.shadowTechnique || 'Auto';
       if (technique === 'SDF' || technique === 'None') return;
-      if (l.isInFrustum === false) return;
-      // Screen footprint, not raw distance: a large light just off-centre matters more than a
-      // small one dead ahead.
-      var reach = (l.radius || 0) * WORLD_UNITS_PER_METER;
-      var dist = camPos ? camPos.distanceTo(l.worldPosition) : (l.viewDistance || 1.0);
-      l.__alMapScore = reach / Math.max(1.0, dist);
-      // Hysteresis: an incumbent light holding a slot gets a 35% priority bonus.
-      // This stops lights near the cutoff from popping on and off as the camera turns.
-      if (l.__alWasMapped) l.__alMapScore *= 1.35;
-      if (technique === 'ShadowMap') l.__alMapScore += 1e6;   // forced lights outrank Auto
+      // This is the current frame's authoritative clustered-culling result. Shadow selection now
+      // runs after binning, so there is no second frustum implementation to disagree at the edge.
+      if (!l.isInFrustum) return;
+      // Use the nearest cluster the light actually touches, rather than its centre. A large light
+      // can have its centre behind or far outside the camera while its lit/shadowed footprint is
+      // plainly on screen; centre distance made that case jump between the front and back of the
+      // reservation queue as the camera crossed the light volume.
+      l.__alMapViewDepth = Number.isFinite(l.__alNearestVisibleDepth)
+        ? l.__alNearestVisibleDepth
+        : Math.max(camera && camera.near || 0.1,
+            (l.viewDistance || 0) * WORLD_UNITS_PER_METER);
+      l.__alMapCoverage = l.__alVisibleClusterCount || 1;
+      l.__alMapScore = (1 + l.__alMapCoverage) / Math.max(1.0, l.__alMapViewDepth);
       candidates.push(l);
     });
-    candidates.sort(function (a, b) { return b.__alMapScore - a.__alMapScore; });
+    candidates.sort(function (a, b) {
+      // An explicit ShadowMap request wins among visible lights. Off-screen forced lights do not
+      // consume a slot: they cannot draw a visible shadow and would evict one that can.
+      var af = (a.shadowTechnique || 'Auto') === 'ShadowMap' ? 1 : 0;
+      var bf = (b.shadowTechnique || 'Auto') === 'ShadowMap' ? 1 : 0;
+      if (af !== bf) return bf - af;
+
+      // Visual distance is the primary ordering. Give incumbents a small depth allowance to stop
+      // two almost-equal lights swapping slots as the camera jitters, but never let that bonus
+      // protect a materially farther shadow from a nearer one.
+      var ad = a.__alMapViewDepth / (a.__alWasMapped ? 1.10 : 1.0);
+      var bd = b.__alMapViewDepth / (b.__alWasMapped ? 1.10 : 1.0);
+      if (ad !== bd) return ad - bd;
+      if (a.__alMapCoverage !== b.__alMapCoverage) return b.__alMapCoverage - a.__alMapCoverage;
+      return ad - bd;
+    });
 
     var capacity = Math.min(ls.maxLights, LOCAL_SHADOW_SLOTS);
     var chosen = candidates.slice(0, capacity);
@@ -698,6 +1149,24 @@
 
     /* ---- 2. Which casters moved this frame ---- */
     var movers = collectMovedCasters(root, ls.movers);
+
+    /* ---- 2b. VSM needs maps we render ourselves, so promote the backend if any light wants it.
+             Done HERE rather than when the filter is set, because a light can ask for VSM without
+             the scene default changing, and because switching backends disposes every slot - which
+             has to happen before they are bound below, never in the middle of the loop. ---- */
+    if (ls.backend !== 'Owned') {
+      for (var vq = 0; vq < chosen.length; vq++) {
+        if (chosen[vq] && chosen[vq].lightType !== 'Point' && filterForLight(ls, chosen[vq]) === 'VSM') {
+          warnOnce('vsmForcesOwned',
+            'A light asked for VSM shadow maps, which need the Owned depth renderer, so it has ' +
+            'been switched on for this scene. It renders pixel-identically to Native and costs ' +
+            'one texture unit per shadowed light instead of two. Point lights are unaffected: ' +
+            'they stay on Native and PCF.');
+          applySceneShadowSettings(runtimeScene, { localShadowBackend: 'Owned' });
+          break;
+        }
+      }
+    }
 
     /* ---- 3. Bind slots, sync the native light, decide staleness ---- */
     var dirty = [];
@@ -724,6 +1193,9 @@
       }
 
       light.__alMapSlot = i;
+      // Both backends need the light record later, for the update-cadence decision. The owned
+      // path also keeps __ownedLight for its render call.
+      slot.__lightRecord = light;
       // A slot that was released and is now re-acquired must re-render unconditionally. While it
       // was unassigned the mover check was not running for it, so the world may have changed
       // underneath a map that still looks current by key. Trusting the key there hands back a
@@ -813,7 +1285,17 @@
 
     /* ---- 4. Stagger the re-renders. Age breaks starvation: a light that is permanently dirty
              must not monopolise the budget while the others never update. ---- */
-    dirty.sort(function (a, b) { return b.age - a.age; });
+    // Age alone decided this, so a three-pixel shadow across the map could take the frame's only
+    // update slot ahead of the one at the player's feet. Visible size leads now, with age kept as
+    // an override so nothing starves: a slot that has waited several frames goes first regardless.
+    dirty.sort(function (a, b) {
+      var starvedA = a.age >= 4 ? 1 : 0, starvedB = b.age >= 4 ? 1 : 0;
+      if (starvedA !== starvedB) return starvedB - starvedA;
+      var sa = (a.__lightRecord && a.__lightRecord.__alMapScore) || 0;
+      var sb = (b.__lightRecord && b.__lightRecord.__alMapScore) || 0;
+      if (sa !== sb) return sb - sa;
+      return b.age - a.age;
+    });
     var budget = Math.max(1, ls.maxUpdatesPerFrame);
     for (var d = 0; d < dirty.length; d++) {
       // WEIGHTED BY FACE COUNT. A point light renders SIX depth passes, one per cube face, while a
@@ -824,6 +1306,11 @@
       // Always allow the first update through even if it alone exceeds the budget: a point light
       // costs 6, so a budget of 2 would otherwise starve it forever and it would never shadow.
       if (ls.updatesThisFrame > 0 && ls.updatesThisFrame + cost > budget) continue;
+      // everRendered guards the FIRST render: throttling that would make a new shadow fade in
+      // several frames after the light appears, which looks far worse than the cost it saves.
+      var interval = updateIntervalFor(ls, dirty[d].__lightRecord);
+      if (interval > 1 && dirty[d].everRendered &&
+          (ls.frame - (dirty[d].lastUpdateFrame || 0)) < interval) continue;
       if (dirty[d].owned) {
         // Owned slots render HERE and now, synchronously. The native path instead raises a flag and
         // lets Three's shadow pass pick it up during the main render, which is why its
@@ -834,6 +1321,7 @@
       }
       dirty[d].requested = true;
       dirty[d].renderedKey = dirty[d].ownerKey;
+      dirty[d].lastUpdateFrame = ls.frame;
       dirty[d].age = 0;
       ls.updatesThisFrame += cost;
     }
@@ -848,6 +1336,7 @@
     var ls = state.localShadows;
     function write(u) {
       if (!u || !u.uAlLocalParams) return;
+      if (u.uAlVsmBleed) u.uAlVsmBleed.value = ls ? ls.vsmLightBleed : 0.3;
       for (var i = 0; i < LOCAL_SHADOW_SLOTS; i++) {
         var slot = ls && ls.slots[i];
         // everRendered is the load-bearing half: an allocated-but-never-drawn map is zeros,
@@ -860,12 +1349,19 @@
         var p = u.uAlLocalParams.value[i];
         var k = u.uAlLocalKind ? u.uAlLocalKind.value[i] : null;
         if (live && owned) {
+          // VSM binds a DIFFERENT texture to the same sampler: moments, not packed depth. The two
+          // are indistinguishable to the sampler and produce a plausible-looking wrong image if
+          // confused, so kind.x carries which one is bound rather than the shader inferring it.
+          var useVsm = !!(slot.vsm && slot.vsmReady && !slot.isPoint);
+          // Releasing it matters: a 1024 moments map is 4 MB, and a light switched back to PCF
+          // would otherwise hold one for the rest of the scene's life.
+          if (!useVsm && slot.vsm) { slot.vsm.dispose(); slot.vsm = null; }
           // Same four things the native path supplies, produced by our own pass instead.
-          u['uAlLocalMap' + i].value = slot.target.texture;
+          u['uAlLocalMap' + i].value = useVsm ? slot.vsm.texture : slot.target.texture;
           u['uAlLocalMatrix' + i].value = slot.matrix;
           p.set(slot.bias, slot.normalBias, slot.radius || 1, 1);
           u.uAlLocalMapSize.value = slot.mapSize;
-          if (k) k.set(slot.isPoint ? 1 : 0, slot.near, slot.far, slot.mapSize);
+          if (k) k.set(useVsm ? 2 : (slot.isPoint ? 1 : 0), slot.near, slot.far, slot.mapSize);
         } else if (live) {
           u['uAlLocalMap' + i].value = slot.light.shadow.map.texture;
           // For BOTH types this is the right matrix: a spot's is world -> shadow UV, and
@@ -940,6 +1436,11 @@
       state.sdfHitEps = Math.max(0.001, options.sdfHitEps);
     if (options.sdfNormalBias !== undefined)
       state.sdfNormalBias = Math.max(0.0, options.sdfNormalBias);
+    if (options.contactShadows !== undefined) contactState(state).enabled = !!options.contactShadows;
+    if (options.contactStrength !== undefined) contactState(state).strength = clamp(Number(options.contactStrength) || 0, 0, 1);
+    if (options.contactDistance !== undefined) contactState(state).distance = Math.max(1, Number(options.contactDistance) || 1);
+    if (options.contactSteps !== undefined) contactState(state).steps = clamp(Math.floor(options.contactSteps), 1, 32);
+    if (options.contactThickness !== undefined) contactState(state).thickness = Math.max(1, Number(options.contactThickness) || 1);
     if (options.sdfBoundsMode !== undefined)
       state.sdfBoundsMode = options.sdfBoundsMode === 'Explicit' ? 'Explicit' : 'AutoScene';
     if (options.sdfAutoPadding !== undefined)
@@ -966,6 +1467,42 @@
     }
     if (options.maxShadowMapUpdatesPerFrame !== undefined)
       ls.maxUpdatesPerFrame = Math.max(1, Math.floor(options.maxShadowMapUpdatesPerFrame));
+    if (options.maxShadowMapUpdateInterval !== undefined)
+      ls.maxUpdateInterval = clamp(Math.floor(options.maxShadowMapUpdateInterval), 1, 60);
+    // AFTER the backend, deliberately: VSM requires owning the depth pass, so when both are set in
+    // one call the filter has the last word rather than being silently overridden by field order.
+    if (options.localShadowFilter !== undefined) setLocalShadowFilter(scene, options.localShadowFilter);
+    if (options.vsmBlurRadius !== undefined)
+      ls.vsmBlurRadius = clamp(Number(options.vsmBlurRadius) || 0, 0, 16);
+    if (options.vsmLightBleed !== undefined)
+      ls.vsmLightBleed = clamp(Number(options.vsmLightBleed) || 0, 0, 0.94);
+  }
+
+  /**
+   * PCF or VSM, for the local shadow maps.
+   *
+   * Selecting VSM FORCES the Owned depth backend, and does so loudly rather than silently failing.
+   * The moments have to be produced from a depth map we control: the native pass renders its maps
+   * during the main render, after this code has run, so a native VSM map would always be one frame
+   * stale - a moving caster's shadow would trail its PCF equivalent by a frame, which reads as a
+   * lag bug rather than a filter choice.
+   */
+  function setLocalShadowFilter(scene, filter) {
+    var state = stateOf(scene), ls = localShadowState(state);
+    var wanted = String(filter) === 'VSM' ? 'VSM' : 'PCF';
+    // The backend is NOT forced here any more. A light on Auto resolves to this value, but a light
+    // may also ask for VSM on its own while the scene default stays PCF - so the decision belongs
+    // where the lights are actually known, in updateLocalShadowMaps.
+    if (ls.filter === wanted) return true;
+    ls.filter = wanted;
+    // Every slot's bound texture changes identity (moments vs packed depth), so nothing cached
+    // survives the switch.
+    for (var i = 0; i < ls.slots.length; i++) {
+      var sl = ls.slots[i];
+      if (!sl) continue;
+      sl.renderedKey = ''; sl.everRendered = false; sl.vsmReady = false;
+    }
+    return true;
   }
 
   function registerShadowManager(scene, behavior, options) {
@@ -984,11 +1521,13 @@
       c.manager = behavior;
       configureCSM(scene, record.options);
       applySceneShadowSettings(scene, record.options);
+      refreshTextureUnitBudget(stateOf(scene), scene);
       return true;
     }
     if (c.manager === behavior) {
       configureCSM(scene, record.options);
       applySceneShadowSettings(scene, record.options);
+      refreshTextureUnitBudget(stateOf(scene), scene);
       return true;
     }
     if (!record.warned) {
@@ -1020,11 +1559,116 @@
     return result;
   }
 
+  /* ================================================= Owned cascade depth rendering ====
+   *
+   * WHY THIS STOPPED BORROWING THREE'S LIGHTS.
+   *
+   * Each cascade used to be a real DirectionalLight with castShadow = true. Three rendered its
+   * depth map and declared directionalShadowMap[N] for it; this extension then declared
+   * uAlCSMMap<i> to sample THE SAME textures itself. Three cascades therefore consumed SIX
+   * fragment texture units to carry three maps - measured, not assumed.
+   *
+   * That is the identical duplication the Owned local-shadow backend removed for spot lights, and
+   * the fix is the same one: own the depth pass, so no light exists for Three to declare a sampler
+   * for. The CONSUMER is unchanged - Three's getShadow() reads a packed-depth map either way - so
+   * this replaces the producer only, which is what makes it verifiable against the existing
+   * cascade tests rather than a rewrite of the shading.
+   *
+   * Cost: three cascades now take three units instead of six, and the number of depth passes per
+   * frame is unchanged, because Three was already rendering exactly these three maps.
+   */
+  function csmDepthMaterial(c) {
+    if (!c.depthMaterial) {
+      // RGBADepthPacking, because the shader unpacks with unpackRGBAToDepth inside getShadow.
+      c.depthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+      c.depthMaterial.side = THREE.BackSide;
+    }
+    return c.depthMaterial;
+  }
+
+  function ensureCascade(c, index, mapSize) {
+    var cascade = c.cascades[index];
+    if (!cascade) cascade = c.cascades[index] = { camera: null, target: null, matrix: null, rendered: false };
+    var size = Math.max(64, Math.floor(mapSize || 1024));
+    if (cascade.target && (cascade.target.width !== size || cascade.target.height !== size)) {
+      cascade.target.dispose(); cascade.target = null;
+    }
+    if (!cascade.target) {
+      cascade.target = new THREE.WebGLRenderTarget(size, size, {
+        // NEAREST. A packed depth is three bytes of one number; interpolating them yields a depth
+        // that is not between the two it came from.
+        minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
+        format: THREE.RGBAFormat, type: THREE.UnsignedByteType,
+        depthBuffer: true, stencilBuffer: false,
+      });
+      cascade.target.texture.generateMipmaps = false;
+      cascade.rendered = false;
+    }
+    if (!cascade.camera) cascade.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
+    if (!cascade.matrix) cascade.matrix = new THREE.Matrix4();
+    cascade.size = size;
+    return cascade;
+  }
+
+  /** Render one cascade's depth map. Returns true if it drew. */
+  function renderCascadeDepth(renderer, root, c, cascade) {
+    if (!renderer || !root || !cascade.target) return false;
+    // A renderer that cannot save and restore its own target is not one we may render through.
+    // The unit tests drive updateCSM with a stub renderer to exercise the cascade FITTING maths
+    // without a GL context; skipping here leaves cascade.rendered false, so c.ready stays false
+    // and the shader reads "no cascades" rather than sampling an undrawn, all-zero map - which
+    // would mean fully shadowed. The real path is covered by the WebGL cascade tests.
+    if (typeof renderer.getRenderTarget !== 'function' ||
+        typeof renderer.setRenderTarget !== 'function' ||
+        typeof renderer.getViewport !== 'function' ||
+        typeof renderer.render !== 'function') return false;
+
+    // Only CASTERS may write depth. scene.overrideMaterial ignores castShadow entirely, so without
+    // this every receiver writes into the map as well and the scene self-shadows into darkness.
+    var hidden = [];
+    root.traverse(function (node) {
+      if (node.isMesh && node.visible && !node.castShadow) { node.visible = false; hidden.push(node); }
+    });
+
+    var savedRenderer = captureRendererState(renderer);
+    var previousOverride = root.overrideMaterial;
+    renderer.shadowMap.enabled = false;      // our pass must not recurse into Three's shadow pass
+
+    // WHITE is depth = FAR once unpacked. Left at the scene's clear colour - black in most scenes -
+    // every texel no geometry covers unpacks to depth 0, meaning "an occluder on the near plane",
+    // and every fragment outside a caster's silhouette reads as shadowed.
+    renderer.setClearColor(0xffffff, 1.0);
+    try {
+      root.overrideMaterial = csmDepthMaterial(c);
+      // NO setViewport HERE. setRenderTarget already sets the active viewport to the target's
+      // own (0,0,width,height); calling setViewport as well additionally overwrites the
+      // renderer's PERSISTENT viewport - the one the main render and the GDevelop scene editor
+      // use - which is the only reason an off-screen pass can disturb the frame that follows.
+      renderer.setRenderTarget(cascade.target);
+      renderer.clear();
+      renderer.render(root, cascade.camera);
+    } finally {
+      root.overrideMaterial = previousOverride;
+      restoreRendererState(renderer, savedRenderer);
+      for (var h = 0; h < hidden.length; h++) hidden[h].visible = true;
+    }
+
+    // [-1,1] clip -> [0,1] texture, folded in here exactly as Three folds it into shadow.matrix,
+    // because the shader's getShadow does only the perspective divide on the strength of that.
+    cascade.matrix.copy(biasRemap());
+    cascade.matrix.multiply(cascade.camera.projectionMatrix);
+    cascade.matrix.multiply(cascade.camera.matrixWorldInverse);
+    cascade.rendered = true;
+    return true;
+  }
+
   function updateCSM(scene, camera) {
     var state = stateOf(scene), c = shadowState(state), root = getThreeScene(scene);
     if (!root || !root.traverse || !THREE.DirectionalLight || !camera.projectionMatrixInverse) return;
     // How the Sun is shadowed is its own choice now, independent of how local lights are.
-    var wantsMaps = c.mode === 'Auto' && c.sunShadows === 'Cascades';
+    var wantsMaps = c.mode === 'Auto' && c.sunShadows === 'Cascades' &&
+      (!state.textureUnitBudget || state.textureUnitBudget.csm !== false);
+    if (!wantsMaps && c.lights.length) disposeCSM(state);
     // 'Off' deliberately means NO shadows in this scene, native Sun included - that is existing,
     // tested behaviour. 'Native' is the mode that hands shadowing back to GDevelop entirely: the
     // clustered light loop still runs, but the engine's own lights and their shadow checkboxes are
@@ -1072,13 +1716,13 @@
       sun.target.position.copy(sun.target.parent ? sun.target.parent.worldToLocal(targetWorld) : targetWorld);
       sun.target.updateMatrixWorld(true);
     }
-    if (!c.lights.length) {
-      for (var i = 0; i < c.count; i++) {
-        var light = new THREE.DirectionalLight(0xffffff,0);
-        light.__alCascade = true; light.castShadow = true;
-        light.shadow.mapSize.set(c.mapSize,c.mapSize);
-        root.add(light); root.add(light.target); c.lights.push(light);
-      }
+    // No cascade lights are created any more; see renderCascadeDepth above. If an older runtime
+    // left some in the scene (editor hot reload), clear them out so Three stops declaring their
+    // shadow samplers.
+    if (c.lights.length) disposeCSM(state);
+    if (c.cascades.length !== c.count) {
+      c.cascades.forEach(function (cascade) { if (cascade.target) cascade.target.dispose(); });
+      c.cascades.length = 0;
     }
     var near = Math.max(camera.near,0.001), far = Math.max(near + 0.001, Math.min(camera.far,c.distance));
     var splits = practicalSplits(near,far,c.count,c.lambda);
@@ -1113,15 +1757,19 @@
       localCenter.z += radius + margin;
       var position = localCenter.clone().applyMatrix4(orientation);
       var target = position.clone().add(direction);
-      var light = c.lights[i];
-      light.position.copy(root.worldToLocal(position.clone()));
-      light.target.position.copy(root.worldToLocal(target.clone()));
-      var cam = light.shadow.camera;
-      cam.up.copy(up); cam.left=-half; cam.right=half; cam.top=half; cam.bottom=-half;
+      var cascade = ensureCascade(c, i, c.mapSize);
+      // WORLD space, not root-local. The old DirectionalLight was a child of the mirrored scene
+      // root, so its position had to be converted through worldToLocal; our camera has no parent,
+      // so converting would mirror it a second time and put the cascade on the wrong side of Y.
+      var cam = cascade.camera;
+      cam.up.copy(up);
+      cam.left=-half; cam.right=half; cam.top=half; cam.bottom=-half;
       cam.near=0.1; cam.far=2*radius+2*margin;
+      cam.position.copy(position);
+      cam.lookAt(target.x, target.y, target.z);
       cam.updateProjectionMatrix();
-      light.shadow.bias=c.bias; light.shadow.normalBias=c.normalBias; light.shadow.radius=c.softness;
-      light.updateMatrixWorld(true); light.target.updateMatrixWorld(true);
+      cam.updateMatrixWorld(true);
+      renderCascadeDepth(renderer, root, c, cascade);
       c.ranges.push({corners:corners,half:half,texel:texel,center:localCenter.clone(),orientation:orientation.clone()});
     }
     c.near = near; c.far = far;
@@ -1130,7 +1778,10 @@
 
   function syncCSMUniforms(state, uniforms) {
     var c = shadowState(state);
-    c.ready = c.lights.length === c.count && c.lights.every(function (l) { return !!l.shadow.map; });
+    // everRendered is load-bearing: an allocated-but-never-drawn map is zeros, and zeros mean
+    // "fully shadowed" to the comparison, so absent must read as unshadowed rather than black.
+    c.ready = c.cascades.length === c.count &&
+      c.cascades.every(function (cascade) { return !!(cascade && cascade.target && cascade.rendered); });
     function write(u) {
       if (!u || !u.uAlCSMReady) return;
       u.uAlCSMReady.value = c.ready ? 1 : 0;
@@ -1141,13 +1792,55 @@
       u.uAlCSMDirection.value = c.sunDirection || new THREE.Vector3();
       u.uAlCSMViewToWorld.value = state.viewToWorldMatrix;
       for (var i=0;i<c.count;i++) {
-        if (!u['uAlCSMMap'+i] || !c.lights[i]) continue;
-        u['uAlCSMMap'+i].value = c.lights[i].shadow.map ? c.lights[i].shadow.map.texture : null;
-        u['uAlCSMMatrix'+i].value = c.lights[i].shadow.matrix;
+        var cascade = c.cascades[i];
+        if (!u['uAlCSMMap'+i] || !cascade) continue;
+        u['uAlCSMMap'+i].value = (cascade.target && cascade.rendered) ? cascade.target.texture : null;
+        u['uAlCSMMatrix'+i].value = cascade.matrix;
       }
     }
     if (uniforms) write(uniforms);
     else state.hookedMaterials.forEach(function (mat) { write(mat.__alUniforms); });
+  }
+
+  /**
+   * Our own cascade PCF sampler.
+   *
+   * This used to call Three's getShadow(). That worked only by accident: getShadow is declared
+   * inside <shadowmap_pars_fragment>, which Three emits ONLY when the scene contains a
+   * shadow-casting light. The cascades used to BE shadow-casting DirectionalLights, so the chunk
+   * was always there. Owning the cascade depth pass removed those lights - and with them the
+   * declaration - so every cascade material failed to link with "'getShadow' : no matching
+   * overloaded function found", while the cascade maps themselves rendered perfectly.
+   *
+   * Owning the producer means owning the consumer too: depending on Three emitting a chunk for a
+   * light we no longer create is precisely the coupling this change exists to remove.
+   *
+   * MUST be injected after <packing>, which declares unpackRGBAToDepth.
+   */
+  function csmShadowHelper() {
+    return [
+      '  float alCsmTap(sampler2D map, vec2 uv, float compare) {',
+      '    // Outside the map is UNSHADOWED. Returning 0 here would draw a hard black rectangle',
+      '    // wherever a cascade does not cover, which reads as geometry rather than as a bug.',
+      '    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 1.0;',
+      '    return step(compare, unpackRGBAToDepth(texture2D(map, uv)));',
+      '  }',
+      '  float alCsmShadow(sampler2D map, vec2 mapSize, float bias, float radius, vec4 coord) {',
+      '    // The matrix already folds in the [-1,1] -> [0,1] remap, so this is ONLY the divide.',
+      '    vec3 p = coord.xyz / coord.w;',
+      '    if (p.z > 1.0 || p.z < 0.0) return 1.0;',
+      '    if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) return 1.0;',
+      '    float compare = p.z + bias;',
+      '    vec2 texel = vec2(max(radius, 0.0)) / max(mapSize, vec2(1.0));',
+      '    float sum = 0.0;',
+      '    for (int dy = -1; dy <= 1; dy++) {',
+      '      for (int dx = -1; dx <= 1; dx++) {',
+      '        sum += alCsmTap(map, p.xy + vec2(float(dx), float(dy)) * texel, compare);',
+      '      }',
+      '    }',
+      '    return sum / 9.0;',
+      '  }',
+    ].join('\n');
   }
 
   function csmShaderPrelude(count) {
@@ -1163,10 +1856,10 @@
       'vec3 alP = (uAlCSMViewToWorld * vec4(geometryPosition,1.0)).xyz + alN * uAlCSMNormalBias;',
       'float alDepth = -geometryPosition.z;', 'float alShadow = 1.0;'];
     for (var i=0;i<count;i++) {
-      var sample='getShadow(uAlCSMMap'+i+',vec2(uAlCSMSize),uAlCSMBias,uAlCSMSoftness,uAlCSMMatrix'+i+'*vec4(alP,1.0))';
+      var sample='alCsmShadow(uAlCSMMap'+i+',vec2(uAlCSMSize),uAlCSMBias,uAlCSMSoftness,uAlCSMMatrix'+i+'*vec4(alP,1.0))';
       lines.push((i ? 'else ' : '')+'if (alDepth <= uAlCSMSplits['+i+']) {');
       lines.push('alShadow = '+sample+';');
-      var next=i<count-1 ? 'getShadow(uAlCSMMap'+(i+1)+',vec2(uAlCSMSize),uAlCSMBias,uAlCSMSoftness,uAlCSMMatrix'+(i+1)+'*vec4(alP,1.0))' : '1.0';
+      var next=i<count-1 ? 'alCsmShadow(uAlCSMMap'+(i+1)+',vec2(uAlCSMSize),uAlCSMBias,uAlCSMSoftness,uAlCSMMatrix'+(i+1)+'*vec4(alP,1.0))' : '1.0';
       lines.push('float alWidth = max(0.0001,uAlCSMBlend*(uAlCSMSplits['+i+']-'+(i?'uAlCSMSplits['+(i-1)+']':'uAlCSMNear')+'));');
       lines.push('if (uAlCSMBlend > 0.0) alShadow = mix(alShadow,'+next+',smoothstep(uAlCSMSplits['+i+']-alWidth,uAlCSMSplits['+i+'],alDepth));','}');
     }
@@ -1323,6 +2016,45 @@
     if (v < minZ) sqDist += (minZ - v) * (minZ - v);
     if (v > maxZ) sqDist += (v - maxZ) * (v - maxZ);
     return sqDist;
+  }
+
+  // Squared distance from a 2D point to a segment. Kept scalar because this runs inside the
+  // clustered broadphase and allocating Vector2 objects here would create thousands per frame.
+  function pointSegmentDistanceSq2D(px, py, ax, ay, bx, by) {
+    var abx = bx - ax, aby = by - ay;
+    var denom = abx * abx + aby * aby;
+    var t = denom > 1e-12 ? ((px - ax) * abx + (py - ay) * aby) / denom : 0;
+    t = clamp(t, 0, 1);
+    var dx = px - (ax + abx * t);
+    var dy = py - (ay + aby * t);
+    return dx * dx + dy * dy;
+  }
+
+  /**
+   * Conservative finite-cone versus sphere intersection.
+   *
+   * Rotating around the cone axis reduces this to the distance between (axial, radial) and the
+   * triangle bounded by the apex, axis, base cap and cone side. Cluster AABBs are represented by
+   * their enclosing sphere, so this can admit a boundary cluster but can never reject one that the
+   * spotlight may illuminate. That is exactly the asymmetry shadow reservation needs.
+   */
+  function sphereIntersectsFiniteCone(cx, cy, cz, sphereRadius,
+      apexX, apexY, apexZ, axisX, axisY, axisZ, height, tanHalfAngle) {
+    var mx = cx - apexX, my = cy - apexY, mz = cz - apexZ;
+    var axial = mx * axisX + my * axisY + mz * axisZ;
+    var radialSq = Math.max(0, mx * mx + my * my + mz * mz - axial * axial);
+    var radial = Math.sqrt(radialSq);
+    var baseRadius = height * tanHalfAngle;
+
+    // Centre already lies inside the solid cone.
+    if (axial >= 0 && axial <= height && radial <= axial * tanHalfAngle) return true;
+
+    var distanceSq = Math.min(
+      pointSegmentDistanceSq2D(axial, radial, 0, 0, height, 0),
+      pointSegmentDistanceSq2D(axial, radial, height, 0, height, baseRadius),
+      pointSegmentDistanceSq2D(axial, radial, 0, 0, height, baseRadius)
+    );
+    return distanceSq <= sphereRadius * sphereRadius;
   }
 
   // Ericson's closest point on triangle (Real-Time Collision Detection, Sec. 5.1.5).
@@ -1529,6 +2261,189 @@
     return lr.getThreeScene ? lr.getThreeScene() : null;
   }
 
+  /* ------------------------------------------------------------- Fragment sampler budget */
+
+  // Every property here adds a fragment sampler to Three's Standard/Physical material variant
+  // when it is populated. Displacement is deliberately absent: it is sampled by the vertex shader
+  // and is governed by MAX_VERTEX_TEXTURE_IMAGE_UNITS, not the fragment limit addressed here.
+  var FRAGMENT_MAP_PROPERTIES = [
+    'map', 'alphaMap', 'aoMap', 'lightMap', 'emissiveMap', 'bumpMap', 'normalMap',
+    'roughnessMap', 'metalnessMap', 'envMap', 'clearcoatMap', 'clearcoatRoughnessMap',
+    'clearcoatNormalMap', 'iridescenceMap', 'iridescenceThicknessMap', 'sheenColorMap',
+    'sheenRoughnessMap', 'transmissionMap', 'thicknessMap', 'specularMap',
+    'specularColorMap', 'specularIntensityMap', 'anisotropyMap'
+  ];
+
+  function materialFragmentSamplerCount(material, sceneHasEnvironment) {
+    if (!material || !material.isMeshStandardMaterial) return 0;
+    var count = 0;
+    for (var i = 0; i < FRAGMENT_MAP_PROPERTIES.length; i++) {
+      var key = FRAGMENT_MAP_PROPERTIES[i];
+      if (material[key]) count++;
+    }
+    // A scene environment activates USE_ENVMAP even when material.envMap itself is null.
+    if (sceneHasEnvironment && !material.envMap) count++;
+    return count;
+  }
+
+  function scanSceneSamplerPressure(runtimeScene) {
+    var root = getThreeScene(runtimeScene);
+    var result = { material: 0, nativeShadows: 0, hasSun: false, sunNativeShadow: 0 };
+    if (!root || !root.traverse) return result;
+    var sceneHasEnvironment = !!root.environment;
+    root.traverse(function (node) {
+      if (node && node.isMesh && node.material) {
+        var materials = Array.isArray(node.material) ? node.material : [node.material];
+        for (var i = 0; i < materials.length; i++) {
+          result.material = Math.max(
+            result.material,
+            materialFragmentSamplerCount(materials[i], sceneHasEnvironment)
+          );
+        }
+      }
+      // AdvancedLighting's own CSM and Native-local lights are accounted below as paired costs:
+      // one stock Three sampler plus one sampler declared by our injection. Do not count them here.
+      if (node && node.visible !== false && node.castShadow &&
+          (node.isDirectionalLight || node.isSpotLight || node.isPointLight) &&
+          !node.__alCascade && !node.__alLocalShadow) {
+        result.nativeShadows++;
+      }
+      // CSM takes over the first visible, positive-intensity DirectionalLight and disables its
+      // stock shadow. Record that replacement so the budget charges CSM's net cost, and do not
+      // reserve six cascade samplers in a scene that has no Sun at all.
+      if (!result.hasSun && node && node.isDirectionalLight && !node.__alCascade &&
+          node.visible !== false && node.intensity > 0) {
+        result.hasSun = true;
+        result.sunNativeShadow = node.castShadow ? 1 : 0;
+      }
+    });
+    return result;
+  }
+
+  function fragmentTextureUnitLimit(state, runtimeScene) {
+    if (state.__fragmentTextureUnitLimit) return state.__fragmentTextureUnitLimit;
+    var units = 16; // WebGL2's guaranteed floor is the safe fallback when the context is late.
+    try {
+      var renderer = runtimeScene ? threeRendererOf(runtimeScene) : null;
+      var gl = renderer && renderer.getContext ? renderer.getContext() : null;
+      if (gl) units = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) || units;
+    } catch (e) {}
+    state.__fragmentTextureUnitLimit = units;
+    return units;
+  }
+
+  /**
+   * Select the shader features that fit this scene's most texture-heavy standard material.
+   *
+   * This is intentionally scene-wide. Three's native shadow arrays are sized per render, so a
+   * hidden fallback only on one material cannot remove the shadow samplers from other materials.
+   * Explicitly attached features (probes, SDF and contact shadows) are admitted before the default
+   * CSM path; local maps come last because they have the largest fixed sampler block. The result is
+   * graceful feature loss with a warning, never a program-link failure that blanks the scene.
+   */
+  function refreshTextureUnitBudget(state, runtimeScene) {
+    runtimeScene = runtimeScene || state.runtimeScene;
+    if (!runtimeScene) return state.textureUnitBudget || null;
+    state.runtimeScene = runtimeScene;
+
+    var limit = fragmentTextureUnitLimit(state, runtimeScene);
+    var pressure = scanSceneSamplerPressure(runtimeScene);
+    var c = shadowState(state);
+    var ls = localShadowState(state);
+    var override = state.__textureBudgetOverride || null; // deterministic internal test seam
+
+    // Cluster data, grid and index textures are the non-optional core of this extension.
+    var used = 3 + pressure.material + pressure.nativeShadows;
+    var requestedProbes = state.receivers && state.receivers.size > 0;
+    var requestedSdf = c.mode === 'Auto' && !!(
+      state.sdfVolume && state.sdfVolume.texture && state.sdfVolume.isBaked);
+    var requestedContact = !!(state.contact && state.contact.enabled);
+    var requestedCsm = c.mode === 'Auto' && c.sunShadows === 'Cascades' && pressure.hasSun;
+
+    function admit(name, requested, cost) {
+      var forcedOn = !!(override && override[name] === true);
+      var effectiveRequest = requested || forcedOn;
+      var allowed = !effectiveRequest || used + cost <= limit;
+      if (override && override[name] !== undefined) allowed = !!override[name];
+      if (effectiveRequest && allowed) used += cost;
+      return allowed;
+    }
+
+    var probes = admit('probes', requestedProbes, 2);
+    var sdf = admit('sdf', requestedSdf, 1);
+    var contact = admit('contact', requestedContact, 1);
+
+    // ONE unit per cascade. This used to be two: the cascades were real DirectionalLights, so
+    // Three declared directionalShadowMap[N] for them AND this extension declared uAlCSMMap<i> for
+    // the same textures. The cascade depth pass is owned now, so only our sampler is declared.
+    //
+    // The native Sun's own shadow sampler is still subtracted, because taking the Sun over sets its
+    // castShadow to false: `used` counted it above, and CSM removes it. The net cost of cascades is
+    // therefore count - 1 on a scene whose Sun was already casting.
+    var csmCost = Math.max(0, c.count - pressure.sunNativeShadow);
+    var csm = admit('csm', requestedCsm, csmCost);
+
+    // Four custom samplers are compiled as one fixed block. Native adds one Three shadow sampler
+    // per possible live slot; Owned removes that duplication for spots, but point maps still fall
+    // back to Native, so reserve one duplicate per registered point-light candidate.
+    var pointCandidates = 0;
+    if (ls.backend === 'Owned' && state.lights) {
+      state.lights.forEach(function (light) {
+        if (pointCandidates >= ls.maxLights || !light || !light.active || !light.castShadow) return;
+        var technique = light.shadowTechnique || 'Auto';
+        if (light.lightType === 'Point' && technique !== 'SDF' && technique !== 'None') {
+          pointCandidates++;
+        }
+      });
+    }
+    var localCost = LOCAL_SHADOW_SLOTS +
+      (ls.backend === 'Native' ? ls.maxLights : Math.min(ls.maxLights, pointCandidates));
+    var localRequested = c.mode === 'Auto' && ls.maxLights > 0;
+    var localMaps = admit('localMaps', localRequested, localCost);
+
+    var next = {
+      limit: limit,
+      material: pressure.material,
+      nativeShadows: pressure.nativeShadows,
+      used: used,
+      probes: probes,
+      sdf: sdf,
+      contact: contact,
+      csm: csm,
+      csmCost: csmCost,
+      localMaps: localMaps,
+      localCost: localCost
+    };
+    state.textureUnitBudget = next;
+    state.__localMapsAffordable = localMaps;
+
+    if (requestedCsm && !csm) {
+      warnOnce('textureBudgetCSM',
+        'This scene needs more than the GPU\'s ' + limit + ' fragment texture units. Sun cascades ' +
+        'were disabled before shader compilation; clustered lighting and explicitly attached ' +
+        'probe/SDF/contact features remain active. Use fewer material maps, DistanceField Sun ' +
+        'shadows, or a GPU with a larger sampler limit.');
+    }
+    if (localRequested && !localMaps) {
+      warnOnce('textureUnitBudget',
+        'This scene cannot fit the ' + localCost + '-unit local shadow-map block inside the GPU\'s ' +
+        limit + '-unit fragment sampler limit, so local shadow maps were disabled before shader ' +
+        'compilation. Use the Owned depth renderer, reduce material maps, or use SDF/None for local ' +
+        'lights.');
+    }
+    if (requestedContact && !contact) warnOnce('textureBudgetContact',
+      'Contact shadows were disabled because this scene reached the fragment texture-unit limit.');
+    if (requestedSdf && !sdf) warnOnce('textureBudgetSDF',
+      'SDF shadows were disabled because this scene reached the fragment texture-unit limit.');
+    if (requestedProbes && !probes) warnOnce('textureBudgetProbes',
+      'Light probes were disabled because this scene reached the fragment texture-unit limit.');
+    if (used > limit) warnOnce('textureBudgetCore',
+      'The material and native GDevelop shadows already need about ' + used + ' fragment texture ' +
+      'units, above this GPU\'s limit of ' + limit + '. AdvancedLighting disabled every optional ' +
+      'sampler it could; reduce the material texture count or native shadow-casting lights.');
+    return next;
+  }
+
   function layerNameOf(object) {
     return (object && typeof object.getLayer === 'function') ? object.getLayer() : '';
   }
@@ -1556,6 +2471,7 @@
     var s = scenes.get(runtimeScene);
     if (!s) {
       s = {
+        runtimeScene: runtimeScene,
         /* ---- Clustered direct lighting ---- */
         maxLights: MAX_LIGHTS_DEFAULT,
         clusterGridX: CLUSTER_GRID_X,
@@ -1979,6 +2895,14 @@
     '  // fine on its own and then fails the moment the Sun path references it - taking the',
     '  // whole injection down and removing every shadow in the scene, not just this one.',
     '  uniform float      uSdfDilation;',
+    '  // Contact shadows: ONE depth texture shared by every light, which is the entire point.',
+    '  uniform sampler2D  uAlSceneDepth;',
+    '  // x: strength, y: max march distance (world units), z: steps, w: occluder thickness',
+    '  uniform vec4       uAlContact;',
+    '  // Our own copy: Three declares projectionMatrix in the VERTEX prefix only, so naming it',
+    '  // here does not resolve and the program fails to link with GL_INVALID_OPERATION.',
+    '  uniform mat4       uAlProjection;',
+    '  uniform mat4       uAlProjectionInverse;',
     '  uniform vec2       uResolution;',
     '  // Float, not ivec3: three uploads an integer uniform through uniform3iv, which',
     '  // needs a real array rather than the Vector3 the uniform value would hold.',
@@ -2156,6 +3080,9 @@
     // w: per-face map size, which for a point light is a quarter of the atlas width.
     lines.push('  uniform vec4 uAlLocalKind[' + count + '];');
     lines.push('  uniform float uAlLocalMapSize;');
+    // Light-bleed reduction for VSM. Scene-wide rather than per-slot: it is a look control, and a
+    // per-light value would let two lights disagree about how dark the same surface is.
+    lines.push('  uniform float uAlVsmBleed;');
     lines.push('#endif');
     lines.push('');
     return lines.join(String.fromCharCode(10));
@@ -2171,6 +3098,83 @@
   // not depend on NUM_SPOT_LIGHT_SHADOWS or NUM_POINT_LIGHT_SHADOWS being non-zero at compile time.
   // Those counts vary at runtime as slots are assigned, and a frame where none exists yet would
   // otherwise fail to link.
+  // Injected AFTER Three's own chunks, never prepended.
+  //
+  // It calls unpackRGBAToDepth, which <packing> declares partway down the generated
+  // shader. Prepending it puts the call before the declaration and the program fails to
+  // link with a bare VALIDATE_STATUS false and an empty info log - which looks exactly
+  // like a texture-unit overrun and sends you hunting the wrong thing. localShadowHelper
+  // carries the same warning for the same reason.
+  function contactShadowHelper() {
+    return [
+    '  #ifdef AL_CONTACT_SHADOWS',
+    '  // Screen-space contact shadow. Marches from the shaded point toward the light, entirely',
+    '  // in VIEW space, projecting each step to screen space to read the prepass depth. View',
+    '  // space keeps it simple: the loop already has the view-space position and light',
+    '  // direction, and projectionMatrix is a built-in Three uniform.',
+    '  float alContactShadow(vec3 viewPos, vec3 viewNormal, vec3 viewL, float lightDist) {',
+    '    float maxDist = min(uAlContact.y, lightDist);',
+    '    int steps = int(uAlContact.z);',
+    '    if (maxDist <= 0.01 || steps <= 0) return 1.0;',
+    '    float stepLen = maxDist / float(steps);',
+    '    // Lift the ray off its receiver. At a grazing camera angle, marching directly along a',
+    '    // floor repeatedly samples that same floor through quantised depth texels; the resulting',
+    '    // self-hits appear as long horizontal bars.',
+    '    float surfaceBias = max(1.0, min(stepLen * 0.25, uAlContact.w * 0.10));',
+    '    // Sub-step spatial jitter breaks coherent march boundaries without temporal shimmer.',
+    '    float jitter = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));',
+    '    vec3 p = viewPos + normalize(viewNormal) * surfaceBias +',
+    '      viewL * stepLen * (0.5 + jitter);',
+    '    float occlusion = 0.0;',
+    '    for (int i = 0; i < 32; i++) {',
+    '      if (i >= steps) break;',
+    '      vec4 clip = uAlProjection * vec4(p, 1.0);',
+    '      if (clip.w <= 0.0) break;',
+    '      vec3 ndc = clip.xyz / clip.w;',
+    '      vec2 uv = ndc.xy * 0.5 + 0.5;',
+    '      // Off screen means no information, not no occluder. Stop rather than guess.',
+    '      if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) break;',
+    '      float sceneZ = unpackRGBAToDepth(texture2D(uAlSceneDepth, uv));',
+    '      // Compare in VIEW-SPACE DISTANCE, not window depth. Window depth is wildly',
+    '      // non-linear: near the camera a tiny offset is a large delta and everything reads as',
+    '      // occluded, which dims the whole frame instead of drawing a contact shadow.',
+    '      // viewZ = P[3][2] / (ndcZ + P[2][2]), positive distance in front of the camera.',
+    '      float ndcZ = sceneZ * 2.0 - 1.0;',
+    '      float denom = ndcZ + uAlProjection[2][2];',
+    '      if (abs(denom) > 1e-6) {',
+    '        float sceneDist = uAlProjection[3][2] / denom;',
+    '        float rayDist = -p.z;',
+    '        // Reconstruct the sampled point and reject the receiver plane itself. Comparing only',
+    '        // view distance cannot tell a real occluder from a neighboring texel on the same',
+    '        // sloped floor; at grazing angles that mistake becomes the detached stripe pattern.',
+    '        vec4 sceneViewH = uAlProjectionInverse * vec4(ndc.xy, ndcZ, 1.0);',
+    '        vec3 sceneView = sceneViewH.xyz /',
+    '          (abs(sceneViewH.w) > 1e-6 ? sceneViewH.w : 1e-6);',
+    '        float receiverPlaneGap = abs(dot(sceneView - viewPos, normalize(viewNormal)));',
+    '        // The bias has to clear the surface the ray started on. Without it the very first',
+    '        // sample reads the origin surface as its own occluder - the same self-occlusion',
+    '        // that made the SDF volume draw its own bounds.',
+    '        float bias = max(1.0, stepLen * 0.20);',
+    '        float gap = rayDist - sceneDist;',
+    '        // A soft hit interval replaces the old binary first-hit result. That result exposed',
+    '        // every discrete march step as a solid stripe, especially on shallow floors.',
+    '        float soft = max(1.0, min(stepLen * 0.75, uAlContact.w * 0.20));',
+    '        if (receiverPlaneGap > surfaceBias * 0.5) {',
+    '          float thickness = max(uAlContact.w, bias + soft + 1.0);',
+    '          float enter = smoothstep(bias, bias + soft, gap);',
+    '          float leave = 1.0 - smoothstep(max(bias + soft, thickness - soft),',
+    '            thickness, gap);',
+    '          occlusion = max(occlusion, enter * leave);',
+    '        }',
+    '      }',
+    '      p += viewL * stepLen;',
+    '    }',
+    '    return 1.0 - uAlContact.x * occlusion;',
+    '  }',
+    '  #endif',
+    ].join('\n');
+  }
+
   function localShadowHelper(count) {
     if (!count) return '';
     var lines = ['#ifdef AL_LOCAL_SHADOW_MAPS'];
@@ -2194,6 +3198,35 @@
     lines.push('      }');
     lines.push('    }');
     lines.push('    return sum / 9.0;');
+    lines.push('  }');
+    lines.push('');
+    // --- SPOT, VARIANCE: one bilinear tap into a pre-blurred moments map -------------------
+    // unpackRGBATo2Half comes from <packing>, which is why this helper is injected after it and
+    // not prepended with the uniforms. Redeclaring it here would be a redefinition error.
+    lines.push('  float alLocalVSM(sampler2D map, vec4 coord, float bias, float nearP, float farP) {');
+    lines.push('    vec3 p = coord.xyz / coord.w;');
+    lines.push('    if (p.z > 1.0 || p.z < 0.0) return 1.0;');
+    lines.push('    if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) return 1.0;');
+    lines.push('    // The SAME linearisation the blur pass applied. Comparing a projected depth');
+    lines.push('    // against linearised moments is not slightly off - it is a different unit.');
+    lines.push('    float viewZ = perspectiveDepthToViewZ(p.z, nearP, farP);');
+    lines.push('    float lin = clamp((-viewZ - nearP) / max(farP - nearP, 1e-4), 0.0, 1.0);');
+    lines.push('    // bias is now in LINEAR light-space units, a fraction of the light radius,');
+    lines.push('    // rather than the compressed projected units the PCF path uses.');
+    lines.push('    float compare = lin + bias;');
+    lines.push('    vec2 moments = unpackRGBATo2Half(texture2D(map, p.xy));');
+    lines.push('    // Fully lit: the nearest occluder is behind us. No inequality needed.');
+    lines.push('    if (compare <= moments.x) return 1.0;');
+    lines.push('    // Chebyshev: P(depth >= compare) <= s2 / (s2 + d^2) bounds the LIT fraction.');
+    lines.push('    // d > 0 is guaranteed by the early-out above, so the denominator cannot be 0.');
+    lines.push('    float d = compare - moments.x;');
+    lines.push('    float s2 = moments.y * moments.y;');
+    lines.push('    float lit = s2 / (s2 + d * d);');
+    lines.push('    // The bound is loose wherever two occluders straddle a receiver, which reads');
+    lines.push('    // as light leaking through solid geometry. Rescaling crushes the low end of');
+    lines.push('    // the probability at the cost of a harder penumbra.');
+    lines.push('    float lo = clamp(uAlVsmBleed, 0.0, 0.94);');
+    lines.push('    return clamp((lit - lo) / (0.95 - lo), 0.0, 1.0);');
     lines.push('  }');
     lines.push('');
     // --- POINT: six faces packed into one 4x2 atlas ---------------------------------------
@@ -2250,6 +3283,12 @@
       lines.push('      vec4 kind = uAlLocalKind[' + j + '];');
       lines.push('      vec3 biased = worldPos + worldNormal * sp.y;');
       lines.push('      vec4 sc = uAlLocalMatrix' + j + ' * vec4(biased, 1.0);');
+      // A uniform branch, not a shader permutation: every fragment of every draw takes the same
+      // side, and switching filters therefore costs no recompile. Adding a define here would put
+      // the recompile hitch back that the Owned backend exists to remove.
+      lines.push('      if (kind.x > 1.5) {');
+      lines.push('        return alLocalVSM(uAlLocalMap' + j + ', sc, sp.x, kind.y, kind.z);');
+      lines.push('      }');
       lines.push('      if (kind.x > 0.5) {');
       // For a point light the matrix is a pure translation by -lightPos, so sc.xyz is the
       // light-to-fragment vector Three's own point path expects.
@@ -2407,6 +3446,11 @@
     '        }',
     '        radiance *= sdfShadowFactor;',
     '      #endif',
+    '      #ifdef AL_CONTACT_SHADOWS',
+    '      // Applied to EVERY light, whether or not it won a shadow-map slot. This is the',
+    '      // half that does not scale with light count.',
+    '      radiance *= alContactShadow(geometryPosition, geometryNormal, clDiffuseL, attenuationDistance);',
+    '      #endif',
     '      clusteredDiffuseAccum += diff * radiance * clDiffuseNdotL;',
     '      clusteredSpecularAccum += spec * radiance * clSpecularNdotL;',
     '    }',
@@ -2438,6 +3482,7 @@
     var wantProbes = inj.probes;
     var hasSDF = inj.sdf;
     var hasLocalMaps = !!inj.localMaps;
+    var hasContact = !!inj.contact;
     var csmCount = inj.csmCount;
     var sdfSun = inj.sdfSun;
     var use3D = inj.use3D;
@@ -2471,9 +3516,11 @@
     if (use3D) shader.defines.USE_3D_CLUSTER_TEXTURE = 1;
     if (wantProbes) shader.defines.USE_PROBE_GRID = 1;
     if (hasSDF) shader.defines.AL_SDF_SHADOWS = 1;
+    if (hasContact) shader.defines.AL_CONTACT_SHADOWS = 1;
     if (hasLocalMaps) {
       shader.defines.AL_LOCAL_SHADOW_MAPS = 1;
       shader.uniforms.uAlLocalMapSize = { value: 1024 };
+      shader.uniforms.uAlVsmBleed = { value: 0.3 };
       var localParams = [], localKind = [];
       for (var lsI = 0; lsI < LOCAL_SHADOW_SLOTS; lsI++) {
         shader.uniforms['uAlLocalMap' + lsI] = { value: null };
@@ -2517,6 +3564,20 @@
       shader.uniforms.uPointShadowDistance = { value: state.pointShadowDistance || 800.0 };
     }
 
+    // --- Contact shadow uniforms
+    // Bound whenever the variant is compiled in. A declared-but-unbound sampler reads as texture
+    // unit 0, which is whatever happened to be bound there - usually the albedo map, which would
+    // unpack as noise and shadow at random.
+    if (hasContact) {
+      var cs = contactState(state);
+      shader.uniforms.uAlSceneDepth = { value: cs.target ? cs.target.texture : null };
+      shader.uniforms.uAlProjection = { value: THREE_OK ? new THREE.Matrix4() : null };
+      shader.uniforms.uAlProjectionInverse = { value: THREE_OK ? new THREE.Matrix4() : null };
+      shader.uniforms.uAlContact = { value: (THREE_OK && THREE.Vector4)
+        ? new THREE.Vector4(cs.strength, cs.distance, cs.steps, cs.thickness)
+        : { x: cs.strength, y: cs.distance, z: cs.steps, w: cs.thickness } };
+    }
+
     if (csmCount) {
       shader.uniforms.uAlCSMReady = {value:0};
       ['Near','Blend','Size','Bias','NormalBias','Softness','Splits','Direction','ViewToWorld'].forEach(function (name) { shader.uniforms['uAlCSM'+name] = {value:null}; });
@@ -2548,6 +3609,26 @@
 
     // The sampler goes AFTER Three's own chunks: it calls unpackRGBAToDepth, which <packing>
     // declares further down the generated shader. Prepending it fails to compile.
+    if (hasContact) {
+      var ctAnchor = '#include <packing>';
+      if (shader.fragmentShader.indexOf(ctAnchor) !== -1) {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          ctAnchor, ctAnchor + '\n' + contactShadowHelper());
+      } else {
+        warnOnce('noPackingChunk', 'Material has no packing chunk, so contact shadows were ' +
+          'skipped for it.');
+      }
+    }
+    if (csmCount) {
+      var csmAnchor = '#include <packing>';
+      if (shader.fragmentShader.indexOf(csmAnchor) !== -1) {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          csmAnchor, csmAnchor + '\n' + csmShadowHelper());
+      } else {
+        warnOnce('noPackingChunkCSM', 'Material has no packing chunk, so Sun cascades were ' +
+          'skipped for it.');
+      }
+    }
     if (hasLocalMaps) {
       var lsAnchor = '#include <shadowmap_pars_fragment>';
       if (shader.fragmentShader.indexOf(lsAnchor) !== -1) {
@@ -2614,7 +3695,8 @@
   function injectShaderOnMaterial(material, state, receiverRecord) {
     if (!material) return false;
 
-    var wantProbes = !!receiverRecord;
+    var wantProbes = !!receiverRecord &&
+      (!state.textureUnitBudget || state.textureUnitBudget.probes !== false);
 
     // MeshBasicMaterial has no lighting at all, and Lambert/Phong carry a different
     // material struct than the PhysicalMaterial fields the clustered loop reads.
@@ -2639,7 +3721,11 @@
     var use3D = !!state.clusterGrid3DTexture;
     var hasSDF = !!(sdfEnabled(state) && state.sdfVolume && state.sdfVolume.texture && state.sdfVolume.isBaked);
     var csm = shadowState(state);
-    var csmCount = csm.lights.length;
+    // cascades, NOT lights: cascade DirectionalLights no longer exist, so reading lights.length
+    // here compiled every material with CSM0 - the cascade samplers were never declared and the
+    // maps, which rendered perfectly, were simply never read. The frame looked exactly like a
+    // broken depth pass.
+    var csmCount = csm.cascades.length;
     var sdfSun = hasSDF && csm.sunShadows === 'DistanceField';
     // Choosing DistanceField without a baked volume removes the Sun shadow entirely - cascades are
     // torn down and there is no field to march. Silent, and indistinguishable from a bug.
@@ -2649,11 +3735,12 @@
         'Sun shadow method back to Cascades.');
     }
     var hasLocalMaps = localMapsEnabled(state);
+    var hasContact = contactShadowsActive(state);
     // Every flag that reaches cacheKey must be compared here. localMaps and use3D were stored but
     // not compared, so a material injected before either flipped kept its old program variant for
     // good. Mode changes churn csmCount often enough to have hidden it; demand-driven arming,
     // which flips localMaps with nothing else moving, would not have been so lucky.
-    if (existing && existing.owner === state && existing.csmCount === csmCount && existing.sdfSun === sdfSun && existing.probes === wantProbes && existing.sdf === hasSDF && existing.localMaps === hasLocalMaps && existing.use3D === use3D && existing.version === RUNTIME_VERSION) {
+    if (existing && existing.owner === state && existing.csmCount === csmCount && existing.sdfSun === sdfSun && existing.probes === wantProbes && existing.sdf === hasSDF && existing.localMaps === hasLocalMaps && existing.contact === hasContact && existing.use3D === use3D && existing.version === RUNTIME_VERSION) {
       state.hookedMaterials.add(material);
       return true;
     }
@@ -2662,9 +3749,9 @@
     // changing feature ownership so returning to an earlier mode cannot reuse stale bindings.
     if (existing && typeof material.dispose === 'function') material.dispose();
     // Local maps change the generated source, so they must change the program key too.
-    var cacheKey = 'GD_ADVLIGHT3D_V8|CL1|G3D' + (use3D ? '1' : '0') + '|LP' + (wantProbes ? '1' : '0') + (hasSDF ? '|SDF1' : '') + (hasLocalMaps ? '|LSM' + LOCAL_SHADOW_SLOTS : '') + '|CSM' + csmCount + '|SUN' + (sdfSun ? 1 : 0);
+    var cacheKey = 'GD_ADVLIGHT3D_V8|CL1|G3D' + (use3D ? '1' : '0') + '|LP' + (wantProbes ? '1' : '0') + (hasSDF ? '|SDF1' : '') + (hasLocalMaps ? '|LSM' + LOCAL_SHADOW_SLOTS : '') + (hasContact ? '|CT1' : '') + '|CSM' + csmCount + '|SUN' + (sdfSun ? 1 : 0);
 
-    material.__alInjection = { probes: wantProbes, sdf: hasSDF, key: cacheKey, version: RUNTIME_VERSION, receiver: receiverRecord, owner: state, csmCount: csmCount, sdfSun: sdfSun, use3D: use3D, localMaps: hasLocalMaps };
+    material.__alInjection = { probes: wantProbes, sdf: hasSDF, key: cacheKey, version: RUNTIME_VERSION, receiver: receiverRecord, owner: state, csmCount: csmCount, sdfSun: sdfSun, use3D: use3D, localMaps: hasLocalMaps, contact: hasContact };
     // ShaderChain owns onBeforeCompile and customProgramCacheKey. Assigning either here directly
     // would silently disable every other injector on this material, and be disabled in turn by the
     // next module to try. The cache-key fragment reaches Three via the injector's key(), which
@@ -2745,7 +3832,6 @@
     // changes AL_LOCAL_SHADOW_MAPS, which changes the program cache key, which recompiles every
     // material in the scene one or two frames in. That shows up as a stutter or flash the moment a
     // light is added, which is indistinguishable from a rendering bug.
-    canAffordLocalMaps(state, runtimeScene);
     if (options) {
       if (options.maxLights !== undefined) applyMaxLights(state, options.maxLights);
       if (options.enableVolumetricFog !== undefined) state.enableVolumetricFog = !!options.enableVolumetricFog;
@@ -2755,6 +3841,7 @@
       if (options.showDebugVisualizer !== undefined) state.showDebugVisualizer = !!options.showDebugVisualizer;
     }
     initTextures(state, runtimeScene);
+    refreshTextureUnitBudget(state, runtimeScene);
     return state;
   }
 
@@ -2952,6 +4039,9 @@
         shadowNormalBias: options && options.shadowNormalBias !== undefined ? options.shadowNormalBias : 0.02,
         shadowMapNear: options && options.shadowMapNear !== undefined ? options.shadowMapNear : 0,
         shadowMapStatic: !!(options && options.shadowMapStatic),
+        // Auto | PCF | VSM. Auto defers to the scene's Maps: Filter setting, so the scene-level
+        // control stays a real default rather than becoming dead once any light overrides it.
+        shadowMapFilter: (options && options.shadowMapFilter) || 'Auto',
         __alMapSlot: -1,
         sourceRadius: options && options.sourceRadius !== undefined ? options.sourceRadius : 0.0,
         flickerMode: (options && options.flickerMode) || 'None',
@@ -3011,6 +4101,7 @@
     if (options.shadowNormalBias !== undefined) light.shadowNormalBias = options.shadowNormalBias;
     if (options.shadowMapNear !== undefined) light.shadowMapNear = options.shadowMapNear;
     if (options.shadowMapStatic !== undefined) light.shadowMapStatic = !!options.shadowMapStatic;
+    if (options.shadowMapFilter !== undefined) light.shadowMapFilter = options.shadowMapFilter;
     if (options.sourceRadius !== undefined) light.sourceRadius = options.sourceRadius;
     if (options.flickerMode !== undefined) light.flickerMode = options.flickerMode;
     if (options.flickerSpeed !== undefined) light.flickerSpeed = options.flickerSpeed;
@@ -3557,6 +4648,10 @@
         effectiveIntensity: 1.0
       };
       state.receivers.add(rec);
+
+      // Probe receivers add two sampler3D uniforms. Settle the new permutation before cloning and
+      // injecting their materials so a 16-unit device never compiles the pre-budget variant first.
+      refreshTextureUnitBudget(state, runtimeScene);
 
       var threeRoot = threeRootOf(object);
       if (threeRoot) {
@@ -4849,8 +5944,16 @@
       state.viewToWorldMatrix.copy(camera.matrixWorld);
     }
 
+    // Resolve the sampler permutation before any shadow light is created or material is compiled.
+    // AdvancedWeather3D adds a non-shadowing PointLight, which legitimately recompiles stock Three
+    // materials; keeping this verdict current is what makes that recompile safe instead of exposing
+    // an already-over-budget AdvancedLighting variant.
+    refreshTextureUnitBudget(state, runtimeScene);
+
+    // Before everything else that renders: the prepass must exist by the time materials are
+    // (re)injected below, or the first frame compiles the non-contact variant and then swaps.
+    renderDepthPrepass(runtimeScene, camera);
     updateCSM(runtimeScene, camera);
-    updateLocalShadowMaps(runtimeScene, camera);
     // Automatic SDF bounds, when nothing supplies a volume and something wants one. Retried
     // rather than one-shot, because a scene that builds its level in events has no casters on the
     // first frame - but bounded, since each attempt traverses the scene.
@@ -4881,15 +5984,6 @@
       }
     }
 
-    // AFTER selection: run at scene creation it would report "no slot" for every light, because
-    // nothing has competed for one yet.
-    try {
-      runStartupShadowValidation(runtimeScene);
-    } catch (e) {
-      state.shadowValidationDone = true;
-      warnOnce('shadowValidationFailed', 'Shadow validation failed and was disabled for this scene: ' +
-        (e && e.message ? e.message : e) + '. This is diagnostics only; rendering is unaffected.');
-    }
     updateClusterAABBs(state, camera);
     initTextures(state, runtimeScene);
 
@@ -4941,6 +6035,11 @@
 
     // 1. Process and transform active dynamic lights
     state.lights.forEach(function (light) {
+      // These values belong to this exact camera frame. Clear them even for inactive/rejected
+      // lights so local-shadow selection can never consume a stale result from the previous view.
+      light.__alPackedIndex = -1;
+      light.__alVisibleClusterCount = 0;
+      light.__alNearestVisibleDepth = Infinity;
       // Also repairs a Cube3D face material replaced by an in-editor object update.
       syncSpotDirectionFace(light);
       if (!light.active || light.currentIntensity <= 0.0001 || lightIndex >= maxLights) {
@@ -4948,21 +6047,7 @@
         return;
       }
 
-      var obj = light.object;
-      var obj3d = obj.get3DRendererObject ? obj.get3DRendererObject() : null;
-
-      if (obj3d && obj3d.getWorldPosition) {
-        obj3d.getWorldPosition(light.worldPosition);
-        if (obj3d.getWorldDirection) {
-          obj3d.getWorldDirection(light.worldDirection);
-        }
-      } else {
-        light.worldPosition.set(
-          obj.getX ? obj.getX() : 0,
-          obj.getY ? -obj.getY() : 0, // the 3D scene root is mirrored on Y
-          obj.getZ ? obj.getZ() : 0
-        );
-      }
+      syncLightWorldTransform(light);
 
       light.viewPosition.copy(light.worldPosition).applyMatrix4(viewMatrix);
       var vx = light.viewPosition.x;
@@ -5029,6 +6114,7 @@
 
       // 4 texels (16 floats) per light
       var baseFloatIdx = lightIndex * LIGHT_FLOATS;
+      light.__alPackedIndex = lightIndex;
       lightData[baseFloatIdx + 0] = vx;
       lightData[baseFloatIdx + 1] = vy;
       lightData[baseFloatIdx + 2] = vz;
@@ -5076,6 +6162,17 @@
 
       var r2 = cullRadius * cullRadius;
       var touchedAny = false;
+      // The sphere above is only a cheap first pass. For a spotlight it is wildly conservative:
+      // a 40 m range produces an 80 m-wide sphere even when the visible cone is narrow and points
+      // away from the camera. That made off-screen FPS-camera lights consume shadow slots. Cull
+      // surviving clusters against the real finite cone as well. Angles at/above 89 degrees retain
+      // sphere-only culling because tan(theta) becomes numerically unbounded and the cone is nearly
+      // the whole forward hemisphere anyway.
+      var spotConeTan = -1;
+      if (light.lightType === 'Spot') {
+        var outerRadians = Math.max(0.001, light.spotOuterAngle || 45) * Math.PI / 180.0;
+        if (outerRadians < 89.0 * Math.PI / 180.0) spotConeTan = Math.tan(outerRadians);
+      }
 
       // 3. Arvo sphere-to-AABB, but only against the tiles the light's screen-space
       //    footprint actually covers. Sweeping all Sx*Sy tiles of every slice in range made
@@ -5124,11 +6221,28 @@
             );
 
             if (d2 <= r2) {
+              if (spotConeTan >= 0) {
+                var clusterCx = (aabbs[aabbOffset + 0] + aabbs[aabbOffset + 3]) * 0.5;
+                var clusterCy = (aabbs[aabbOffset + 1] + aabbs[aabbOffset + 4]) * 0.5;
+                var clusterCz = (aabbs[aabbOffset + 2] + aabbs[aabbOffset + 5]) * 0.5;
+                var clusterHx = (aabbs[aabbOffset + 3] - aabbs[aabbOffset + 0]) * 0.5;
+                var clusterHy = (aabbs[aabbOffset + 4] - aabbs[aabbOffset + 1]) * 0.5;
+                var clusterHz = (aabbs[aabbOffset + 5] - aabbs[aabbOffset + 2]) * 0.5;
+                var clusterRadius = Math.sqrt(clusterHx * clusterHx + clusterHy * clusterHy +
+                  clusterHz * clusterHz);
+                if (!sphereIntersectsFiniteCone(
+                    clusterCx, clusterCy, clusterCz, clusterRadius,
+                    vx, vy, vz, dirX, dirY, dirZ, radius, spotConeTan)) continue;
+              }
               var slot = binCounts[cIdx];
               if (slot < MAX_LIGHTS_PER_CLUSTER) {
                 binData[cIdx * MAX_LIGHTS_PER_CLUSTER + slot] = lightIndex;
                 binCounts[cIdx] = slot + 1;
                 touchedAny = true;
+                light.__alVisibleClusterCount++;
+                // maxZ is the cluster face nearest the camera (view-space Z is negative).
+                light.__alNearestVisibleDepth = Math.min(light.__alNearestVisibleDepth,
+                  Math.max(cameraNear, -aabbs[aabbOffset + 5]));
               }
             }
           }
@@ -5140,6 +6254,34 @@
     });
 
     state.activeLightCount = lightIndex;
+
+    // Shadow-map reservations must use the visibility result computed immediately above. Running
+    // this before cluster binning used last frame's isInFrustum flag and produced camera-edge pops,
+    // one-frame lag after turns, and slots apparently changing only when the player approached.
+    updateLocalShadowMaps(runtimeScene, camera);
+
+    // Selection changes __alMapSlot after the light records were packed. Patch only shape.z now so
+    // the shader sees this frame's owner; leaving the old value here delayed every hand-off by one
+    // more frame and could briefly sample a map belonging to a different light.
+    state.lights.forEach(function (light) {
+      var packedIndex = light.__alPackedIndex;
+      if (packedIndex === undefined || packedIndex < 0) return;
+      var mapSlot = (light.__alMapSlot !== undefined && light.__alMapSlot >= 0)
+        ? light.__alMapSlot : -1;
+      var shadowInt = light.castShadow ? (mapSlot >= 0 ? 2 + mapSlot : 1) : 0;
+      lightData[packedIndex * LIGHT_FLOATS + 14] = shadowInt +
+        clamp((Number(light.shadowBias) || 0.0) / SHADOW_BIAS_ENCODE_SCALE, 0.0, 0.999);
+    });
+
+    // AFTER selection: run at scene creation it would report "no slot" for every light, because
+    // nothing has competed for one yet.
+    try {
+      runStartupShadowValidation(runtimeScene);
+    } catch (e) {
+      state.shadowValidationDone = true;
+      warnOnce('shadowValidationFailed', 'Shadow validation failed and was disabled for this scene: ' +
+        (e && e.message ? e.message : e) + '. This is diagnostics only; rendering is unaffected.');
+    }
 
     // 4. Flatten the bins into the index list
     var maxCount = 0;
@@ -5210,6 +6352,22 @@
         if (uniforms.uSdfParams.value && typeof uniforms.uSdfParams.value.set === 'function') {
           uniforms.uSdfParams.value.set(vx, state.sdfHitEps || 0.05, state.sdfNormalBias, sunK);
           if (uniforms.uSdfDilation) uniforms.uSdfDilation.value = sdfVolumeDilation(state.sdfVolume);
+        }
+      }
+      // Contact shadows are INDEPENDENT of the SDF. Nested inside the volume check above they
+      // would only ever update in scenes that also have a baked field, which is precisely the
+      // case they exist to serve as an alternative to.
+      if (uniforms.uAlContact && uniforms.uAlContact.value && typeof uniforms.uAlContact.value.set === 'function') {
+        var ccs = contactState(state);
+        uniforms.uAlContact.value.set(ccs.strength, ccs.distance, ccs.steps, ccs.thickness);
+        if (uniforms.uAlSceneDepth) uniforms.uAlSceneDepth.value = ccs.target ? ccs.target.texture : null;
+        if (uniforms.uAlProjection && camera && camera.projectionMatrix &&
+            uniforms.uAlProjection.value && typeof uniforms.uAlProjection.value.copy === 'function') {
+          uniforms.uAlProjection.value.copy(camera.projectionMatrix);
+        }
+        if (uniforms.uAlProjectionInverse && camera && camera.projectionMatrixInverse &&
+            uniforms.uAlProjectionInverse.value && typeof uniforms.uAlProjectionInverse.value.copy === 'function') {
+          uniforms.uAlProjectionInverse.value.copy(camera.projectionMatrixInverse);
         }
       }
       if (uniforms.uSdfVolume && state.sdfVolume && state.sdfVolume.texture) {
@@ -5458,7 +6616,7 @@
           'slot. This is expected and resolves when it comes back on screen.');
       if (technique === 'ShadowMap')
         return no('MAP_BUDGET_FULL', name + ' demands a shadow map but lost the slot race: ' + ls.mappedCount +
-          ' of ' + ls.maxLights + ' slots are taken by lights with a larger screen footprint.');
+          ' of ' + ls.maxLights + ' visible slots are taken by shadows closer to the camera.');
       // Auto and unslotted: fall through to the SDF, which is exactly what Auto promises.
     } else if (technique !== 'SDF' && !canTakeMap) {
       // AreaCapsule has no shadow-map formulation; the SDF is its only path.
@@ -5562,6 +6720,41 @@
 
     setShadowMode: setShadowMode,
     setSunShadows: setSunShadows,
+    setLocalShadowFilter: setLocalShadowFilter,
+    setMaxShadowMapUpdateInterval: function (runtimeScene, frames) {
+      localShadowState(stateOf(runtimeScene)).maxUpdateInterval =
+        clamp(Math.floor(frames), 1, 60);
+    },
+    getMaxShadowMapUpdateInterval: function (runtimeScene) {
+      return localShadowState(stateOf(runtimeScene)).maxUpdateInterval;
+    },
+    setLightShadowFilter: function (runtimeScene, behavior, filter) {
+      var light = behavior && behavior.__alLight;
+      if (!light) return false;
+      var want = String(filter);
+      light.shadowMapFilter = (want === 'VSM' || want === 'PCF') ? want : 'Auto';
+      return true;
+    },
+    getLightShadowFilter: function (runtimeScene, behavior) {
+      var light = behavior && behavior.__alLight;
+      if (!light) return 'Auto';
+      return filterForLight(localShadowState(stateOf(runtimeScene)), light);
+    },
+    getLocalShadowFilter: function (runtimeScene) {
+      return localShadowState(stateOf(runtimeScene)).filter;
+    },
+    isLocalShadowFilter: function (runtimeScene, filter) {
+      return localShadowState(stateOf(runtimeScene)).filter === String(filter);
+    },
+    setVsmSoftness: function (runtimeScene, radius) {
+      localShadowState(stateOf(runtimeScene)).vsmBlurRadius = clamp(Number(radius) || 0, 0, 16);
+    },
+    setVsmLightBleed: function (runtimeScene, amount) {
+      localShadowState(stateOf(runtimeScene)).vsmLightBleed = clamp(Number(amount) || 0, 0, 0.94);
+    },
+    setContactShadows: function (runtimeScene, on) { contactState(stateOf(runtimeScene)).enabled = !!on; },
+    isContactShadowsActive: function (runtimeScene) { return contactShadowsActive(stateOf(runtimeScene)); },
+    contactStateOf: function (runtimeScene) { return contactState(stateOf(runtimeScene)); },
 
     /* ---- Shadow diagnostics ---- */
     diagnoseLightShadow: function (runtimeScene, behavior) {
@@ -5968,6 +7161,15 @@
     // Internal seams for the unit test harness. Not part of the events API and not
     // referenced by any generated JsCode block.
     __internals: {
+      // Exported because test-texture-unit-budget.mjs read it, found undefined, and silently fell
+      // back to 8 - parking eight native shadow-casting spots while the runtime only ever uses
+      // four. That inflated its worst-case sampler count by four units.
+      LOCAL_SHADOW_SLOTS: LOCAL_SHADOW_SLOTS,
+      scanSceneSamplerPressure: scanSceneSamplerPressure,
+      updateIntervalFor: updateIntervalFor,
+      moverAffectsLight: moverAffectsLight,
+      sphereIntersectsFiniteCone: sphereIntersectsFiniteCone,
+      refreshTextureUnitBudget: refreshTextureUnitBudget,
       updateCSM: updateCSM,
       disposeCSM: disposeCSM,
       practicalSplits: practicalSplits,
@@ -5977,6 +7179,7 @@
       updateLocalShadowMaps: updateLocalShadowMaps,
       slotFaceCost: slotFaceCost,
       localMapsEnabled: localMapsEnabled,
+      refreshTextureUnitBudget: refreshTextureUnitBudget,
       parkSlotLight: parkSlotLight,
       localShadowStateOf: function (runtimeScene) { return localShadowState(stateOf(runtimeScene)); },
       injectShaderOnMaterial: injectShaderOnMaterial,

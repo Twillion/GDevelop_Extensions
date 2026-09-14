@@ -123,24 +123,122 @@ flowchart TD
 
 ## Shadow modes and CSM
 
-Hybrid is the default. CSM follows the first visible native directional Sun on the base 3D layer; it does not add another source of brightness. If there is no native Sun, CSM stays inactive. Add one in GDevelop before expecting Sun shadows.
+Auto is the default. CSM follows the first visible native directional Sun on the base 3D layer; it does not add another source of brightness. If there is no native Sun, CSM stays inactive. Add one in GDevelop before expecting Sun shadows.
 
-| Mode | Sun shadows | Clustered local-light shadows |
+Shadowing is configured on four independent axes, not one combined mode enum.
+
+**Who shadows the scene** (`SetShadowMode`): `Auto` (this extension does), `Native` (leave the stock
+GDevelop shadow system alone), or `Off`.
+
+**How the Sun shadows** (`SetSunShadows`): `Cascades`, `DistanceField`, or `Off`.
+
+**How local clustered lights shadow.** Each light picks its own technique from its Shadow Technique
+property and what the budget allows: a real depth map, the baked distance field, or nothing. Two
+scene-level settings control the depth maps:
+
+| Setting | Choices | What it changes |
 | --- | --- | --- |
-| Off | Disabled | Disabled |
-| CSM | Cascaded shadow maps | Disabled |
-| SDF | Baked distance field | Baked distance field |
-| Hybrid | Cascaded shadow maps | Baked distance field |
+| Maps: Depth renderer | `Native` / `Owned` | Who renders the depth map. Native borrows Three's shadow pass through a hidden zero-intensity light and costs **two** fragment texture units per shadowed light, plus a full material recompile whenever the shadowed-light count changes. Owned renders the maps directly: **one** unit, no recompile, spot lights only — point lights fall back to Native automatically. |
+| Maps: Filter | `PCF` / `VSM` | Default for lights whose own Shadow Map Filter is `Auto`. |
+
+**Contact shadows** are a separate, additive layer: short-range screen-space darkening marched
+against a full-resolution depth prepass, costing **one** texture unit shared by every light rather
+than one each. The ray starts above the receiver normal, jitters within each step and blends its hit
+interval. It also reconstructs each sampled view-space position and rejects hits lying on the
+receiver's own plane; this prevents the detached horizontal bars caused by neighboring floor-depth
+texels at shallow viewing angles.
+
+**Local shadow-map slots follow the current view.** A light competes only when it occupies a cluster
+rendered by the active camera in the current frame. Spotlights use their finite cone for this test,
+not the much larger range sphere, so an off-screen cone cannot reserve a slot just because its range
+encloses the FPS camera. Visible candidates are ordered first by their nearest occupied depth slice
+and then by cluster coverage, with a small incumbent allowance to avoid flicker between nearly equal
+lights. Off-screen lights release their slots immediately. The limit is four slots; lights beyond it
+fall back to SDF when available or remain lit without a local map.
+
+**Texture-unit protection is automatic.** Before shadow work each frame, the extension reads the
+GPU's fragment-texture limit and scans the scene's most texture-heavy Standard/Physical material
+plus native GDevelop shadow casters. It reserves the clustered-light core first, then explicitly
+attached probes, SDF and contact shadows, then CSM, then local maps. Any complete feature block that
+does not fit is removed from the shader permutation before compilation and a warning explains what
+was disabled. This also makes AdvancedWeather3D coexist safely: its scene-light changes may make
+Three recompile a material, but the recompiled variant cannot request more samplers than the
+allocator admitted.
+
+The linked-program test measures **25 active fragment samplers** with every feature on using Native
+local maps, or **21** with Owned maps. Neither fits the WebGL2 guaranteed minimum of 16. On a
+simulated 16-unit device the automatic fallback compiles at 11 units by retaining probes, SDF and
+contact shadows while dropping the six-unit CSM and eight-unit Native-local blocks. Use Owned,
+fewer material maps, DistanceField Sun shadows, or fewer native shadow casters when you want to
+retain more features on constrained GPUs.
+
+#### PCF or VSM
+
+PCF takes nine depth comparisons per light per pixel and averages them; that averaging is the only
+thing making the edge soft, so a softer PCF shadow costs more every frame, forever.
+
+VSM stores the **mean and standard deviation** of depth instead of depth itself. Statistics can be
+blurred where a depth value cannot, so the map is blurred once when it is rendered and then read
+with a **single** bilinear tap, and Chebyshev's inequality converts the two moments back into a
+visibility estimate. Softness becomes a property of the map, paid once per map update, instead of a
+per-pixel cost. Bias tuning also largely goes away, because nothing is being compared against
+itself.
+
+**Set it per light** (`ClusteredLight3D` → Shadow Map Filter: `Auto | PCF | VSM`, or the
+`SetShadowMapFilter` action). `Auto` follows the scene-level Maps: Filter setting, so that stays a
+real default rather than dead weight. A light asking for VSM promotes the scene's depth renderer to
+Owned on its own; point lights ignore the setting and stay on PCF.
+
+Mixing is the point, and it is *cheaper* than turning VSM on scene-wide, not more expensive:
+
+* The shader is **unchanged**. `uAlLocalKind[slot].x` was already a per-slot uniform (0 = spot PCF,
+  1 = point, 2 = spot VSM), so the per-slot branch already existed. Nothing was added to the
+  per-pixel path.
+* Moments targets are **per slot**, allocated only for lights that asked. One VSM light among four
+  allocates one buffer, not four — and a light switched back to PCF releases its buffer.
+* Blur passes run **per VSM slot**, so fewer VSM lights means fewer passes.
+
+The rule of thumb is about motion, because the cost sits in map regeneration: VSM saves 8 texture
+fetches per lit pixel per light per frame, and spends roughly `2 x mapSize² x 8` fetches each time
+the map re-renders. At a 512 map that is 4.2M, which a light covering 50,000 screen pixels earns
+back after about 11 still frames; at 1024 it is nearer 42. The extension only re-renders a map when
+something inside that light actually moves, so **static casters → VSM, casters that move every
+frame → PCF.**
+
+Two controls, and they pull against each other:
+
+* **Maps: VSM softness** (default 4) — blur radius in map texels. Past about 8 the Chebyshev
+  estimate starts eroding the shadow itself; on the reference scene radius 8 retained 56% of PCF's
+  shadow area against 77% at radius 4.
+* **Maps: VSM light bleed reduction** (default 0.15) — crushes the technique's characteristic
+  artefact, where a surface shadowed by two stacked occluders brightens instead of going dark. It is
+  paid for directly in softness. Measured on the reference scene at a fixed radius: 0 gives a
+  1278 px penumbra, 0.15 gives 464 px, 0.30 gives 332 px. Three.js defaults this to 0.30; the
+  default here is **0.15**, because at 0.30 the result comes out harder than the PCF it replaced,
+  which defeats the point of choosing VSM at all. Raise it only if you actually see light leaking
+  through stacked geometry.
+
+Stated plainly: **at the shipped defaults VSM is not dramatically softer than PCF.** Choose it for
+one texture fetch instead of nine, and for softness that costs nothing to widen — then raise VSM
+softness or lower light bleed reduction to spend that headroom.
+
+One implementation note, because it is the difference between VSM working and VSM being a slower
+PCF: the moments are taken over **linearised** depth. A perspective depth buffer puts every surface
+a spot light can usefully reach into roughly the top 8% of [0,1] — measured at 234..255 of 255 here.
+Variance is a squared quantity, so that compression collapses the standard deviation below what the
+16-bit store can even hold, and Chebyshev degenerates into exactly the hard step VSM exists to
+avoid. Three's own VSM converts the projected depth as-is, which is why its spot VSM shadows look
+barely softer than its PCF ones.
 
 Use SetShadowMode, or add one **AdvancedShadowManager3D** to configure the scene in the inspector. CSM supports 2–4 cascades (default 3), 1024/2048/4096 maps (default 2048), maximum distance, practical split lambda, depth/normal bias, PCF softness and seam blending. Fitting handles the mirrored Y root and Z-up coordinates, snaps to shadow texels, overlaps cascade transition bands and fades the final cascade to unshadowed Sun. Meshes keep their authored Three.js `castShadow` and `receiveShadow` flags, so enable those flags on the casters and receivers that should participate. Mode changes and scene cleanup release owned maps and restore renderer settings.
 
-SDF baking now yields during voxel seeding, each distance-transform scanline, and conversion. Geometry collection and GPU texture upload remain synchronous. Deleting/resizing a volume cancels stale bake work. Loaded files validate bounds and samples. Zero normal bias is valid. Empty fields stay finite. Conservative half-voxel-diagonal dilation reduces thin-wall leaks, at the cost of slightly thicker silhouettes; rebake older SDF files to use this change. Local shadow priorities use distance to the cluster center, not exact per-fragment nearest-neighbor sorting.
+SDF baking now yields during voxel seeding, each distance-transform scanline, and conversion. Geometry collection and GPU texture upload remain synchronous. Deleting/resizing a volume cancels stale bake work. Loaded files validate bounds and samples. Zero normal bias is valid. Empty fields stay finite. Conservative half-voxel-diagonal dilation reduces thin-wall leaks, at the cost of slightly thicker silhouettes; rebake older SDF files to use this change.
 
 SDF is **static geometry only**: moving casters need CSM for Sun shadows; moving local-light casters are not implemented. Only the base 3D layer is currently managed. Per-light `ShadowBias` offsets local SDF rays in voxel-size units; the global SDF normal bias controls the directional Sun.
 
 ### Validation
 
-Run node AdvancedLighting3D/test-light-flicker-effects.mjs, node AdvancedLighting3D/test-shadow-runtime.mjs, and node AdvancedLighting3D/test-shadow-webgl.mjs. The WebGL test uses the repository's Three.js r160 and headless Chrome with SwiftShader, checks actual changed pixels, mode restoration, cascade bounds and shader errors, and writes shadow-validation.png. It requires Chrome (or CHROME_PATH).
+Run node AdvancedLighting3D/test-light-flicker-effects.mjs, node AdvancedLighting3D/test-shadow-runtime.mjs, and node AdvancedLighting3D/test-shadow-webgl.mjs. `test-owned-depth-webgl.mjs` asserts the Owned renderer matches the Native one pixel for pixel, `test-vsm-webgl.mjs` validates VSM filtering and mixed PCF/VSM lights, `test-contact-shadows-webgl.mjs` validates the depth-prepass contact result, and `test-sampler-ladder.mjs` measures every feature's active sampler cost and the automatic 16-unit fallback. The WebGL tests use the repository's Three.js r160 and headless Chrome with SwiftShader, check actual changed pixels, mode restoration, cascade bounds and shader errors, and write validation images. They require Chrome (or CHROME_PATH).
 
 Software-WebGL tests are not hardware performance measurements or a full GDevelop export test. Desktop/mobile GPU profiling and editor/export acceptance testing remain outstanding. No universal 60 FPS guarantee is made.
 
@@ -289,10 +387,6 @@ still a single self-contained import and works with MaterialMaster **not** insta
 - `ensureAll()` runs on the post-events tick. A runtime that swaps in a fresh material discards the
   hook silently; this re-patches it on the next frame.
 - The build refuses to compile if this runtime assigns `onBeforeCompile` directly.
-
-> **Known incompatibility:** `Portal3D` assigns `onBeforeCompile` directly and is not part of the
-> chain. On any material shared with this extension, whichever patches last wins and the other's
-> edits silently vanish. Do not combine Portal3D with AdvancedLighting3D on the same object.
 
 ---
 

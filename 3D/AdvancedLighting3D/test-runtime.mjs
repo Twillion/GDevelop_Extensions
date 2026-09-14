@@ -941,7 +941,7 @@ staleMaterial.onBeforeCompile = staleCompileHook;
 AL.__internals.injectShaderOnMaterial(staleMaterial, mgrState, null);
 assert.notStrictEqual(staleMaterial.onBeforeCompile, staleCompileHook,
   'A material injected by an older editor runtime must receive the current shader hook');
-assert.strictEqual(staleMaterial.__alInjection.version, '2026.09.11.3',
+assert.strictEqual(staleMaterial.__alInjection.version, '2026.09.13.5',
   'The material injection must identify the runtime that owns its texture bindings');
 assert.ok(staleMaterial.customProgramCacheKey().includes('advlight3d:GD_ADVLIGHT3D_V8|'),
   'Replacing stale bindings must force a new Three.js shader program');
@@ -1010,7 +1010,7 @@ gdjs.__advancedLighting3D = staleRuntime;
 new Function(runtimeCode)();
 assert.notStrictEqual(gdjs.__advancedLighting3D, staleRuntime,
   'Re-importing the extension must replace a stale editor runtime');
-assert.strictEqual(gdjs.__advancedLighting3D.__runtimeVersion, '2026.09.11.3',
+assert.strictEqual(gdjs.__advancedLighting3D.__runtimeVersion, '2026.09.13.5',
   'The replacement runtime must identify the current build');
 assert.strictEqual(typeof registeredCallbacks.editorStep, 'function',
   'The replacement runtime must install its editor callback');

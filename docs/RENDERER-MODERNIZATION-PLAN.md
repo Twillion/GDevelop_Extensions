@@ -17,6 +17,54 @@ it.
 
 ---
 
+## Current state — read this first (updated 2026-09-14)
+
+**Where the plan stands.** Phases marked "landed" have a §x.9 section recording exactly what was
+built and measured.
+
+| Phase | State | Blocked on |
+| :--- | :--- | :--- |
+| **0** Baseline | **Partial** — metrics, harness, **scenes 2 and 4** | scenes 1 and 3 (Phase 8 only) not built; GPU-pass timing unavailable (§0.4) |
+| **1** Composition | Landed (§1.9) | §1.10 still owes a GDevelop preview check and the editor re-import case |
+| **2** Specular AA | Landed (§2.9) | — |
+| **3** LUT | Landed (§3.9) | — |
+| **4** Fog | **Cancelled** — AdvancedWeather3D covers it | — |
+| **5** Blue noise | Not started, *may correctly end in "no"* | scene 3 |
+| **6** TAA / SSGI | Deferred by design; §6 records what reopens it | — |
+| **7** MSAA spike | Not started, *timeboxed, may end in "no"* | **unblocked — scene 4 is built** |
+| **8** Radiance Cascades | Not started | scenes 1 + 3, **and an offline path tracer matched per §8** |
+
+**Scene 4 is now built and validated** (`demos/bench/test-scene-foliage.mjs`). Scenes 1 and 3 remain
+absent; both gate Phase 8 only. A stub for those would be worse than their absence, because a gate
+would appear to have been evaluated (§0.2).
+
+**Recommended next step: Phase 7 (MSAA), now unblocked.** It is explicitly timeboxed with a written
+exit, and alpha-tested foliage is the aliasing §2 states it does *not* fix — so it closes a known gap
+rather than opening a new one. The check most likely to fail, and the one colour rendering cannot
+reveal, is §7's item 3: whether a multisampled depth attachment resolves correctly.
+
+**Hold Phase 8.** It needs a new baked albedo/emission volume — the existing SDF is single-channel
+distance and carries no radiance — and §11 states that if the offline reference cannot be matched
+on light units (including the legacy-lights π factor), its RMSE gates are not usable at all and the
+phase needs a different acceptance basis before starting.
+
+### Constraint: MaterialMaster is being worked on elsewhere
+
+**Do not edit `3D/MaterialMaster/` while that work is in flight.** This costs the plan nothing:
+per §10's table, only Phases 1 and 2 touch MaterialMaster and both have landed. Phases 5 and 7 are
+CinematicPostFX3D, Phase 8 is AdvancedLighting3D, Phase 0 is `demos/` only.
+
+### Uncommitted work sitting in the tree
+
+A large body of AdvancedLighting3D work is complete and verified but **not committed**: owned
+cascade depth rendering (3 texture units for 3 cascades instead of 6), per-light VSM shadow maps,
+contact shadows with a shared depth prepass, the scene-wide texture-unit allocator, finite-cone
+map invalidation, the distant-shadow update throttle, the editor render-target/viewport fix, repairs
+to `tools/gdjs-harness/` broken by the category reorganisation, and roughly eight new test suites.
+See §10.5.
+
+---
+
 ## 0. Baseline — prerequisite for everything
 
 ### 0.1 Target and budget
@@ -80,6 +128,7 @@ have been evaluated.
 | :--- | :--- |
 | `metrics.mjs` | RMSE, windowed SSIM, temporal error delta, raw temporal delta, box downsample, region mask, median/p95 |
 | `test-metrics.mjs` | 34 assertions against known answers |
+| **Scene 4 — alpha-tested foliage** | **Built.** Crossed leaf cards on a procedural cutout atlas with mipmaps, plus thin geometric fence slats as the MSAA control, dolly camera. `test-scene-foliage.mjs` validates it renders, alpha-tests (RMSE 3.01 when the cutoff moves 0.5 → 0.95), aliases (temporal error delta **1.460**), and that the aliasing is attributable to the foliage (**0.849** with the leaf cards removed). Measured alongside scene 2 at **5.642** — recorded, not ranked: the two measure different artefacts. |
 | `harness.mjs` | Headless Chrome + SwiftShader, frames streamed one at a time |
 | `scenes.js` | **Scene 2 only** (rough-metal sphere array, mipmapped normal map, orbiting camera) |
 | `run-specular-aa.mjs` | Section 2's four-way acceptance comparison |
@@ -884,23 +933,31 @@ in Phase 5 before writing the sampler, since it changes where the mask comes fro
 
 ## 10.5 Related: local-light shadow maps (AdvancedLighting3D)
 
-Not part of this plan's phases, but the same three extensions and the same budgets. Clustered spot
-and point lights currently have exactly one shadow source — the baked SDF — which is static-only and
-needs an authored bounds cube. Real depth maps for those lights are specified in
+Not part of this plan's phases, but the same three extensions and the same budgets.
+
+**This section is behind the code.** The sentence below describes the state before local shadow maps
+existed. As built, clustered spot lights now have: real depth maps with an owned depth backend (one
+texture unit per light rather than two), a per-light PCF/VSM filter choice, screen-space contact
+shadows sharing one depth prepass across every light, a scene-wide texture-unit allocator that drops
+whole optional features before compilation rather than failing to link, finite-cone culling for both
+slot selection and map invalidation, and a screen-coverage-driven update throttle. The Sun's cascades
+are likewise rendered by this extension rather than borrowed from Three. The original specification,
+now partly historical, is in
 [../AdvancedLighting3D/LOCAL_SHADOW_MAPS_PLAN.md](../AdvancedLighting3D/LOCAL_SHADOW_MAPS_PLAN.md).
 It borrows §0.1's hardware floor and memory ceiling and §0.3's measurement method directly.
 
 ## 11. Open questions before coding
 
-- §2: pick the `SIGMA2` default empirically on scene 2; 0.15 is a starting point, not a result. The
-  equation choice is settled (Eq. 4), so this is the only free parameter.
 - §1: confirm the (a)+(b) migration strategy survives a GDevelop editor re-import with live materials
   — that is the real-world trigger, not a synthetic test.
 - §8: choose the offline reference renderer and confirm it can be driven to match the parity
   checklist. If matching light units and bounce count is impractical in the available tool, the RMSE
   gates are not usable and §8 needs a different acceptance basis before starting.
 
-Resolved since revision 3: LUT domain (sRGB-to-sRGB only, §3), specular AA equation (Eq. 4, §2).
+Resolved since revision 3: LUT domain (sRGB-to-sRGB only, §3), specular AA equation (Eq. 4, §2),
+and the `SIGMA2` default — measured on scene 2 and settled at **0.02**, the largest value still
+passing both acceptance gates (§2.9). The 0.15 in §2's constants table is the paper's starting
+point, not the shipped value.
 
 ---
 

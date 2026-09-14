@@ -34,12 +34,20 @@ AL.setShadowMode(scene,'Off');assert.equal(AL.isSDFShadowsEnabled(scene),false);
 AL.setShadowMode(scene,'Auto');assert.equal(AL.isSDFShadowsEnabled(scene),true);
 const managerA={},managerB={};assert.equal(AL.registerShadowManager(scene,managerA,{mode:'Auto',sunShadows:'DistanceField',count:3}),true);assert.equal(AL.registerShadowManager(scene,managerB,{mode:'Auto',count:3}),false);assert.equal(AL.shadowState(scene).manager,managerA);AL.destroyShadowManager(scene,managerA);assert.equal(AL.shadowState(scene).manager,managerB);assert.equal(AL.shadowState(scene).mode,'Auto');AL.destroyShadowManager(scene,managerB);assert.equal(AL.shadowState(scene).manager,null);assert.equal(AL.shadowState(scene).mode,'Off');AL.setShadowMode(scene,'Auto');AL.setSunShadows(scene,'Cascades');
 AL.__internals.updateCSM(scene,camera);const c=AL.shadowState(scene);
-assert.equal(c.lights.length,3);assert.equal(c.ready,false);assert.equal(sun.castShadow,false);assert.equal(sun.intensity,1);
+// Cascades are OWNED render targets now, not borrowed DirectionalLights: each cascade used to
+// cost two fragment texture units because Three declared directionalShadowMap[N] for the light
+// and this extension declared uAlCSMMap<i> for the same texture. c.lights must stay EMPTY, or
+// that duplication is back.
+assert.equal(c.cascades.length,3,'three cascades must be allocated');
+assert.equal(c.lights.length,0,'no cascade DirectionalLight may exist, or Three declares a second sampler per cascade');
+// ready stays false here because the stub renderer cannot draw: an undrawn map is all zeros,
+// which reads as FULLY SHADOWED, so absent must be reported as not-ready rather than black.
+assert.equal(c.ready,false);assert.equal(sun.castShadow,false);assert.equal(sun.intensity,1);
 assert.equal(mesh.castShadow,false);assert.equal(mesh.receiveShadow,true);
 for(const lambda of [0,0.75,1]){const split=AL.__internals.practicalSplits(2,5000,4,lambda);assert.equal(split[3],5000);assert.ok(split.every((v,i)=>v>(i?split[i-1]:2)));}
 for(const r of c.ranges){assert.ok(Math.abs(r.center.x/r.texel-Math.round(r.center.x/r.texel))<1e-8);assert.ok(Math.abs(r.center.y/r.texel-Math.round(r.center.y/r.texel))<1e-8);}
-let disposed=0;for(const l of c.lights)l.shadow.map={dispose:()=>disposed++};
-AL.setShadowMode(scene,'Off');assert.equal(disposed,3);assert.equal(c.lights.length,0);assert.equal(mesh.castShadow,false);assert.equal(mesh.receiveShadow,true);assert.equal(sun.castShadow,true);assert.equal(renderer.shadowMap.enabled,false);
+let disposed=0;for(const cascade of c.cascades)cascade.target={dispose:()=>disposed++};
+AL.setShadowMode(scene,'Off');assert.equal(disposed,3,'every cascade target must be released');assert.equal(c.cascades.length,0);assert.equal(mesh.castShadow,false);assert.equal(mesh.receiveShadow,true);assert.equal(sun.castShadow,true);assert.equal(renderer.shadowMap.enabled,false);
 AL.__internals.updateCSM(scene,camera);assert.equal(sun.castShadow,false,'Off suppresses native Sun shadows');
 AL.setShadowMode(scene,'Auto');AL.setSunShadows(scene,'DistanceField');const behavior={};const vol=AL.registerSDFVolume(scene,{getRenderer:()=>null},behavior,{resX:8,resY:8,resZ:4});
 AL.startSDFBake(scene);AL.disposeSDFVolume(scene,behavior);assert.equal(AL.isSDFBakeInProgress(scene),false);AL.doStepPostEvents(scene);assert.equal(vol.texture,null);
@@ -63,21 +71,36 @@ AL.setShadowMode(scene,'Native');AL.__internals.updateCSM(scene,camera);
 assert.equal(sun.castShadow,true,'Native must leave the native Sun casting');
 AL.setShadowMode(scene,'Auto');AL.setSunShadows(scene,'Cascades');AL.__internals.updateCSM(scene,camera);
 assert.equal(sun.castShadow,false,'Auto shadows the Sun with cascades, so it takes the flag over');
-assert.equal(AL.shadowState(scene).lights.length,3,'Auto must build Sun cascades');
+assert.equal(AL.shadowState(scene).cascades.length,3,'Auto must build Sun cascades');
 AL.setShadowMode(scene,'Native');AL.__internals.updateCSM(scene,camera);
 assert.equal(sun.castShadow,true,'returning to Native must restore the authored flag');
-assert.equal(AL.shadowState(scene).lights.length,0,'Native must release the cascade lights');
+assert.equal(AL.shadowState(scene).cascades.length,0,'Native must release the cascade targets');
 
-// Auto permits everything, so it must take the Sun over and compile the local shadow-map path in.
-// Demand gating, which decides what is actually allocated, lands separately.
+// Auto requests every shadow path, but the sampler allocator must keep the linked program inside
+// the GPU limit. This mock has WebGL2's 16-unit floor: clustered data + CSM + four Native local
+// slots cannot coexist, so CSM wins and the local-map permutation is suppressed.
 AL.setShadowMode(scene,'Auto');AL.__internals.updateCSM(scene,camera);
 assert.equal(sun.castShadow,false,'Auto shadows the Sun with cascades');
-assert.equal(AL.shadowState(scene).lights.length,3,'Auto must build Sun cascades');
+assert.equal(AL.shadowState(scene).cascades.length,3,'Auto must build Sun cascades');
 // stateOf(scene), not the captured `state`: the unload above dropped that one, so the mode reads
 // below must come from the scene state the mode setters are actually writing to.
+// LEAN SCENE. Cascades are owned render targets now, so three of them cost THREE units rather
+// than six - Three no longer declares a directionalShadowMap per cascade alongside ours. Those
+// three reclaimed units are exactly what lets the local-map block fit here, where it did not
+// before. This assertion is the payoff of owning the cascade pass, so it is asserted directly.
 AL.__internals.injectShaderOnMaterial(mesh.material,AL.stateOf(scene),null);
-assert.ok(mesh.material.__alInjection.localMaps,'Auto must permit local shadow maps');
-assert.ok(/\|LSM/.test(mesh.material.__alInjection.key),'Auto program key must carry the local-map variant');
+assert.equal(mesh.material.__alInjection.localMaps,true,'owned cascades must free enough units for local maps on a lean 16-unit scene');
+assert.match(mesh.material.__alInjection.key,/\|LSM/,'the local-map variant must compile when it fits');
+// ...and the allocator must STILL refuse when the scene genuinely cannot afford it. Six material
+// maps is an ordinary textured asset, not a pathological case.
+const heavyMaps=['map','aoMap','emissiveMap','normalMap','roughnessMap','metalnessMap'];
+for(const k of heavyMaps)mesh.material[k]={};
+AL.__internals.refreshTextureUnitBudget(AL.stateOf(scene),scene);
+AL.__internals.injectShaderOnMaterial(mesh.material,AL.stateOf(scene),null);
+assert.equal(mesh.material.__alInjection.localMaps,false,'six material maps must push the local-map block back out of a 16-unit budget');
+assert.doesNotMatch(mesh.material.__alInjection.key,/\|LSM/,'the rejected local-map variant must not compile');
+for(const k of heavyMaps)mesh.material[k]=null;
+AL.__internals.refreshTextureUnitBudget(AL.stateOf(scene),scene);
 AL.setShadowMode(scene,'Off');
 AL.__internals.injectShaderOnMaterial(mesh.material,AL.stateOf(scene),null);
 assert.equal(mesh.material.__alInjection.localMaps,false,'Off permits no local shadow maps');
@@ -112,6 +135,63 @@ console.log('Shadow runtime checks passed: authoritative modes, manager takeover
 
 console.log('Shadow-map budget checks passed: face-count weighting and visible slot parking.');
 
+// --- Slot ownership follows this frame's rendered clusters, then visual distance --------------
+// Shadow selection must happen after clustered binning. Otherwise isInFrustum is stale by one
+// frame and a quick camera turn can retain a map behind the player or pop at the screen edge.
+{
+  const visualRoot = new T.Scene(); visualRoot.scale.y = -1;
+  const visualCamera = new T.PerspectiveCamera(60, 1, 1, 5000);
+  visualCamera.position.set(0, 0, 0); visualCamera.lookAt(0, 0, -1);
+  visualCamera.updateProjectionMatrix(); visualCamera.updateMatrixWorld(true);
+  const visualRenderer = {capabilities:{isWebGL2:true},
+    shadowMap:{enabled:false,type:T.BasicShadowMap,autoUpdate:false},
+    getContext:()=>({MAX_TEXTURE_IMAGE_UNITS:0x8872,getParameter:()=>32})};
+  const visualScene = {getGame:()=>({getRenderer:()=>({getThreeRenderer:()=>visualRenderer})}),
+    getLayer:()=>({getRenderer:()=>({getThreeScene:()=>visualRoot,getThreeCamera:()=>visualCamera})})};
+  const visualState = AL.registerSceneManager(visualScene);
+  AL.setSunShadows(visualScene, 'Off');
+  AL.applySceneShadowSettings(visualScene, {maxShadowMappedLights:1});
+
+  const pos = {near:{x:0,y:0,z:-300}, far:{x:0,y:0,z:-1000}, side:{x:3000,y:0,z:-400}};
+  const obj = (p) => ({getX:()=>p.x,getY:()=>p.y,getZ:()=>p.z,getRenderer:()=>null});
+  const opts = {lightType:'Spot',intensity:1,radius:1,castShadow:true,shadowTechnique:'ShadowMap'};
+  const near = AL.registerLight(visualScene,obj(pos.near),{},opts);
+  const far = AL.registerLight(visualScene,obj(pos.far),{},opts);
+  const side = AL.registerLight(visualScene,obj(pos.side),{},opts);
+  // Its enormous range SPHERE overlaps the whole camera frustum, but its narrow cone points away.
+  // This reproduces the FPS scene: off-screen spotlights used to look visible and occupy all four
+  // map slots even though only one or two actual pools of light were on screen.
+  side.radius = 40;
+  side.spotOuterAngle = 10;
+  side.worldDirection.set(1,0,0);
+  near.isInFrustum = false; // deliberately stale: this frame's clustered pass must replace it
+  AL.doStepPostEvents(visualScene);
+  assert.equal(near.__alMapSlot,0,'the nearest visible shadow must own the only slot');
+  assert.equal(far.__alMapSlot,-1);
+  assert.equal(side.__alMapSlot,-1,'an off-screen light must not reserve a visible shadow slot');
+  assert.equal(side.isInFrustum,false,
+    'a spotlight range sphere intersecting the view is not enough when its finite cone misses');
+  assert.equal(Math.floor(visualState.lightDataArray[near.__alPackedIndex * 16 + 14]),2,
+    'the newly selected map slot must reach the packed light record in the same frame');
+
+  pos.near.x = 3000;
+  AL.doStepPostEvents(visualScene);
+  assert.equal(near.__alMapSlot,-1,'a light leaving the view must release its slot immediately');
+  assert.equal(far.__alMapSlot,0,'the next closest visible shadow must take the released slot');
+  assert.equal(Math.floor(visualState.lightDataArray[far.__alPackedIndex * 16 + 14]),2,
+    'a map hand-off must repack the new owner without a one-frame delay');
+
+  // FPS-camera rotation is applied during behavior post-events. The lighting callback must use
+  // that new transform immediately, not the editor camera or the preceding frame's matrix.
+  near.active = false; far.active = false;
+  visualCamera.lookAt(1,0,0); visualCamera.updateMatrixWorld(true);
+  AL.doStepPostEvents(visualScene);
+  assert.equal(side.isInFrustum,true,'the same cone must become visible after the FPS camera turns');
+  assert.equal(side.__alMapSlot,0,'the newly viewed cone must acquire the shadow slot immediately');
+}
+
+console.log('Shadow-map reservation follows current-camera visibility and visual distance.');
+
 // --- The texture-unit verdict must be settled before any material compiles -------------------
 // Decided lazily it answers "affordable" on frame 0 and the real answer on frame 1, which flips
 // AL_LOCAL_SHADOW_MAPS and recompiles every material in the scene — a visible stutter the moment a
@@ -139,14 +219,55 @@ console.log('Texture-unit verdict is settled at registration, before any materia
   const sceneWith = (n) => ({getGame:()=>({getRenderer:()=>({getThreeRenderer:()=>units(n)})}),
     getLayer:()=>({getRenderer:()=>({getThreeScene:()=>root,getThreeCamera:()=>camera})})});
 
+  // A LEAN scene now fits at 16, and that is the point of owning the cascade pass: 3 cluster +
+  // 3 cascades + 4 of our local samplers + 4 of Three's = 14. It did NOT fit while each cascade
+  // cost two units (3 + 6 + 8 = 17), so this assertion is the reclaimed headroom, stated as a number.
+  const lean = sceneWith(16);
+  const stLean = AL.registerSceneManager(lean);
+  assert.equal(stLean.__localMapsAffordable, true,
+    'owned cascades must leave a lean 16-unit scene enough room for 4 native local slots');
+
+  // ...and the verdict must still DISABLE rather than merely warn once the scene is genuinely over
+  // budget. It once read `affordableSlots > 0`, found room for 2 of 4 slots, printed "disabled",
+  // and then returned affordable - announcing the exact overrun it went on to commit.
+  const heavy = ['map','aoMap','emissiveMap','normalMap','roughnessMap','metalnessMap'];
+  for (const k of heavy) mesh.material[k] = {};
   const tight = sceneWith(16);
   const st = AL.registerSceneManager(tight);
   assert.equal(st.__localMapsAffordable, false,
-    '16 units cannot fit 4 native slots (12 reserved + 4x2 = 20) and must be refused, not warned about');
+    'six material maps push 4 native slots past 16 units, and that must be refused, not warned about');
+  for (const k of heavy) mesh.material[k] = null;
 
   const roomy = sceneWith(32);
   const st2 = AL.registerSceneManager(roomy);
   assert.equal(st2.__localMapsAffordable, true, '32 units comfortably fits 4 native slots');
+
+  const noSunRoot = new T.Scene();
+  const noSun = {getGame:()=>({getRenderer:()=>({getThreeRenderer:()=>units(16)})}),
+    getLayer:()=>({getRenderer:()=>({getThreeScene:()=>noSunRoot,getThreeCamera:()=>camera})})};
+  const noSunState = AL.registerSceneManager(noSun);
+  // THREE, not six: one owned render target per cascade instead of Three's map plus ours.
+  assert.equal(noSunState.textureUnitBudget.csmCost, 3);
+  assert.equal(noSunState.__localMapsAffordable, true,
+    'a scene with no Sun must not reserve inactive CSM samplers at all');
+
+  const exactRoot = new T.Scene();
+  const exactSun = new T.DirectionalLight(); exactSun.castShadow = true; exactRoot.add(exactSun);
+  const exactMat = new T.MeshStandardMaterial();
+  for (const p of ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap']) exactMat[p] = {};
+  exactRoot.add(new T.Mesh(new T.BoxGeometry(), exactMat));
+  const exact = {getGame:()=>({getRenderer:()=>({getThreeRenderer:()=>units(16)})}),
+    getLayer:()=>({getRenderer:()=>({getThreeScene:()=>exactRoot,getThreeCamera:()=>camera})})};
+  const exactState = AL.registerSceneManager(exact);
+  AL.setContactShadows(exact, true);
+  AL.__internals.refreshTextureUnitBudget(exactState, exact);
+  assert.equal(exactState.textureUnitBudget.csm, true,
+    'CSM must subtract the native Sun sampler it replaces, and must fit');
+  // 3 cluster + 6 material maps + 1 native Sun shadow + 1 contact + (3 cascades - 1 replaced Sun).
+  // This was 16 - exactly at the limit - while each cascade cost two units; owning the cascade pass
+  // is what turned a scene sitting on the edge into one with three units of headroom.
+  assert.equal(exactState.textureUnitBudget.used, 13);
+  assert.equal(exactState.textureUnitBudget.localMaps, false);
 }
 
 console.log('Texture-unit affordability disables rather than warning-and-proceeding.');

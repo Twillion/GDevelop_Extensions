@@ -175,7 +175,8 @@ const LIGHT_OPTIONS = `{
   shadowMapBias: behavior._getShadowMapBias ? behavior._getShadowMapBias() : -0.0005,
   shadowNormalBias: behavior._getShadowNormalBias ? behavior._getShadowNormalBias() : 0.02,
   shadowMapNear: behavior._getShadowMapNear ? behavior._getShadowMapNear() : 0,
-  shadowMapStatic: behavior._getShadowMapStatic ? behavior._getShadowMapStatic() : false
+  shadowMapStatic: behavior._getShadowMapStatic ? behavior._getShadowMapStatic() : false,
+  shadowMapFilter: behavior._getShadowMapFilter ? behavior._getShadowMapFilter() : 'Auto'
 }`;
 
 const lightLifecycle = [
@@ -326,6 +327,21 @@ AL.updateLight(runtimeScene, object, behavior, { iesProfile: val });
 if (behavior._setCastShadows) behavior._setCastShadows(val);
 AL.updateLight(runtimeScene, object, behavior, { castShadow: val });
 `, { group: G_LIGHT_SHADOW }),
+
+  fn('SetShadowMapFilter', 'Set shadow map filter',
+    'Set shadow map filter on _PARAM0_ to _PARAM2_',
+    'Switch this light between PCF and VSM at runtime, or back to Auto to follow the scene setting. The useful pattern is to flip a light to PCF while its caster is moving and back to VSM once it settles: VSM samples nine times more cheaply but pays two blur passes every time the map re-renders, so it wins on casters that hold still and loses on ones that do not. Changing this re-renders the light map on the next frame. Point lights ignore it and stay on PCF.', 'Action',
+    [choice('Filter', 'Filter', ['Auto', 'PCF', 'VSM'])],
+    `const val = eventsFunctionContext.getArgument("Filter");
+if (behavior._setShadowMapFilter) behavior._setShadowMapFilter(val);
+AL.updateLight(runtimeScene, object, behavior, { shadowMapFilter: val });
+`, { group: G_LIGHT_SHADOW }),
+
+  fn('ShadowMapFilter', 'Shadow map filter', '',
+    'Which filter this light actually uses right now - PCF or VSM, with Auto already resolved against the scene setting and point lights already reported as PCF.', 'StringExpression',
+    [],
+    `eventsFunctionContext.returnValue = AL.getLightShadowFilter(runtimeScene, behavior);
+`, { group: G_LIGHT_SHADOW, expressionType: 'string' }),
 
   fn('SetSourceRadius', 'Set light source radius',
     'Set light source radius on _PARAM0_ to _PARAM2_',
@@ -526,6 +542,9 @@ const clusteredLightBehavior = {
     prop('ShadowTechnique', 'Choice', 'Shadow Technique',
       'How this light casts. Auto lets the budget decide and falls back to the SDF if it does not win a shadow-map slot. ShadowMap always takes a slot, reserved ahead of Auto lights. SDF always marches the baked volume (static casters only, needs an SDFVolume3D). None lights without shadowing. Anything but SDF needs the scene shadow ownership to be Auto. Spot and Point lights can take a shadow map; AreaCapsule cannot and always uses the SDF. A POINT light costs roughly SIX times a spot, because its shadow is six cube faces rather than one map.',
       'Auto', { extraInformation: ['Auto', 'ShadowMap', 'SDF', 'None'] }),
+    prop('ShadowMapFilter', 'Choice', 'Shadow Map Filter',
+      'How THIS light reads its depth map, if it takes one. Auto follows the scene Maps: Filter setting. PCF averages nine depth comparisons per pixel; the averaging is what softens the edge, so a softer PCF shadow costs more every frame. VSM stores the mean and deviation of depth, blurs the map once when it is rendered, and samples it with ONE tap, so softness costs nothing per pixel - but it adds two blur passes each time the map is re-rendered. That trade favours lights whose casters hold still: the extension only re-renders a map when something inside the light actually moves, so a static prop pays the blur once and samples cheaply forever, while a caster that moves every frame pays it every frame. Set moving casters to PCF and static ones to VSM. Point lights ignore this and always use PCF - their map is six cube faces in one atlas, and blurring across the face joins would invent seams.',
+      'Auto', { extraInformation: ['Auto', 'PCF', 'VSM'] }),
     prop('ShadowMapSize', 'Choice', 'Shadow Map Size',
       'Depth map resolution for this light. 1024 is about 4 MB; 512 is often indistinguishable for a spot covering a small area.',
       '1024', { extraInformation: ['512', '1024', '2048'] }),
@@ -1500,7 +1519,7 @@ const installerFunction = {
 const extension = {
   name: 'AdvancedLighting3D',
   fullName: 'Advanced Lighting 3D',
-  version: '4.1.0',
+  version: '4.2.4',
   description: 'Clustered forward dynamic lighting, baked light-probe GI, cascaded Sun shadows, and Signed Distance Field raymarched soft shadows for GDevelop 5 (Three.js WebGL2). Streams up to 512 registered Point, Spot, or Area Capsule lights through data textures, with a default 256-light budget and a 64-light limit per screen/depth cluster. Includes Karis representative-point area specular reflections, blackbody Kelvin colors, IES photometric distributions, Frostbite windowed attenuation, dedicated Lightflickereffects presets, and independent LightTweens transitions. A LightProbeVolume3D supplies baked indirect light. AdvancedShadowManager3D decides who shadows the scene and how the Sun casts. Performance depends on light overlap, shadow settings, cascade settings, SDF resolution, scene geometry, and target hardware.',
   shortDescription: 'Clustered dynamic lighting, baked light-probe GI, polished CSM Sun shadows, and static SDF soft shadows.',
   category: '3D',
@@ -1541,10 +1560,35 @@ const extension = {
 // sunShadows below, and the per-light ShadowTechnique property.
 const shadowModes = ['Auto','Off','Native'];
 const sunShadowMethods = ['Cascades','DistanceField','Off'];
+const localShadowFilters = ['PCF','VSM'];
 const shadowGroup = 'Shadows — CSM and SDF';
 const shadowDiagGroup = 'Shadows — diagnostics';
 extension.eventsFunctions.push(
   freeFn('SetShadowMode','Set shadow mode','Set shadow mode to _PARAM0_','Who shadows this scene. Auto is the default and needs no thought: this extension shadows it and each light gets the best method its Shadow Technique and the budget allow. Native leaves the GDevelop shadow system completely alone - use it to combine clustered lighting with stock GDevelop 3D lights and their shadow checkboxes. Off means no shadows at all. To change HOW things shadow rather than WHO does it, use Set Sun shadow method and the per-light Shadow Technique property.', 'Action',[choice('Mode','Shadow ownership',shadowModes)], 'AL.setShadowMode(runtimeScene, eventsFunctionContext.getArgument("Mode"));', {group:shadowGroup}),
+  freeFn('SetMaxShadowMapUpdateInterval','Set distant shadow update interval','Set distant shadow update interval to _PARAM0_ frames',
+    'Longest a barely-visible shadow may go without re-rendering, in frames (1 to 60). 1 turns the throttle off. A light that leaves the view already loses its map slot; this throttles maps whose light is still on screen but occupies only a few pixels, so the depth pass is spent on the shadows you can actually see. Lower it if a distant moving caster visibly lags its shadow.',
+    'Action',[num('Frames','Frames')],
+    'AL.setMaxShadowMapUpdateInterval(runtimeScene, eventsFunctionContext.getArgument("Frames"));',{group:shadowGroup}),
+  freeFn('MaxShadowMapUpdateInterval','Distant shadow update interval','','Frames a barely-visible shadow may go without re-rendering.',
+    'Expression',[],
+    'eventsFunctionContext.returnValue = AL.getMaxShadowMapUpdateInterval(runtimeScene);',{group:shadowGroup}),
+  freeFn('SetLocalShadowFilter','Set shadow map filter','Set shadow map filter to _PARAM0_',
+    'How local spot-light shadow maps are read. PCF takes nine depth comparisons per light and averages them, which is what softens the edge - so softer costs more. VSM stores the mean and standard deviation of depth instead, blurs THAT once when the map is rendered, and reads it back with a single tap: the softness becomes free at sampling time, and the blur radius no longer costs anything per pixel. VSM also needs almost no depth bias, so shadow acne largely stops being a setting you have to tune. Its price is light bleeding - bright patches where one object is shadowed by another that is itself shadowed - which Light bleed reduction controls. VSM requires the Owned depth renderer and switches it on for you; point lights keep using PCF.',
+    'Action',[choice('Filter','Filter',localShadowFilters)],
+    'AL.setLocalShadowFilter(runtimeScene, eventsFunctionContext.getArgument("Filter"));',{group:shadowGroup}),
+  freeFn('LocalShadowFilterIs','Shadow map filter is','Shadow map filter is _PARAM0_','Compare the shadow map filter.',
+    'Condition',[choice('Filter','Filter',localShadowFilters)],
+    'eventsFunctionContext.returnValue = AL.isLocalShadowFilter(runtimeScene, eventsFunctionContext.getArgument("Filter"));',{group:shadowGroup}),
+  freeFn('LocalShadowFilter','Shadow map filter','','PCF or VSM.','StringExpression',[],
+    'eventsFunctionContext.returnValue = AL.getLocalShadowFilter(runtimeScene);',{group:shadowGroup,expressionType:'string'}),
+  freeFn('SetVSMSoftness','Set VSM softness','Set VSM softness to _PARAM0_',
+    'Blur radius in map texels applied when a VSM shadow map is rendered, 0 to 16. This is what makes the shadow edge soft, and unlike a PCF radius it costs nothing per pixel - the blur happens once per map update, not once per shaded fragment. Ignored while the filter is PCF.',
+    'Action',[num('Radius','Radius in texels')],
+    'AL.setVsmSoftness(runtimeScene, eventsFunctionContext.getArgument("Radius"));',{group:shadowGroup}),
+  freeFn('SetVSMLightBleed','Set VSM light bleed reduction','Set VSM light bleed reduction to _PARAM0_',
+    'How hard to crush VSM light bleeding, 0 to 0.94. Bleeding is the technique inherent artefact where a surface behind two stacked occluders brightens instead of going fully dark. Raising this removes it and hardens the penumbra; lowering it keeps the shadow soft and lets the bleed back in. Ignored while the filter is PCF.',
+    'Action',[num('Amount','Amount, 0 to 0.94')],
+    'AL.setVsmLightBleed(runtimeScene, eventsFunctionContext.getArgument("Amount"));',{group:shadowGroup}),
   freeFn('ShadowModeIs','Shadow mode is','Shadow mode is _PARAM0_','Compare the selected shadow technique.', 'Condition',[choice('Mode','Shadow technique',shadowModes)], 'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).mode === eventsFunctionContext.getArgument("Mode");',{group:shadowGroup}),
   freeFn('ShadowMode','Shadow mode','','Who currently shadows this scene.', 'StringExpression',[], 'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).mode;',{group:shadowGroup,expressionType:'string'}),
   freeFn('ExplainShadows','Explain shadows in the console','Explain why lights do or do not cast shadows',
@@ -1554,6 +1598,8 @@ extension.eventsFunctions.push(
     'StringExpression',[], 'eventsFunctionContext.returnValue = AL.explainAllShadows(runtimeScene);',{group:shadowDiagGroup,expressionType:'string'}),
   freeFn('CastingLightCount','Lights actually casting shadows','','How many clustered lights are genuinely casting a shadow right now, as judged by the full diagnostic - not how many merely have Cast Shadows ticked.',
     'Expression',[], 'eventsFunctionContext.returnValue = AL.diagnoseAllLights(runtimeScene).filter(function(d){return d.ok;}).length;',{group:shadowDiagGroup}),
+  freeFn('SetContactShadows','Enable contact shadows','Enable contact shadows: _PARAM0_','Short-range screen-space shadows marched against a depth prepass. One texture unit shared by every light, so the cost does not grow with light count - unlike shadow maps, which cost a unit each. Adds contact darkening where geometry meets; not a replacement for shadow maps, since only on-screen occluders cast.','Action',[{name:'Enable',type:'yesorno',description:'Enable'}], 'AL.setContactShadows(runtimeScene, eventsFunctionContext.getArgument("Enable"));',{group:shadowGroup}),
+  freeFn('ContactShadowsActive','Contact shadows are active','Contact shadows are active','True once the depth prepass has rendered and the shader variant is compiled in.','Condition',[], 'eventsFunctionContext.returnValue = AL.isContactShadowsActive(runtimeScene);',{group:shadowDiagGroup}),
   freeFn('SetSunShadows','Set Sun shadow method','Set Sun shadow method to _PARAM0_','How the native Sun casts, independent of how local lights do. Cascades gives it cascaded shadow maps that follow the camera and handle moving casters. DistanceField marches the baked volume instead - cheaper and softer, but static casters only and it needs an SDFVolume3D. Off leaves the Sun unshadowed while local lights still cast.', 'Action',[choice('Method','Sun shadow method',sunShadowMethods)], 'AL.setSunShadows(runtimeScene, eventsFunctionContext.getArgument("Method"));',{group:shadowGroup}),
   freeFn('SunShadowsAre','Sun shadow method is','Sun shadow method is _PARAM0_','Compare how the Sun is shadowed.', 'Condition',[choice('Method','Sun shadow method',sunShadowMethods)], 'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).sunShadows === eventsFunctionContext.getArgument("Method");',{group:shadowGroup}),
   freeFn('SunShadowMethod','Sun shadow method','','How the Sun is currently shadowed.', 'StringExpression',[], 'eventsFunctionContext.returnValue = AL.shadowState(runtimeScene).sunShadows;',{group:shadowGroup,expressionType:'string'}),
@@ -1562,7 +1608,7 @@ extension.eventsFunctions.push(
 const mapGroup = 'Shadows — local shadow maps';
 extension.eventsFunctions.push(
   freeFn('SetMaxShadowMappedLights','Set maximum shadow-mapped lights','Set maximum shadow-mapped lights to _PARAM0_',
-    'Memory budget: how many clustered spot lights may hold a depth map at once (0-4). Each 1024 map is about 4 MB. Lights beyond this fall back to the SDF, or go unshadowed if no baked volume is available.',
+    'Memory budget: how many clustered spot or point lights may hold a depth map at once (0-4). Selection uses the same current-frame cluster visibility as rendering, including the finite spotlight cone rather than its much larger range sphere; the nearest visible depth slice wins, followed by visible screen coverage. Each 1024 spot map is about 4 MB. Lights beyond this fall back to the SDF, or go unshadowed if no baked volume is available.',
     'Action',[num('Count','Maximum shadow-mapped lights','4')],
     'AL.setMaxShadowMappedLights(runtimeScene, eventsFunctionContext.getArgument("Count"));',{group:mapGroup}),
   freeFn('SetMaxShadowMapUpdatesPerFrame','Set maximum shadow-map updates per frame','Set maximum shadow-map updates per frame to _PARAM0_',
@@ -1617,9 +1663,27 @@ const shadowManager = {
    'World units added around the fitted geometry in AutoScene mode. Shadows need a little room beyond the objects themselves.','200'),
  prop('SDFMaxAutoExtent','Number','SDF: Max auto extent',
    'Longest side, in world units, that AutoScene will fit. Beyond this the grid resolution is spread so thin that voxels grow larger than the props and the shadows are worse than none, so it refuses and says so instead of baking something useless. Raise it only if you accept the resolution loss.','20000'),
+  prop('ContactShadows','Boolean','Contact: Enable contact shadows',
+   'Short-range screen-space shadows marched against a full-resolution depth prepass. Unlike shadow maps these cost ONE texture unit shared by EVERY light instead of one unit per light, so they are the only shadow type whose cost does not grow with light count - which matters on hardware reporting the WebGL2 minimum of 16 units. They add the darkening where objects meet the ground and where geometry touches. They are NOT a replacement for shadow maps: only occluders currently on screen cast anything, and the march is short-range by design. Costs one extra depth-only pass over the scene per frame.',
+   'false'),
+ prop('ContactStrength','Number','Contact: Strength',
+   'How dark a contact shadow gets, 0 to 1.','1.0'),
+ prop('ContactDistance','Number','Contact: Maximum distance',
+   'How far the march travels from the surface toward the light, in world units. Larger reaches further but spreads the same number of steps over more ground, so it misses thin occluders.','120'),
+ prop('ContactSteps','Number','Contact: Steps',
+   'Samples per light along the march, 1 to 32. More is sharper and more expensive; this runs per light per pixel.','12'),
+ prop('ContactThickness','Number','Contact: Occluder thickness',
+   'How deep behind a depth sample still counts as the same surface, in world units. Too small and shadows break up; too large and unrelated background geometry casts long streaks.','40'),
  prop('LocalShadowBackend','Choice','Maps: Depth renderer',
    'Who renders the local shadow maps. Native borrows the Three.js shadow pass through a hidden zero-intensity light per slot, which costs TWO fragment texture units per shadowed light and recompiles every material in the scene whenever the shadowed-light count changes. Owned renders the depth maps directly instead: one texture unit per light, no recompile. Owned is newer and currently handles spot lights only - point lights fall back to Native automatically. Try Owned if you hit a black screen with a texture-units error in the console.',
    'Native',{extraInformation:['Native','Owned']}),
+ prop('LocalShadowFilter','Choice','Maps: Filter',
+   'How local spot-light shadow maps are read back. PCF takes nine depth comparisons per light per pixel and averages them - a softer edge means a wider kernel, and a wider kernel costs more every frame. VSM stores the mean and standard deviation of depth instead, blurs that once when the map is rendered, and reads it with a SINGLE tap, so softness is free at sampling time and the map can be filtered by the hardware. VSM also needs almost no depth bias, which removes most shadow acne tuning. Its cost is light bleeding: a surface shadowed by two stacked occluders brightens where it should be fully dark - raise Light bleed reduction to crush it. VSM requires the Owned depth renderer and turns it on automatically; point lights fall back to Native and PCF regardless.',
+   'PCF',{extraInformation:['PCF','VSM']}),
+ prop('VSMSoftness','Number','Maps: VSM softness',
+   'Blur radius in map texels applied when a VSM map is rendered, 0 to 16. Larger is softer. Unlike a PCF radius this is paid once per map update rather than once per shaded pixel, so a very soft VSM shadow costs no more to display than a hard one. Past about 8 the Chebyshev estimate starts eroding the shadow itself - on the reference scene radius 8 kept only 56% of the shadow area that PCF produced, against 77% at radius 4 - so raise it for mood, not for accuracy. Ignored while Filter is PCF.','4'),
+ prop('VSMLightBleed','Number','Maps: VSM light bleed reduction',
+   'How hard to crush VSM light bleeding, 0 to 0.94. Light bleeding is the artefact where a surface shadowed by two stacked occluders brightens instead of going fully dark. Raising this removes it, but it is paid for directly in softness: on the reference scene 0 gave a 1278 px penumbra, 0.15 gave 464 px and 0.30 gave 332 px at the same blur radius. Three.js defaults this to 0.30; the default here is 0.15 because at 0.30 the shadow comes out HARDER than the PCF it replaced, which defeats the point of choosing VSM. Raise it only if you actually see light leaking through stacked geometry. Ignored while Filter is PCF.','0.15'),
  prop('MaxShadowedLights','Number','SDF: Max shadowed lights',
    'How many clustered lights may raymarch the distance field at once. Beyond this they still light the scene but stop casting.','4'),
  prop('PointShadowDistance','Number','SDF: Max ray distance',
@@ -1633,9 +1697,11 @@ const shadowManager = {
 
  // --- Shadow maps (local lights, moving casters) ---
  prop('MaxShadowMappedLights','Number','Maps: Max shadow-mapped lights',
-   'Memory budget: how many clustered spot or point lights may hold a depth map (0-8). A 1024 spot map is about 4 MB; a point light stores six faces in one atlas and costs roughly six times as much to both store and render. Lights beyond this fall back to SDF, or go unshadowed if no baked volume is available.','8'),
+   'Memory budget: how many clustered spot or point lights may hold a depth map (0-4). Selection uses the exact current-frame cluster visibility used for rendering. Spotlights are tested with their finite cone rather than their much larger range sphere, so off-screen cones cannot reserve slots merely because their range encloses the FPS camera. Visible lights are ordered by their nearest intersected depth slice, then by visible cluster coverage. A 1024 spot map is about 4 MB; a point light stores six faces in one atlas and costs roughly six times as much to both store and render. Lights beyond this fall back to SDF, or go unshadowed if no baked volume is available.','4'),
  prop('MaxShadowMapUpdatesPerFrame','Number','Maps: Max map updates per frame',
-   'Time budget, separate from the memory budget: how many maps may RE-RENDER in one frame. A map only re-renders when something inside its light moved, so a static scene costs nothing.','4')
+   'Time budget, separate from the memory budget: how many maps may RE-RENDER in one frame. A map only re-renders when something inside its light moved, so a static scene costs nothing.','4'),
+ prop('MaxShadowMapUpdateInterval','Number','Maps: Distant update interval',
+   'Longest a barely-visible shadow may go without re-rendering, in frames (1 to 60). Set to 1 to turn the throttle off and re-render every dirty map as soon as the frame budget allows. A light that leaves the view already loses its map slot, so a shadow you cannot see costs nothing. This handles the other case: a light still on screen whose shadow covers a handful of pixels, re-rendering its entire depth map every time anything inside its radius twitches. Those maps re-render every 2, 4 or this many frames depending on how much of the screen the light occupies, while the shadow at your feet keeps updating every frame. Raise it to save more while walking around; lower it if a distant moving caster visibly lags its shadow.','6')
  ],
  eventsFunctions:[
  tweenLifecycle('onCreated',
@@ -1644,7 +1710,13 @@ const shadowManager = {
  ', sdfSunSoftness:behavior._getSDFSunSoftness(), sdfHitEps:behavior._getSDFHitEps(), sdfNormalBias:behavior._getSDFNormalBias()'+
  ', sdfBoundsMode:behavior._getSDFBoundsMode(), sdfAutoPadding:behavior._getSDFAutoPadding(), sdfMaxExtent:behavior._getSDFMaxAutoExtent()'+
  ', localShadowBackend:behavior._getLocalShadowBackend()'+
- ', maxShadowMappedLights:behavior._getMaxShadowMappedLights(), maxShadowMapUpdatesPerFrame:behavior._getMaxShadowMapUpdatesPerFrame()});',true),
+ ', localShadowFilter:behavior._getLocalShadowFilter(), vsmBlurRadius:behavior._getVSMSoftness()'+
+ ', vsmLightBleed:behavior._getVSMLightBleed()'+
+ ', contactShadows:behavior._getContactShadows(), contactStrength:behavior._getContactStrength()'+
+ ', contactDistance:behavior._getContactDistance(), contactSteps:behavior._getContactSteps()'+
+ ', contactThickness:behavior._getContactThickness()'+
+ ', maxShadowMappedLights:behavior._getMaxShadowMappedLights(), maxShadowMapUpdatesPerFrame:behavior._getMaxShadowMapUpdatesPerFrame()'+
+ ', maxShadowMapUpdateInterval:behavior._getMaxShadowMapUpdateInterval()});',true),
  tweenLifecycle('onDestroy','AL.destroyShadowManager(runtimeScene, behavior);')
  ]
 };

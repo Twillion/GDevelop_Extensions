@@ -25,19 +25,23 @@ window.run=async function(){
  AL.setShadowMode(scene,'Auto');draw();draw();const csm=pixels();
  let changed=0;for(let i=0;i<off.length;i+=4)if(Math.abs(off[i]-csm[i])+Math.abs(off[i+1]-csm[i+1])+Math.abs(off[i+2]-csm[i+2])>10)changed++;
  const ready=AL.shadowState(scene).ready;
- const contain=AL.shadowState(scene).ranges.every((r,i)=>{const l=AL.shadowState(scene).lights[i];l.shadow.updateMatrices(l);return r.corners.every(p=>{const v=p.clone().applyMatrix4(l.shadow.camera.matrixWorldInverse);return Math.abs(v.x)<=r.half+0.001 && Math.abs(v.y)<=r.half+0.001 && -v.z>=0 && -v.z<=l.shadow.camera.far;});});
+ // Cascades are owned OrthographicCameras now, not DirectionalLight shadow cameras, so there is
+ // no shadow.updateMatrices() to call: updateCSM sets each camera and updates its world matrix
+ // directly. The containment check itself is unchanged - every cascade's frustum corners must
+ // still fall inside the map it is fitted to, which is what makes the snapping maths testable.
+ const contain=AL.shadowState(scene).ranges.every((r,i)=>{const cam=AL.shadowState(scene).cascades[i].camera;return r.corners.every(p=>{const v=p.clone().applyMatrix4(cam.matrixWorldInverse);return Math.abs(v.x)<=r.half+0.001 && Math.abs(v.y)<=r.half+0.001 && -v.z>=0 && -v.z<=cam.far;});});
  // Asking the Sun for a distance field it has not got must visibly DROP its shadow rather than
  // render black or corrupt, and switching back must return the exact CSM image - that round trip
  // is what proves the cascade teardown and rebuild are clean.
  AL.setSunShadows(scene,'DistanceField');draw();draw();const hybrid=pixels();let sunNoVolumeDifference=0;for(let i=0;i<csm.length;i++)sunNoVolumeDifference=Math.max(sunNoVolumeDifference,Math.abs(csm[i]-hybrid[i]));
  AL.setSunShadows(scene,'Cascades');draw();draw();const backToCsm=pixels();let sunRoundTripDifference=0;for(let i=0;i<csm.length;i++)sunRoundTripDifference=Math.max(sunRoundTripDifference,Math.abs(csm[i]-backToCsm[i]));
  const saved=renderer.domElement.toDataURL();
- AL.configureCSM(scene,{count:4});draw();draw();const count4=AL.shadowState(scene).lights.length;AL.configureCSM(scene,{count:2});draw();draw();const count2=AL.shadowState(scene).lights.length;
+ AL.configureCSM(scene,{count:4});draw();draw();const count4=AL.shadowState(scene).cascades.length;AL.configureCSM(scene,{count:2});draw();draw();const count2=AL.shadowState(scene).cascades.length;
  const behavior={};const volume=AL.registerSDFVolume(scene,{getRenderer:()=>null},behavior,{resX:24,resY:24,resZ:12});AL.setSDFVolumeBounds(scene,-700,-700,-100,700,700,600);
  AL.startSDFBake(scene);let steps=0;while(AL.isSDFBakeInProgress(scene)&&steps++<2000)draw();
  AL.setSunShadows(scene,'DistanceField');draw();draw();const sdf=AL.isSDFBakeComplete(scene);const sdfPixels=pixels();let sdfChanged=0;for(let i=0;i<off.length;i+=4)if(Math.abs(off[i]-sdfPixels[i])>5)sdfChanged++;
  AL.setShadowMode(scene,'Off');draw();draw();const restored=pixels();let restoreDifference=0;for(let i=0;i<off.length;i++)restoreDifference=Math.max(restoreDifference,Math.abs(off[i]-restored[i]));
- const noCascades=AL.shadowState(scene).lights.length===0;
+ const noCascades=AL.shadowState(scene).cascades.length===0;
  return {revision:THREE.REVISION,ready,contain,changed,sunNoVolumeDifference,sunRoundTripDifference,count4,count2,sdf,sdfChanged,steps,restoreDifference,noCascades,glErrors,image:saved,glError:renderer.getContext().getError()};
 };</script>`;
 const server=http.createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/'?'text/html':'text/javascript');if(req.url==='/')res.end(html);else if(req.url==='/three.js')res.end(fs.readFileSync(path.join(root,'tools/gdjs-harness/runtime/pixi-renderers/three.js')));else if(req.url==='/runtime.js')res.end(
