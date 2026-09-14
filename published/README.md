@@ -8,7 +8,6 @@ GDevelop extensions created by Twillion.
 | --- | :---: | --- |
 | 3DCRT+ | 1.0.0 | `extensions/3DCRTplus.json` |
 | Extruded Sprite 3D | 0.5.3 | `extensions/ExtrudedSprite3D.json` |
-| MIDI Synth Player | 1.0.0 | `extensions/MidiSynthPlayer.json` |
 | Y-axis 3D Physics Character | 2.0.20 | `extensions/YAxisPhysicsCharacter3D.json` |
 
 ### Known broken
